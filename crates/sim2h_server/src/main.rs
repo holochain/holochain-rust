@@ -11,7 +11,7 @@ use lib3h_protocol::uri::Builder;
 use lib3h_sodium::SodiumCryptoSystem;
 use log::*;
 use newrelic::{LogLevel, LogOutput, NewRelicConfig};
-use sim2h::{run_sim2h, DhtAlgorithm, Sim2h, MESSAGE_LOGGER};
+use sim2h::{run_sim2h, DhtAlgorithm, MESSAGE_LOGGER};
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -85,7 +85,7 @@ fn main() {
         MESSAGE_LOGGER.lock().start();
     }
 
-    let sim2h = Sim2h::new(
+    let (mut rt, _) = run_sim2h(
         Box::new(SodiumCryptoSystem::new()),
         uri,
         DhtAlgorithm::NaiveSharding {
@@ -94,7 +94,6 @@ fn main() {
         tracer,
     );
 
-    run_sim2h(sim2h)
-        // just park the main thread indefinitely...
-        .block_on(futures::future::pending::<()>());
+    // just park the main thread indefinitely...
+    rt.block_on(futures::future::pending::<()>());
 }

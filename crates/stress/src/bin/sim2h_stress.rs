@@ -15,7 +15,7 @@ use lib3h_protocol::{data_types::*, protocol::*, uri::Lib3hUri};
 use lib3h_sodium::SodiumCryptoSystem;
 use sim2h::{
     crypto::{Provenance, SignedWireMessage},
-    run_sim2h, DhtAlgorithm, Sim2h, WireMessage,
+    run_sim2h, DhtAlgorithm, WireMessage,
 };
 use std::{
     collections::{HashMap, VecDeque},
@@ -474,40 +474,51 @@ impl Job {
                 let res = res.unwrap();
                 logger.log("ping_recv_pong_in_ms", res.elapsed().as_millis() as f64);
             }
-            WireMessage::Lib3hToClient(span_wrap) => match &span_wrap.data {
-                Lib3hToClient::HandleGetAuthoringEntryList(_)
-                | Lib3hToClient::HandleGetGossipingEntryList(_) => {}
-                Lib3hToClient::HandleStoreEntryAspect(aspect) => {
-                    let epoch_millis = std::time::SystemTime::now()
-                        .duration_since(std::time::UNIX_EPOCH)
-                        .unwrap()
-                        .as_millis() as u64;
-                    let published = aspect.entry_aspect.type_hint.parse::<u64>().unwrap();
-                    let elapsed = epoch_millis - published;
-                    logger.log("publish_received_aspect_in_ms", elapsed as f64);
+            WireMessage::Lib3hToClient(span_wrap) => self.priv_handle_msg_inner(logger, span_wrap),
+            WireMessage::MultiSend(msg_list) => {
+                for span_wrap in msg_list {
+                    self.priv_handle_msg_inner(logger, span_wrap)
                 }
-                Lib3hToClient::HandleSendDirectMessage(dm_data) => {
-                    let to_agent_id: String = dm_data.to_agent_id.clone().into();
-                    assert_eq!(self.agent_id, to_agent_id);
-                    let dm_data = dm_data.clone();
-                    let mut out_dm = dm_data.clone();
-                    out_dm.to_agent_id = dm_data.from_agent_id;
-                    out_dm.from_agent_id = dm_data.to_agent_id;
-                    self.send_wire(WireMessage::Lib3hToClientResponse(
-                        span_wrap
-                            .swapped(Lib3hToClientResponse::HandleSendDirectMessageResult(out_dm)),
-                    ));
+            }
+            e @ _ => panic!("unexpected: {:?}", e),
+        }
+    }
+
+    fn priv_handle_msg_inner(
+        &mut self,
+        logger: &mut StressJobMetricLogger,
+        span_wrap: ht::EncodedSpanWrap<Lib3hToClient>,
+    ) {
+        match &span_wrap.data {
+            Lib3hToClient::HandleGetAuthoringEntryList(_)
+            | Lib3hToClient::HandleGetGossipingEntryList(_) => {}
+            Lib3hToClient::HandleStoreEntryAspect(aspect) => {
+                let epoch_millis = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis() as u64;
+                let published = aspect.entry_aspect.type_hint.parse::<u64>().unwrap();
+                let elapsed = epoch_millis - published;
+                logger.log("publish_received_aspect_in_ms", elapsed as f64);
+            }
+            Lib3hToClient::HandleSendDirectMessage(dm_data) => {
+                let to_agent_id: String = dm_data.to_agent_id.clone().into();
+                assert_eq!(self.agent_id, to_agent_id);
+                let mut out_dm = dm_data.clone();
+                out_dm.to_agent_id = dm_data.from_agent_id.clone();
+                out_dm.from_agent_id = dm_data.to_agent_id.clone();
+                self.send_wire(WireMessage::Lib3hToClientResponse(
+                    span_wrap.swapped(Lib3hToClientResponse::HandleSendDirectMessageResult(out_dm)),
+                ));
+            }
+            Lib3hToClient::SendDirectMessageResult(dm_data) => {
+                let res = self.pending_dms.remove(&dm_data.request_id);
+                if res.is_none() {
+                    panic!("invalid dm.request_id")
                 }
-                Lib3hToClient::SendDirectMessageResult(dm_data) => {
-                    let res = self.pending_dms.remove(&dm_data.request_id);
-                    if res.is_none() {
-                        panic!("invalid dm.request_id")
-                    }
-                    let res = res.unwrap();
-                    logger.log("dm_result_in_ms", res.elapsed().as_millis() as f64);
-                }
-                e @ _ => panic!("unexpected: {:?}", e),
-            },
+                let res = res.unwrap();
+                logger.log("dm_result_in_ms", res.elapsed().as_millis() as f64);
+            }
             e @ _ => panic!("unexpected: {:?}", e),
         }
     }
@@ -587,20 +598,18 @@ impl Suite {
             // changed to ws until we reactive TLS
             let url = Url2::parse(&format!("ws://127.0.0.1:{}", port));
 
-            // TODO: set up tracer here if we want to examine traces of stress runs
-            let sim2h = Sim2h::new(
+            let mut logger = None;
+
+            let (mut rt, binding) = run_sim2h(
                 Box::new(SodiumCryptoSystem::new()),
                 Lib3hUri(url.into()),
                 DhtAlgorithm::FullSync,
+                None,
             );
-
-            snd1.send(sim2h.bound_uri.clone().unwrap()).unwrap();
-            drop(snd1);
-
-            let mut logger = None;
-
-            let mut rt = run_sim2h(sim2h);
             rt.block_on(async move {
+                tokio::task::spawn(async move {
+                    snd1.send(binding.await.unwrap()).unwrap();
+                });
                 while *sim2h_cont_clone.lock().unwrap() {
                     tokio::time::delay_for(std::time::Duration::from_millis(1)).await;
 

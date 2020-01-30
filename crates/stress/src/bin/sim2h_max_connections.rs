@@ -1,5 +1,7 @@
 //! `cargo run --bin sim2h_max_connections`
 
+extern crate holochain_tracing as ht;
+
 use in_stream::*;
 use lib3h_crypto_api::CryptoSystem;
 use lib3h_protocol::{data_types::*, protocol::*, uri::Lib3hUri};
@@ -7,7 +9,7 @@ use lib3h_sodium::SodiumCryptoSystem;
 use log::*;
 use sim2h::{
     crypto::{Provenance, SignedWireMessage},
-    run_sim2h, DhtAlgorithm, Sim2h, WireMessage,
+    run_sim2h, DhtAlgorithm, WireMessage,
 };
 use std::sync::{Arc, Mutex};
 use url2::prelude::*;
@@ -126,13 +128,15 @@ impl Job {
 
     /// join the space "abcd" : )
     pub fn join_space(&mut self) {
-        self.send_wire(WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(
-            SpaceData {
-                agent_id: self.agent_id.clone().into(),
-                request_id: "".to_string(),
-                space_address: "abcd".to_string().into(),
-            },
-        )));
+        self.send_wire(WireMessage::ClientToLib3h(
+            ht::noop("join_space")
+                .wrap(ClientToLib3h::JoinSpace(SpaceData {
+                    agent_id: self.agent_id.clone().into(),
+                    request_id: "".to_string(),
+                    space_address: "abcd".to_string().into(),
+                }))
+                .into(),
+        ));
     }
 
     /// send a ping message to sim2h
@@ -146,8 +150,14 @@ impl Job {
             WireMessage::Pong => {
                 self.last_pong = std::time::Instant::now();
             }
-            WireMessage::Lib3hToClient(Lib3hToClient::HandleGetAuthoringEntryList(_))
-            | WireMessage::Lib3hToClient(Lib3hToClient::HandleGetGossipingEntryList(_)) => {}
+            WireMessage::Lib3hToClient(ht::EncodedSpanWrap {
+                data: Lib3hToClient::HandleGetAuthoringEntryList(_),
+                ..
+            })
+            | WireMessage::Lib3hToClient(ht::EncodedSpanWrap {
+                data: Lib3hToClient::HandleGetGossipingEntryList(_),
+                ..
+            }) => {}
             e @ _ => panic!("unexpected: {:?}", e),
         }
     }
@@ -186,16 +196,15 @@ pub fn main() {
     // changed to ws until we reactive TLS
     let url = Url2::parse("ws://127.0.0.1:0");
 
-    let sim2h = Sim2h::new(
+    let (mut rt, binding) = run_sim2h(
         Box::new(SodiumCryptoSystem::new()),
         Lib3hUri(url.into()),
         DhtAlgorithm::FullSync,
+        None,
     );
-
-    let bound_uri = sim2h.bound_uri.as_ref().unwrap().clone();
-
-    let mut rt = run_sim2h(sim2h);
     rt.block_on(async move {
+        let bound_uri = binding.await.unwrap();
+
         std::thread::spawn(|| loop {
             warn!("1 second tick - hardware");
             std::thread::sleep(std::time::Duration::from_secs(1));

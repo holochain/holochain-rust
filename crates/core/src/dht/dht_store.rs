@@ -164,7 +164,7 @@ impl DhtStore {
             .into_iter()
             .rev()
             .skip(pagination.clone().map(|page|page.page_size * page.page_number).unwrap_or(0))
-            .take(pagination.map(|page|page.page_size).unwrap_or(std::usize::MAX)
+            .take(pagination.map(|page|page.page_size).unwrap_or(std::usize::MAX))
             .map(|s| match s.attribute() {
                 Attribute::LinkTag(_, _) => (s, CrudStatus::Live),
                 _ => (s, CrudStatus::Deleted),

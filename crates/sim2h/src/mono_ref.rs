@@ -1,17 +1,38 @@
-//use crate::*;
+use crate::*;
 
 /// ref counted - lets us override some debugging
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct MonoRef<T>(std::sync::Arc<T>);
 
-impl<T: std::fmt::Debug> std::fmt::Debug for MonoRef<T> {
+impl std::fmt::Debug for MonoRef<AgentId> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.0)
+        write!(f, "AgentId({})", self.0)
+    }
+}
+impl std::fmt::Debug for MonoRef<SpaceHash> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "SpaceHash({})", self.0)
+    }
+}
+impl std::fmt::Debug for MonoRef<EntryHash> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "EntryHash({})", self.0)
+    }
+}
+impl std::fmt::Debug for MonoRef<AspectHash> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "AspectHash({})", self.0)
+    }
+}
+impl std::fmt::Debug for MonoRef<Lib3hUri> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Uri({})", self.0)
     }
 }
 
 /*
-impl std::fmt::Debug for MonoRef<AgentId> {
+// WTF - why can't we make a generic one too?
+impl<T: std::fmt::Debug> std::fmt::Debug for MonoRef<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.0)
     }

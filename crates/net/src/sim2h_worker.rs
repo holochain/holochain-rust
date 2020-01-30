@@ -490,6 +490,9 @@ impl Sim2hWorker {
             WireMessage::Status => error!("Got a Status from the Sim2h server, weird! Ignoring"),
             WireMessage::Hello(_) => error!("Got a Hello from the Sim2h server, weird! Ignoring"),
             WireMessage::HelloResponse(response) => {
+                if WIRE_VERSION != response.version {
+                    panic!("holochain SIM2H WIRE_VERSION ({}) does not match SIM2H server WIRE_VERSION ({}) - cannot continue", WIRE_VERSION, response.version);
+                }
                 debug!("HelloResponse {:?}", response);
                 self.set_full_sync(response.redundant_count == 0);
             }

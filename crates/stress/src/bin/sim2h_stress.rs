@@ -14,7 +14,7 @@ use lib3h_protocol::{data_types::*, protocol::*, uri::Lib3hUri};
 use lib3h_sodium::SodiumCryptoSystem;
 use sim2h::{
     crypto::{Provenance, SignedWireMessage},
-    run_sim2h, DhtAlgorithm, Sim2h, WireMessage,
+    run_sim2h, DhtAlgorithm, WireMessage,
 };
 use std::{
     collections::{HashMap, VecDeque},
@@ -468,9 +468,21 @@ impl Job {
                 let res = res.unwrap();
                 logger.log("ping_recv_pong_in_ms", res.elapsed().as_millis() as f64);
             }
-            WireMessage::Lib3hToClient(Lib3hToClient::HandleGetAuthoringEntryList(_))
-            | WireMessage::Lib3hToClient(Lib3hToClient::HandleGetGossipingEntryList(_)) => {}
-            WireMessage::Lib3hToClient(Lib3hToClient::HandleStoreEntryAspect(aspect)) => {
+            WireMessage::Lib3hToClient(msg) => self.priv_handle_msg_inner(logger, msg),
+            WireMessage::MultiSend(msg_list) => {
+                for msg in msg_list {
+                    self.priv_handle_msg_inner(logger, msg)
+                }
+            }
+            e @ _ => panic!("unexpected: {:?}", e),
+        }
+    }
+
+    fn priv_handle_msg_inner(&mut self, logger: &mut StressJobMetricLogger, msg: Lib3hToClient) {
+        match msg {
+            Lib3hToClient::HandleGetAuthoringEntryList(_)
+            | Lib3hToClient::HandleGetGossipingEntryList(_) => {}
+            Lib3hToClient::HandleStoreEntryAspect(aspect) => {
                 let epoch_millis = std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap()
@@ -479,7 +491,7 @@ impl Job {
                 let elapsed = epoch_millis - published;
                 logger.log("publish_received_aspect_in_ms", elapsed as f64);
             }
-            WireMessage::Lib3hToClient(Lib3hToClient::HandleSendDirectMessage(dm_data)) => {
+            Lib3hToClient::HandleSendDirectMessage(dm_data) => {
                 let to_agent_id: String = dm_data.to_agent_id.clone().into();
                 assert_eq!(self.agent_id, to_agent_id);
                 let mut out_dm = dm_data.clone();
@@ -489,7 +501,7 @@ impl Job {
                     Lib3hToClientResponse::HandleSendDirectMessageResult(out_dm),
                 ));
             }
-            WireMessage::Lib3hToClient(Lib3hToClient::SendDirectMessageResult(dm_data)) => {
+            Lib3hToClient::SendDirectMessageResult(dm_data) => {
                 let res = self.pending_dms.remove(&dm_data.request_id);
                 if res.is_none() {
                     panic!("invalid dm.request_id")
@@ -576,19 +588,17 @@ impl Suite {
             // changed to ws until we reactive TLS
             let url = Url2::parse(&format!("ws://127.0.0.1:{}", port));
 
-            let sim2h = Sim2h::new(
+            let mut logger = None;
+
+            let (mut rt, binding) = run_sim2h(
                 Box::new(SodiumCryptoSystem::new()),
                 Lib3hUri(url.into()),
                 DhtAlgorithm::FullSync,
             );
-
-            snd1.send(sim2h.bound_uri.clone().unwrap()).unwrap();
-            drop(snd1);
-
-            let mut logger = None;
-
-            let mut rt = run_sim2h(sim2h);
             rt.block_on(async move {
+                tokio::task::spawn(async move {
+                    snd1.send(binding.await.unwrap()).unwrap();
+                });
                 while *sim2h_cont_clone.lock().unwrap() {
                     tokio::time::delay_for(std::time::Duration::from_millis(1)).await;
 

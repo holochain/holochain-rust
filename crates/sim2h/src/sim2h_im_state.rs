@@ -154,7 +154,10 @@ impl Space {
         entry_location(&self.crypto, entry_hash)
     }
 
-    fn get_agents_that_should_hold_entry(&self, entry_hash: &EntryHash) -> im::Vector<MonoAgentId> {
+    fn get_agents_that_should_hold_entry(
+        &self,
+        entry_hash: &EntryHash,
+    ) -> im::HashSet<MonoAgentId> {
         if self.redundancy == 0 {
             // FULL SYNC
             return self.connections.keys().cloned().collect();
@@ -162,7 +165,7 @@ impl Space {
 
         let entry_loc = self.get_entry_location(entry_hash);
 
-        let mut out = im::Vector::new();
+        let mut out = im::HashSet::new();
 
         let agent_count = self.connections.len() as u64;
 
@@ -173,11 +176,33 @@ impl Space {
                 agent_count,
                 self.redundancy,
             ) {
-                out.push_back(agent_id.clone());
+                out.insert(agent_id.clone());
             }
         }
 
         out
+    }
+
+    fn get_agents_holding_entry(&self, entry_hash: &EntryHash) -> im::HashSet<MonoAgentId> {
+        if let Some(entry) = self.entry_to_all_aspects.get(entry_hash) {
+            let mut aspect_iter = entry.aspects.iter();
+            let mut remaining_agents = match aspect_iter.next() {
+                None => return im::HashSet::new(),
+                Some((_, holding)) => holding.clone(),
+            };
+
+            for (_, holding) in aspect_iter {
+                remaining_agents = remaining_agents.intersection(holding.clone());
+
+                if remaining_agents.is_empty() {
+                    return im::HashSet::new();
+                }
+            }
+
+            return remaining_agents;
+        }
+
+        im::HashSet::new()
     }
 
     fn check_insert_connection(&mut self, agent_id: &AgentId, uri: Lib3hUri) {
@@ -478,9 +503,18 @@ impl Store {
         &self,
         space_hash: &SpaceHash,
         entry_hash: &EntryHash,
-    ) -> Option<im::Vector<MonoAgentId>> {
+    ) -> Option<im::HashSet<MonoAgentId>> {
         let space = self.get_space(space_hash)?;
         Some(space.get_agents_that_should_hold_entry(entry_hash))
+    }
+
+    pub fn get_agents_holding_entry(
+        &self,
+        space_hash: &SpaceHash,
+        entry_hash: &EntryHash,
+    ) -> Option<im::HashSet<MonoAgentId>> {
+        let space = self.get_space(space_hash)?;
+        Some(space.get_agents_holding_entry(entry_hash))
     }
 
     /// return a mapping of all entry_hash/aspect_hashes

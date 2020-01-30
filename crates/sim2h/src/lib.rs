@@ -195,6 +195,7 @@ pub enum DhtAlgorithm {
 mod mono_ref;
 use mono_ref::*;
 
+#[allow(dead_code)]
 mod sim2h_state;
 pub(crate) use sim2h_state::*;
 
@@ -433,7 +434,7 @@ pub struct Sim2h {
     num_ticks: u64,
     /// when should we try to resync nodes that are still missing aspect data
     missing_aspects_resync: std::time::Instant,
-    dht_algorithm: DhtAlgorithm,
+    //dht_algorithm: DhtAlgorithm,
     recv_com: tokio::sync::mpsc::UnboundedReceiver<Sim2hCom>,
     sim2h_handle: Sim2hHandle,
     connection_count: usize,
@@ -466,7 +467,7 @@ impl Sim2h {
             crypto.box_clone(),
             state.clone(),
             send_com,
-            dht_algorithm.clone(),
+            dht_algorithm,
             metric_gen.clone(),
             connection_mgr,
         );
@@ -493,7 +494,7 @@ impl Sim2h {
             connection_mgr_evt_recv,
             num_ticks: 0,
             missing_aspects_resync: std::time::Instant::now(),
-            dht_algorithm,
+            //dht_algorithm,
             recv_com,
             sim2h_handle,
             connection_count: 0,
@@ -1272,6 +1273,45 @@ impl Sim2h {
                 Ok(())
             }
             WireMessage::ClientToLib3h(ClientToLib3h::QueryEntry(query_data)) => {
+                let sim2h_handle = self.sim2h_handle.clone();
+                tokio::task::spawn(async move {
+                    let state = sim2h_handle.im_state().get_clone().await;
+                    let mut holding_agents = state.get_agents_holding_entry(
+                        &space_address,
+                        &query_data.entry_address,
+                    ).unwrap();
+                    holding_agents.remove(&query_data.requester_agent_id);
+                    if holding_agents.is_empty() {
+                        holding_agents = state.get_agents_that_should_hold_entry(
+                            &space_address,
+                            &query_data.entry_address,
+                        ).unwrap();
+                        holding_agents.remove(&query_data.requester_agent_id);
+                    }
+                    if holding_agents.is_empty() {
+                        holding_agents = im::hashset! {query_data.requester_agent_id.clone().into() };
+                    }
+                    let mut holding_agents: Vec<MonoRef<AgentId>> = holding_agents.iter().cloned().collect();
+                    let holding_agents = &mut holding_agents[..];
+                    holding_agents.shuffle(&mut thread_rng());
+                    // TODO db - send it out to more than one node
+                    //           then give it some aggregation time
+                    let query_target = holding_agents[0].clone();
+
+                    let url = match state.lookup_joined(&space_address, &query_target) {
+                        None => {
+                            error!("AHH - the query_target we found doesn't exist");
+                            return;
+                        }
+                        Some(url) => url,
+                    };
+                    let query_message = WireMessage::Lib3hToClient(
+                        Lib3hToClient::HandleQueryEntry(query_data)
+                    );
+                    sim2h_handle.send((&*query_target).clone(), url.clone(), &query_message);
+                });
+                Ok(())
+                /*
                 if let DhtAlgorithm::NaiveSharding {redundant_count} = self.dht_algorithm {
                     let sim2h_handle = self.sim2h_handle.clone();
                     tokio::task::spawn(async move {
@@ -1288,6 +1328,7 @@ impl Sim2h {
                 } else {
                     Err("Got ClientToLib3h::QueryEntry in full-sync mode".into())
                 }
+                */
             }
             WireMessage::Lib3hToClientResponse(Lib3hToClientResponse::HandleQueryEntryResult(query_result)) => {
                 if (query_result.responder_agent_id != agent_id) || (query_result.space_address != space_address)

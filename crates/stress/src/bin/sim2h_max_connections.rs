@@ -7,7 +7,7 @@ use lib3h_sodium::SodiumCryptoSystem;
 use log::*;
 use sim2h::{
     crypto::{Provenance, SignedWireMessage},
-    run_sim2h, DhtAlgorithm, Sim2h, WireMessage,
+    run_sim2h, DhtAlgorithm, WireMessage,
 };
 use std::sync::{Arc, Mutex};
 use url2::prelude::*;
@@ -186,16 +186,14 @@ pub fn main() {
     // changed to ws until we reactive TLS
     let url = Url2::parse("ws://127.0.0.1:0");
 
-    let sim2h = Sim2h::new(
+    let (mut rt, binding) = run_sim2h(
         Box::new(SodiumCryptoSystem::new()),
         Lib3hUri(url.into()),
         DhtAlgorithm::FullSync,
     );
-
-    let bound_uri = sim2h.bound_uri.as_ref().unwrap().clone();
-
-    let mut rt = run_sim2h(sim2h);
     rt.block_on(async move {
+        let bound_uri = binding.await.unwrap();
+
         std::thread::spawn(|| loop {
             warn!("1 second tick - hardware");
             std::thread::sleep(std::time::Duration::from_secs(1));

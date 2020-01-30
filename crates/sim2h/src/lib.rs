@@ -45,7 +45,6 @@ use lib3h_protocol::{
     types::SpaceHash,
     uri::Lib3hUri,
 };
-use url2::prelude::*;
 
 pub use wire_message::{
     HelloData, StatusData, WireError, WireMessage, WireMessageVersion, WIRE_VERSION,
@@ -195,8 +194,8 @@ impl Drop for MetricsTimer {
 pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTcp>;
 pub type TcpWss = InStreamWss<InStreamTcp>;
 
-mod job;
-use job::*;
+mod connection_mgr;
+use connection_mgr::*;
 
 #[derive(Clone)]
 pub enum DhtAlgorithm {
@@ -237,6 +236,7 @@ struct Sim2hHandle {
     send_com: tokio::sync::mpsc::UnboundedSender<Sim2hCom>,
     dht_algorithm: DhtAlgorithm,
     metric_gen: MetricsTimerGenerator,
+    connection_mgr: ConnectionMgrHandle,
 }
 
 impl Sim2hHandle {
@@ -245,12 +245,14 @@ impl Sim2hHandle {
         send_com: tokio::sync::mpsc::UnboundedSender<Sim2hCom>,
         dht_algorithm: DhtAlgorithm,
         metric_gen: MetricsTimerGenerator,
+        connection_mgr: ConnectionMgrHandle,
     ) -> Self {
         Self {
             state,
             send_com,
             dht_algorithm,
             metric_gen,
+            connection_mgr,
         }
     }
 
@@ -311,7 +313,14 @@ impl Sim2hHandle {
 
 /// creates a tokio runtime and executes the Sim2h instance within it
 /// returns the runtime so the user can choose how to manage the main loop
-pub fn run_sim2h(sim2h: Sim2h) -> tokio::runtime::Runtime {
+pub fn run_sim2h(
+    crypto: Box<dyn CryptoSystem>,
+    bind_spec: Lib3hUri,
+    dht_algorithm: DhtAlgorithm,
+) -> (
+    tokio::runtime::Runtime,
+    tokio::sync::oneshot::Receiver<Lib3hUri>,
+) {
     let rt = tokio::runtime::Builder::new()
         .enable_all()
         .threaded_scheduler()
@@ -320,7 +329,12 @@ pub fn run_sim2h(sim2h: Sim2h) -> tokio::runtime::Runtime {
         .build()
         .expect("can build tokio runtime");
 
+    let (bind_send, bind_recv) = tokio::sync::oneshot::channel();
+
     rt.spawn(async move {
+        let sim2h = Sim2h::new(crypto, bind_spec, dht_algorithm);
+        let _ = bind_send.send(sim2h.bound_uri.clone().unwrap());
+
         /*
         tokio::task::spawn(async move {
             let mut listener = tokio::net::TcpListener::bind("127.0.0.1:0")
@@ -384,7 +398,7 @@ pub fn run_sim2h(sim2h: Sim2h) -> tokio::runtime::Runtime {
         }
     });
 
-    rt
+    (rt, bind_recv)
 }
 
 /// a Sim2h server instance - manages connections between holochain instances
@@ -394,14 +408,14 @@ pub struct Sim2h {
     pub bound_uri: Option<Lib3hUri>,
     wss_send: crossbeam_channel::Sender<TcpWss>,
     wss_recv: crossbeam_channel::Receiver<TcpWss>,
-    msg_send: crossbeam_channel::Sender<(Url2, FrameResult)>,
-    msg_recv: crossbeam_channel::Receiver<(Url2, FrameResult)>,
+    connection_mgr_evt_recv: ConnectionMgrEventRecv,
     num_ticks: u64,
     /// when should we try to resync nodes that are still missing aspect data
     missing_aspects_resync: Instant,
     dht_algorithm: DhtAlgorithm,
     recv_com: tokio::sync::mpsc::UnboundedReceiver<Sim2hCom>,
     sim2h_handle: Sim2hHandle,
+    connection_count: usize,
     metric_gen: MetricsTimerGenerator,
 }
 
@@ -415,18 +429,24 @@ impl Sim2h {
     ) -> Self {
         let (metric_gen, metric_task) = MetricsTimerGenerator::new();
 
+        let (connection_mgr, connection_mgr_evt_recv) = ConnectionMgr::new();
+
         let (wss_send, wss_recv) = crossbeam_channel::unbounded();
-        let (msg_send, msg_recv) = crossbeam_channel::unbounded();
         let state = Arc::new(tokio::sync::Mutex::new(Sim2hState {
             crypto: crypto.box_clone(),
             connection_states: HashMap::new(),
-            open_connections: HashMap::new(),
             spaces: HashMap::new(),
             metric_gen: metric_gen.clone(),
+            connection_mgr: connection_mgr.clone(),
         }));
         let (send_com, recv_com) = tokio::sync::mpsc::unbounded_channel();
-        let sim2h_handle =
-            Sim2hHandle::new(state, send_com, dht_algorithm.clone(), metric_gen.clone());
+        let sim2h_handle = Sim2hHandle::new(
+            state,
+            send_com,
+            dht_algorithm.clone(),
+            metric_gen.clone(),
+            connection_mgr,
+        );
 
         let config = TcpBindConfig::default();
         //        let config = TlsBindConfig::new(config).dev_certificate();
@@ -436,18 +456,20 @@ impl Sim2h {
         let bound_uri = Some(url::Url::from(listen.binding()).into());
 
         let sim2h = Sim2h {
+            // TODO - (db) - Sim2h::new() is now called inside tokio runtime
+            //               we can move these back into the constructor
             bound_listener: Some(listen),
             metric_task: Some(metric_task),
             bound_uri,
             wss_send,
             wss_recv,
-            msg_send,
-            msg_recv,
+            connection_mgr_evt_recv,
             num_ticks: 0,
             missing_aspects_resync: std::time::Instant::now(),
             dht_algorithm,
             recv_com,
             sim2h_handle,
+            connection_count: 0,
             metric_gen,
         };
 
@@ -471,7 +493,6 @@ impl Sim2h {
             }
         }
         if !wss_list.is_empty() {
-            let msg_send = self.msg_send.clone();
             let sim2h_handle = self.sim2h_handle.clone();
             tokio::task::spawn(async move {
                 let _m =
@@ -483,41 +504,12 @@ impl Sim2h {
                     let uuid = nanoid::simple();
                     open_lifecycle("adding conn job", &uuid, &url);
 
-                    let (job, outgoing_send) = ConnectionJob::new(wss, msg_send.clone());
-                    let mut job = Arc::new(Mutex::new(job));
-
                     state
                         .connection_states
                         .insert(url.clone(), (nanoid::simple(), ConnectionState::new()));
 
-                    state.open_connections.insert(
-                        url.clone(),
-                        OpenConnectionItem {
-                            version: 1, // assume version 1 until we get a Hello
-                            uuid,
-                            job: job.clone(),
-                            sender: outgoing_send,
-                        },
-                    );
-
                     walkman_log(|| WalkmanSim2hEvent::Connect(url.to_string()));
-
-                    tokio::task::spawn(async move {
-                        loop {
-                            let res = job.run();
-                            if !res.cont {
-                                break;
-                            }
-                            if res.wait_ms == 0 {
-                                tokio::task::yield_now().await;
-                            } else {
-                                tokio::time::delay_for(std::time::Duration::from_millis(
-                                    res.wait_ms,
-                                ))
-                                .await;
-                            }
-                        }
-                    });
+                    state.connection_mgr.connect(url, wss);
                 }
             });
         }
@@ -537,40 +529,64 @@ impl Sim2h {
     /// if our connections sent us any data, process it
     fn priv_check_incoming_messages(&mut self) -> bool {
         let _m = self.metric_gen.timer("sim2h-priv_check_incoming_messages");
-        let len = self.msg_recv.len();
-        if len > 0 {
-            debug!("Handling {} incoming messages", len);
-        }
-        let v: Vec<_> = self.msg_recv.try_iter().collect();
-        for (url, msg) in v {
-            let url: Lib3hUri = url::Url::from(url).into();
-            match msg {
-                Ok(frame) => match frame {
-                    WsFrame::Text(s) => self.priv_drop_connection_for_error(
-                        url,
-                        format!("unexpected text message: {:?}", s).into(),
-                    ),
-                    WsFrame::Binary(b) => {
-                        trace!(
-                            "priv_check_incoming_messages: received a frame from {}",
-                            url
-                        );
-                        let payload: Opaque = b.into();
-                        Sim2h::handle_payload(self.sim2h_handle.clone(), url, payload);
+        let mut did_work = false;
+
+        let mut disconnect = Vec::new();
+        for _ in 0..100 {
+            match self.connection_mgr_evt_recv.try_recv() {
+                Ok(evt) => {
+                    did_work = true;
+                    match evt {
+                        ConMgrEvent::Disconnect(uri, maybe_err) => {
+                            debug!("disconnect {} {:?}", uri, maybe_err);
+                            disconnect.push(uri);
+                        }
+                        ConMgrEvent::ReceiveData(uri, data) => {
+                            self.priv_handle_recv_data(uri, data);
+                        }
+                        ConMgrEvent::ConnectionCount(count) => {
+                            self.connection_count = count;
+                        }
                     }
-                    // TODO - we should use websocket ping/pong
-                    //        instead of rolling our own on top of Binary
-                    WsFrame::Ping(_) => (),
-                    WsFrame::Pong(_) => (),
-                    WsFrame::Close(c) => {
-                        debug!("Disconnecting {} after connection reset {:?}", url, c);
-                        self.sim2h_handle.disconnect(vec![url]);
-                    }
-                },
-                Err(e) => self.priv_drop_connection_for_error(url, e),
+                }
+                Err(tokio::sync::mpsc::error::TryRecvError::Empty) => break,
+                Err(tokio::sync::mpsc::error::TryRecvError::Closed) => {
+                    panic!("connection mgr channel broken");
+                }
             }
         }
-        false
+
+        if !disconnect.is_empty() {
+            self.sim2h_handle.disconnect(disconnect);
+        }
+
+        did_work
+    }
+
+    /// process an actual incoming message
+    fn priv_handle_recv_data(&mut self, uri: Lib3hUri, data: WsFrame) {
+        match data {
+            WsFrame::Text(s) => self.priv_drop_connection_for_error(
+                uri,
+                format!("unexpected text message: {:?}", s).into(),
+            ),
+            WsFrame::Binary(b) => {
+                trace!(
+                    "priv_check_incoming_messages: received a frame from {}",
+                    uri
+                );
+                let payload: Opaque = b.into();
+                Sim2h::handle_payload(self.sim2h_handle.clone(), uri, payload);
+            }
+            // TODO - we should use websocket ping/pong
+            //        instead of rolling our own on top of Binary
+            WsFrame::Ping(_) => (),
+            WsFrame::Pong(_) => (),
+            WsFrame::Close(c) => {
+                debug!("Disconnecting {} after connection reset {:?}", uri, c);
+                self.sim2h_handle.disconnect(vec![uri]);
+            }
+        }
     }
 
     // adds an agent to a space
@@ -675,10 +691,10 @@ impl Sim2h {
         if let WireMessage::Status = message {
             debug!("Sending StatusResponse in response to Status");
             let sim2h_handle = self.sim2h_handle.clone();
+            let connection_count = self.connection_count;
             tokio::task::spawn(async move {
                 let state = sim2h_handle.lock_state().await;
                 let spaces_len = state.spaces.len();
-                let connection_count = state.open_connections.len();
                 state.send(
                     signer.clone(),
                     uri.clone(),
@@ -699,10 +715,7 @@ impl Sim2h {
             debug!("Sending HelloResponse in response to Hello({})", version);
             let sim2h_handle = self.sim2h_handle.clone();
             tokio::task::spawn(async move {
-                let mut state = sim2h_handle.lock_state().await;
-                if let Some(conn) = state.open_connections.get_mut(&uri) {
-                    conn.version = version;
-                }
+                let state = sim2h_handle.lock_state().await;
                 state.send(
                     signer.clone(),
                     uri.clone(),
@@ -715,6 +728,11 @@ impl Sim2h {
                         extra: None,
                     }),
                 );
+                // versions do not match - disconnect them
+                if version != WIRE_VERSION {
+                    warn!("Disconnecting client for bad version this WIRE_VERSIO = {}, client WIRE_VERSION = {}", WIRE_VERSION, version);
+                    sim2h_handle.disconnect(vec![uri]);
+                }
             });
             return Ok(());
         }

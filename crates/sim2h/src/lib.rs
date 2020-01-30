@@ -191,6 +191,10 @@ pub enum DhtAlgorithm {
     NaiveSharding { redundant_count: u64 },
 }
 
+#[allow(dead_code)]
+mod mono_ref;
+use mono_ref::*;
+
 mod sim2h_state;
 pub(crate) use sim2h_state::*;
 

@@ -76,20 +76,25 @@ pub struct ConnectionState {
     uri: Lib3hUri,
 }
 
+pub type MonoAgentId = MonoRef<String>;
+pub type MonoSpaceHash = MonoRef<String>;
+pub type MonoEntryHash = MonoRef<String>;
+pub type MonoAspectHash = MonoRef<String>;
+
 /// so we cache entry locations as well
 #[derive(Debug, Clone)]
 pub struct Entry {
     entry_loc: Location,
-    aspects: im::HashSet<AspectHash>,
+    aspects: im::HashSet<MonoAspectHash>,
 }
 
 /// sim2h state storage
 #[derive(Debug, Clone)]
 pub struct Space {
-    pub all_aspects: im::HashMap<EntryHash, Entry>,
-    pub connections: im::HashMap<AgentId, ConnectionState>,
-    pub uri_to_connection: im::HashMap<Lib3hUri, AgentId>,
-    pub holding: im::HashMap<AspectHash, im::HashSet<AgentId>>,
+    pub all_aspects: im::HashMap<MonoEntryHash, Entry>,
+    pub connections: im::HashMap<MonoAgentId, ConnectionState>,
+    pub uri_to_connection: im::HashMap<Lib3hUri, MonoAgentId>,
+    pub holding: im::HashMap<MonoAspectHash, im::HashSet<MonoAgentId>>,
 }
 
 impl Space {
@@ -105,8 +110,9 @@ impl Space {
 
 pub struct Store {
     pub crypto: Box<dyn CryptoSystem>,
-    pub spaces: im::HashMap<SpaceHash, Space>,
+    pub spaces: im::HashMap<MonoSpaceHash, Space>,
     pub con_incr: Arc<AtomicU64>,
+    mono_ref_cache: Option<MonoRefCache<String>>,
 }
 
 impl std::fmt::Debug for Store {
@@ -123,6 +129,7 @@ impl Clone for Store {
             crypto: self.crypto.box_clone(),
             spaces: self.spaces.clone(),
             con_incr: self.con_incr.clone(),
+            mono_ref_cache: self.mono_ref_cache.clone(),
         }
     }
 }
@@ -141,6 +148,7 @@ impl Store {
             crypto,
             spaces: im::HashMap::new(),
             con_incr: con_incr.clone(),
+            mono_ref_cache: Some(MonoRefCache::new()),
         };
 
         tokio::task::spawn(async move {
@@ -219,13 +227,19 @@ impl Store {
     }
 
     fn get_space(&self, space_hash: &SpaceHash) -> Option<&Space> {
-        self.spaces.get(space_hash)
+        let space_hash = self.mono_get(space_hash.clone().into());
+        self.spaces.get(&space_hash)
     }
 
     fn get_space_mut(&mut self, space_hash: SpaceHash) -> &mut Space {
+        let space_hash = self.mono_get(space_hash.into());
         self.spaces
             .entry(space_hash)
             .or_insert_with(|| Space::new())
+    }
+
+    fn mono_get(&self, s: String) -> MonoRef<String> {
+        self.mono_ref_cache.as_ref().unwrap().get(s)
     }
 
     fn ensure_aspects(
@@ -234,13 +248,14 @@ impl Store {
         entry_hash: &EntryHash,
         aspects: &im::HashSet<AspectHash>,
     ) {
+        let entry_hash = self.mono_get(entry_hash.clone().into());
         let need_entry = {
             let space = self.get_space_mut(space_hash.clone());
-            !space.all_aspects.contains_key(entry_hash)
+            !space.all_aspects.contains_key(&entry_hash)
         };
 
         if need_entry {
-            let entry_loc = entry_location(&self.crypto, entry_hash);
+            let entry_loc = entry_location(&self.crypto, &entry_hash.as_entry_hash());
             let space = self.get_space_mut(space_hash.clone());
             space.all_aspects.insert(
                 entry_hash.clone(),
@@ -252,10 +267,10 @@ impl Store {
         }
 
         let space = self.get_space_mut(space_hash.clone());
-        let e = space.all_aspects.get_mut(entry_hash).unwrap();
+        let e = space.all_aspects.get_mut(&entry_hash).unwrap();
 
         for a in aspects {
-            e.aspects.insert(a.clone());
+            e.aspects.insert(a.clone().into());
         }
     }
 
@@ -268,6 +283,7 @@ impl Store {
                     return;
                 }
             };
+        let agent_id = self.mono_get(agent_id.into());
 
         let space = self.get_space_mut(space_hash);
 
@@ -291,7 +307,7 @@ impl Store {
         // - TODO clear `holding`?
     }
 
-    fn drop_connection_inner(space: &mut Space, agent_id: AgentId) {
+    fn drop_connection_inner(space: &mut Space, agent_id: MonoAgentId) {
         // - mark connection as disconnected (tombstone)
         let uri = match space.connections.entry(agent_id.clone()) {
             im::hashmap::Entry::Occupied(entry) => entry.remove().uri,
@@ -306,6 +322,8 @@ impl Store {
     }
 
     fn drop_connection(&mut self, space_hash: SpaceHash, agent_id: AgentId) {
+        let agent_id = self.mono_get(agent_id.into());
+
         let space = self.get_space_mut(space_hash);
         Self::drop_connection_inner(space, agent_id);
     }
@@ -316,6 +334,7 @@ impl Store {
                 Some(agent_id) => agent_id.clone(),
                 None => continue,
             };
+
             Self::drop_connection_inner(space, agent_id);
         }
     }
@@ -328,6 +347,7 @@ impl Store {
         aspects: im::HashSet<AspectHash>,
     ) {
         self.ensure_aspects(&space_hash, &entry_hash, &aspects);
+        let agent_id = self.mono_get(agent_id.into());
 
         let space = self.get_space_mut(space_hash);
 
@@ -337,7 +357,7 @@ impl Store {
         for aspect in aspects {
             space
                 .holding
-                .entry(aspect)
+                .entry(aspect.into())
                 .or_default()
                 .insert(agent_id.clone());
         }
@@ -345,8 +365,9 @@ impl Store {
 
     /// if we have an active connection for an agent_id - get the uri
     pub fn lookup_joined(&self, space_hash: &SpaceHash, agent_id: &AgentId) -> Option<&Lib3hUri> {
+        let agent_id = self.mono_get(agent_id.into());
         let space = self.get_space(space_hash)?;
-        let con = space.connections.get(agent_id)?;
+        let con = space.connections.get(&agent_id)?;
         Some(&con.uri)
     }
 
@@ -355,13 +376,15 @@ impl Store {
     pub fn get_agents_missing_aspects(
         &self,
         space_hash: &SpaceHash,
-    ) -> im::HashMap<&AgentId, im::HashMap<&EntryHash, im::HashSet<&AspectHash>>> {
+    ) -> im::HashMap<MonoAgentId, im::HashMap<MonoEntryHash, im::HashSet<MonoAspectHash>>> {
         let space = self
             .get_space(space_hash)
             .expect("space should already exist");
 
-        let mut out: im::HashMap<&AgentId, im::HashMap<&EntryHash, im::HashSet<&AspectHash>>> =
-            im::HashMap::new();
+        let mut out: im::HashMap<
+            MonoAgentId,
+            im::HashMap<MonoEntryHash, im::HashSet<MonoAspectHash>>,
+        > = im::HashMap::new();
         for (entry_hash, entry) in space.all_aspects.iter() {
             for aspect in entry.aspects.iter() {
                 for (agent_id, _) in space.connections.iter() {
@@ -370,11 +393,11 @@ impl Store {
                             continue;
                         }
                     }
-                    out.entry(agent_id)
+                    out.entry(agent_id.clone())
                         .or_default()
-                        .entry(entry_hash)
+                        .entry(entry_hash.clone())
                         .or_default()
-                        .insert(aspect);
+                        .insert(aspect.clone());
                 }
             }
         }

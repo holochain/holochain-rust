@@ -37,8 +37,8 @@ lib3h_crypto_api = { version = "=0.0.31", git = "https://github.com/holochain/li
 lib3h_sodium = { version = "=0.0.31", git = "https://github.com/holochain/lib3h", branch = "tracing-0.0.6" }
 lib3h_zombie_actor = { version = "=0.0.31", git = "https://github.com/holochain/lib3h", branch = "tracing-0.0.6" }
 
-holochain_tracing = { version = "=0.0.14", git = "https://github.com/holochain/holochain-tracing", branch = "rubber-meets-road" }
-holochain_tracing_macros = { version = "=0.0.14", git = "https://github.com/holochain/holochain-tracing", branch = "rubber-meets-road" }
+# holochain_tracing = { version = "=0.0.15", git = "https://github.com/holochain/holochain-tracing", branch = "rubber-meets-road" }
+# holochain_tracing_macros = { version = "=0.0.15", git = "https://github.com/holochain/holochain-tracing", branch = "rubber-meets-road" }
 
 
 # lib3h = { version = "=0.0.31", path = "../lib3h/crates/lib3h" }
@@ -47,5 +47,5 @@ holochain_tracing_macros = { version = "=0.0.14", git = "https://github.com/holo
 # lib3h_sodium = { version = "=0.0.31", path = "../lib3h/crates/sodium" }
 # lib3h_zombie_actor = { version = "=0.0.31", path = "../lib3h/crates/zombie_actor" }
 
-# holochain_tracing = { version = "=0.0.14", path = "../tracing/crates/tracing" }
-# holochain_tracing_macros = { version = "=0.0.14", path = "../tracing/crates/tracing_macros" }
+# holochain_tracing = { version = "=0.0.15", path = "../tracing/crates/tracing" }
+# holochain_tracing_macros = { version = "=0.0.15", path = "../tracing/crates/tracing_macros" }

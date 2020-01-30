@@ -49,6 +49,4 @@ pub mod state_dump;
 pub mod wasm_engine;
 pub mod workflows;
 
-use lazy_static::lazy_static;
-
 new_relic_setup!("NEW_RELIC_LICENSE_KEY");

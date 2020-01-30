@@ -19,8 +19,6 @@ extern crate holochain_core_types;
 extern crate holochain_locksmith;
 #[macro_use]
 extern crate holochain_common;
-#[macro_use]
-extern crate lazy_static;
 extern crate lib3h_sodium;
 #[cfg(unix)]
 extern crate signal_hook;

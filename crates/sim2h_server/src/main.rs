@@ -4,7 +4,6 @@ extern crate structopt;
 #[macro_use(new_relic_setup)]
 extern crate holochain_common;
 
-use lazy_static::lazy_static;
 use lib3h_protocol::uri::Builder;
 use lib3h_sodium::SodiumCryptoSystem;
 use log::*;

@@ -1,3 +1,4 @@
+use crate::NEW_RELIC_LICENSE_KEY;
 use boolinator::Boolinator;
 use holochain_core_types::{agent::AgentId, error::HolochainError};
 use holochain_persistence_api::cas::content::AddressableContent;

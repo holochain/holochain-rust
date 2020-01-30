@@ -2,7 +2,7 @@
 use crate::{
     error::*,
     naive_sharding::{entry_location, naive_sharding_should_store},
-    AgentId,
+    AgentId, NEW_RELIC_LICENSE_KEY,
 };
 use lib3h::rrdht_util::*;
 use lib3h_crypto_api::CryptoSystem;

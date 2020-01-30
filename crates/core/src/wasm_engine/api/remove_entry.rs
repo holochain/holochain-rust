@@ -1,6 +1,7 @@
 use crate::{
     wasm_engine::{api::ZomeApiResult, Runtime},
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     entry::{deletion_entry::DeletionEntry, Entry},

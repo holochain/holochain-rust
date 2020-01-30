@@ -1,3 +1,4 @@
+extern crate lazy_static;
 pub mod env_vars;
 pub mod paths;
 

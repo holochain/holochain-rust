@@ -13,6 +13,9 @@ extern crate lazy_static;
 extern crate holochain_walkman_types;
 extern crate newrelic;
 
+#[macro_use]
+extern crate holochain_common;
+
 #[allow(dead_code)]
 mod naive_sharding;
 
@@ -74,6 +77,8 @@ fn walkman_log<F: FnOnce() -> WalkmanSim2hEvent>(event: F) {
         println!("<walkman>{}</walkman>", json);
     }
 }
+//set up license_key
+new_relic_setup!("NEW_RELIC_LICENSE_KEY");
 
 /// extention trait for making sure deadlocks are fatal
 pub(crate) trait MutexExt<T> {

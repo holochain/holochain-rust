@@ -1,4 +1,4 @@
-use crate::{conductor::broadcaster::Broadcaster, interface::Interface};
+use crate::{conductor::broadcaster::Broadcaster, interface::Interface, NEW_RELIC_LICENSE_KEY};
 use crossbeam_channel::Receiver;
 use jsonrpc_core::IoHandler;
 use jsonrpc_http_server::ServerBuilder;

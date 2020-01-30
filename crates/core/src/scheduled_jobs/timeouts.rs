@@ -2,6 +2,7 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     instance::dispatch_action,
+    NEW_RELIC_LICENSE_KEY,
 };
 use std::sync::Arc;
 

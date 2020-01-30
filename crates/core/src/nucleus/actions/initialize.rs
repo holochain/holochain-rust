@@ -3,6 +3,7 @@ use crate::{
     agent::actions::commit::commit_entry,
     context::Context,
     nucleus::state::NucleusStatus,
+    NEW_RELIC_LICENSE_KEY,
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::{

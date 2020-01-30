@@ -1,4 +1,6 @@
-use crate::{action::ActionWrapper, network::state::NetworkState, state::State};
+use crate::{
+    action::ActionWrapper, network::state::NetworkState, state::State, NEW_RELIC_LICENSE_KEY,
+};
 use holochain_core_types::error::HolochainError;
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_handle_custom_send_response(

@@ -1,6 +1,8 @@
 extern crate lib3h_sodium;
 extern crate newrelic;
 extern crate structopt;
+#[macro_use(new_relic_setup)]
+extern crate holochain_common;
 
 use lib3h_protocol::uri::Builder;
 use lib3h_sodium::SodiumCryptoSystem;
@@ -34,8 +36,10 @@ struct Cli {
     message_log_file: Option<PathBuf>,
 }
 
+new_relic_setup!("NEW_RELIC_LICENSE_KEY");
 #[holochain_tracing_macros::newrelic_autotrace(SIM2H_SERVER)]
 fn main() {
+    //this set up new relic needs
     NewRelicConfig::default()
         .logging(LogLevel::Error, LogOutput::StdErr)
         .init()

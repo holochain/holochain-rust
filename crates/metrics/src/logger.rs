@@ -1,4 +1,4 @@
-use crate::{Metric, MetricPublisher};
+use crate::{Metric, MetricPublisher, NEW_RELIC_LICENSE_KEY};
 use chrono::prelude::*;
 use regex::Regex;
 use std::{

@@ -955,15 +955,62 @@ impl Sim2h {
             tokio::task::spawn(async move {
                 let agents_needing_gossip = sim2h_handle.im_state().check_gossip().await.spaces();
                 let state = sim2h_handle.im_state().get_clone().await;
+
                 for (space_hash, agents) in agents_needing_gossip.iter() {
+                    let mut all_handle_requests: im::HashMap<
+                        MonoRef<EntryHash>,
+                        im::HashSet<MonoRef<AspectHash>>,
+                    > = im::HashMap::new();
+
                     for agent_id in agents {
-                        let aspects =
-                            state.get_gossip_aspects_needed_for_agent(&space_hash, &agent_id);
-                        // TODO - combine / fetch all these aspects
-                        //        then, make sure handleFetch distributes
-                        //        data to all nodes that need them
+                        let r = state
+                            .get_gossip_aspects_needed_for_agent(&space_hash, &agent_id)
+                            .unwrap();
+                        for (entry_hash, aspects) in r.iter() {
+                            if aspects.is_empty() {
+                                continue;
+                            }
+
+                            let e = all_handle_requests.entry(entry_hash.clone()).or_default();
+                            for aspect in aspects {
+                                e.insert(aspect.clone());
+                            }
+                        }
+                    }
+
+                    for (entry_hash, aspects) in all_handle_requests.iter() {
+                        let query_agents =
+                            state.get_agents_for_query(&space_hash, &entry_hash, None);
+
+                        if query_agents.is_empty() {
+                            continue;
+                        }
+
+                        // TODO - if we have multiple options,
+                        // do we want to fire off more than one?
+                        let query_agent = query_agents[0].clone();
+
+                        let uri = match state.lookup_joined(space_hash, &query_agent) {
+                            None => continue,
+                            Some(uri) => uri,
+                        };
+
+                        let wire_message = WireMessage::Lib3hToClient(
+                            Lib3hToClient::HandleFetchEntry(FetchEntryData {
+                                request_id: "".to_string(),
+                                space_address: (&**space_hash).clone(),
+                                provider_agent_id: (&*query_agent).clone(),
+                                entry_address: (&**entry_hash).clone(),
+                                aspect_address_list: Some(
+                                    aspects.iter().map(|a| (&**a).clone()).collect(),
+                                ),
+                            }),
+                        );
+
+                        sim2h_handle.send((&*query_agent).clone(), (&*uri).clone(), &wire_message);
                     }
                 }
+
                 //sim2h_handle.lock_state().await.retry_sync_missing_aspects();
             });
         }
@@ -1296,6 +1343,7 @@ impl Sim2h {
                 let sim2h_handle = self.sim2h_handle.clone();
                 tokio::task::spawn(async move {
                     let state = sim2h_handle.im_state().get_clone().await;
+                    /*
                     let mut holding_agents = state.get_agents_holding_entry(
                         &space_address,
                         &query_data.entry_address,
@@ -1314,6 +1362,12 @@ impl Sim2h {
                     let mut holding_agents: Vec<MonoRef<AgentId>> = holding_agents.iter().cloned().collect();
                     let holding_agents = &mut holding_agents[..];
                     holding_agents.shuffle(&mut thread_rng());
+                    */
+                    let holding_agents = state.get_agents_for_query(
+                        &space_address,
+                        &query_data.entry_address,
+                        Some(&query_data.requester_agent_id),
+                    );
                     // TODO db - send it out to more than one node
                     //           then give it some aggregation time
                     let query_target = holding_agents[0].clone();

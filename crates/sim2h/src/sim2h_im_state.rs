@@ -643,6 +643,45 @@ impl Store {
         Some(space.get_agents_holding_entry(entry_hash))
     }
 
+    pub fn get_agents_for_query(
+        &self,
+        space_hash: &SpaceHash,
+        entry_hash: &EntryHash,
+        requesting_agent_id: Option<&AgentId>,
+    ) -> Vec<MonoAgentId> {
+        // first check agents we believe are actually holding this data
+        let mut out = match self.get_agents_holding_entry(space_hash, entry_hash) {
+            None => im::HashSet::new(),
+            Some(s) => s,
+        };
+        if let Some(aid) = requesting_agent_id {
+            out.remove(aid);
+        }
+        if out.is_empty() {
+            // if we don't already have good options, get the list of
+            // those who MAY be holding the data
+            if let Some(s) = self.get_agents_that_should_hold_entry(space_hash, entry_hash) {
+                out = s;
+            }
+            if let Some(aid) = requesting_agent_id {
+                out.remove(aid);
+            }
+        }
+        if out.is_empty() {
+            if requesting_agent_id.is_none() {
+                // there are no options
+                return vec![];
+            }
+            // only in the case where we have no other options
+            // do we want to redirect the query back to the requester
+            out.insert(MonoAgentId::new(requesting_agent_id.unwrap().clone()));
+        }
+        let mut out: Vec<MonoAgentId> = out.iter().cloned().collect();
+        let out = &mut out[..];
+        out.shuffle(&mut thread_rng());
+        out[..3].to_vec()
+    }
+
     /// return a mapping of all entry_hash/aspect_hashes
     /// that each agent is missing (note how it returns references :+1:)
     pub fn get_agents_missing_aspects(

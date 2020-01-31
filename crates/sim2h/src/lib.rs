@@ -94,7 +94,10 @@ impl<T> SendExt<T> for crossbeam_channel::Sender<T> {
     }
 }
 
-const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 30000; // 30 seconds
+//const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 30000; // 30 seconds
+/// actual timing is handled by sim2h_im_state
+/// but it does cause a mutate, so we don't want to spam it too hard
+const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 500; // half second
 
 fn conn_lifecycle(desc: &str, uuid: &str, obj: &ConnectionState, uri: &Lib3hUri) {
     debug!(
@@ -944,7 +947,18 @@ impl Sim2h {
 
             let sim2h_handle = self.sim2h_handle.clone();
             tokio::task::spawn(async move {
-                sim2h_handle.lock_state().await.retry_sync_missing_aspects();
+                let agents_needing_gossip = sim2h_handle.im_state().check_gossip().await.spaces();
+                let state = sim2h_handle.im_state().get_clone().await;
+                for (space_hash, agents) in agents_needing_gossip.iter() {
+                    for agent_id in agents {
+                        let aspects =
+                            state.get_gossip_aspects_needed_for_agent(&space_hash, &agent_id);
+                        // TODO - combine / fetch all these aspects
+                        //        then, make sure handleFetch distributes
+                        //        data to all nodes that need them
+                    }
+                }
+                //sim2h_handle.lock_state().await.retry_sync_missing_aspects();
             });
         }
 
@@ -1391,6 +1405,7 @@ impl Sim2h {
     }
     */
 
+    /*
     fn fetch_aspects_from_arbitrary_agent(
         sim2h_handle: Sim2hHandle,
         aspects_to_fetch: AspectList,
@@ -1409,4 +1424,5 @@ impl Sim2h {
             sim2h_handle.disconnect(disconnects);
         });
     }
+    */
 }

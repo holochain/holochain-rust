@@ -1,10 +1,15 @@
 use crate::*;
 use lib3h::rrdht_util::Location;
+use rand::Rng;
 use std::sync::{
     atomic::{AtomicU64, Ordering},
     Arc,
 };
 use tokio::stream::StreamExt;
+
+/// How often(ish) should we check/fetch aspects for each connected agent
+/// note this value is randomized by ~50% each time
+const AGENT_FETCH_ASPECTS_INTERVAL_MS: u64 = 5000;
 
 /// add an increment function to AtomicU64
 /// returns the previous value after making sure it is upped by 1
@@ -60,6 +65,38 @@ enum AolEntry {
         entry_hash: EntryHash,
         aspects: im::HashSet<AspectHash>,
     },
+
+    // our owner is ready to do a round of gossip
+    // check to see if any of our agents are ready to check
+    // for missing aspects they need to be holding
+    CheckGossip {
+        aol_idx: u64,
+        response: tokio::sync::oneshot::Sender<CheckGossipData>,
+    },
+}
+
+/// we asked for gossip - this indicates which aspects for which agents
+/// should be requested
+#[derive(Debug)]
+pub struct CheckGossipData {
+    pub spaces: im::HashMap<MonoSpaceHash, im::HashSet<MonoAgentId>>,
+}
+
+impl CheckGossipData {
+    pub fn new() -> Self {
+        Self {
+            spaces: im::HashMap::new(),
+        }
+    }
+
+    pub fn add_agent(&mut self, space_hash: MonoSpaceHash, agent_id: MonoAgentId) {
+        let s = self.spaces.entry(space_hash).or_default();
+        s.insert(agent_id);
+    }
+
+    pub fn spaces(self) -> im::HashMap<MonoSpaceHash, im::HashSet<MonoAgentId>> {
+        self.spaces
+    }
 }
 
 /// protocol for sending messages to the `Store`
@@ -75,6 +112,7 @@ pub struct ConnectionState {
     agent_id: MonoAgentId,
     agent_loc: Location,
     uri: MonoUri,
+    next_gossip_check: std::time::Instant,
 }
 
 pub type MonoAgentId = MonoRef<AgentId>;
@@ -205,6 +243,37 @@ impl Space {
         im::HashSet::new()
     }
 
+    fn get_gossip_aspects_needed_for_agent(
+        &self,
+        agent_id: &AgentId,
+    ) -> im::HashMap<MonoEntryHash, im::HashSet<MonoAspectHash>> {
+        let mut out = im::HashMap::new();
+
+        let agent_count = self.connections.len() as u64;
+        let agent_loc = match self.connections.get(agent_id) {
+            None => return out,
+            Some(c) => c.agent_loc,
+        };
+
+        for (_, entry) in self.entry_to_all_aspects.iter() {
+            if naive_sharding::naive_sharding_should_store(
+                agent_loc,
+                entry.entry_loc,
+                agent_count,
+                self.redundancy,
+            ) {
+                let e = out.entry(entry.entry_hash.clone()).or_default();
+                for (aspect_hash, holding) in entry.aspects.iter() {
+                    if !holding.contains(agent_id) {
+                        e.insert(aspect_hash.clone());
+                    }
+                }
+            }
+        }
+
+        out
+    }
+
     fn check_insert_connection(&mut self, agent_id: &AgentId, uri: Lib3hUri) {
         let agent_id = self.get_mono_agent_id(agent_id);
         let uri: MonoUri = uri.into();
@@ -218,6 +287,13 @@ impl Space {
                 }
             };
 
+        // make it so we're almost ready to check this agent for gossip
+        let to_add: u64 = thread_rng().gen_range(0, AGENT_FETCH_ASPECTS_INTERVAL_MS / 4);
+
+        let next_gossip_check = std::time::Instant::now()
+            .checked_add(std::time::Duration::from_millis(to_add))
+            .unwrap();
+
         // - add the main connection entry
         match self.connections.entry(agent_id.clone()) {
             im::hashmap::Entry::Occupied(mut entry) => {
@@ -225,12 +301,14 @@ impl Space {
                 entry.agent_id = agent_id.clone();
                 entry.agent_loc = agent_loc;
                 entry.uri = uri.clone();
+                entry.next_gossip_check = next_gossip_check;
             }
             im::hashmap::Entry::Vacant(entry) => {
                 entry.insert(ConnectionState {
                     agent_id: agent_id.clone(),
                     agent_loc,
                     uri: uri.clone(),
+                    next_gossip_check,
                 });
             }
         }
@@ -299,6 +377,25 @@ impl Space {
             for holding_set in entry.aspects.iter_mut() {
                 holding_set.remove(agent_id);
             }
+        }
+    }
+
+    fn check_gossip(&mut self, space_hash: MonoSpaceHash, check_gossip_data: &mut CheckGossipData) {
+        let now = std::time::Instant::now();
+
+        for con in self.connections.iter_mut() {
+            if con.next_gossip_check > now {
+                continue;
+            }
+
+            let to_add: u64 = thread_rng().gen_range(0, AGENT_FETCH_ASPECTS_INTERVAL_MS / 2)
+                + ((AGENT_FETCH_ASPECTS_INTERVAL_MS * 4) / 3);
+
+            con.next_gossip_check = now
+                .checked_add(std::time::Duration::from_millis(to_add))
+                .unwrap();
+
+            check_gossip_data.add_agent(space_hash.clone(), con.agent_id.clone());
         }
     }
 }
@@ -418,6 +515,10 @@ impl Store {
                 entry_hash,
                 aspects,
             } => self.agent_holds_aspects(space_hash, agent_id, entry_hash, aspects),
+            AolEntry::CheckGossip {
+                aol_idx: _,
+                response,
+            } => self.check_gossip(response),
         }
     }
 
@@ -484,6 +585,31 @@ impl Store {
     ) {
         self.get_space_mut(space_hash)
             .agent_holds_aspects(&agent_id, &entry_hash, &aspects);
+    }
+
+    fn check_gossip(&mut self, response: tokio::sync::oneshot::Sender<CheckGossipData>) {
+        let mut check_gossip_data = CheckGossipData::new();
+
+        let space_hashes = self.spaces.keys().cloned().collect::<Vec<_>>();
+        for space_hash in space_hashes {
+            self.spaces
+                .get_mut(&space_hash)
+                .unwrap()
+                .check_gossip(space_hash, &mut check_gossip_data);
+        }
+
+        if let Err(e) = response.send(check_gossip_data) {
+            error!("Failed to send check gossip response! {:?}", e);
+        }
+    }
+
+    pub fn get_gossip_aspects_needed_for_agent(
+        &self,
+        space_hash: &SpaceHash,
+        agent_id: &AgentId,
+    ) -> Option<im::HashMap<MonoEntryHash, im::HashSet<MonoAspectHash>>> {
+        let space = self.get_space(space_hash)?;
+        Some(space.get_gossip_aspects_needed_for_agent(agent_id))
     }
 
     /// how many spaces do we currently have registered?
@@ -654,6 +780,17 @@ impl StoreHandle {
             }))
             .unwrap();
     }
+
+    pub async fn check_gossip(&self) -> CheckGossipData {
+        let (sender, receiver) = tokio::sync::oneshot::channel();
+        self.send_mut
+            .send(StoreProto::Mutate(AolEntry::CheckGossip {
+                aol_idx: self.con_incr.inc(),
+                response: sender,
+            }))
+            .unwrap();
+        receiver.await.unwrap()
+    }
 }
 
 #[cfg(test)]
@@ -680,9 +817,7 @@ mod tests {
         let uri1: Lib3hUri = url::Url::parse("ws://yada1").unwrap().into();
         let uri2: Lib3hUri = url::Url::parse("ws://yada2").unwrap().into();
 
-        let store = Store::new(crypto);
-
-        //store.add_aspect(space_hash.clone(), "test".into(), im::hashset! {"one".into(), "two".into()});
+        let store = Store::new(crypto, 0);
 
         println!("GOT: {:#?}", store.get_clone().await);
 

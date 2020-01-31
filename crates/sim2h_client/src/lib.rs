@@ -102,7 +102,7 @@ impl Sim2hClient {
                 .read_lock(),
         );
         let signed_message = SignedWireMessage {
-            provenance: Provenance::new(self.agent_pubkey.clone().into(), sig.into()),
+            provenance: Provenance::new(self.agent_pubkey.clone(), sig.into()),
             payload,
         };
         let to_send: Opaque = signed_message.into();

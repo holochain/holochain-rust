@@ -12,7 +12,7 @@ edition = "2018"
 lazy_static = "=1.4.0"
 base64 = "=0.10.1"
 holochain_core_types = { version = "=0.0.42-alpha5", path = "../core_types" }
-holochain_tracing_macros = "=0.0.15"
+holochain_tracing_macros = "=0.0.16"
 newrelic="0.2"
 lib3h_sodium = "=0.0.31"
 holochain_persistence_api = "=0.0.13"

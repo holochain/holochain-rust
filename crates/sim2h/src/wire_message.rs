@@ -27,6 +27,7 @@ pub struct HelloData {
     pub extra: Option<String>,
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum WireMessage {
     ClientToLib3h(ht::EncodedSpanWrap<ClientToLib3h>),

@@ -26,8 +26,8 @@ holochain_core_types = { version = "=0.0.42-alpha5", path = "../core_types" }
 holochain_locksmith = { version = "=0.0.42-alpha5", path = "../locksmith" }
 holochain_metrics = { version = "=0.0.42-alpha5", path = "../metrics" }
 holochain_common = { version = "=0.0.42-alpha5", path = "../common" }
-holochain_tracing = "=0.0.15"
-holochain_tracing_macros = "=0.0.15"
+holochain_tracing = "=0.0.16"
+holochain_tracing_macros = "=0.0.16"
 in_stream = { version = "=0.0.42-alpha5", path = "../in_stream" }
 uuid = { version = "0.4", features = ["v4"] }
 log = "=0.4.8"

@@ -1,3 +1,4 @@
+use crate::NEW_RELIC_LICENSE_KEY;
 pub use aead::{ABYTES, NONCEBYTES};
 use holochain_core_types::error::HcResult;
 use lib3h_sodium::{aead, kx, pwhash, secbuf::SecBuf};

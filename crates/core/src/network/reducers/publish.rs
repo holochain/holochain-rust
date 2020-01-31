@@ -8,6 +8,7 @@ use crate::{
         state::NetworkState,
     },
     state::State,
+    NEW_RELIC_LICENSE_KEY,
 };
 use chrono::{offset::FixedOffset, DateTime};
 use holochain_core_types::{

@@ -9,6 +9,7 @@ use crate::{
         state::NetworkState,
     },
     state::State,
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{chain_header::ChainHeader, error::HolochainError};
 use lib3h_protocol::{

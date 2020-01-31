@@ -7,6 +7,7 @@ use crate::{
         validation::{entry_to_validation_data, ValidationError, ValidationResult},
         CallbackFnCall,
     },
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{entry::Entry, validation::ValidationData};
 use holochain_persistence_api::cas::content::AddressableContent;

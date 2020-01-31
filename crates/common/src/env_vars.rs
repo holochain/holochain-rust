@@ -53,3 +53,19 @@ impl EnvVar {
         std::env::var(self.as_str())
     }
 }
+
+#[macro_export]
+macro_rules! new_relic_setup {
+    ($x:expr) => {
+        lazy_static::lazy_static! {
+            static ref NEW_RELIC_LICENSE_KEY: Option<String> =
+                option_env!($x).map(|s| s.to_string());
+        }
+    };
+}
+
+#[test]
+fn test_macro() {
+    new_relic_setup!("NEW_RELIC_LICENSE_KEY");
+    assert_eq!(*NEW_RELIC_LICENSE_KEY, None);
+}

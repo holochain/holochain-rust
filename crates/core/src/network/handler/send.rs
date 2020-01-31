@@ -7,6 +7,7 @@ use crate::{
         handle_custom_direct_message::handle_custom_direct_message,
         respond_validation_package_request::respond_validation_package_request,
     },
+    NEW_RELIC_LICENSE_KEY,
 };
 use std::sync::Arc;
 

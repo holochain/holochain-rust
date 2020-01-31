@@ -1,4 +1,4 @@
-use crate::WireMessage;
+use crate::{WireMessage, NEW_RELIC_LICENSE_KEY};
 use chrono::{DateTime, Utc};
 use lib3h_protocol::{types::AgentPubKey, uri::Lib3hUri};
 use log::error;

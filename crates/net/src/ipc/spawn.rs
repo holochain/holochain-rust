@@ -5,6 +5,7 @@
 use crate::{
     connection::{net_connection::NetShutdown, NetResult},
     tweetlog::TWEETLOG,
+    NEW_RELIC_LICENSE_KEY,
 };
 
 use super::n3h::get_verify_n3h;

@@ -1,4 +1,5 @@
 #![feature(vec_remove_item)]
+#![allow(clippy::redundant_clone)]
 
 extern crate backtrace;
 extern crate env_logger;

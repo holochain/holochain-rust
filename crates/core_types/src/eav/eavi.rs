@@ -56,8 +56,6 @@ impl Default for Attribute {
 unsafe impl Sync for Attribute {}
 unsafe impl Send for Attribute {}
 
-impl holochain_persistence_api::eav::Attribute for Attribute {}
-
 impl From<AttributeError> for HolochainError {
     fn from(err: AttributeError) -> HolochainError {
         let msg = match err {

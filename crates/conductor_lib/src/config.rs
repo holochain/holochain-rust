@@ -1,4 +1,4 @@
-use crate::{conductor::base::DnaLoader, logger::LogRules};
+use crate::{conductor::base::DnaLoader, logger::LogRules, NEW_RELIC_LICENSE_KEY};
 /// Conductor Configuration
 /// This module provides structs that represent the different aspects of how
 /// a conductor can be configured.
@@ -211,6 +211,7 @@ fn detect_dupes<'a, I: Iterator<Item = &'a String>>(
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl Configuration {
     /// This function basically checks if self is a semantically valid configuration.
     /// This mainly means checking for consistency between config structs that reference others.

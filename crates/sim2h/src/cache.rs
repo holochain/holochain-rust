@@ -2,7 +2,7 @@
 use crate::{
     error::*,
     naive_sharding::{entry_location, naive_sharding_should_store},
-    AgentId,
+    AgentId, NEW_RELIC_LICENSE_KEY,
 };
 use lib3h::rrdht_util::*;
 use lib3h_crypto_api::CryptoSystem;
@@ -25,6 +25,7 @@ pub struct Space {
     missing_aspects: HashMap<AgentId, HashMap<EntryHash, HashSet<AspectHash>>>,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl Space {
     pub fn new(crypto: Box<dyn CryptoSystem>) -> Self {
         Space {
@@ -193,6 +194,7 @@ impl Space {
 // TODO: unify with AspectMap
 #[derive(Debug)]
 pub struct AspectList(HashMap<EntryHash, Vec<AspectHash>>);
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl AspectList {
     pub fn len(&self) -> usize {
         self.0.len()

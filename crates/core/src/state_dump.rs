@@ -4,6 +4,7 @@ use crate::{
     dht::{aspect_map::AspectMapBare, pending_validations::PendingValidationWithTimeout},
     network::direct_message::DirectMessage,
     nucleus::{ZomeFnCall, ZomeFnCallState},
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
 use holochain_json_api::json::JsonString;
@@ -91,6 +92,7 @@ impl From<Arc<Context>> for StateDump {
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn address_to_content_and_type(
     address: &Address,
     context: Arc<Context>,

@@ -12,6 +12,7 @@ use crate::{
     signal::Signal,
     state::{State, StateWrapper},
     workflows::{application, run_holding_workflow},
+    NEW_RELIC_LICENSE_KEY,
 };
 #[cfg(test)]
 use crate::{
@@ -64,6 +65,7 @@ pub struct Observer {
 
 pub static DISPATCH_WITHOUT_CHANNELS: &str = "dispatch called without channels open";
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Instance {
     /// This is initializing and starting the redux action loop and adding channels to dispatch
     /// actions and observers to the context

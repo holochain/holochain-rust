@@ -15,14 +15,16 @@ holochain_conductor_lib = { version = "=0.0.42-alpha5", path = "../conductor_lib
 holochain_net = { version = "=0.0.42-alpha5", path = "../net" }
 holochain_dpki = { version = "=0.0.42-alpha5", path = "../dpki" }
 holochain_locksmith = { version = "=0.0.42-alpha5", path = "../locksmith" }
+holochain_tracing_macros = "0.0.14"
+newrelic="0.2"
 sim2h = { version = "=0.0.42-alpha5", path = "../sim2h" }
-lib3h_crypto_api = "=0.0.26"
+lib3h_crypto_api = "=0.0.31"
 in_stream = { version = "=0.0.42-alpha5", path = "../in_stream" }
 url2 = "=0.0.4"
-lib3h_sodium = "=0.0.26"
+lib3h_sodium = "=0.0.31"
 holochain_json_api = "=0.0.17"
-holochain_persistence_api = "=0.0.11"
-holochain_persistence_file = "=0.0.11"
+holochain_persistence_api = "=0.0.13"
+holochain_persistence_file = "=0.0.13"
 holochain_wasm_utils = { path = "../wasm_utils" }
 structopt = "=0.3.3"
 failure = "=0.1.5"
@@ -41,11 +43,12 @@ rustyline = "=5.0.0"
 json-patch = "=0.2.2"
 reqwest = "=0.9.11"
 tempfile = "=3.0.7"
-lib3h_protocol = "=0.0.26"
+lib3h_protocol = "=0.0.31"
 tar = "=0.4.26"
 flate2 = "=1.0.12"
 dns-lookup = "=1.0.1"
 hcid = "=0.0.6"
+lazy_static = "=1.4.0"
 
 [dev-dependencies]
 assert_cmd = "=0.10.2"

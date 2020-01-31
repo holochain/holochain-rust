@@ -1,3 +1,4 @@
+use crate::NEW_RELIC_LICENSE_KEY;
 use error::DefaultResult;
 use holochain_common::paths::keys_directory;
 use holochain_conductor_lib::{key_loaders::mock_passphrase_manager, keystore::Keystore};
@@ -8,6 +9,7 @@ use std::{
     path::PathBuf,
 };
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 pub fn keygen(path: Option<PathBuf>, passphrase: Option<String>, quiet: bool) -> DefaultResult<()> {
     let passphrase = passphrase.unwrap_or_else(|| {
         if !quiet {

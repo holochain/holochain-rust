@@ -1,3 +1,4 @@
+use crate::NEW_RELIC_LICENSE_KEY;
 use error::DefaultResult;
 use failure::err_msg;
 use holochain_conductor_lib::conductor::Conductor;
@@ -5,6 +6,7 @@ use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use serde_json::Map;
 use std::path::PathBuf;
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 pub fn hash_dna(
     dna_file_path: &PathBuf,
     properties: Option<Vec<String>>,

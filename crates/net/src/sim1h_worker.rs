@@ -1,8 +1,11 @@
 //! provides worker that makes use of sim1h
 
-use crate::connection::{
-    net_connection::{NetHandler, NetWorker},
-    NetResult,
+use crate::{
+    connection::{
+        net_connection::{NetHandler, NetWorker},
+        NetResult,
+    },
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
 use lib3h_protocol::{
@@ -47,6 +50,7 @@ pub struct Sim1hWorker {
     state: Option<Sim1hState>,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl Sim1hWorker {
     pub fn advertise(self) -> url::Url {
         Url::parse("ws://example.com").unwrap()
@@ -282,6 +286,7 @@ impl Sim1hWorker {
 }
 
 // TODO: DRY this up as it is basically the same as the lib3h engine
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl NetWorker for Sim1hWorker {
     /// We got a message from core
     /// -> forward it to the NetworkEngine

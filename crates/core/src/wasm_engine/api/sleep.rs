@@ -1,4 +1,7 @@
-use crate::wasm_engine::{api::ZomeApiResult, Runtime};
+use crate::{
+    wasm_engine::{api::ZomeApiResult, Runtime},
+    NEW_RELIC_LICENSE_KEY,
+};
 use std::{convert::TryFrom, thread, time::Duration};
 use wasmi::{RuntimeArgs, RuntimeValue};
 
@@ -6,6 +9,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected argument: u64
 /// Returns an HcApiReturnCode as I64
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_sleep(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);

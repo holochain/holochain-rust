@@ -14,7 +14,7 @@ use lib3h_protocol::{
     uri::Lib3hUri,
 };
 use lib3h_sodium::SodiumCryptoSystem;
-use sim2h::Sim2h;
+use sim2h::{run_sim2h, DhtAlgorithm};
 use std::sync::Arc;
 
 #[test]
@@ -36,18 +36,21 @@ fn sim2h_worker_talks_to_sim2h() {
     let srv_cont = cont.clone();
     let sim2h_join = std::thread::spawn(move || {
         let url = url2!("ws://127.0.0.1:0");
-        let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), Lib3hUri(url.into()));
 
-        snd.send(sim2h.bound_uri.clone().unwrap()).unwrap();
-        drop(snd);
+        let (mut rt, binding) = run_sim2h(
+            Box::new(SodiumCryptoSystem::new()),
+            Lib3hUri(url.into()),
+            DhtAlgorithm::FullSync,
+        );
+        rt.block_on(async move {
+            tokio::task::spawn(async move {
+                snd.send(binding.await.unwrap()).unwrap();
+            });
 
-        while *srv_cont.lock().unwrap() {
-            if let Err(e) = sim2h.process() {
-                panic!("{:?}", e);
+            while *srv_cont.lock().unwrap() {
+                tokio::time::delay_for(std::time::Duration::from_millis(1)).await;
             }
-
-            std::thread::yield_now();
-        }
+        });
     });
 
     let bound_uri = rcv.recv().unwrap();

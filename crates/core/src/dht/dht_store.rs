@@ -4,6 +4,7 @@ use crate::{
         aspect_map::{AspectMap, AspectMapBare},
         pending_validations::{PendingValidationWithTimeout, ValidationTimeout},
     },
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
@@ -92,6 +93,7 @@ impl AddressableContent for DhtStoreSnapshot {
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn create_get_links_eavi_query<'a>(
     address: Address,
     link_type: String,
@@ -116,6 +118,7 @@ pub fn create_get_links_eavi_query<'a>(
     ))
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl DhtStore {
     // LifeCycle
     // =========

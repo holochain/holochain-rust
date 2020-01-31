@@ -3,6 +3,7 @@ use crate::{
     context::Context,
     instance::dispatch_action,
     network::query::{GetLinksNetworkQuery, NetworkQueryResult},
+    NEW_RELIC_LICENSE_KEY,
 };
 use futures::{future::Future, task::Poll};
 
@@ -29,6 +30,7 @@ pub enum QueryMethod {
     Link(GetLinksArgs, GetLinksNetworkQuery),
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn query(
     context: Arc<Context>,
     method: QueryMethod,
@@ -83,6 +85,7 @@ pub struct QueryFuture {
     key: QueryKey,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Future for QueryFuture {
     type Output = HcResult<NetworkQueryResult>;
 

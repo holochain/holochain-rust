@@ -5,6 +5,7 @@
 use crate::{
     connection::{net_connection::NetShutdown, NetResult},
     tweetlog::TWEETLOG,
+    NEW_RELIC_LICENSE_KEY,
 };
 
 use super::n3h::get_verify_n3h;
@@ -25,6 +26,7 @@ pub const DEFAULT_TIMEOUT_MS: usize = 5000;
 /// Spawn a holochain networking ipc sub-process
 /// Will block for IPC connection until timeout_ms is reached.
 /// Can also block for P2P connection
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 pub fn ipc_spawn(
     work_dir: String,
     end_user_config: String,

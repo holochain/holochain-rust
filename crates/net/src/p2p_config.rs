@@ -1,4 +1,4 @@
-use crate::{sim1h_worker::Sim1hConfig, sim2h_worker::Sim2hConfig};
+use crate::{sim1h_worker::Sim1hConfig, sim2h_worker::Sim2hConfig, NEW_RELIC_LICENSE_KEY};
 use holochain_json_api::{error::JsonError, json::JsonString};
 use lib3h::engine::{EngineConfig, GatewayId, TransportConfig};
 use lib3h_protocol::uri::Lib3hUri;
@@ -94,6 +94,7 @@ impl P2pConfig {
 }
 
 // Constructors
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl P2pConfig {
     pub fn new(
         backend_kind: P2pBackendKind,
@@ -251,6 +252,7 @@ impl P2pConfig {
 }
 
 /// end_user config
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl P2pConfig {
     pub fn default_end_user_config() -> serde_json::Value {
         json!({

@@ -1,6 +1,7 @@
 use crate::{
     agent::actions::commit::commit_entry,
     wasm_engine::{api::ZomeApiResult, Runtime},
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     entry::{
@@ -17,6 +18,7 @@ use holochain_wasm_utils::api_serialization::capabilities::{
 use std::convert::TryFrom;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_commit_capability_grant(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
     // deserialize args
@@ -41,7 +43,7 @@ pub fn invoke_commit_capability_grant(runtime: &mut Runtime, args: &RuntimeArgs)
 
     runtime.store_result(task_result)
 }
-
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_commit_capability_claim(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
     // deserialize args

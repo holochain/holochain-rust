@@ -23,6 +23,7 @@ use crate::{
         InterfaceConfiguration, InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
     },
     keystore::{KeyType, Keystore, Secret},
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_dpki::utils::SeedContext;
 use serde_json::{self, map::Map};
@@ -98,6 +99,7 @@ pub struct ConductorApiBuilder {
     io: Box<IoHandler>,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl ConductorApiBuilder {
     pub fn new() -> Self {
         ConductorApiBuilder {

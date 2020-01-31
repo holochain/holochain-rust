@@ -1,6 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper},
     instance::dispatch_action,
+    NEW_RELIC_LICENSE_KEY,
 };
 use crossbeam_channel::Sender;
 use futures::{future::Future, task::Poll};
@@ -13,6 +14,7 @@ use std::{pin::Pin, sync::Arc};
 /// Shutdown the network
 /// This tells the network to untrack this instance and then stops the network thread
 /// and sets the P2pNetwork instance in the state to None.
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn shutdown(
     state: Arc<RwLock<StateWrapper>>,
     action_channel: Sender<ActionWrapper>,
@@ -32,6 +34,7 @@ pub struct ShutdownFuture {
     state: Arc<RwLock<StateWrapper>>,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Future for ShutdownFuture {
     type Output = HcResult<()>;
 

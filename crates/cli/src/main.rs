@@ -1,4 +1,5 @@
 #![warn(unused_extern_crates)]
+#[macro_use]
 extern crate holochain_common;
 extern crate holochain_conductor_lib;
 extern crate holochain_core;
@@ -43,6 +44,7 @@ use crate::error::{HolochainError, HolochainResult};
 use holochain_conductor_lib::happ_bundle::HappBundle;
 use std::{fs::File, io::Read, path::PathBuf, str::FromStr};
 use structopt::{clap::arg_enum, StructOpt};
+new_relic_setup!("NEW_RELIC_LICENSE_KEY");
 
 #[derive(StructOpt)]
 /// A command line for Holochain
@@ -171,6 +173,7 @@ arg_enum! {
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn main() {
     lib3h_sodium::check_init();
     run().unwrap_or_else(|err| {
@@ -180,6 +183,7 @@ fn main() {
     });
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn run() -> HolochainResult<()> {
     let args = Cli::from_args();
 

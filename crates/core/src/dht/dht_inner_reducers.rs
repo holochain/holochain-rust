@@ -1,4 +1,3 @@
-use crate::content_store::{AddContent, GetContent};
 ///
 /// Inner DHT reducers are not pure functions but rather functions designed to make the required
 /// mutations to a newly cloned DhtState object. Unlike the reducers they do not need a specific signature.
@@ -9,6 +8,10 @@ use crate::content_store::{AddContent, GetContent};
 /// It is up to the calling reducer function whether the new state object should be kept and what to do with the return value
 ///
 use crate::dht::dht_store::DhtStore;
+use crate::{
+    content_store::{AddContent, GetContent},
+    NEW_RELIC_LICENSE_KEY,
+};
 use holochain_core_types::{
     crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus},
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
@@ -30,6 +33,7 @@ pub(crate) enum LinkModification {
 }
 
 /// Used as the inner function for both commit and hold reducers
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn reduce_store_entry_inner(store: &mut DhtStore, entry: &Entry) -> HcResult<()> {
     match store.add(entry) {
         Ok(()) => create_crud_status_eav(&entry.address(), CrudStatus::Live).map(|status_eav| {
@@ -41,6 +45,7 @@ pub(crate) fn reduce_store_entry_inner(store: &mut DhtStore, entry: &Entry) -> H
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn reduce_add_remove_link_inner(
     store: &mut DhtStore,
     link: &Link,
@@ -66,6 +71,7 @@ pub(crate) fn reduce_add_remove_link_inner(
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn reduce_update_entry_inner(
     store: &mut DhtStore,
     old_address: &Address,
@@ -81,6 +87,7 @@ pub(crate) fn reduce_update_entry_inner(
     Ok(new_address.clone())
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn reduce_remove_entry_inner(
     store: &mut DhtStore,
     latest_deleted_address: &Address,

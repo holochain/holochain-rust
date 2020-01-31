@@ -1,4 +1,4 @@
-use crate::error::DefaultResult;
+use crate::{error::DefaultResult, NEW_RELIC_LICENSE_KEY};
 use colored::*;
 use holochain_core::{
     agent::{
@@ -16,6 +16,7 @@ use std::{fs, path::PathBuf};
 // TODO: use system-agnostic default path
 const DEFAULT_CHAIN_PATH: &str = "TODO";
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 pub fn chain_log(storage_path: Option<PathBuf>, instance_id: String) -> DefaultResult<()> {
     let storage_path = storage_path.ok_or_else(|| {
         format_err!("Please specify the path to CAS storage with the --path option.")
@@ -69,6 +70,7 @@ pub fn chain_log(storage_path: Option<PathBuf>, instance_id: String) -> DefaultR
     Ok(())
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 pub fn chain_list(path: Option<PathBuf>) {
     let path = path.unwrap_or_else(|| PathBuf::from(DEFAULT_CHAIN_PATH));
     println!("Please specify an instance ID to view its chain.");
@@ -79,6 +81,7 @@ pub fn chain_list(path: Option<PathBuf>) {
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn display_header(header: &ChainHeader, entry: &Entry) {
     println!(
         "{} {}",

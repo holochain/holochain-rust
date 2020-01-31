@@ -1,4 +1,4 @@
-use crate::WireMessage;
+use crate::{WireMessage, NEW_RELIC_LICENSE_KEY};
 use chrono::{DateTime, Utc};
 use lib3h_protocol::{types::AgentPubKey, uri::Lib3hUri};
 use log::error;
@@ -34,6 +34,7 @@ pub struct MessageLogger {
     running: bool,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl MessageLogger {
     pub fn new() -> Self {
         MessageLogger {

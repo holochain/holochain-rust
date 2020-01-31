@@ -1,8 +1,11 @@
 //! provides worker that makes use of sim2h
 
-use crate::connection::{
-    net_connection::{NetHandler, NetWorker},
-    NetResult,
+use crate::{
+    connection::{
+        net_connection::{NetHandler, NetWorker},
+        NetResult,
+    },
+    NEW_RELIC_LICENSE_KEY,
 };
 use failure::_core::time::Duration;
 use holochain_conductor_lib_api::{ConductorApi, CryptoMethod};
@@ -69,6 +72,7 @@ pub struct Sim2hWorker {
     is_full_sync_DHT: bool,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl Sim2hWorker {
     pub fn advertise(self) -> url::Url {
         Url::parse("ws://example.com").unwrap()
@@ -486,6 +490,9 @@ impl Sim2hWorker {
             WireMessage::Status => error!("Got a Status from the Sim2h server, weird! Ignoring"),
             WireMessage::Hello(_) => error!("Got a Hello from the Sim2h server, weird! Ignoring"),
             WireMessage::HelloResponse(response) => {
+                if WIRE_VERSION != response.version {
+                    panic!("holochain SIM2H WIRE_VERSION ({}) does not match SIM2H server WIRE_VERSION ({}) - cannot continue", WIRE_VERSION, response.version);
+                }
                 debug!("HelloResponse {:?}", response);
                 self.set_full_sync(response.redundant_count == 0);
             }
@@ -507,6 +514,7 @@ impl Sim2hWorker {
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl NetWorker for Sim2hWorker {
     /// We got a message from core
     /// -> forward it to the NetworkEngine

@@ -4,6 +4,7 @@ use crate::{
         actions::queue_holding_workflow::dispatch_queue_holding_workflow,
         pending_validations::PendingValidationStruct,
     },
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::network::entry_aspect::EntryAspect;
 use holochain_json_api::json::JsonString;
@@ -14,6 +15,7 @@ use std::{
 };
 
 /// The network requests us to store (i.e. hold) the given entry aspect data.
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
     let aspect_json =
         JsonString::from_json(std::str::from_utf8(&*dht_data.entry_aspect.aspect).unwrap());

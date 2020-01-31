@@ -1,6 +1,7 @@
 use crate::{
     network::{actions::custom_send::custom_send, direct_message::CustomDirectMessage},
     wasm_engine::{api::ZomeApiResult, Runtime},
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_json_api::json::JsonString;
 use holochain_wasm_utils::api_serialization::send::SendArgs;
@@ -11,6 +12,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: SendArgs
 /// Returns an HcApiReturnCode as I64
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_send(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let call_data = runtime.call_data()?;
     // deserialize args

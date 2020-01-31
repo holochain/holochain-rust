@@ -1,3 +1,4 @@
+use crate::NEW_RELIC_LICENSE_KEY;
 use holochain_core_types::error::HolochainError;
 use reqwest::{self, Url};
 use serde::{
@@ -14,6 +15,7 @@ pub enum DnaLocation {
     Url(Url),
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl DnaLocation {
     pub fn get_content(&self) -> Result<String, HolochainError> {
         match self {

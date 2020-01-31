@@ -1,4 +1,4 @@
-use crate::NetworkingType;
+use crate::{NetworkingType, NEW_RELIC_LICENSE_KEY};
 use cli;
 use colored::*;
 use error::DefaultResult;
@@ -22,6 +22,7 @@ pub enum Networking {
 }
 
 /// Starts a minimal configuration Conductor with the current application running
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 pub fn run(
     dna_path: PathBuf,
     package: bool,
@@ -72,6 +73,7 @@ pub fn run(
     Ok(())
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 pub fn get_interface_type_string(given_type: String) -> String {
     // note that this behaviour is documented within
     // holochain_common::env_vars module and should be updated
@@ -80,6 +82,7 @@ pub fn get_interface_type_string(given_type: String) -> String {
     EnvVar::Interface.value().ok().unwrap_or_else(|| given_type)
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 pub fn hc_run_configuration(
     dna_path: &PathBuf,
     port: u16,
@@ -100,6 +103,7 @@ pub fn hc_run_configuration(
     })
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 pub fn hc_run_bundle_configuration(
     bundle: &HappBundle,
     port: u16,
@@ -123,6 +127,7 @@ pub fn hc_run_bundle_configuration(
 pub(crate) const AGENT_NAME_DEFAULT: &str = "testAgent";
 const AGENT_CONFIG_ID: &str = "hc-run-agent";
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn agent_configuration(agent_name: String) -> AgentConfiguration {
     // note that this behaviour is documented within
     // holochain_common::env_vars module and should be updated
@@ -147,6 +152,7 @@ fn agent_configuration(agent_name: String) -> AgentConfiguration {
 // DNA
 const DNA_CONFIG_ID: &str = "hc-run-dna";
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn dna_configuration(dna_path: &PathBuf) -> DnaConfiguration {
     let dna = Conductor::load_dna(dna_path).unwrap_or_else(|_| {
         panic!(
@@ -168,6 +174,7 @@ fn dna_configuration(dna_path: &PathBuf) -> DnaConfiguration {
 // STORAGE
 const LOCAL_STORAGE_PATH: &str = ".hc";
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn storage_configuration(persist: bool) -> DefaultResult<StorageConfiguration> {
     if persist {
         fs::create_dir_all(LOCAL_STORAGE_PATH)?;
@@ -183,6 +190,7 @@ fn storage_configuration(persist: bool) -> DefaultResult<StorageConfiguration> {
 // INSTANCE
 const INSTANCE_CONFIG_ID: &str = "test-instance";
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn instance_configuration(storage: StorageConfiguration) -> InstanceConfiguration {
     InstanceConfiguration {
         id: INSTANCE_CONFIG_ID.into(),
@@ -195,6 +203,7 @@ fn instance_configuration(storage: StorageConfiguration) -> InstanceConfiguratio
 // INTERFACE
 const INTERFACE_CONFIG_ID: &str = "websocket-interface";
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn interface_configuration(
     interface_type: &String,
     port: u16,
@@ -220,6 +229,7 @@ fn interface_configuration(
 }
 
 // LOGGER
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn logger_configuration(logging: bool) -> LoggerConfiguration {
     // temporary log rules, should come from a configuration
     LoggerConfiguration {
@@ -234,6 +244,7 @@ fn logger_configuration(logging: bool) -> LoggerConfiguration {
 }
 
 // NETWORKING
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn networking_configuration(networked: Option<Networking>) -> Option<NetworkConfig> {
     // create an n3h network config if the --networked flag is set
     let networked = match networked {

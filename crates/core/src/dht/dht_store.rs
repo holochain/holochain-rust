@@ -17,7 +17,7 @@ use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::{
     cas::content::{Address, AddressableContent, Content},
     eav::{EavFilter, IndexFilter},
-    txn::{Cursor, CursorRwDyn, CursorProviderDyn, PersistenceManagerDyn},
+    txn::{Cursor, CursorProviderDyn, CursorRwDyn, PersistenceManagerDyn},
 };
 use regex::Regex;
 
@@ -185,7 +185,7 @@ impl DhtStore {
     /// Get all headers for an entry by first looking in the DHT meta store
     /// for header addresses, then resolving them with the DHT CAS
     pub fn get_headers(&self, entry_address: Address) -> HcResult<Vec<ChainHeader>> {
-        let cursor : Box<dyn Cursor<Attribute>> = self.create_cursor()?;
+        let cursor: Box<dyn Cursor<Attribute>> = self.create_cursor()?;
         // fetch all EAV references to chain headers for this entry
         let eavis = cursor
             .fetch_eavi(&EaviQuery::new(
@@ -237,7 +237,7 @@ impl DhtStore {
             &Attribute::EntryHeader,
             &header.address(),
         )?;
-        let cursor : Box<dyn CursorRwDyn<Attribute>> = self.create_cursor_rw()?;
+        let cursor: Box<dyn CursorRwDyn<Attribute>> = self.create_cursor_rw()?;
         cursor.add(header)?;
         cursor.add_eavi(&eavi)?;
         cursor.commit()?;

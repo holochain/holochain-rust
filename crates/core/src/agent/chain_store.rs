@@ -12,9 +12,8 @@ use holochain_core_types::{
 use holochain_persistence_api::{
     cas::content::{Address, AddressableContent, Content},
     error::PersistenceResult,
-    txn::{Cursor, CursorRwDyn, CursorProviderDyn, PersistenceManagerDyn}
+    txn::{Cursor, CursorProviderDyn, CursorRwDyn, PersistenceManagerDyn},
 };
-
 
 use std::{str::FromStr, sync::Arc};
 
@@ -657,8 +656,7 @@ pub mod tests {
             &test_iso_8601(),
         );
 
-        let storage = chain_store.persistence_manager
-            .create_cursor_rw().unwrap();
+        let storage = chain_store.persistence_manager.create_cursor_rw().unwrap();
         storage
             .add(&chain_header_f)
             .expect("could not add header to cas");
@@ -725,8 +723,7 @@ pub mod tests {
             &test_iso_8601(),
         );
 
-        let storage = chain_store.persistence_manager
-            .create_cursor_rw().unwrap();
+        let storage = chain_store.persistence_manager.create_cursor_rw().unwrap();
         storage
             .add(&chain_header_i)
             .expect("could not add header to cas");

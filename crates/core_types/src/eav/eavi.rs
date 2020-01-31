@@ -6,12 +6,10 @@
 use holochain_persistence_api::{
     cas::content::{Address, AddressableContent, Content},
     eav::{
-        FetchEavi,
-        AddEavi,
         storage::{
             EntityAttributeValueStorage as GenericStorage, ExampleEntityAttributeValueStorage,
         },
-        AttributeError, IndexFilter,
+        AddEavi, AttributeError, FetchEavi, IndexFilter,
     },
     error::{PersistenceError, PersistenceResult},
 };

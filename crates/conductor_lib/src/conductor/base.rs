@@ -883,7 +883,7 @@ impl Conductor {
         Receiver<ht::FinishedSpan>,
         ht::reporter::JaegerCompactReporter,
     )> {
-        match self.config.tracing.clone() {
+        match self.config.tracing.clone().unwrap_or_default() {
             TracingConfiguration::Jaeger(jaeger_config) => {
                 let (span_tx, span_rx) = crossbeam_channel::unbounded();
                 let service_name = format!("{}-{}", jaeger_config.service_name, id);

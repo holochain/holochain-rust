@@ -77,11 +77,12 @@ pub struct Configuration {
 
     /// Configures Jaeger tracing. Optional.
     #[serde(default)]
-    pub tracing: TracingConfiguration,
+    pub tracing: Option<TracingConfiguration>,
 
     /// Configuration options for the network module. Optional.
     #[serde(default)]
     pub network: Option<NetworkConfig>,
+
     /// where to persist the config file and DNAs. Optional.
     #[serde(default = "default_persistence_dir")]
     pub persistence_dir: PathBuf,

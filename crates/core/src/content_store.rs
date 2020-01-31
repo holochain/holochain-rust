@@ -1,5 +1,6 @@
 use holochain_core_types::{eav::Attribute, entry::Entry, error::HcResult};
-use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
+use holochain_persistence_api::{txn::{Cursor, CursorRwDyn},
+    cas::content::{Address, AddressableContent, Content}};
 
 pub trait GetContent {
     /// Return the content at this address, do not attempt to convert to an entry
@@ -20,10 +21,16 @@ pub trait GetContent {
     }
 }
 
-use holochain_persistence_api::txn::CursorDyn;
 
-impl GetContent for dyn CursorDyn<Attribute> {
+impl GetContent for dyn Cursor<Attribute> {
     fn get_raw(&self, address: &Address) -> HcResult<Option<Content>> {
         Ok(self.fetch(address)?)
     }
 }
+
+impl GetContent for dyn CursorRwDyn<Attribute> {
+    fn get_raw(&self, address: &Address) -> HcResult<Option<Content>> {
+        Ok(self.fetch(address)?)
+    }
+}
+

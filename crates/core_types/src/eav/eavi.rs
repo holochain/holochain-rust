@@ -6,6 +6,8 @@
 use holochain_persistence_api::{
     cas::content::{Address, AddressableContent, Content},
     eav::{
+        FetchEavi,
+        AddEavi,
         storage::{
             EntityAttributeValueStorage as GenericStorage, ExampleEntityAttributeValueStorage,
         },

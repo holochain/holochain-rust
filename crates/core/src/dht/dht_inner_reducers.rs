@@ -33,7 +33,7 @@ pub(crate) enum LinkModification {
 /// Used as the inner function for both commit and hold reducers
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn reduce_store_entry_inner(store: &mut DhtStore, entry: &Entry) -> HcResult<()> {
-    let cursor = store.create_cursor()?;
+    let cursor = store.create_cursor_rw()?;
     match cursor.add(entry) {
         Ok(()) => {
             let status_eav = create_crud_status_eav(&entry.address(), CrudStatus::Live)?;
@@ -63,7 +63,7 @@ pub(crate) fn reduce_add_remove_link_inner(
     address: &Address,
     link_modification: LinkModification,
 ) -> HcResult<Address> {
-    let cursor = store.create_cursor()?;
+    let cursor = store.create_cursor_rw()?;
     if cursor.contains(link.base())? {
         let attr = match link_modification {
             LinkModification::Add => {
@@ -74,7 +74,6 @@ pub(crate) fn reduce_add_remove_link_inner(
             }
         };
         let eav = EntityAttributeValueIndex::new(link.base(), &attr, address)?;
-        let cursor = store.create_cursor()?;
         cursor.add_eavi(&eav)?;
         cursor.commit()?;
         Ok(link.base().clone())
@@ -93,7 +92,7 @@ pub(crate) fn reduce_update_entry_inner(
 ) -> HcResult<Address> {
     // Update crud-status
     let new_status_eav = create_crud_status_eav(old_address, CrudStatus::Modified)?;
-    let cursor = store.create_cursor()?;
+    let cursor = store.create_cursor_rw()?;
     cursor.add_eavi(&new_status_eav)?;
     // add link from old to new
     let crud_link_eav = create_crud_link_eav(old_address, new_address)?;
@@ -108,7 +107,7 @@ pub(crate) fn reduce_remove_entry_inner(
     latest_deleted_address: &Address,
     deletion_address: &Address,
 ) -> HcResult<Address> {
-    let cursor = store.create_cursor()?;
+    let cursor = store.create_cursor_rw()?;
     let entry = cursor
         .get(latest_deleted_address)?
         .ok_or_else(|| HolochainError::ErrorGeneric("trying to remove a missing entry".into()))?;

@@ -45,7 +45,7 @@ impl Persister for SimplePersister {
         let nucleus_snapshot = NucleusStateSnapshot::from(state);
         let dht_store_snapshot = DhtStoreSnapshot::from(state);
 
-        let cursor = self.storage.create_cursor()?;
+        let cursor = self.storage.create_cursor_rw()?;
         cursor.add(&agent_snapshot)?;
         cursor.add(&nucleus_snapshot)?;
         cursor.add(&dht_store_snapshot)?;

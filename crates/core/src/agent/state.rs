@@ -277,7 +277,7 @@ fn reduce_commit_entry(
         provenances,
     )
     .and_then(|chain_header| {
-        let cursor = agent_state.chain_store.create_cursor()?;
+        let cursor = agent_state.chain_store.create_cursor_rw()?;
         cursor.add(entry)?;
         cursor.add(&chain_header)?;
         cursor.commit()?;

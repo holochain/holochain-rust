@@ -17,7 +17,7 @@ use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::{
     cas::content::{Address, AddressableContent, Content},
     eav::{EavFilter, IndexFilter},
-    txn::PersistenceManagerDyn,
+    txn::{Cursor, CursorRwDyn, CursorProviderDyn, PersistenceManagerDyn},
 };
 use regex::Regex;
 
@@ -105,12 +105,12 @@ pub fn create_get_links_eavi_query<'a>(
         Some(EavFilter::single(Attribute::RemovedLink(link_type, tag))),
     ))
 }
-
-use holochain_persistence_api::txn::{CursorDyn, CursorProviderDyn};
-
 impl CursorProviderDyn<Attribute> for DhtStore {
-    fn create_cursor(&self) -> PersistenceResult<Box<dyn CursorDyn<Attribute>>> {
+    fn create_cursor(&self) -> PersistenceResult<Box<dyn Cursor<Attribute>>> {
         self.persistence_manager.create_cursor()
+    }
+    fn create_cursor_rw(&self) -> PersistenceResult<Box<dyn CursorRwDyn<Attribute>>> {
+        self.persistence_manager.create_cursor_rw()
     }
 }
 
@@ -185,7 +185,7 @@ impl DhtStore {
     /// Get all headers for an entry by first looking in the DHT meta store
     /// for header addresses, then resolving them with the DHT CAS
     pub fn get_headers(&self, entry_address: Address) -> HcResult<Vec<ChainHeader>> {
-        let cursor = self.create_cursor()?;
+        let cursor : Box<dyn Cursor<Attribute>> = self.create_cursor()?;
         // fetch all EAV references to chain headers for this entry
         let eavis = cursor
             .fetch_eavi(&EaviQuery::new(
@@ -237,7 +237,7 @@ impl DhtStore {
             &Attribute::EntryHeader,
             &header.address(),
         )?;
-        let cursor = self.create_cursor()?;
+        let cursor : Box<dyn CursorRwDyn<Attribute>> = self.create_cursor_rw()?;
         cursor.add(header)?;
         cursor.add_eavi(&eavi)?;
         cursor.commit()?;

@@ -11,8 +11,10 @@ use holochain_core_types::{
 };
 use holochain_persistence_api::{
     cas::content::{Address, AddressableContent, Content},
-    txn::PersistenceManagerDyn,
+    error::PersistenceResult,
+    txn::{Cursor, CursorRwDyn, CursorProviderDyn, PersistenceManagerDyn}
 };
+
 
 use std::{str::FromStr, sync::Arc};
 
@@ -202,14 +204,12 @@ pub struct ChainStoreIterator {
     persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>>,
     current: Option<ChainHeader>,
 }
-
-use holochain_persistence_api::{
-    error::PersistenceResult,
-    txn::{CursorDyn, CursorProviderDyn},
-};
 impl CursorProviderDyn<Attribute> for ChainStore {
-    fn create_cursor(&self) -> PersistenceResult<Box<dyn CursorDyn<Attribute>>> {
+    fn create_cursor(&self) -> PersistenceResult<Box<dyn Cursor<Attribute>>> {
         self.persistence_manager.create_cursor()
+    }
+    fn create_cursor_rw(&self) -> PersistenceResult<Box<dyn CursorRwDyn<Attribute>>> {
+        self.persistence_manager.create_cursor_rw()
     }
 }
 
@@ -343,7 +343,7 @@ pub mod tests {
             &test_iso_8601(),
         );
 
-        let storage = chain_store.persistence_manager.create_cursor().unwrap();
+        let storage = chain_store.persistence_manager.create_cursor_rw().unwrap();
         storage
             .add(&chain_header_a)
             .expect("could not add header to cas");
@@ -493,7 +493,7 @@ pub mod tests {
             &test_iso_8601(),
         );
 
-        let storage = chain_store.persistence_manager.create_cursor().unwrap();
+        let storage = chain_store.persistence_manager.create_cursor_rw().unwrap();
         storage
             .add(&chain_header_a)
             .expect("could not add header to cas");
@@ -657,7 +657,8 @@ pub mod tests {
             &test_iso_8601(),
         );
 
-        let storage = chain_store.persistence_manager.create_cursor().unwrap();
+        let storage = chain_store.persistence_manager
+            .create_cursor_rw().unwrap();
         storage
             .add(&chain_header_f)
             .expect("could not add header to cas");
@@ -724,7 +725,8 @@ pub mod tests {
             &test_iso_8601(),
         );
 
-        let storage = chain_store.persistence_manager.create_cursor().unwrap();
+        let storage = chain_store.persistence_manager
+            .create_cursor_rw().unwrap();
         storage
             .add(&chain_header_i)
             .expect("could not add header to cas");

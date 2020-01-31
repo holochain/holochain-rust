@@ -323,7 +323,7 @@ pub mod tests {
         let store = test_store(context.clone());
         let entry = test_entry();
 
-        let cursor = (*store.dht()).clone().create_cursor().unwrap();
+        let cursor = (*store.dht()).clone().create_cursor_rw().unwrap();
         cursor.add(&entry).unwrap();
         cursor.commit().unwrap();
         let test_link = String::from("test_link");
@@ -369,7 +369,7 @@ pub mod tests {
         let store = test_store(context.clone());
         let entry = test_entry();
 
-        let cursor = (*store.dht()).clone().create_cursor().unwrap();
+        let cursor = (*store.dht()).clone().create_cursor_rw().unwrap();
         cursor.add(&entry).unwrap();
         cursor.commit().unwrap();
         let test_link = String::from("test_link");

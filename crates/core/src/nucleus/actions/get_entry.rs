@@ -150,7 +150,7 @@ pub mod tests {
         assert_eq!(Ok(None), result);
         let cursor = (*context.state().unwrap().dht())
             .clone()
-            .create_cursor()
+            .create_cursor_rw()
             .unwrap();
         cursor.add(&entry).unwrap();
         cursor.commit().unwrap();

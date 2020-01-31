@@ -481,7 +481,8 @@ impl Job {
     fn priv_handle_msg_inner(&mut self, logger: &mut StressJobMetricLogger, msg: Lib3hToClient) {
         match msg {
             Lib3hToClient::HandleGetAuthoringEntryList(_)
-            | Lib3hToClient::HandleGetGossipingEntryList(_) => {}
+            | Lib3hToClient::HandleGetGossipingEntryList(_)
+            | Lib3hToClient::HandleFetchEntry(_) => {}
             Lib3hToClient::HandleStoreEntryAspect(aspect) => {
                 let epoch_millis = std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)

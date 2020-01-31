@@ -1281,6 +1281,67 @@ impl Sim2h {
                 if (fetch_result.provider_agent_id != agent_id) || (fetch_result.space_address != space_address) {
                     return Err(SPACE_MISMATCH_ERR_STR.into());
                 }
+
+                let sim2h_handle = self.sim2h_handle.clone();
+                tokio::task::spawn(async move {
+                    let state = sim2h_handle.im_state().get_clone().await;
+
+                    #[allow(clippy::type_complexity)]
+                    let mut to_agent: std::collections::HashMap<MonoRef<AgentId>, (Vec<Lib3hToClient>, std::collections::HashMap<EntryHash, im::HashSet<AspectHash>>)> = std::collections::HashMap::new();
+
+                    for aspect in fetch_result.entry.aspect_list {
+                        let agents_that_need_aspect = state
+                            .get_agents_that_need_aspect(
+                                &space_address,
+                                &fetch_result.entry.entry_address,
+                                &aspect.aspect_address.clone(),
+                            );
+
+                        for agent_id in agents_that_need_aspect {
+                            let m = to_agent.entry(agent_id.clone()).or_default();
+                            m.0.push(Lib3hToClient::HandleStoreEntryAspect(
+                                StoreEntryAspectData {
+                                    request_id: "".into(),
+                                    space_address: space_address.clone(),
+                                    provider_agent_id: (&*agent_id).clone(),
+                                    entry_address: fetch_result.entry.entry_address.clone(),
+                                    entry_aspect: aspect.clone(),
+                                },
+                            ));
+
+                            let e = m.1.entry(fetch_result.entry.entry_address.clone()).or_default();
+                            e.insert(aspect.aspect_address.clone());
+                        }
+                    }
+
+                    for (agent_id, (multi_message, mut holding)) in to_agent.drain() {
+                        let uri = match state.lookup_joined(
+                            &space_address,
+                            &agent_id,
+                        ) {
+                            None => continue,
+                            Some(uri) => uri,
+                        };
+
+                        let multi_send = WireMessage::MultiSend(multi_message);
+
+                        sim2h_handle.send(
+                            (&*agent_id).clone(),
+                            (&*uri).clone(),
+                            &multi_send,
+                        );
+
+                        for (entry_hash, aspects) in holding.drain() {
+                            sim2h_handle.im_state().agent_holds_aspects(
+                                space_address.clone(),
+                                (&*agent_id).clone(),
+                                entry_hash,
+                                aspects,
+                            );
+                        }
+                    }
+                });
+
                 /*
                 debug!("HANDLE FETCH ENTRY RESULT: {:?}", fetch_result);
                 if fetch_result.request_id == "" {

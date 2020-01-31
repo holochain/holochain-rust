@@ -7,6 +7,18 @@ use std::sync::{
 };
 use tokio::stream::StreamExt;
 
+fn should_store(
+    agent_loc: Location,
+    entry_loc: Location,
+    agent_count: u64,
+    redundancy: u64,
+) -> bool {
+    if redundancy == 0 {
+        return true;
+    }
+    naive_sharding::naive_sharding_should_store(agent_loc, entry_loc, agent_count, redundancy)
+}
+
 /// How often(ish) should we check/fetch aspects for each connected agent
 /// note this value is randomized by ~50% each time
 const AGENT_FETCH_ASPECTS_INTERVAL_MS: u64 = 5000;
@@ -208,12 +220,7 @@ impl Space {
         let agent_count = self.connections.len() as u64;
 
         for (agent_id, con) in self.connections.iter() {
-            if naive_sharding::naive_sharding_should_store(
-                con.agent_loc,
-                entry_loc,
-                agent_count,
-                self.redundancy,
-            ) {
+            if should_store(con.agent_loc, entry_loc, agent_count, self.redundancy) {
                 out.insert(agent_id.clone());
             }
         }
@@ -243,6 +250,25 @@ impl Space {
         im::HashSet::new()
     }
 
+    fn get_agents_that_need_aspect(
+        &self,
+        entry_hash: &EntryHash,
+        aspect_hash: &AspectHash,
+    ) -> im::HashSet<MonoAgentId> {
+        let mut out = im::HashSet::new();
+        if let Some(entry) = self.entry_to_all_aspects.get(entry_hash) {
+            if let Some(holding) = entry.aspects.get(aspect_hash) {
+                let agents = self.get_agents_that_should_hold_entry(entry_hash);
+                for agent_id in agents {
+                    if !holding.contains(&agent_id) {
+                        out.insert(agent_id);
+                    }
+                }
+            }
+        }
+        out
+    }
+
     fn get_gossip_aspects_needed_for_agent(
         &self,
         agent_id: &AgentId,
@@ -256,12 +282,7 @@ impl Space {
         };
 
         for (_, entry) in self.entry_to_all_aspects.iter() {
-            if naive_sharding::naive_sharding_should_store(
-                agent_loc,
-                entry.entry_loc,
-                agent_count,
-                self.redundancy,
-            ) {
+            if should_store(agent_loc, entry.entry_loc, agent_count, self.redundancy) {
                 let e = out.entry(entry.entry_hash.clone()).or_default();
                 for (aspect_hash, holding) in entry.aspects.iter() {
                     if !holding.contains(agent_id) {
@@ -603,6 +624,18 @@ impl Store {
         }
     }
 
+    pub fn get_agents_that_need_aspect(
+        &self,
+        space_hash: &SpaceHash,
+        entry_hash: &EntryHash,
+        aspect_hash: &AspectHash,
+    ) -> im::HashSet<MonoAgentId> {
+        match self.get_space(space_hash) {
+            None => im::HashSet::new(),
+            Some(space) => space.get_agents_that_need_aspect(entry_hash, aspect_hash),
+        }
+    }
+
     pub fn get_gossip_aspects_needed_for_agent(
         &self,
         space_hash: &SpaceHash,
@@ -679,38 +712,7 @@ impl Store {
         let mut out: Vec<MonoAgentId> = out.iter().cloned().collect();
         let out = &mut out[..];
         out.shuffle(&mut thread_rng());
-        out[..3].to_vec()
-    }
-
-    /// return a mapping of all entry_hash/aspect_hashes
-    /// that each agent is missing (note how it returns references :+1:)
-    pub fn get_agents_missing_aspects(
-        &self,
-        space_hash: &SpaceHash,
-    ) -> im::HashMap<MonoAgentId, im::HashMap<MonoEntryHash, im::HashSet<MonoAspectHash>>> {
-        let space = self
-            .get_space(space_hash)
-            .expect("space should already exist");
-
-        let mut out: im::HashMap<
-            MonoAgentId,
-            im::HashMap<MonoEntryHash, im::HashSet<MonoAspectHash>>,
-        > = im::HashMap::new();
-        for (entry_hash, entry) in space.entry_to_all_aspects.iter() {
-            for (aspect_hash, holding) in entry.aspects.iter() {
-                for (agent_id, _) in space.connections.iter() {
-                    if holding.contains(agent_id) {
-                        continue;
-                    }
-                    out.entry(agent_id.clone())
-                        .or_default()
-                        .entry(entry_hash.clone())
-                        .or_default()
-                        .insert(aspect_hash.clone());
-                }
-            }
-        }
-        out
+        out[..std::cmp::min(out.len(), 3)].to_vec()
     }
 }
 
@@ -892,13 +894,17 @@ mod tests {
         println!("GOT: {:#?}", store.get_clone().await);
 
         println!("--- beg check missing ---");
-        println!(
-            "{:#?}",
-            store
-                .get_clone()
-                .await
-                .get_agents_missing_aspects(&space_hash),
-        );
+        let store_clone = store.get_clone().await;
+        for (space_hash, space) in store_clone.spaces.iter() {
+            println!("-- space: {:?} --", space_hash);
+            for (agent_id, _c) in space.connections.iter() {
+                println!("-- agent: {:?} --", agent_id);
+                println!(
+                    "{:#?}",
+                    store_clone.get_gossip_aspects_needed_for_agent(&space_hash, &agent_id),
+                );
+            }
+        }
         println!("--- end check missing ---");
 
         store.drop_connection(space_hash.clone(), aid1.clone());

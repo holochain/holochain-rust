@@ -243,6 +243,7 @@ struct Sim2hHandle {
     dht_algorithm: DhtAlgorithm,
     metric_gen: MetricsTimerGenerator,
     connection_mgr: ConnectionMgrHandle,
+    connection_count: ConnectionCount,
 }
 
 impl Sim2hHandle {
@@ -253,6 +254,7 @@ impl Sim2hHandle {
         dht_algorithm: DhtAlgorithm,
         metric_gen: MetricsTimerGenerator,
         connection_mgr: ConnectionMgrHandle,
+        connection_count: ConnectionCount,
     ) -> Self {
         let redundancy = match dht_algorithm {
             DhtAlgorithm::FullSync => 0,
@@ -265,6 +267,7 @@ impl Sim2hHandle {
             dht_algorithm,
             metric_gen,
             connection_mgr,
+            connection_count,
         }
     }
 
@@ -301,16 +304,37 @@ impl Sim2hHandle {
 
     /// forward a message to be handled
     pub fn handle_message(&self, uri: Lib3hUri, message: WireMessage, signer: AgentId) {
-        if let Err(e) =
-            self.send_com
-                .send(Sim2hCom::HandleMessage(Box::new(Sim2hComHandleMessage {
+        // dispatch to correct handler
+        let sim2h_handle = self.clone();
+
+        // these message types are allowed before joining
+        match message {
+            WireMessage::Ping => return spawn_handle_message_ping(sim2h_handle, uri, signer),
+            WireMessage::Status => return spawn_handle_message_status(sim2h_handle, uri, signer),
+            WireMessage::Hello(version) => {
+                return spawn_handle_message_hello(sim2h_handle, uri, signer, version)
+            }
+            WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(data)) => {
+                return spawn_handle_message_join_space(sim2h_handle, uri, signer, data)
+            }
+            _ => (),
+        }
+
+        // you have to be in a space to proceed further
+
+        tokio::task::spawn(async move {
+            // -- right now each agent can only be part of a single space :/ --
+
+            if let Err(e) = sim2h_handle.send_com.send(Sim2hCom::HandleMessage(Box::new(
+                Sim2hComHandleMessage {
                     uri,
                     message,
                     signer,
-                })))
-        {
-            error!("error sending message to sim2h - shutting down? {:?}", e);
-        }
+                },
+            ))) {
+                error!("error sending message to sim2h - shutting down? {:?}", e);
+            }
+        });
     }
 
     /// forward a message to an already joined connection to be handled
@@ -340,6 +364,111 @@ impl Sim2hHandle {
             .send(Sim2hCom::Disconnect(disconnect))
             .expect("can send");
     }
+}
+
+fn spawn_handle_message_ping(sim2h_handle: Sim2hHandle, uri: Lib3hUri, signer: AgentId) {
+    /*
+    tokio::task::spawn(async move {
+    });
+    */
+    // no processing here, don't bother actually spawning
+    debug!("Sending Pong in response to Ping");
+    sim2h_handle.send(signer, uri, &WireMessage::Pong);
+}
+
+fn spawn_handle_message_status(sim2h_handle: Sim2hHandle, uri: Lib3hUri, signer: AgentId) {
+    tokio::task::spawn(async move {
+        debug!("Sending StatusResponse in response to Status");
+        let state = sim2h_handle.im_state().get_clone().await;
+        sim2h_handle.send(
+            signer.clone(),
+            uri.clone(),
+            &WireMessage::StatusResponse(StatusData {
+                spaces: state.spaces_count(),
+                connections: sim2h_handle.connection_count.get().await,
+                redundant_count: match sim2h_handle.dht_algorithm() {
+                    DhtAlgorithm::FullSync => 0,
+                    DhtAlgorithm::NaiveSharding { redundant_count } => *redundant_count,
+                },
+                version: WIRE_VERSION,
+            }),
+        );
+    });
+}
+
+fn spawn_handle_message_hello(
+    sim2h_handle: Sim2hHandle,
+    uri: Lib3hUri,
+    signer: AgentId,
+    version: u32,
+) {
+    /*
+    tokio::task::spawn(async move {
+    });
+    */
+    // no processing here, don't bother actually spawning
+    debug!("Sending HelloResponse in response to Hello({})", version);
+    sim2h_handle.send(
+        signer,
+        uri.clone(),
+        &WireMessage::HelloResponse(HelloData {
+            redundant_count: match sim2h_handle.dht_algorithm() {
+                DhtAlgorithm::FullSync => 0,
+                DhtAlgorithm::NaiveSharding { redundant_count } => *redundant_count,
+            },
+            version: WIRE_VERSION,
+            extra: None,
+        }),
+    );
+    // versions do not match - disconnect them
+    if version != WIRE_VERSION {
+        warn!(
+            "Disconnecting client for bad version this WIRE_VERSIO = {}, client WIRE_VERSION = {}",
+            WIRE_VERSION, version
+        );
+        sim2h_handle.disconnect(vec![uri]);
+    }
+}
+
+fn spawn_handle_message_join_space(
+    sim2h_handle: Sim2hHandle,
+    uri: Lib3hUri,
+    signer: AgentId,
+    data: SpaceData,
+) {
+    sim2h_handle.im_state().new_connection(
+        data.space_address.clone(),
+        data.agent_id.clone(),
+        uri.clone(),
+    );
+
+    sim2h_handle.send(
+        data.agent_id.clone(),
+        uri.clone(),
+        &WireMessage::Lib3hToClient(Lib3hToClient::HandleGetGossipingEntryList(GetListData {
+            request_id: "".into(),
+            space_address: data.space_address.clone(),
+            provider_agent_id: data.agent_id.clone(),
+        })),
+    );
+
+    sim2h_handle.send(
+        data.agent_id.clone(),
+        uri.clone(),
+        &WireMessage::Lib3hToClient(Lib3hToClient::HandleGetAuthoringEntryList(GetListData {
+            request_id: "".into(),
+            space_address: data.space_address.clone(),
+            provider_agent_id: data.agent_id.clone(),
+        })),
+    );
+
+    // TODO - this is a hack while we're still depending on some ConState Stuff
+    tokio::task::spawn(Sim2h::handle_connection_msg(
+        sim2h_handle,
+        uri,
+        WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(data)),
+        signer,
+    ));
 }
 
 /// creates a tokio runtime and executes the Sim2h instance within it
@@ -460,7 +589,7 @@ impl Sim2h {
     ) -> Self {
         let (metric_gen, metric_task) = MetricsTimerGenerator::new();
 
-        let (connection_mgr, connection_mgr_evt_recv) = ConnectionMgr::new();
+        let (connection_mgr, connection_mgr_evt_recv, connection_count) = ConnectionMgr::new();
 
         let (wss_send, wss_recv) = crossbeam_channel::unbounded();
         let state = Arc::new(tokio::sync::Mutex::new(Sim2hState {
@@ -479,6 +608,7 @@ impl Sim2h {
             dht_algorithm,
             metric_gen.clone(),
             connection_mgr,
+            connection_count,
         );
         state
             .try_lock()
@@ -667,11 +797,13 @@ impl Sim2h {
 
             *conn = new_conn;
 
+            /*
             sim2h_handle.im_state().new_connection(
                 data.space_address.clone(),
                 data.agent_id.clone(),
                 uri.clone(),
             );
+            */
 
             if let Err(e) =
                 state.join_agent(&data.space_address, data.agent_id.clone(), uri.clone())
@@ -684,6 +816,7 @@ impl Sim2h {
                 "Agent {:?} joined space {:?}",
                 data.agent_id, data.space_address
             );
+            /*
             state.request_gossiping_list(
                 uri.clone(),
                 data.space_address.clone(),
@@ -694,6 +827,7 @@ impl Sim2h {
                 data.space_address.clone(),
                 data.agent_id.clone(),
             );
+            */
 
             pending_messages
         };
@@ -721,11 +855,16 @@ impl Sim2h {
 
         // TODO: anyway, but especially with this Ping/Pong, mitigate DoS attacks.
         if message == WireMessage::Ping {
+            unreachable!();
+            /*
             debug!("Sending Pong in response to Ping");
             self.sim2h_handle.send(signer, uri, &WireMessage::Pong);
             return Ok(());
+            */
         }
         if let WireMessage::Status = message {
+            unreachable!();
+            /*
             debug!("Sending StatusResponse in response to Status");
 
             let sim2h_handle = self.sim2h_handle.clone();
@@ -748,8 +887,11 @@ impl Sim2h {
             });
 
             return Ok(());
+            */
         }
-        if let WireMessage::Hello(version) = message {
+        if let WireMessage::Hello(_version) = message {
+            unreachable!();
+            /*
             debug!("Sending HelloResponse in response to Hello({})", version);
             self.sim2h_handle.send(
                 signer,
@@ -769,6 +911,7 @@ impl Sim2h {
                 self.sim2h_handle.disconnect(vec![uri]);
             }
             return Ok(());
+            */
         }
 
         tokio::task::spawn(Sim2h::handle_connection_msg(

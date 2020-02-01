@@ -1,6 +1,19 @@
 use crate::*;
 use std::sync::{Arc, Weak};
 
+#[derive(Clone)]
+pub struct ConnectionCount(Arc<tokio::sync::RwLock<usize>>);
+
+impl ConnectionCount {
+    pub fn new() -> Self {
+        Self(Arc::new(tokio::sync::RwLock::new(0)))
+    }
+
+    pub async fn get(&self) -> usize {
+        *self.0.read().await
+    }
+}
+
 /// incoming messages from websockets
 #[derive(Debug)]
 pub enum ConMgrEvent {
@@ -144,13 +157,14 @@ pub struct ConnectionMgr {
     evt_send_to_parent: EvtSend,
     evt_send_from_children: EvtSend,
     evt_recv_from_children: EvtRecv,
+    connection_count: ConnectionCount,
     wss_map: std::collections::HashMap<Lib3hUri, CmdSend>,
 }
 
 impl ConnectionMgr {
     /// spawn a new connection manager task, returning a handle for controlling it
     /// and a receiving channel for any incoming data
-    pub fn new() -> (ConnectionMgrHandle, ConnectionMgrEventRecv) {
+    pub fn new() -> (ConnectionMgrHandle, ConnectionMgrEventRecv, ConnectionCount) {
         let (evt_p_send, evt_p_recv) = tokio::sync::mpsc::unbounded_channel();
         let (evt_c_send, evt_c_recv) = tokio::sync::mpsc::unbounded_channel();
         let (cmd_send, cmd_recv) = tokio::sync::mpsc::unbounded_channel();
@@ -159,17 +173,24 @@ impl ConnectionMgr {
 
         let weak_ref_dummy = Arc::downgrade(&ref_dummy);
 
+        let connection_count = ConnectionCount::new();
+
         let con_mgr = ConnectionMgr {
             cmd_recv,
             evt_send_to_parent: evt_p_send,
             evt_send_from_children: evt_c_send,
             evt_recv_from_children: evt_c_recv,
+            connection_count: connection_count.clone(),
             wss_map: std::collections::HashMap::new(),
         };
 
         tokio::task::spawn(con_mgr_task(con_mgr, weak_ref_dummy));
 
-        (ConnectionMgrHandle::new(ref_dummy, cmd_send), evt_p_recv)
+        (
+            ConnectionMgrHandle::new(ref_dummy, cmd_send),
+            evt_p_recv,
+            connection_count,
+        )
     }
 
     /// internal check our channels
@@ -268,6 +289,10 @@ impl ConnectionMgr {
                 // channel broken, end task
                 return EndTask;
             }
+            let connection_count = self.connection_count.clone();
+            tokio::task::spawn(async move {
+                *connection_count.0.write().await = new_c_count;
+            });
         }
 
         if did_work {

@@ -771,7 +771,10 @@ impl StoreHandle {
 
     pub async fn get_clone(&self) -> StoreRef {
         let (sender, receiver) = tokio::sync::oneshot::channel();
-        self.send_mut.send(StoreProto::GetClone(sender)).unwrap();
+        if let Err(_) = self.send_mut.send(StoreProto::GetClone(sender)) {
+            // we're probably shutting down, prevent panic!s
+            return futures::future::pending().await;
+        }
         StoreRef(receiver.await.unwrap())
     }
 
@@ -782,26 +785,26 @@ impl StoreHandle {
             agent_id,
             uri,
         });
-        self.send_mut.send(msg).unwrap();
+        let _ = self.send_mut.send(msg);
     }
 
     pub fn drop_connection(&self, space_hash: SpaceHash, agent_id: AgentId) {
-        self.send_mut
+        let _ = self
+            .send_mut
             .send(StoreProto::Mutate(AolEntry::DropConnection {
                 aol_idx: self.con_incr.inc(),
                 space_hash,
                 agent_id,
-            }))
-            .unwrap();
+            }));
     }
 
     pub fn drop_connection_by_uri(&self, uri: Lib3hUri) {
-        self.send_mut
+        let _ = self
+            .send_mut
             .send(StoreProto::Mutate(AolEntry::DropConnectionByUri {
                 aol_idx: self.con_incr.inc(),
                 uri,
-            }))
-            .unwrap();
+            }));
     }
 
     pub fn agent_holds_aspects(
@@ -811,25 +814,29 @@ impl StoreHandle {
         entry_hash: EntryHash,
         aspects: im::HashSet<AspectHash>,
     ) {
-        self.send_mut
+        let _ = self
+            .send_mut
             .send(StoreProto::Mutate(AolEntry::AgentHoldsAspects {
                 aol_idx: self.con_incr.inc(),
                 space_hash,
                 agent_id,
                 entry_hash,
                 aspects,
-            }))
-            .unwrap();
+            }));
     }
 
     pub async fn check_gossip(&self) -> CheckGossipData {
         let (sender, receiver) = tokio::sync::oneshot::channel();
-        self.send_mut
+        if let Err(_) = self
+            .send_mut
             .send(StoreProto::Mutate(AolEntry::CheckGossip {
                 aol_idx: self.con_incr.inc(),
                 response: sender,
             }))
-            .unwrap();
+        {
+            // we're probably shutting down, prevent panic!s
+            return futures::future::pending().await;
+        }
         receiver.await.unwrap()
     }
 }

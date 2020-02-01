@@ -6,8 +6,7 @@ use crate::{
     network::query::{
         GetLinksNetworkQuery, GetLinksNetworkResult, NetworkQuery, NetworkQueryResult,
     },
-    nucleus,
-    NEW_RELIC_LICENSE_KEY,
+    nucleus, NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     crud_status::CrudStatus, eav::Attribute, entry::EntryWithMetaAndHeader, error::HolochainError,

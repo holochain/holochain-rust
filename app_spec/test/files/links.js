@@ -77,7 +77,63 @@ module.exports = scenario => {
     t.ok(error.line)
   })
 
-// this is where the failing tests are
+  scenario('get_links_paginate', async (s, t) => {
+    const { alice, bob } = await s.players({ alice: one, bob: one }, true)
+
+    // commits an entry and creates two links for alice
+    await alice.callSync('app', 'simple', 'create_link',
+      { base: alice.info('app').agentAddress, target: 'Holo world' }
+    )
+    await alice.callSync('app', 'simple', 'create_link',
+      { base: alice.info('app').agentAddress, target: 'Holo world 2' }
+    )
+
+    await alice.callSync('app', 'simple', 'create_link',
+      { base: alice.info('app').agentAddress, target: 'Holo world 3' }
+    )
+    await alice.callSync('app', 'simple', 'create_link',
+      { base: alice.info('app').agentAddress, target: 'Holo world 4' }
+    )
+
+
+    // get posts for alice from bob
+    const bob_posts_live = await bob.call('app', 'simple', 'get_my_links_with_pagination',
+      {
+        base: alice.info('app').agentAddress,
+        pagesize: 3,
+        pagenumber:0
+      })
+    
+      const alice_posts_live = await alice.call('app', 'simple', 'get_my_links_with_pagination',
+      {
+        base: alice.info('app').agentAddress,
+        pagesize: 3,
+        pagenumber:0
+      })
+
+    // make sure all our links are live and they are two of them
+    console.log("alice posts live : " + JSON.stringify(alice_posts_live));
+    t.equal(3, alice_posts_live.Ok.links.length)
+    t.equal(3, bob_posts_live.Ok.links.length)
+
+    const bob_posts_live_2 = await bob.call('app', 'simple', 'get_my_links_with_pagination',
+      {
+        base: alice.info('app').agentAddress,
+        pagesize: 3,
+        pagenumber:1
+      })
+    
+      const alice_posts_live_2 = await alice.call('app', 'simple', 'get_my_links_with_pagination',
+      {
+        base: alice.info('app').agentAddress,
+        pagesize: 3,
+        pagenumber:1
+      })
+
+      t.equal(1, bob_posts_live_2.Ok.links.length)
+      t.equal(1, alice_posts_live_2.Ok.links.length)
+  })
+
   scenario('get_links_crud', async (s, t) => {
     const { alice, bob } = await s.players({ alice: one, bob: one }, true)
 

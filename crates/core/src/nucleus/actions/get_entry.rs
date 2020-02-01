@@ -1,4 +1,4 @@
-use crate::{content_store::GetContent, context::Context};
+use crate::{content_store::GetContent, context::Context, NEW_RELIC_LICENSE_KEY};
 use holochain_core_types::{
     crud_status::CrudStatus,
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},

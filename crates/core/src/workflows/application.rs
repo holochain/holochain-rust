@@ -3,6 +3,7 @@ use crate::{
     instance::Instance,
     network::actions::initialize_network::initialize_network,
     nucleus::actions::{call_init::call_init, initialize::initialize_chain},
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     dna::Dna,

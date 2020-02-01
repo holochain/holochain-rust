@@ -6,6 +6,7 @@ use crate::{
         CallbackFnCall,
     },
     wasm_engine::callback::links_utils,
+    NEW_RELIC_LICENSE_KEY,
 };
 use boolinator::*;
 use holochain_core_types::{

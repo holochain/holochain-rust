@@ -1,3 +1,4 @@
+use crate::NEW_RELIC_LICENSE_KEY;
 use crossbeam_channel::{unbounded, Sender};
 use holochain_core_types::error::HolochainError;
 use holochain_locksmith::Mutex;

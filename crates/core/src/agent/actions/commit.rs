@@ -3,6 +3,7 @@ use crate::{
     agent::state::AgentActionResponse,
     context::Context,
     instance::dispatch_action,
+    NEW_RELIC_LICENSE_KEY,
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::{entry::Entry, error::HolochainError};

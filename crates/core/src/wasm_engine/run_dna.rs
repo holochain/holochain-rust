@@ -5,6 +5,7 @@ use crate::{
         memory::WasmPageManager,
         runtime::{Runtime, WasmCallData},
     },
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     dna::wasm::ModuleArc,

@@ -5,9 +5,12 @@ mod tcp;
 
 use std::io::{Read, Write};
 
-use crate::ipc::transport::{
-    DidWork, Transport, TransportError, TransportEvent, TransportId, TransportIdRef,
-    TransportResult,
+use crate::{
+    ipc::transport::{
+        DidWork, Transport, TransportError, TransportEvent, TransportId, TransportIdRef,
+        TransportResult,
+    },
+    NEW_RELIC_LICENSE_KEY,
 };
 
 //use reqwest;

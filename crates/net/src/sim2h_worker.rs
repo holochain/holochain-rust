@@ -1,8 +1,11 @@
 //! provides worker that makes use of sim2h
 
-use crate::connection::{
-    net_connection::{NetHandler, NetWorker},
-    NetResult,
+use crate::{
+    connection::{
+        net_connection::{NetHandler, NetWorker},
+        NetResult,
+    },
+    NEW_RELIC_LICENSE_KEY,
 };
 use failure::_core::time::Duration;
 use holochain_conductor_lib_api::{ConductorApi, CryptoMethod};

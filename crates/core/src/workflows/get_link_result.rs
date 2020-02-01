@@ -8,6 +8,7 @@ use crate::{
         },
     },
     workflows::get_entry_result::get_entry_result_workflow,
+    NEW_RELIC_LICENSE_KEY
 };
 use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_utils::api_serialization::get_entry::{

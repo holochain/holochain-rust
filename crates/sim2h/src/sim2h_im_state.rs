@@ -658,6 +658,21 @@ impl Store {
         Some(&con.uri)
     }
 
+    /// sim2h is currently NOT set up to handle multiple spaces per connection
+    /// while this should be fixed, for now we need to support the current
+    /// use-case. Just returning the first con/agent encountered in spaces.
+    pub fn get_space_info_from_uri(&self, uri: &Lib3hUri) -> Option<(MonoAgentId, MonoSpaceHash)> {
+        for (space_hash, space) in self.spaces.iter() {
+            match space.uri_to_connection.get(uri) {
+                None => continue,
+                Some(agent_id) => {
+                    return Some((agent_id.clone(), space_hash.clone()));
+                }
+            }
+        }
+        None
+    }
+
     pub fn get_agents_that_should_hold_entry(
         &self,
         space_hash: &SpaceHash,

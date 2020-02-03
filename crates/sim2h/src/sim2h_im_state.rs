@@ -114,8 +114,7 @@ impl CheckGossipData {
 /// protocol for sending messages to the `Store`
 #[derive(Debug)]
 enum StoreProto {
-    GetClone(tokio::sync::oneshot::Sender<Store>),
-    Mutate(AolEntry),
+    Mutate(AolEntry, tokio::sync::oneshot::Sender<()>),
 }
 
 /// represents an active connection
@@ -464,6 +463,9 @@ impl Store {
             con_incr: con_incr.clone(),
         };
 
+        let clone_ref = Arc::new(tokio::sync::RwLock::new(store.clone()));
+
+        let clone_ref_clone = clone_ref.clone();
         tokio::task::spawn(async move {
             let mut should_end_task = false;
             loop {
@@ -494,11 +496,13 @@ impl Store {
 
                         for msg in messages.drain(..) {
                             match msg {
-                                StoreProto::GetClone(sender) => {
-                                    sender.send(store.clone()).unwrap();
-                                }
-                                StoreProto::Mutate(aol_entry) => {
+                                //StoreProto::GetClone(sender) => {
+                                //    let _ = sender.send(store.clone());
+                                //}
+                                StoreProto::Mutate(aol_entry, complete) => {
                                     store.mutate(aol_entry);
+                                    *clone_ref_clone.write().await = store.clone();
+                                    let _ = complete.send(());
                                 }
                             }
                         }
@@ -512,7 +516,7 @@ impl Store {
             }
         });
 
-        StoreHandle::new(ref_dummy, send_mut, con_incr)
+        StoreHandle::new(ref_dummy, clone_ref, send_mut, con_incr)
     }
 
     fn mutate(&mut self, aol_entry: AolEntry) {
@@ -767,6 +771,8 @@ impl std::borrow::Borrow<Store> for StoreRef {
 pub struct StoreHandle {
     // this is just used for ref-counting
     _ref_dummy: Arc<()>,
+    // clone ref
+    clone_ref: Arc<tokio::sync::RwLock<Store>>,
     send_mut: tokio::sync::mpsc::UnboundedSender<StoreProto>,
     con_incr: Arc<AtomicU64>,
 }
@@ -774,84 +780,144 @@ pub struct StoreHandle {
 impl StoreHandle {
     fn new(
         ref_dummy: Arc<()>,
+        clone_ref: Arc<tokio::sync::RwLock<Store>>,
         send_mut: tokio::sync::mpsc::UnboundedSender<StoreProto>,
         con_incr: Arc<AtomicU64>,
     ) -> Self {
         Self {
             _ref_dummy: ref_dummy,
+            clone_ref,
             send_mut,
             con_incr,
         }
     }
 
     pub async fn get_clone(&self) -> StoreRef {
+        StoreRef(self.clone_ref.read().await.clone())
+    }
+
+    #[must_use]
+    pub fn new_connection(
+        &self,
+        space_hash: SpaceHash,
+        agent_id: AgentId,
+        uri: Lib3hUri,
+    ) -> BoxFuture<'static, ()> {
         let (sender, receiver) = tokio::sync::oneshot::channel();
-        if let Err(_) = self.send_mut.send(StoreProto::GetClone(sender)) {
-            // we're probably shutting down, prevent panic!s
-            return futures::future::pending().await;
-        }
-        StoreRef(receiver.await.unwrap())
-    }
-
-    pub fn new_connection(&self, space_hash: SpaceHash, agent_id: AgentId, uri: Lib3hUri) {
-        let msg = StoreProto::Mutate(AolEntry::NewConnection {
-            aol_idx: self.con_incr.inc(),
-            space_hash,
-            agent_id,
-            uri,
-        });
+        let msg = StoreProto::Mutate(
+            AolEntry::NewConnection {
+                aol_idx: self.con_incr.inc(),
+                space_hash,
+                agent_id,
+                uri,
+            },
+            sender,
+        );
         let _ = self.send_mut.send(msg);
+        async move {
+            let _ = receiver.await;
+        }
+        .boxed()
     }
 
-    pub fn drop_connection(&self, space_hash: SpaceHash, agent_id: AgentId) {
+    pub fn spawn_new_connection(&self, space_hash: SpaceHash, agent_id: AgentId, uri: Lib3hUri) {
+        let f = self.new_connection(space_hash, agent_id, uri);
+        tokio::task::spawn(f);
+    }
+
+    /*
+    #[must_use]
+    pub fn drop_connection(&self, space_hash: SpaceHash, agent_id: AgentId) -> BoxFuture<'static, ()> {
+        let (sender, receiver) = tokio::sync::oneshot::channel();
         let _ = self
             .send_mut
             .send(StoreProto::Mutate(AolEntry::DropConnection {
                 aol_idx: self.con_incr.inc(),
                 space_hash,
                 agent_id,
-            }));
+            }, sender));
+        async move {
+            let _ = receiver.await;
+        }.boxed()
     }
 
-    pub fn drop_connection_by_uri(&self, uri: Lib3hUri) {
-        let _ = self
-            .send_mut
-            .send(StoreProto::Mutate(AolEntry::DropConnectionByUri {
+    pub fn spawn_drop_connection(&self, space_hash: SpaceHash, agent_id: AgentId) {
+        let f = self.drop_connection(space_hash, agent_id);
+        tokio::task::spawn(f);
+    }
+    */
+
+    #[must_use]
+    pub fn drop_connection_by_uri(&self, uri: Lib3hUri) -> BoxFuture<'static, ()> {
+        let (sender, receiver) = tokio::sync::oneshot::channel();
+        let _ = self.send_mut.send(StoreProto::Mutate(
+            AolEntry::DropConnectionByUri {
                 aol_idx: self.con_incr.inc(),
                 uri,
-            }));
+            },
+            sender,
+        ));
+        async move {
+            let _ = receiver.await;
+        }
+        .boxed()
     }
 
+    pub fn spawn_drop_connection_by_uri(&self, uri: Lib3hUri) {
+        let f = self.drop_connection_by_uri(uri);
+        tokio::task::spawn(f);
+    }
+
+    #[must_use]
     pub fn agent_holds_aspects(
         &self,
         space_hash: SpaceHash,
         agent_id: AgentId,
         entry_hash: EntryHash,
         aspects: im::HashSet<AspectHash>,
-    ) {
-        let _ = self
-            .send_mut
-            .send(StoreProto::Mutate(AolEntry::AgentHoldsAspects {
+    ) -> BoxFuture<'static, ()> {
+        let (sender, receiver) = tokio::sync::oneshot::channel();
+        let _ = self.send_mut.send(StoreProto::Mutate(
+            AolEntry::AgentHoldsAspects {
                 aol_idx: self.con_incr.inc(),
                 space_hash,
                 agent_id,
                 entry_hash,
                 aspects,
-            }));
+            },
+            sender,
+        ));
+        async move {
+            let _ = receiver.await;
+        }
+        .boxed()
+    }
+
+    pub fn spawn_agent_holds_aspects(
+        &self,
+        space_hash: SpaceHash,
+        agent_id: AgentId,
+        entry_hash: EntryHash,
+        aspects: im::HashSet<AspectHash>,
+    ) {
+        let f = self.agent_holds_aspects(space_hash, agent_id, entry_hash, aspects);
+        tokio::task::spawn(f);
     }
 
     pub async fn check_gossip(&self) -> CheckGossipData {
         let (sender, receiver) = tokio::sync::oneshot::channel();
-        if let Err(_) = self
-            .send_mut
-            .send(StoreProto::Mutate(AolEntry::CheckGossip {
+        let (sender_c, receiver_c) = tokio::sync::oneshot::channel();
+        if let Err(_) = self.send_mut.send(StoreProto::Mutate(
+            AolEntry::CheckGossip {
                 aol_idx: self.con_incr.inc(),
                 response: sender,
-            }))
-        {
+            },
+            sender_c,
+        )) {
             // we're probably shutting down, prevent panic!s
             return futures::future::pending().await;
         }
+        let _ = receiver_c.await;
         receiver.await.unwrap()
     }
 }
@@ -891,27 +957,35 @@ mod tests {
                 .await
                 .lookup_joined(&space_hash, &"id-1".into(),)
         );
-        store.new_connection(space_hash.clone(), aid1.clone(), uri1.clone());
+        store
+            .new_connection(space_hash.clone(), aid1.clone(), uri1.clone())
+            .await;
         assert_eq!(
             Some(&uri1),
             store.get_clone().await.lookup_joined(&space_hash, &aid1,)
         );
-        store.new_connection(space_hash.clone(), aid2.clone(), uri2.clone());
+        store
+            .new_connection(space_hash.clone(), aid2.clone(), uri2.clone())
+            .await;
 
         println!("GOT: {:#?}", store.get_clone().await);
 
-        store.agent_holds_aspects(
-            space_hash.clone(),
-            aid1.clone(),
-            "test".into(),
-            im::hashset! {"one".into(), "two".into()},
-        );
-        store.agent_holds_aspects(
-            space_hash.clone(),
-            aid2.clone(),
-            "test".into(),
-            im::hashset! {"one".into()},
-        );
+        store
+            .agent_holds_aspects(
+                space_hash.clone(),
+                aid1.clone(),
+                "test".into(),
+                im::hashset! {"one".into(), "two".into()},
+            )
+            .await;
+        store
+            .agent_holds_aspects(
+                space_hash.clone(),
+                aid2.clone(),
+                "test".into(),
+                im::hashset! {"one".into()},
+            )
+            .await;
 
         println!("GOT: {:#?}", store.get_clone().await);
 
@@ -929,7 +1003,8 @@ mod tests {
         }
         println!("--- end check missing ---");
 
-        store.drop_connection(space_hash.clone(), aid1.clone());
+        //store.drop_connection(space_hash.clone(), aid1.clone());
+        store.drop_connection_by_uri(uri1.clone()).await;
 
         println!("GOT: {:#?}", store.get_clone().await);
     }

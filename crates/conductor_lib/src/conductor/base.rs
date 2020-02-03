@@ -451,12 +451,14 @@ impl Conductor {
     pub fn spawn_trace_reporter_thread(&mut self) -> thread::JoinHandle<()> {
         let reporters = self.trace_reporters.clone();
         thread::Builder::new()
-            .name("signal_multiplexer".to_string())
+            .name("trace_reporter_thread".to_string())
             .spawn(move || loop {
                 // TODO: try using crossbeam Select?
                 for (rx, reporter) in reporters.read().unwrap().values() {
                     if let Ok(span) = rx.try_recv() {
-                        reporter.report(&[span]).expect("could not report span");
+                        if let Err(e) = reporter.report(&[span]) {
+                            warn!("Could not report span: {:?}", e);
+                        }
                     }
                 }
                 thread::sleep(Duration::from_millis(1));

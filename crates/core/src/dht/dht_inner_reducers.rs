@@ -63,7 +63,8 @@ pub(crate) fn reduce_add_remove_link_inner(
             }
         };
         let link_created_time : DateTime<FixedOffset> = link.top_chain_header.timestamp().into();
-        let eav = EntityAttributeValueIndex::new_with_index(link.link().base(), &attr, address,link_created_time.timestamp())?;
+        //let eav = EntityAttributeValueIndex::new(&link.link().base().clone(), &attr, address)?;
+        let eav = EntityAttributeValueIndex::new_with_index(&link.link().base().clone(), &attr, address,link_created_time.timestamp_nanos())?;
         store.add_eavi(&eav)?;
         Ok(link.link().base().clone())
     } else {

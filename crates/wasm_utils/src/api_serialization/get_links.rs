@@ -50,7 +50,7 @@ pub struct LinksResult {
     pub status: CrudStatus,
 }
 
-#[derive(Deserialize, Clone, Serialize, Debug, DefaultJson)]
+#[derive(Deserialize, Clone, Serialize, Debug, DefaultJson,PartialEq)]
 pub struct GetLinksResult {
     links: Vec<LinksResult>,
 }

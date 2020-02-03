@@ -150,6 +150,7 @@ impl DhtStore {
     ///this means no matter how many links are added after one is removed, we will always say that the link has been removed.
     ///One thing to remember is that LinkAdd entries occupy the "Value" aspect of our EAVI link stores.
     ///When that set is obtained, we filter based on the LinkTag and RemovedLink attributes to evaluate if they are "live" or "deleted". A reminder that links cannot be modified
+    //returns a vector so that the view is maintained and not sorted by a btreeset
     pub fn get_links(
         &self,
         address: Address,
@@ -157,7 +158,7 @@ impl DhtStore {
         tag: String,
         crud_filter: Option<CrudStatus>,
         pagination : Option<Pagination>
-    ) -> Result<BTreeSet<(EntityAttributeValueIndex, CrudStatus)>, HolochainError> {
+    ) -> Result<Vec<(EntityAttributeValueIndex, CrudStatus)>, HolochainError> {
         let get_links_query = create_get_links_eavi_query(address, link_type, tag)?;
         let filtered = self.meta_storage.read()?.fetch_eavi(&get_links_query)?;
         Ok(filtered

@@ -416,6 +416,9 @@ pub struct Sim2h {
     connection_count: usize,
     metric_gen: MetricsTimerGenerator,
     tracer: ht::Tracer,
+    // TODO: This is just a hack to tell if tracing is on because sometimes we need to know to avoid doing extra work
+    // Maybe the above tracer can just be in an option?
+    tracing_on: Option<()>,
 }
 
 #[autotrace]
@@ -430,7 +433,7 @@ impl Sim2h {
     ) -> Self {
         let (metric_gen, metric_task) = MetricsTimerGenerator::new();
 
-        let (connection_mgr, connection_mgr_evt_recv) = ConnectionMgr::new();
+        let (connection_mgr, connection_mgr_evt_recv) = ConnectionMgr::new(tracer.clone());
 
         let (wss_send, wss_recv) = crossbeam_channel::unbounded();
         let state = Arc::new(tokio::sync::Mutex::new(Sim2hState {
@@ -472,6 +475,7 @@ impl Sim2h {
             sim2h_handle,
             connection_count: 0,
             metric_gen,
+            tracing_on: tracer.as_ref().map(|_| ()),
             tracer: tracer.unwrap_or_else(|| ht::null_tracer()),
         };
 
@@ -577,7 +581,8 @@ impl Sim2h {
                     uri
                 );
                 let payload: Opaque = b.into();
-                Sim2h::handle_payload(self.sim2h_handle.clone(), uri, payload);
+                let tracer = self.tracing_on.map(|_| self.tracer.clone());
+                Sim2h::handle_payload(self.sim2h_handle.clone(), uri, payload, tracer);
             }
             // TODO - we should use websocket ping/pong
             //        instead of rolling our own on top of Binary
@@ -743,6 +748,7 @@ impl Sim2h {
             uri,
             message,
             signer,
+            self.tracing_on.map(|_| self.tracer.clone()),
         ));
         Ok(())
     }
@@ -752,7 +758,17 @@ impl Sim2h {
         uri: Lib3hUri,
         message: WireMessage,
         signer: AgentId,
+        tracer: Option<ht::Tracer>,
     ) {
+        let _spanguard = tracer.map(|t| {
+            match message.clone() { 
+                WireMessage::ClientToLib3h(span_wrap) => {
+                    let span = ht::SpanWrap::from(span_wrap).follower(&t, format!("{}:{}", file!(), line!()));
+                    span.map(|span| ht::push_span(span))
+                }
+                _ => None,
+            }
+        });
         let _m = sim2h_handle.metric_timer("sim2h-handle_connection_msg");
         let state = sim2h_handle.clone();
         let mut state = state.lock_state().await;
@@ -805,7 +821,7 @@ impl Sim2h {
         }
     }
 
-    fn handle_payload(sim2h_handle: Sim2hHandle, url: Lib3hUri, payload: Opaque) {
+    fn handle_payload(sim2h_handle: Sim2hHandle, url: Lib3hUri, payload: Opaque, tracer: Option<ht::Tracer>) {
         tokio::task::spawn(async move {
             let _m = sim2h_handle.metric_timer("sim2h-handle_payload");
             match (|| -> Sim2hResult<(AgentId, WireMessage)> {
@@ -818,6 +834,15 @@ impl Sim2h {
                 Ok((signed_message.provenance.source().into(), wire_message))
             })() {
                 Ok((source, wire_message)) => {
+                    let _spanguard = tracer.map(|t| {
+                        match wire_message.clone() { 
+                            WireMessage::ClientToLib3h(span_wrap) => {
+                                let span = ht::SpanWrap::from(span_wrap).follower(&t, format!("{}:{}", file!(), line!()));
+                                span.map(|span| ht::push_span(span))
+                            }
+                            _ => None,
+                        }
+                    });
                     sim2h_handle.handle_message(url, wire_message, source)
                 }
                 Err(error) => {
@@ -891,6 +916,15 @@ impl Sim2h {
                     self.handle_message(m.uri, m.message, m.signer)?;
                 }
                 Ok(Sim2hCom::HandleJoined(m)) => {
+                    let _spanguard = self.tracing_on.map(|_| {
+                        match m.message.clone() { 
+                            WireMessage::ClientToLib3h(span_wrap) => {
+                                let span = ht::SpanWrap::from(span_wrap).follower(&self.tracer, format!("HandleJoind ClientToLib3h"));
+                                span.map(|span| ht::push_span(span))
+                            }
+                            _ => None,
+                        }
+                    });
                     did_work = true;
                     self.handle_joined(m.uri, m.space_address, m.agent_id, m.message)?;
                 }
@@ -981,6 +1015,7 @@ impl Sim2h {
                             return Err(SPACE_MISMATCH_ERR_STR.into());
                         }
                         let sim2h_handle = self.sim2h_handle.clone();
+                        let tracer_handle = self.tracer.clone();
                         tokio::task::spawn(async move {
                             let state = sim2h_handle.lock_state().await;
                             let to_url = match state
@@ -992,6 +1027,8 @@ impl Sim2h {
                                     return;
                                 }
                             };
+                            let span = ht::SpanWrap::from(span_wrap.clone()).follower(&tracer_handle, format!("{}:{}", file!(), line!()));
+                            let _spanguard = span.map(|span| ht::push_span(span));
                             state.send(
                                 dm_data.to_agent_id.clone(),
                                 to_url,
@@ -1049,7 +1086,9 @@ impl Sim2h {
                             return Err(SPACE_MISMATCH_ERR_STR.into());
                         }
                         let sim2h_handle = self.sim2h_handle.clone();
-                        tokio::task::spawn(async move {
+                        tokio::task::spawn({
+                            let tracer = self.tracer.clone();
+                            async move {
                             let state = sim2h_handle.lock_state().await;
                             let to_url = match state
                                 .lookup_joined(&space_address, &dm_data.to_agent_id)
@@ -1060,12 +1099,14 @@ impl Sim2h {
                                     return;
                                 }
                             };
+                            let span = ht::SpanWrap::from(span_wrap.clone()).follower(&tracer, format!("{}:{}", file!(), line!()));
+                            let _spanguard = span.map(|span| ht::push_span(span));
                             state.send(
                                 dm_data.to_agent_id.clone(),
                                 to_url,
                                 &WireMessage::Lib3hToClient(span_wrap.swapped(Lib3hToClient::SendDirectMessageResult(dm_data)))
                             );
-                        });
+                        }});
                         Ok(())
                     }
                     Lib3hToClientResponse::HandleGetAuthoringEntryListResult(list_data) => {

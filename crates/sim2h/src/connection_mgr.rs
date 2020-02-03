@@ -14,7 +14,7 @@ pub enum ConMgrEvent {
 #[derive(Debug)]
 enum ConMgrCommand {
     Connect(Lib3hUri, TcpWss),
-    SendData(Lib3hUri, WsFrame),
+    SendData(Lib3hUri, ht::SpanWrap<WsFrame>),
     Disconnect(Lib3hUri),
 }
 
@@ -26,7 +26,7 @@ type CmdRecv = tokio::sync::mpsc::UnboundedReceiver<ConMgrCommand>;
 pub type ConnectionMgrEventRecv = EvtRecv;
 
 /// internal websocket polling loop
-async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_recv: CmdRecv) {
+async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_recv: CmdRecv, tracer: Option<ht::Tracer>) {
     let mut frame = None;
 
     // TODO - this should be done with tokio tcp streams && selecting
@@ -42,7 +42,11 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
                     did_work = true;
                     match cmd {
                         ConMgrCommand::SendData(_uri, frame) => {
-                            if let Err(e) = wss.write(frame) {
+                            let _spanguard = tracer.as_ref().map(|t|{
+                                let root_span = frame.follower(&t, format!("{}:{}", file!(), line!()));
+                                root_span.map(|span| ht::push_span(span))
+                            });
+                            if let Err(e) = wss.write(frame.data) {
                                 error!("socket write error {} {:?}", uri, e);
                                 let _ = evt_send
                                     .send(ConMgrEvent::Disconnect(uri.clone(), Some(e.into())));
@@ -106,9 +110,9 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
 }
 
 /// internal actually spawn the above wss_task into the tokio runtime
-fn spawn_wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend) -> CmdSend {
+fn spawn_wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend, tracer: Option<ht::Tracer>) -> CmdSend {
     let (cmd_send, cmd_recv) = tokio::sync::mpsc::unbounded_channel();
-    tokio::task::spawn(wss_task(uri, wss, evt_send, cmd_recv));
+    tokio::task::spawn(wss_task(uri, wss, evt_send, cmd_recv, tracer));
     cmd_send
 }
 
@@ -145,12 +149,13 @@ pub struct ConnectionMgr {
     evt_send_from_children: EvtSend,
     evt_recv_from_children: EvtRecv,
     wss_map: std::collections::HashMap<Lib3hUri, CmdSend>,
+    tracer: Option<ht::Tracer>,
 }
 
 impl ConnectionMgr {
     /// spawn a new connection manager task, returning a handle for controlling it
     /// and a receiving channel for any incoming data
-    pub fn new() -> (ConnectionMgrHandle, ConnectionMgrEventRecv) {
+    pub fn new(tracer: Option<ht::Tracer>) -> (ConnectionMgrHandle, ConnectionMgrEventRecv) {
         let (evt_p_send, evt_p_recv) = tokio::sync::mpsc::unbounded_channel();
         let (evt_c_send, evt_c_recv) = tokio::sync::mpsc::unbounded_channel();
         let (cmd_send, cmd_recv) = tokio::sync::mpsc::unbounded_channel();
@@ -165,6 +170,7 @@ impl ConnectionMgr {
             evt_send_from_children: evt_c_send,
             evt_recv_from_children: evt_c_recv,
             wss_map: std::collections::HashMap::new(),
+            tracer,
         };
 
         tokio::task::spawn(con_mgr_task(con_mgr, weak_ref_dummy));
@@ -185,6 +191,10 @@ impl ConnectionMgr {
                     did_work = true;
                     match cmd {
                         ConMgrCommand::SendData(uri, frame) => {
+                            let _spanguard = self.tracer.as_ref().map(|t|{
+                                let root_span = frame.follower(&t, format!("{}:{}", file!(), line!()));
+                                root_span.map(|span| ht::push_span(span))
+                            });
                             let mut remove = false;
                             if let Some(cmd_send) = self.wss_map.get(&uri) {
                                 if let Err(_) =
@@ -207,6 +217,7 @@ impl ConnectionMgr {
                                 uri.clone(),
                                 wss,
                                 self.evt_send_from_children.clone(),
+                                self.tracer.clone(),
                             );
                             if let Some(old) = self.wss_map.insert(uri.clone(), cmd_send) {
                                 error!("REPLACING ACTIVE CONNECTION: {}", uri);
@@ -304,7 +315,7 @@ impl ConnectionMgrHandle {
     }
 
     /// send data to a managed websocket connection
-    pub fn send_data(&self, uri: Lib3hUri, frame: WsFrame) {
+    pub fn send_data(&self, uri: Lib3hUri, frame: ht::SpanWrap<WsFrame>) {
         if let Err(e) = self.send_cmd.send(ConMgrCommand::SendData(uri, frame)) {
             error!("failed to send on channel - shutting down? {:?}", e);
         }

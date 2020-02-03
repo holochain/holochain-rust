@@ -190,9 +190,20 @@ impl Sim2hState {
             }
         }
 
+        let child = ht::with_top(|top| {
+            top.event("Sending direct message response to connection manager");
+            top.child(format!("{}:{}", file!(), line!()))
+        });
+        let wrap_send = match child.as_ref() {
+            Some(child) => child.follower("outgoing"),
+            None => ht::Span::noop().follower("outgoing"),
+        };
+        let _spanguard = child.map(|span| ht::push_span(span));
+
+
         let payload: Opaque = msg.clone().into();
         self.connection_mgr
-            .send_data(uri, payload.as_bytes().into());
+            .send_data(uri, wrap_send.wrap(payload.as_bytes().into()));
 
         match msg {
             WireMessage::Ping | WireMessage::Pong => {}

@@ -891,7 +891,6 @@ pub struct Sim2h {
     /// when should we try to resync nodes that are still missing aspect data
     missing_aspects_resync: std::time::Instant,
     sim2h_handle: Sim2hHandle,
-    connection_count: usize,
     metric_gen: MetricsTimerGenerator,
 }
 
@@ -935,7 +934,6 @@ impl Sim2h {
             num_ticks: 0,
             missing_aspects_resync: std::time::Instant::now(),
             sim2h_handle,
-            connection_count: 0,
             metric_gen,
         };
 
@@ -1003,9 +1001,6 @@ impl Sim2h {
                         }
                         ConMgrEvent::ReceiveData(uri, data) => {
                             self.priv_handle_recv_data(uri, data);
-                        }
-                        ConMgrEvent::ConnectionCount(count) => {
-                            self.connection_count = count;
                         }
                     }
                 }

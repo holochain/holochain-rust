@@ -19,7 +19,6 @@ impl ConnectionCount {
 pub enum ConMgrEvent {
     Disconnect(Lib3hUri, Option<Sim2hError>),
     ReceiveData(Lib3hUri, WsFrame),
-    ConnectionCount(usize),
 }
 
 /// messages for controlling the connection manager
@@ -282,13 +281,6 @@ impl ConnectionMgr {
 
         let new_c_count = self.wss_map.len();
         if new_c_count != c_count {
-            if let Err(_) = self
-                .evt_send_to_parent
-                .send(ConMgrEvent::ConnectionCount(new_c_count))
-            {
-                // channel broken, end task
-                return EndTask;
-            }
             let connection_count = self.connection_count.clone();
             tokio::task::spawn(async move {
                 *connection_count.0.write().await = new_c_count;

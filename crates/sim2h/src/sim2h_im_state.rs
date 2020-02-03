@@ -505,6 +505,22 @@ impl Store {
         let clone_ref_clone = clone_ref.clone();
         tokio::task::spawn(async move {
             let mut should_end_task = false;
+            let mut handle_message = move |msg| {
+                match msg {
+                    //StoreProto::GetClone(sender) => {
+                    //    let _ = sender.send(store.clone());
+                    //}
+                    StoreProto::Mutate(aol_entry, complete) => {
+                        store.mutate(aol_entry);
+                        let store_clone = store.clone();
+                        let clone_ref_clone_clone = clone_ref_clone.clone();
+                        tokio::task::spawn(async move {
+                            *clone_ref_clone_clone.write().await = store_clone;
+                            let _ = complete.send(());
+                        });
+                    }
+                }
+            };
             loop {
                 if let None = weak_ref_dummy.upgrade() {
                     // there are no more references to us...
@@ -516,7 +532,11 @@ impl Store {
                     // broken channel, let this task end
                     None => return,
                     Some(msg) => {
-                        let mut messages = vec![msg];
+                        let loop_start = std::time::Instant::now();
+
+                        handle_message(msg);
+
+                        let mut count = 1;
 
                         // we've got some cpu time, process a batch of
                         // messages all at once if any more are pending
@@ -527,22 +547,16 @@ impl Store {
                                     should_end_task = true;
                                     break;
                                 }
-                                Ok(msg) => messages.push(msg),
+                                Ok(msg) => handle_message(msg),
                             }
+                            count += 1;
                         }
 
-                        for msg in messages.drain(..) {
-                            match msg {
-                                //StoreProto::GetClone(sender) => {
-                                //    let _ = sender.send(store.clone());
-                                //}
-                                StoreProto::Mutate(aol_entry, complete) => {
-                                    store.mutate(aol_entry);
-                                    *clone_ref_clone.write().await = store.clone();
-                                    let _ = complete.send(());
-                                }
-                            }
-                        }
+                        trace!(
+                            "sim2h_im_state main loop processed {} messages in {} ms",
+                            count,
+                            loop_start.elapsed().as_millis()
+                        );
 
                         // if we got a Closed on our recv
                         if should_end_task {

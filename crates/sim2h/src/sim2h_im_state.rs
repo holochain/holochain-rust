@@ -20,7 +20,7 @@ fn should_store(
 }
 
 /// How often(ish) should we check/fetch aspects for each connected agent
-/// note this value is randomized by ~50% each time
+/// note this value is randomized by ~50% each time (i.e. 0.75x to 1.25x)
 const AGENT_FETCH_ASPECTS_INTERVAL_MS: u64 = 5000;
 
 /// add an increment function to AtomicU64
@@ -111,6 +111,35 @@ impl CheckGossipData {
     }
 }
 
+#[derive(Clone)]
+struct UpcomingInstant(pub std::time::Instant);
+
+impl std::fmt::Debug for UpcomingInstant {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let now = std::time::Instant::now();
+        let tmp = match self.0.checked_duration_since(now) {
+            Some(d) => format!("{:?} ms", d.as_millis()),
+            None => "[expired]".to_string(),
+        };
+        f.debug_struct("UpcomingInstant").field("in", &tmp).finish()
+    }
+}
+
+impl UpcomingInstant {
+    pub fn new_ms_from_now(ms: u64) -> Self {
+        Self(
+            std::time::Instant::now()
+                .checked_add(std::time::Duration::from_millis(ms))
+                .expect("instant"),
+        )
+    }
+
+    pub fn still_pending(&self) -> bool {
+        let now = std::time::Instant::now();
+        self.0 > now
+    }
+}
+
 /// protocol for sending messages to the `Store`
 #[derive(Debug)]
 enum StoreProto {
@@ -123,7 +152,7 @@ pub struct ConnectionState {
     agent_id: MonoAgentId,
     agent_loc: Location,
     uri: MonoUri,
-    next_gossip_check: std::time::Instant,
+    next_gossip_check: UpcomingInstant,
 }
 
 pub type MonoAgentId = MonoRef<AgentId>;
@@ -151,6 +180,7 @@ pub struct Space {
     pub entry_to_all_aspects: im::HashMap<MonoEntryHash, Entry>,
     pub connections: im::HashMap<MonoAgentId, ConnectionState>,
     pub uri_to_connection: im::HashMap<MonoUri, MonoAgentId>,
+    pub gossip_interval: u64,
 }
 
 impl std::fmt::Debug for Space {
@@ -173,12 +203,13 @@ impl Clone for Space {
             entry_to_all_aspects: self.entry_to_all_aspects.clone(),
             connections: self.connections.clone(),
             uri_to_connection: self.uri_to_connection.clone(),
+            gossip_interval: self.gossip_interval,
         }
     }
 }
 
 impl Space {
-    fn new(crypto: Box<dyn CryptoSystem>, redundancy: u64) -> Space {
+    fn new(crypto: Box<dyn CryptoSystem>, redundancy: u64, gossip_interval: u64) -> Space {
         Space {
             crypto,
             redundancy,
@@ -186,6 +217,7 @@ impl Space {
             entry_to_all_aspects: im::HashMap::new(),
             connections: im::HashMap::new(),
             uri_to_connection: im::HashMap::new(),
+            gossip_interval,
         }
     }
 
@@ -308,11 +340,11 @@ impl Space {
             };
 
         // make it so we're almost ready to check this agent for gossip
-        let to_add: u64 = thread_rng().gen_range(0, AGENT_FETCH_ASPECTS_INTERVAL_MS / 4);
+        // (add 10 ms to make sure we don't do it right away...
+        let to_add: u64 =
+            thread_rng().gen_range(10, (self.gossip_interval as f64 * 0.25) as u64 + 10);
 
-        let next_gossip_check = std::time::Instant::now()
-            .checked_add(std::time::Duration::from_millis(to_add))
-            .unwrap();
+        let next_gossip_check = UpcomingInstant::new_ms_from_now(to_add);
 
         // - add the main connection entry
         match self.connections.entry(agent_id.clone()) {
@@ -401,19 +433,17 @@ impl Space {
     }
 
     fn check_gossip(&mut self, space_hash: MonoSpaceHash, check_gossip_data: &mut CheckGossipData) {
-        let now = std::time::Instant::now();
-
         for con in self.connections.iter_mut() {
-            if con.next_gossip_check > now {
+            if con.next_gossip_check.still_pending() {
                 continue;
             }
 
-            let to_add: u64 = thread_rng().gen_range(0, AGENT_FETCH_ASPECTS_INTERVAL_MS / 2)
-                + ((AGENT_FETCH_ASPECTS_INTERVAL_MS * 4) / 3);
+            let to_add: u64 = thread_rng().gen_range(
+                (self.gossip_interval as f64 * 0.75) as u64,
+                (self.gossip_interval as f64 * 1.25) as u64,
+            );
 
-            con.next_gossip_check = now
-                .checked_add(std::time::Duration::from_millis(to_add))
-                .unwrap();
+            con.next_gossip_check = UpcomingInstant::new_ms_from_now(to_add);
 
             check_gossip_data.add_agent(space_hash.clone(), con.agent_id.clone());
         }
@@ -425,6 +455,7 @@ pub struct Store {
     pub redundancy: u64,
     pub spaces: im::HashMap<MonoSpaceHash, Space>,
     pub con_incr: Arc<AtomicU64>,
+    pub gossip_interval: u64,
 }
 
 impl std::fmt::Debug for Store {
@@ -442,12 +473,17 @@ impl Clone for Store {
             redundancy: self.redundancy,
             spaces: self.spaces.clone(),
             con_incr: self.con_incr.clone(),
+            gossip_interval: self.gossip_interval,
         }
     }
 }
 
 impl Store {
-    pub fn new(crypto: Box<dyn CryptoSystem>, redundancy: u64) -> StoreHandle {
+    pub fn new(
+        crypto: Box<dyn CryptoSystem>,
+        redundancy: u64,
+        gossip_interval: Option<u64>,
+    ) -> StoreHandle {
         let (send_mut, mut recv_mut) = tokio::sync::mpsc::unbounded_channel();
 
         let ref_dummy = Arc::new(());
@@ -461,6 +497,7 @@ impl Store {
             redundancy,
             spaces: im::HashMap::new(),
             con_incr: con_incr.clone(),
+            gossip_interval: gossip_interval.unwrap_or(AGENT_FETCH_ASPECTS_INTERVAL_MS),
         };
 
         let clone_ref = Arc::new(tokio::sync::RwLock::new(store.clone()));
@@ -557,7 +594,7 @@ impl Store {
             let crypto = self.crypto.box_clone();
             self.spaces.insert(
                 space_hash.clone().into(),
-                Space::new(crypto, self.redundancy),
+                Space::new(crypto, self.redundancy, self.gossip_interval),
             );
         }
 
@@ -926,7 +963,26 @@ impl StoreHandle {
 mod tests {
     use super::*;
 
-    async fn async_workflow_test() {
+    fn async_run(f: BoxFuture<'static, ()>) {
+        if std::env::var("RUST_LOG").is_err() {
+            std::env::set_var("RUST_LOG", "trace");
+        }
+        let _ = env_logger::builder()
+            .default_format_timestamp(false)
+            .default_format_module_path(false)
+            .is_test(true)
+            .try_init();
+        tokio::runtime::Builder::new()
+            .threaded_scheduler()
+            .core_threads(num_cpus::get())
+            .thread_name("tokio-rkv-test-thread")
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(f);
+    }
+
+    fn gen_agent() -> AgentId {
         let crypto = Box::new(lib3h_sodium::SodiumCryptoSystem::new());
         let enc = hcid::HcidEncoding::with_kind("hcs0").unwrap();
 
@@ -934,21 +990,24 @@ mod tests {
         let mut sk1 = crypto.buf_new_secure(crypto.sign_secret_key_bytes());
         crypto.sign_keypair(&mut pk1, &mut sk1).unwrap();
 
-        let aid1: AgentId = enc.encode(&*pk1).unwrap().into();
+        enc.encode(&*pk1).unwrap().into()
+    }
 
-        let mut pk2 = crypto.buf_new_insecure(crypto.sign_public_key_bytes());
-        let mut sk2 = crypto.buf_new_secure(crypto.sign_secret_key_bytes());
-        crypto.sign_keypair(&mut pk2, &mut sk2).unwrap();
-
-        let aid2: AgentId = enc.encode(&*pk2).unwrap().into();
+    async fn async_workflow_test() {
+        let aid1 = gen_agent();
+        let aid2 = gen_agent();
 
         let space_hash: SpaceHash = "abcd".into();
         let uri1: Lib3hUri = url::Url::parse("ws://yada1").unwrap().into();
         let uri2: Lib3hUri = url::Url::parse("ws://yada2").unwrap().into();
 
-        let store = Store::new(crypto, 0);
+        let crypto = Box::new(lib3h_sodium::SodiumCryptoSystem::new());
+        let store = Store::new(
+            crypto, 0,    /* full sync */
+            None, /* default gossip */
+        );
 
-        println!("GOT: {:#?}", store.get_clone().await);
+        debug!("GOT: {:#?}", store.get_clone().await);
 
         assert_eq!(
             None,
@@ -968,7 +1027,7 @@ mod tests {
             .new_connection(space_hash.clone(), aid2.clone(), uri2.clone())
             .await;
 
-        println!("GOT: {:#?}", store.get_clone().await);
+        debug!("GOT: {:#?}", store.get_clone().await);
 
         store
             .agent_holds_aspects(
@@ -987,37 +1046,118 @@ mod tests {
             )
             .await;
 
-        println!("GOT: {:#?}", store.get_clone().await);
+        debug!("GOT: {:#?}", store.get_clone().await);
 
-        println!("--- beg check missing ---");
+        debug!("--- beg check missing ---");
         let store_clone = store.get_clone().await;
         for (space_hash, space) in store_clone.spaces.iter() {
-            println!("-- space: {:?} --", space_hash);
+            assert_eq!("SpaceHash(abcd)", &format!("{:?}", space_hash),);
+            debug!("-- space: {:?} --", space_hash);
             for (agent_id, _c) in space.connections.iter() {
-                println!("-- agent: {:?} --", agent_id);
-                println!(
-                    "{:#?}",
-                    store_clone.get_gossip_aspects_needed_for_agent(&space_hash, &agent_id),
-                );
+                assert!(**agent_id == aid1 || **agent_id == aid2);
+                debug!("-- agent: {:?} --", agent_id);
+                let res = store_clone.get_gossip_aspects_needed_for_agent(&space_hash, &agent_id);
+                debug!("{:#?}", res,);
+                if **agent_id == aid1 {
+                    assert_eq!("Some({EntryHash(test): {}})", &format!("{:?}", res),);
+                } else if **agent_id == aid2 {
+                    assert_eq!(
+                        "Some({EntryHash(test): {AspectHash(two)}})",
+                        &format!("{:?}", res),
+                    );
+                }
             }
         }
-        println!("--- end check missing ---");
+        debug!("--- end check missing ---");
 
         //store.drop_connection(space_hash.clone(), aid1.clone());
         store.drop_connection_by_uri(uri1.clone()).await;
 
-        println!("GOT: {:#?}", store.get_clone().await);
+        debug!("GOT: {:#?}", store.get_clone().await);
     }
 
     #[test]
     fn workflow_test() {
-        tokio::runtime::Builder::new()
-            .threaded_scheduler()
-            .core_threads(num_cpus::get())
-            .thread_name("tokio-rkv-test-thread")
-            .enable_all()
-            .build()
+        async_run(async_workflow_test().boxed());
+    }
+
+    async fn async_gossip_test() {
+        let aid1 = gen_agent();
+        let aid2 = gen_agent();
+
+        let space_hash: SpaceHash = "abcd".into();
+        let entry_hash: EntryHash = "test".into();
+        let aspect_hash_1: AspectHash = "one".into();
+        let aspect_hash_2: AspectHash = "two".into();
+        let uri1: Lib3hUri = url::Url::parse("ws://yada1").unwrap().into();
+        let uri2: Lib3hUri = url::Url::parse("ws://yada2").unwrap().into();
+
+        let crypto = Box::new(lib3h_sodium::SodiumCryptoSystem::new());
+        let store = Store::new(
+            crypto,
+            0,       // FULL SYNC
+            Some(6), // set a nice/short 6ms gossip interval for testing : )
+        );
+
+        store
+            .new_connection(space_hash.clone(), aid1.clone(), uri1.clone())
+            .await;
+        store
+            .new_connection(space_hash.clone(), aid2.clone(), uri2.clone())
+            .await;
+
+        debug!("GOT: {:#?}", store.get_clone().await);
+
+        store
+            .agent_holds_aspects(
+                space_hash.clone(),
+                aid1.clone(),
+                entry_hash.clone(),
+                im::hashset! {aspect_hash_1.clone(), aspect_hash_2.clone()},
+            )
+            .await;
+
+        debug!("GOT: {:#?}", store.get_clone().await);
+
+        // give us time to need gossip
+        tokio::time::delay_for(std::time::Duration::from_millis(17)).await;
+
+        let need_gossip = store.check_gossip().await;
+
+        debug!("GOT: {:#?}", need_gossip);
+
+        assert!(need_gossip.spaces.get(&space_hash).unwrap().contains(&aid1));
+        assert!(need_gossip.spaces.get(&space_hash).unwrap().contains(&aid2));
+
+        let store_clone = store.get_clone().await;
+
+        let res = store_clone.get_gossip_aspects_needed_for_agent(&space_hash, &aid1);
+
+        debug!("GOT: {:#?}", res);
+
+        assert_eq!(0, res.unwrap().get(&entry_hash).unwrap().len());
+
+        let res = store_clone.get_gossip_aspects_needed_for_agent(&space_hash, &aid2);
+
+        debug!("GOT: {:#?}", res);
+
+        assert_eq!(2, res.as_ref().unwrap().get(&entry_hash).unwrap().len());
+        assert!(res
+            .as_ref()
             .unwrap()
-            .block_on(async_workflow_test());
+            .get(&entry_hash)
+            .unwrap()
+            .contains(&aspect_hash_1));
+        assert!(res
+            .as_ref()
+            .unwrap()
+            .get(&entry_hash)
+            .unwrap()
+            .contains(&aspect_hash_2));
+    }
+
+    #[test]
+    fn gossip_test() {
+        async_run(async_gossip_test().boxed());
     }
 }

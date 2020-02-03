@@ -210,7 +210,7 @@ impl Sim2hHandle {
             DhtAlgorithm::NaiveSharding { redundant_count } => redundant_count,
         };
         Self {
-            im_state: sim2h_im_state::Store::new(crypto, redundancy),
+            im_state: sim2h_im_state::Store::new(crypto, redundancy, None),
             dht_algorithm,
             metric_gen,
             connection_mgr,

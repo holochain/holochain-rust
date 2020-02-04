@@ -47,10 +47,15 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
     loop {
         let mut did_work = false;
 
+        let loop_start = std::time::Instant::now();
+        let mut cmd_count = 0;
+        let mut read_count = 0;
+
         // first, process a batch of control commands
-        for _ in 0..100 {
+        for _ in 0..10 {
             match cmd_recv.try_recv() {
                 Ok(cmd) => {
+                    cmd_count += 1;
                     did_work = true;
                     match cmd {
                         ConMgrCommand::SendData(_uri, frame) => {
@@ -82,12 +87,13 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
         }
 
         // next process a batch of incoming websocket frames
-        for _ in 0..100 {
+        for _ in 0..10 {
             if frame.is_none() {
                 frame = Some(WsFrame::default());
             }
             match wss.read(frame.as_mut().unwrap()) {
                 Ok(_) => {
+                    read_count += 1;
                     did_work = true;
                     let data = frame.take().unwrap();
                     debug!("socket {} read {} bytes", uri, data.as_bytes().len());
@@ -106,6 +112,14 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
                 }
             }
         }
+
+        trace!(
+            "wss_task uri {} process {} commands and {} reads in {} ms",
+            uri,
+            cmd_count,
+            read_count,
+            loop_start.elapsed().as_millis(),
+        );
 
         // if we did work we might have more work to do,
         // if not, let this task get parked for a time
@@ -196,12 +210,18 @@ impl ConnectionMgr {
     fn process(&mut self) -> ConMgrResult {
         let mut did_work = false;
 
+        let loop_start = std::time::Instant::now();
+
+        let mut cmd_count = 0;
+        let mut recv_count = 0;
+
         let c_count = self.wss_map.len();
 
         // first, if any of our handles sent commands / process a batch of them
         for _ in 0..100 {
             match self.cmd_recv.try_recv() {
                 Ok(cmd) => {
+                    cmd_count += 1;
                     did_work = true;
                     match cmd {
                         ConMgrCommand::SendData(uri, frame) => {
@@ -249,6 +269,8 @@ impl ConnectionMgr {
         for _ in 0..100 {
             match self.evt_recv_from_children.try_recv() {
                 Ok(evt) => {
+                    recv_count += 1;
+                    did_work = true;
                     match evt {
                         ConMgrEvent::Disconnect(uri, maybe_err) => {
                             if let Some(cmd_send) = self.wss_map.remove(&uri) {
@@ -286,6 +308,13 @@ impl ConnectionMgr {
                 *connection_count.0.write().await = new_c_count;
             });
         }
+
+        trace!(
+            "connection_mgr process {} commands and {} recv in {} ms",
+            cmd_count,
+            recv_count,
+            loop_start.elapsed().as_millis(),
+        );
 
         if did_work {
             DidWork

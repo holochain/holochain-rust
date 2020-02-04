@@ -20,14 +20,6 @@ pub enum GetLinksNetworkQuery {
     Links(GetLinksQueryConfiguration),
 }
 
-// The data returned by a remote node on responding to a get_links query
-#[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
-pub struct GetLinkFromRemoteData {
-    pub link_add_address: Address,
-    pub crud_status: CrudStatus,
-    pub tag: String,
-}
-
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
 pub struct GetLinkData {
     pub address: Address,
@@ -57,7 +49,7 @@ impl GetLinkData {
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
 pub enum GetLinksNetworkResult {
     Count(usize),
-    Links(Vec<GetLinkFromRemoteData>),
+    Links(Vec<GetLinkData>),
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]

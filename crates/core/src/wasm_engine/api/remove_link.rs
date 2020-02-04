@@ -3,21 +3,19 @@ use crate::{
     network::{
         actions::query::{query, QueryMethod},
         query::{
-            GetLinkFromRemoteData, GetLinksNetworkQuery, GetLinksNetworkResult,
+             GetLinksNetworkQuery, GetLinksNetworkResult,
             GetLinksQueryConfiguration, NetworkQueryResult,
         },
     },
-    workflows::{author_entry::author_entry, get_link_result::get_link_data_from_link_addresses},
+    workflows::author_entry::author_entry,
     NEW_RELIC_LICENSE_KEY,
-    workflows::{author_entry::author_entry, get_link_result::get_link_data_from_link_addresses},
 };
 
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
     link::{link_data::LinkData, LinkActionKind},
-    time::Timeout,
-    network::query::GetLinkFromRemoteData,
+    time::Timeout
 };
 use holochain_wasm_utils::api_serialization::{
     get_links::{GetLinksArgs, GetLinksOptions},
@@ -89,31 +87,19 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
                 "Could not get links for type".to_string(),
             )),
         };
-
-        if let Ok(GetLinksNetworkResult::Links(links)) = links_result {
-
+        if links_result.is_err() {
+            log_error!(context, "zome : Could not get links for remove_link method");
+            ribosome_error_code!(WorkflowFailed)
+        } else {
+            let links = links_result.expect("This is supposed to not fail");
+            let links = match links {
+                GetLinksNetworkResult::Links(links) => links,
+                _ => return ribosome_error_code!(WorkflowFailed),
+            };
             let filtered_links = links
                 .into_iter()
-                .map(
-                    |GetLinkFromRemoteData {
-                         link_add_address,
-                         tag,
-                         ..
-                     }| {
-                        // make DHT calls to get the entries for the links
-                        (
-                            get_link_data_from_link_addresses(
-                                &context,
-                                &link_add_address,
-                                &tag,
-                                false,
-                            )
-                            .unwrap(),
-                            link_add_address,
-                        )
-                    },
-                )
-                .filter(|(link_for_filter, _)| &link_for_filter.target == link.target())
+                .filter(|link_for_filter| &link_for_filter.target == link.target())
+                .map(|s| s.address)
                 .collect::<Vec<_>>();
 
             let entry = Entry::LinkRemove((link_remove, filtered_links));
@@ -124,9 +110,6 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
                 .map(|_| ());
 
             runtime.store_result(result)
-        } else {
-            log_error!(context, "zome : Could not get links for remove_link method");
-            ribosome_error_code!(WorkflowFailed)
         }
     }
 }

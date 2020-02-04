@@ -2,7 +2,7 @@ use holochain_walkman_types::{Cassette, WalkmanEvent, WalkmanLogItem, WalkmanSim
 use in_stream::InStream;
 use lib3h_protocol::{data_types::Opaque, protocol::*};
 use sim2h::{crypto::SignedWireMessage, wire_message::WireMessage};
-use sim2h_client::Sim2hClient;
+use sim2h_client::{ClientError, Sim2hClient};
 use std::{
     collections::{hash_map::Entry, HashMap},
     convert::TryInto,
@@ -89,13 +89,20 @@ impl Sim2hCassettePlayer {
                         // We need to wait for the JoinSpace to complete on the sim2h side,
                         // but JoinSpaceResult is never sent by sim2h, so we do this hacky waiting
                         println!("Awaiting Lib3hToClient::HandleGetGossipingEntryListResult after JoinSpace");
-                        let _ = client.await_msg(|msg| {
+                        while let Err(e) = client.await_msg(|msg| {
                             if let WireMessage::Lib3hToClient(Lib3hToClient::HandleGetGossipingEntryList(_)) = msg {
                                 true
                             } else {
                                 false
                             }
-                        });
+                        }) {
+                            match e {
+                                ClientError::Disconnected => {
+                                    client.try_blocking_reconnect(sim2h_url).expect("Failed to reconnect");
+                                },
+                                _ => panic!(format!("client error: {:?}", e)),
+                            }
+                        };
                         println!("Now waiting 100ms because we don't know when the Join is actually done...");
                         std::thread::sleep(std::time::Duration::from_millis(100));
                     }

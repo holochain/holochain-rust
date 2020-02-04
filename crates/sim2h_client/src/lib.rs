@@ -41,7 +41,7 @@ impl Sim2hClient {
         let agent_pubkey = HashString::from(enc.encode(&*pub_key).unwrap());
         info!("Generated agent id: {}", agent_pubkey);
         let connection = await_in_stream_connect(connect_uri)
-            .map_err(|e| format!("Error awaiting connection: {}", e))?;
+            .map_err(|e| format!("Error awaiting connection: {:?}", e))?;
 
         let out = Self {
             agent_pubkey,
@@ -61,7 +61,7 @@ impl Sim2hClient {
         AgentPubKey::from(self.agent_pubkey.clone())
     }
 
-    pub fn await_msg<F>(&mut self, predicate: F) -> Result<WireMessage, String>
+    pub fn await_msg<F>(&mut self, predicate: F) -> Result<WireMessage, ClientError>
     where
         F: Fn(&WireMessage) -> bool,
     {
@@ -70,7 +70,7 @@ impl Sim2hClient {
             .unwrap();
 
         loop {
-            if let Some(msg) = pull_message_from_stream(&mut self.connection) {
+            if let Some(msg) = pull_message_from_stream(&mut self.connection)? {
                 if predicate(&msg) {
                     return Ok(msg);
                 } else {
@@ -79,10 +79,30 @@ impl Sim2hClient {
             }
 
             if std::time::Instant::now() >= timeout {
-                Err("could not connect within timeout".to_string())?
+                Err(ClientError::Timeout("Timed out during await_msg".into()))?
             }
 
             std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+    }
+
+    pub fn try_blocking_reconnect(
+        &mut self,
+        url: &Url2,
+    ) -> Result<(), ClientError> {
+        let timeout = std::time::Instant::now()
+            .checked_add(std::time::Duration::from_millis(60000))
+            .unwrap();
+        loop {
+            if let Ok(connection) = await_in_stream_connect(url) {
+                self.connection = connection;
+                return Ok(());
+            }
+            if std::time::Instant::now() >= timeout {
+                return Err(ClientError::Timeout(
+                    "Failed to reconnect to sim2h_sever".to_string(),
+                ));
+            }
         }
     }
 
@@ -110,24 +130,37 @@ impl Sim2hClient {
     }
 }
 
-fn pull_message_from_stream(connection: &mut Connection) -> Option<WireMessage> {
+#[derive(Debug)]
+pub enum ClientError {
+    Disconnected,
+    Timeout(String),
+    Unknown(String),
+}
+
+fn pull_message_from_stream(
+    connection: &mut Connection,
+) -> Result<Option<WireMessage>, ClientError> {
     let mut frame = WsFrame::default();
     match connection.read(&mut frame) {
         Ok(_) => {
             if let WsFrame::Binary(b) = frame {
                 let msg: WireMessage = serde_json::from_slice(&b).unwrap();
-                Some(msg)
+                Ok(Some(msg))
             } else {
-                panic!("unexpected {:?}", frame);
+                Err(ClientError::Unknown(format!("unexpected {:?}", frame)))
             }
         }
-        Err(e) if e.would_block() => None,
-        Err(e) => panic!(e),
+        Err(e) if e.would_block() => Ok(None),
+        Err(_e) => {
+            // let's just assume this meant we were disconnected
+            // TODO: actually match on the Ws error
+            Err(ClientError::Disconnected)
+        }
     }
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
-fn await_in_stream_connect(connect_uri: &Url2) -> Result<InStreamWss<InStreamTcp>, String> {
+fn await_in_stream_connect(connect_uri: &Url2) -> Result<Connection, ClientError> {
     let timeout = std::time::Instant::now()
         .checked_add(std::time::Duration::from_millis(60000))
         .unwrap();
@@ -138,8 +171,8 @@ fn await_in_stream_connect(connect_uri: &Url2) -> Result<InStreamWss<InStreamTcp
     loop {
         //        let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
         let config = WssConnectConfig::new(TcpConnectConfig::default());
-        let mut connection =
-            InStreamWss::connect(connect_uri, config).map_err(|e| format!("{}", e))?;
+        let mut connection = InStreamWss::connect(connect_uri, config)
+            .map_err(|e| ClientError::Unknown(format!("{}", e)))?;
         connection.write(WsFrame::Ping(b"".to_vec())).unwrap();
 
         loop {
@@ -155,7 +188,9 @@ fn await_in_stream_connect(connect_uri: &Url2) -> Result<InStreamWss<InStreamTcp
             }
 
             if std::time::Instant::now() >= timeout {
-                Err("could not connect within timeout".to_string())?
+                Err(ClientError::Timeout(
+                    "could not connect within timeout".to_string(),
+                ))?
             }
 
             if err {

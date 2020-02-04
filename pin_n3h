@@ -13,7 +13,7 @@ const https = require('https')
 const { URL } = require('url')
 
 if (!process.argv[2]) {
-  throw new Error('required tag, usage: pin_n3h n3h_tag')
+  throw new Error('required git tag, usage: pin_n3h n3h_tag')
 }
 
 const TAG = process.argv[2]

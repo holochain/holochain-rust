@@ -34,7 +34,7 @@ module.exports = scenario => {
 
     // alice removes both links
     await alice.callSync('app', 'simple', 'delete_link', { base: alice.info('app').agentAddress, target: 'Posty' })
-
+    console.log("get links starts here");
     // get links from bob
     const bob_agent_posts_expect_empty = await bob.call('app', 'simple', 'get_my_links', { base: alice.info('app').agentAddress, status_request: 'Live' })
     // get links from alice
@@ -209,11 +209,11 @@ module.exports = scenario => {
 
     // make sure we get two links with the first one being a live link and the second one being a deleted link
     t.equal(2, alice_posts_all.Ok.links.length)
-    t.equal('live', alice_posts_all.Ok.links[0].status)
-    t.equal('deleted', alice_posts_all.Ok.links[1].status)
+    t.equal('deleted', alice_posts_all.Ok.links[0].status)
+    t.equal('live', alice_posts_all.Ok.links[1].status)
     t.equal(2, bob_posts_all.Ok.links.length)
-    t.equal('live', bob_posts_all.Ok.links[0].status)
-    t.equal('deleted', bob_posts_all.Ok.links[1].status)
+    t.equal('deleted', bob_posts_all.Ok.links[0].status)
+    t.equal('live', bob_posts_all.Ok.links[1].status)
   })
 
   scenario('get_links_crud_count', async (s, t) => {

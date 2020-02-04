@@ -115,6 +115,7 @@ pub(crate) fn reduce_hold_aspect(
             links_to_remove
                 .iter()
                 .fold(new_store, |mut store, link_addresses| {
+                    println!("link_addresses {:?}", link_addresses.clone());
                     let _ = reduce_add_remove_link_inner(
                         &mut store,
                         link_data,

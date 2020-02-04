@@ -9,6 +9,7 @@ use crate::{
     },
     NEW_RELIC_LICENSE_KEY,
     workflows::get_entry_result::get_entry_result_workflow,
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_utils::api_serialization::get_entry::{
@@ -31,7 +32,7 @@ pub async fn get_link_result_workflow<'a>(
 ) -> Result<GetLinksResult, HolochainError> {
     let config = GetLinksQueryConfiguration {
         headers: link_args.options.headers,
-        pagination : link_args.options.pagination.clone()
+        pagination: link_args.options.pagination.clone(),
     };
     let method = QueryMethod::Link(link_args.clone(), GetLinksNetworkQuery::Links(config));
     let response = query(context.clone(), method, link_args.options.timeout.clone()).await?;

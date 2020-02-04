@@ -1,4 +1,6 @@
-use holochain_core_types::{chain_header::ChainHeader, crud_status::CrudStatus, time::Timeout,network::query::Pagination};
+use holochain_core_types::{
+    chain_header::ChainHeader, crud_status::CrudStatus, network::query::Pagination, time::Timeout,
+};
 use holochain_json_api::{error::JsonError, json::*};
 use holochain_persistence_api::cas::content::Address;
 
@@ -7,10 +9,8 @@ pub struct GetLinksArgs {
     pub entry_address: Address,
     pub link_type: String,
     pub tag: String,
-    pub options: GetLinksOptions
+    pub options: GetLinksOptions,
 }
-
-
 
 #[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, PartialEq, Eq, Hash)]
 pub enum LinksStatusRequestKind {
@@ -29,7 +29,7 @@ pub struct GetLinksOptions {
     pub status_request: LinksStatusRequestKind,
     pub headers: bool,
     pub timeout: Timeout,
-    pub pagination : Option<Pagination>
+    pub pagination: Option<Pagination>,
 }
 impl Default for GetLinksOptions {
     fn default() -> Self {
@@ -37,7 +37,7 @@ impl Default for GetLinksOptions {
             status_request: LinksStatusRequestKind::default(),
             headers: false,
             timeout: Default::default(),
-            pagination: Default::default()
+            pagination: Default::default(),
         }
     }
 }
@@ -50,7 +50,7 @@ pub struct LinksResult {
     pub status: CrudStatus,
 }
 
-#[derive(Deserialize, Clone, Serialize, Debug, DefaultJson,PartialEq)]
+#[derive(Deserialize, Clone, Serialize, Debug, DefaultJson, PartialEq)]
 pub struct GetLinksResult {
     links: Vec<LinksResult>,
 }

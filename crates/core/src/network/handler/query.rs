@@ -6,19 +6,20 @@ use crate::{
     network::query::{
         GetLinksNetworkQuery, GetLinksNetworkResult, NetworkQuery, NetworkQueryResult,
     },
-    nucleus,
-    NEW_RELIC_LICENSE_KEY,
+    nucleus, NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
-    crud_status::CrudStatus, eav::Attribute, entry::EntryWithMetaAndHeader, error::HolochainError,
-    network::query::GetLinkFromRemoteData,network::query::Pagination
+    crud_status::CrudStatus,
+    eav::Attribute,
+    entry::EntryWithMetaAndHeader,
+    error::HolochainError,
+    network::query::{GetLinkFromRemoteData, Pagination},
 };
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::Address;
 
 use lib3h_protocol::data_types::{QueryEntryData, QueryEntryResultData};
 use std::{convert::TryInto, sync::Arc};
-
 
 pub type LinkTag = String;
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
@@ -29,12 +30,12 @@ fn get_links(
     link_type: String,
     tag: String,
     crud_status: Option<CrudStatus>,
-    pagination: Option<Pagination>
+    pagination: Option<Pagination>,
 ) -> Result<Vec<GetLinkFromRemoteData>, HolochainError> {
     //get links
     let dht_store = context.state().unwrap().dht();
     Ok(dht_store
-        .get_links(base, link_type, tag, crud_status,pagination)
+        .get_links(base, link_type, tag, crud_status, pagination)
         .unwrap_or_default()
         .into_iter()
         .map(|(eavi, crud_status)| {

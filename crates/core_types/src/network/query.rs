@@ -3,16 +3,15 @@ use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::{cas::content::Address, eav::Value};
 
 #[derive(Deserialize, Default, Debug, Serialize, Clone, PartialEq, Eq, Hash, DefaultJson)]
-pub struct Pagination
-{
-    pub page_number : usize,
-    pub page_size :  usize
+pub struct Pagination {
+    pub page_number: usize,
+    pub page_size: usize,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone,Default)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone, Default)]
 pub struct GetLinksQueryConfiguration {
     pub headers: bool,
-    pub pagination : Option<Pagination>
+    pub pagination: Option<Pagination>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]

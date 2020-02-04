@@ -12,8 +12,7 @@ use holochain_core_types::{
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
     entry::Entry,
     error::{HcResult, HolochainError},
-    network::entry_aspect::EntryAspect,
-    network::query::Pagination
+    network::{entry_aspect::EntryAspect, query::Pagination},
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_locksmith::RwLock;
@@ -115,7 +114,14 @@ pub fn create_get_links_eavi_query<'a>(
         }),
         None.into(),
         IndexFilter::LatestByAttribute,
-        Some(EavFilter::single(Attribute::RemovedLink(link_type, tag))),
+        Some(EavFilter::predicate(move |attr: Attribute| match attr {
+            //the problem with this is the tombstone match will be matching against regex
+            //at this stage of the eavi_query all three vectors (e,a,v) have already been matched
+            //it would be safe to assume at this point that any value that we match using this method
+            //will be a tombstone
+            Attribute::RemovedLink(_, _) => true,
+            _ => false,
+        })),
     ))
 }
 
@@ -157,15 +163,25 @@ impl DhtStore {
         link_type: String,
         tag: String,
         crud_filter: Option<CrudStatus>,
-        pagination : Option<Pagination>
+        pagination: Option<Pagination>,
     ) -> Result<Vec<(EntityAttributeValueIndex, CrudStatus)>, HolochainError> {
         let get_links_query = create_get_links_eavi_query(address, link_type, tag)?;
+        println!("get links query created");
         let filtered = self.meta_storage.read()?.fetch_eavi(&get_links_query)?;
         Ok(filtered
             .into_iter()
             .rev()
-            .skip(pagination.clone().map(|page|page.page_size * page.page_number).unwrap_or(0))
-            .take(pagination.map(|page|page.page_size).unwrap_or(std::usize::MAX))
+            .skip(
+                pagination
+                    .clone()
+                    .map(|page| page.page_size * page.page_number)
+                    .unwrap_or(0),
+            )
+            .take(
+                pagination
+                    .map(|page| page.page_size)
+                    .unwrap_or(std::usize::MAX),
+            )
             .map(|s| match s.attribute() {
                 Attribute::LinkTag(_, _) => (s, CrudStatus::Live),
                 _ => (s, CrudStatus::Deleted),

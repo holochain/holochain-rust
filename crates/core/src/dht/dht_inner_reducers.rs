@@ -25,8 +25,8 @@ use holochain_persistence_api::{
     eav::IndexFilter,
 };
 
+use chrono::{DateTime, FixedOffset};
 use std::{collections::BTreeSet, str::FromStr};
-use chrono::{DateTime,FixedOffset};
 
 pub(crate) enum LinkModification {
     Add,
@@ -55,17 +55,33 @@ pub(crate) fn reduce_add_remove_link_inner(
 ) -> HcResult<Address> {
     if store.contains(link.link().base())? {
         let attr = match link_modification {
-            LinkModification::Add => {
-                Attribute::LinkTag(link.link().link_type().to_string(), link.link().tag().to_string())
-            }
-            LinkModification::Remove => {
-                Attribute::RemovedLink(link.link().link_type().to_string(), link.link().tag().to_string())
-            }
+            LinkModification::Add => Attribute::LinkTag(
+                link.link().link_type().to_string(),
+                link.link().tag().to_string(),
+            ),
+            LinkModification::Remove => Attribute::RemovedLink(
+                link.link().link_type().to_string(),
+                link.link().tag().to_string(),
+            ),
         };
-        let link_created_time : DateTime<FixedOffset> = link.top_chain_header.timestamp().into();
-        //let eav = EntityAttributeValueIndex::new(&link.link().base().clone(), &attr, address)?;
-        let eav = EntityAttributeValueIndex::new_with_index(&link.link().base().clone(), &attr, address,link_created_time.timestamp_nanos())?;
+        let link_created_time: DateTime<FixedOffset> = link.top_chain_header.timestamp().into();
+        let eav = EntityAttributeValueIndex::new_with_index(
+            &link.link().base().clone(),
+            &attr,
+            address,
+            link_created_time.timestamp_nanos(),
+        )?;
         store.add_eavi(&eav)?;
+        println!(
+            "store {:?}",
+            store.fetch_eavi(&EaviQuery::new(
+                Some(link.link().base().clone()).into(),
+                None.into(),
+                None.into(),
+                IndexFilter::LatestByAttribute,
+                None,
+            ))
+        );
         Ok(link.link().base().clone())
     } else {
         Err(HolochainError::ErrorGeneric(String::from(

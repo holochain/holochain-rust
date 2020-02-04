@@ -10,13 +10,10 @@ extern crate test_utils;
 
 use hdk::error::{ZomeApiError, ZomeApiResult};
 
-
-
 use holochain_core_types::{
     crud_status::CrudStatus,
     error::{HolochainError, RibosomeEncodedValue, RibosomeEncodingBits},
 };
-
 
 use holochain_core_types::error::CoreError;
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
@@ -27,7 +24,6 @@ use test_utils::{
     assert_zome_internal_errors_equivalent, generate_zome_internal_error, make_test_call,
     start_holochain_instance, wait_for_zome_result, TestEntry,
 };
-
 
 //
 // These empty function definitions below are needed for the windows linker
@@ -265,7 +261,7 @@ pub fn test_links_with_load() {
         r#"{"content": "message me","tag":"tag me"}"#,
     );
     assert!(result.is_ok(), "result = {:?}", result);
-    
+
     let expected_result = wait_for_zome_result::<Vec<TestEntry>>(
         &mut hc,
         "my_entries_with_load",
@@ -430,7 +426,7 @@ fn can_roundtrip_links() {
             headers: Vec::new(),
             tag: "test-tag".into(),
             status: CrudStatus::Live,
-        }
+        },
     ]);
 
     // Polling loop because the links have to get pushed over the in-memory network and then validated
@@ -444,8 +440,8 @@ fn can_roundtrip_links() {
         &zome_call,
         |cond| cond.links().len() == 2,
         15,
-    ).unwrap();
-    
-    assert_eq!(expected_links,results);
+    )
+    .unwrap();
 
+    assert_eq!(expected_links, results);
 }

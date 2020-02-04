@@ -220,7 +220,10 @@ pub fn create_new_chain_header(
             .nth(0)
             .map(|chain_header| chain_header.address()),
         crud_link,
-        &Iso8601::new(duration_since_epoch.as_secs() as i64,duration_since_epoch.subsec_nanos()),
+        &Iso8601::new(
+            duration_since_epoch.as_secs() as i64,
+            duration_since_epoch.subsec_nanos(),
+        ),
     ))
 }
 

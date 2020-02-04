@@ -451,7 +451,6 @@ impl From<DateTime<FixedOffset>> for Iso8601 {
     }
 }
 
-
 impl From<&DateTime<FixedOffset>> for Iso8601 {
     fn from(lhs: &DateTime<FixedOffset>) -> Iso8601 {
         lhs.to_owned().into()

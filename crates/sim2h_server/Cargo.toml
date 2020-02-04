@@ -19,7 +19,7 @@ holochain_tracing_macros = "=0.0.16"
 holochain_common = { version = "=0.0.42-alpha5", path = "../common" }
 newrelic="0.2"
 detach = "=0.0.19"
-futures = "=0.3.1"
+futures = "=0.3.2"
 lib3h = "=0.0.32"
 lib3h_protocol = "=0.0.32"
 lib3h_sodium = "=0.0.32"

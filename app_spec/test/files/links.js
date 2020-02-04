@@ -207,7 +207,7 @@ module.exports = scenario => {
         status_request: 'All'
       })
 
-    // make sure we get two links with the first one being a live link and the second one being a deleted link
+    // make sure we get two links with the first one being a deleted link and the second one being a live link since they are now sorted backwards
     t.equal(2, alice_posts_all.Ok.links.length)
     t.equal('deleted', alice_posts_all.Ok.links[0].status)
     t.equal('live', alice_posts_all.Ok.links[1].status)

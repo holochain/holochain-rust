@@ -145,21 +145,40 @@ fn get_multi_type(list: &Vec<Lib3hToClient>) -> &str {
 
 impl From<WireMessage> for Opaque {
     fn from(message: WireMessage) -> Opaque {
-        serde_json::to_string(&message)
+        let tmp: Opaque = serde_json::to_string(&message)
             .expect("wiremessage should serialize")
-            .into()
+            .into();
+        let mut e = flate2::write::GzEncoder::new(
+            Vec::new(),
+            flate2::Compression::default(),
+        );
+        use std::io::Write;
+        e.write_all(&tmp).expect("can write");
+        e.finish().expect("can gzip").into()
     }
 }
 
+fn decompress(input: Opaque) -> Result<Opaque, WireError> {
+    let mut input = std::io::Cursor::new(input.to_vec());
+    let mut d = flate2::read::GzDecoder::new(&mut input);
+    let mut out: Vec<u8> = Vec::new();
+    use std::io::Read;
+    d.read_to_end(&mut out)?;
+    Ok(out.into())
+}
+
+/*
 impl From<WireMessage> for String {
     fn from(message: WireMessage) -> String {
         serde_json::to_string(&message).expect("wiremessage should serialize")
     }
 }
+*/
 
 impl TryFrom<Opaque> for WireMessage {
     type Error = WireError;
     fn try_from(message: Opaque) -> Result<Self, Self::Error> {
+        let message = decompress(message)?;
         Ok(serde_json::from_str(&String::from_utf8_lossy(&message))
             .map_err(|e| format!("{:?}", e))?)
     }
@@ -168,7 +187,8 @@ impl TryFrom<Opaque> for WireMessage {
 impl TryFrom<&Opaque> for WireMessage {
     type Error = WireError;
     fn try_from(message: &Opaque) -> Result<Self, Self::Error> {
-        Ok(serde_json::from_str(&String::from_utf8_lossy(message))
+        let message = decompress(message.clone())?;
+        Ok(serde_json::from_str(&String::from_utf8_lossy(&message))
             .map_err(|e| format!("{:?}", e))?)
     }
 }
@@ -182,6 +202,12 @@ impl From<&str> for WireError {
 impl From<String> for WireError {
     fn from(err: String) -> Self {
         WireError::Other(err)
+    }
+}
+
+impl From<std::io::Error> for WireError {
+    fn from(err: std::io::Error) -> Self {
+        WireError::Other(format!("{:?}", err))
     }
 }
 

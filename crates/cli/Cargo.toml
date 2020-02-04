@@ -45,7 +45,7 @@ reqwest = "=0.9.11"
 tempfile = "=3.0.7"
 lib3h_protocol = "=0.0.31"
 tar = "=0.4.26"
-flate2 = "=1.0.12"
+flate2 = { version = "=1.0.12", features = ["miniz-sys"], default-features = false }
 dns-lookup = "=1.0.1"
 hcid = "=0.0.6"
 lazy_static = "=1.4.0"

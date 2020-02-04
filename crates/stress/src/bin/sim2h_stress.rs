@@ -522,7 +522,10 @@ impl StressJob for Job {
         match self.connection.read(&mut frame) {
             Ok(_) => {
                 if let WsFrame::Binary(b) = frame {
-                    let msg: WireMessage = serde_json::from_slice(&b).unwrap();
+                    let msg: Opaque = b.clone().into();
+                    use std::convert::TryFrom;
+                    let msg = WireMessage::try_from(msg).expect("can decode");
+                    //let msg: WireMessage = serde_json::from_slice(&b).unwrap();
                     self.priv_handle_msg(logger, msg);
                 } else {
                     panic!("unexpected {:?}", frame);

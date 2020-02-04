@@ -16,6 +16,7 @@ backtrace = "=0.3.27"
 hcid = "=0.0.6"
 holochain_persistence_api = "=0.0.13"
 holochain_json_api = "=0.0.17"
+flate2 = { version = "=1.0.12", features = ["miniz-sys"], default-features = false }
 futures = "=0.3.2"
 lib3h = "=0.0.31"
 lib3h_crypto_api = "=0.0.31"

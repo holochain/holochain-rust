@@ -166,7 +166,6 @@ impl DhtStore {
         pagination: Option<Pagination>,
     ) -> Result<Vec<(EntityAttributeValueIndex, CrudStatus)>, HolochainError> {
         let get_links_query = create_get_links_eavi_query(address, link_type, tag)?;
-        println!("get links query created");
         let filtered = self.meta_storage.read()?.fetch_eavi(&get_links_query)?;
         Ok(filtered
             .into_iter()

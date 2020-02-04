@@ -17,7 +17,10 @@ extern crate holochain_common;
 
 #[allow(dead_code)]
 mod naive_sharding;
-
+#[allow(dead_code)]
+mod schedule;
+#[allow(unused_imports)]
+use schedule::*;
 pub mod connection_state;
 pub mod crypto;
 pub mod error;
@@ -889,7 +892,7 @@ pub struct Sim2h {
     connection_mgr_evt_recv: ConnectionMgrEventRecv,
     num_ticks: u64,
     /// when should we try to resync nodes that are still missing aspect data
-    missing_aspects_resync: std::time::Instant,
+    missing_aspects_resync_schedule: Schedule,
     sim2h_handle: Sim2hHandle,
     metric_gen: MetricsTimerGenerator,
 }
@@ -932,10 +935,15 @@ impl Sim2h {
             wss_recv,
             connection_mgr_evt_recv,
             num_ticks: 0,
-            missing_aspects_resync: std::time::Instant::now(),
+            missing_aspects_resync_schedule: Schedule::new(std::time::Duration::from_millis(
+                RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS,
+            )),
             sim2h_handle,
             metric_gen,
         };
+
+        // trigger an initial schedule ready event
+        let _ = sim2h.missing_aspects_resync_schedule.get_guard();
 
         sim2h
     }
@@ -989,10 +997,14 @@ impl Sim2h {
         let _m = self.metric_gen.timer("sim2h-priv_check_incoming_messages");
         let mut did_work = false;
 
+        let loop_start = std::time::Instant::now();
+        let mut msg_count = 0;
+
         let mut disconnect = Vec::new();
         for _ in 0..100 {
             match self.connection_mgr_evt_recv.try_recv() {
                 Ok(evt) => {
+                    msg_count += 1;
                     did_work = true;
                     match evt {
                         ConMgrEvent::Disconnect(uri, maybe_err) => {
@@ -1015,6 +1027,12 @@ impl Sim2h {
         if !disconnect.is_empty() {
             self.sim2h_handle.disconnect(disconnect);
         }
+
+        trace!(
+            "sim2h lib processed {} incoming messages in {} ms",
+            msg_count,
+            loop_start.elapsed().as_millis(),
+        );
 
         did_work
     }
@@ -1127,75 +1145,73 @@ impl Sim2h {
             did_work = true;
         }
 
-        if std::time::Instant::now() >= self.missing_aspects_resync {
-            self.missing_aspects_resync = std::time::Instant::now()
-                .checked_add(std::time::Duration::from_millis(
-                    RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS,
-                ))
-                .expect("can add interval ms");
-
+        if self.missing_aspects_resync_schedule.should_proceed() {
+            let schedule_guard = self.missing_aspects_resync_schedule.get_guard();
             let sim2h_handle = self.sim2h_handle.clone();
-            tokio::task::spawn(async move {
-                let agents_needing_gossip = sim2h_handle.im_state().check_gossip().await.spaces();
-                let state = sim2h_handle.im_state().get_clone().await;
-
-                for (space_hash, agents) in agents_needing_gossip.iter() {
-                    let mut all_handle_requests: im::HashMap<
-                        MonoRef<EntryHash>,
-                        im::HashSet<MonoRef<AspectHash>>,
-                    > = im::HashMap::new();
-
-                    for agent_id in agents {
-                        let r = state
-                            .get_gossip_aspects_needed_for_agent(&space_hash, &agent_id)
-                            .unwrap();
-                        for (entry_hash, aspects) in r.iter() {
-                            if aspects.is_empty() {
-                                continue;
-                            }
-
-                            let e = all_handle_requests.entry(entry_hash.clone()).or_default();
-                            for aspect in aspects {
-                                e.insert(aspect.clone());
-                            }
-                        }
-                    }
-
-                    for (entry_hash, aspects) in all_handle_requests.iter() {
-                        let query_agents =
-                            state.get_agents_for_query(&space_hash, &entry_hash, None);
-
-                        if query_agents.is_empty() {
-                            continue;
-                        }
-
-                        // TODO - if we have multiple options,
-                        // do we want to fire off more than one?
-                        let query_agent = query_agents[0].clone();
-
-                        let uri = match state.lookup_joined(space_hash, &query_agent) {
-                            None => continue,
-                            Some(uri) => uri,
-                        };
-
-                        let wire_message = WireMessage::Lib3hToClient(
-                            Lib3hToClient::HandleFetchEntry(FetchEntryData {
-                                request_id: "".to_string(),
-                                space_address: (&**space_hash).clone(),
-                                provider_agent_id: (&*query_agent).clone(),
-                                entry_address: (&**entry_hash).clone(),
-                                aspect_address_list: Some(
-                                    aspects.iter().map(|a| (&**a).clone()).collect(),
-                                ),
-                            }),
-                        );
-
-                        sim2h_handle.send((&*query_agent).clone(), (&*uri).clone(), &wire_message);
-                    }
-                }
-            });
+            tokio::task::spawn(missing_aspects_resync(sim2h_handle, schedule_guard));
         }
 
         Ok(did_work)
     }
+}
+
+async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: ScheduleGuard) {
+    let gossip_full_start = std::time::Instant::now();
+
+    let agents_needing_gossip = sim2h_handle.im_state().check_gossip().await.spaces();
+
+    for (space_hash, agents) in agents_needing_gossip.iter() {
+        trace!("sim2h gossip agent count: {}", agents.len());
+
+        for agent_id in agents {
+            // explicitly yield here as we don't want to hog the scheduler
+            tokio::task::yield_now().await;
+            let state = sim2h_handle.im_state().get_clone().await;
+
+            let gossip_agent_start = std::time::Instant::now();
+
+            let r = state
+                .get_gossip_aspects_needed_for_agent(&space_hash, &agent_id)
+                .unwrap();
+
+            trace!("sim2h gossip entry count: {}", r.len());
+
+            for (entry_hash, aspects) in r.iter() {
+                if aspects.is_empty() {
+                    continue;
+                }
+
+                let query_agents = state.get_agents_for_query(&space_hash, &entry_hash, None);
+
+                if query_agents.is_empty() {
+                    continue;
+                }
+
+                // TODO - if we have multiple options,
+                // do we want to fire off more than one?
+                let query_agent = query_agents[0].clone();
+
+                let uri = match state.lookup_joined(space_hash, &query_agent) {
+                    None => continue,
+                    Some(uri) => uri,
+                };
+
+                let wire_message =
+                    WireMessage::Lib3hToClient(Lib3hToClient::HandleFetchEntry(FetchEntryData {
+                        request_id: "".to_string(),
+                        space_address: (&**space_hash).clone(),
+                        provider_agent_id: (&*query_agent).clone(),
+                        entry_address: (&**entry_hash).clone(),
+                        aspect_address_list: Some(aspects.iter().map(|a| (&**a).clone()).collect()),
+                    }));
+
+                sim2h_handle.send((&*query_agent).clone(), (&*uri).clone(), &wire_message);
+            }
+            trace!(
+                "sim2h gossip agent in {} ms",
+                gossip_agent_start.elapsed().as_millis()
+            );
+        }
+    }
+    trace!("sim2h gossip full loop in {} ms (ok to be long, this task is broken into multiple sub-loops)", gossip_full_start.elapsed().as_millis());
 }

@@ -837,8 +837,14 @@ impl Sim2h {
                     let _spanguard = tracer.map(|t| {
                         match wire_message.clone() { 
                             WireMessage::ClientToLib3h(span_wrap) => {
-                                let span = ht::SpanWrap::from(span_wrap).follower(&t, format!("{}:{}", file!(), line!()));
-                                span.map(|span| ht::push_span(span))
+                                if let ClientToLib3h::SendDirectMessage(_) = span_wrap.data {
+                                    let span = ht::SpanWrap::from(span_wrap.clone()).follower_(&t, format!("handle_payload-ClientToLib3h"),
+                                    |options| {options.tag(ht::debug_tag("ClientToLib3h", span_wrap.data.clone())).start().into()}
+                                    );
+                                    span.map(|span| ht::push_span(span))
+                                } else {
+                                    None
+                                }
                             }
                             _ => None,
                         }
@@ -919,7 +925,7 @@ impl Sim2h {
                     let _spanguard = self.tracing_on.map(|_| {
                         match m.message.clone() { 
                             WireMessage::ClientToLib3h(span_wrap) => {
-                                let span = ht::SpanWrap::from(span_wrap).follower(&self.tracer, format!("HandleJoind ClientToLib3h"));
+                                let span = ht::SpanWrap::from(span_wrap).follower(&self.tracer, format!("HandleJoined ClientToLib3h"));
                                 span.map(|span| ht::push_span(span))
                             }
                             _ => None,

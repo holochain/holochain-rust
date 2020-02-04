@@ -190,9 +190,11 @@ impl Sim2hState {
             }
         }
 
-        let child = ht::with_top(|top| {
+        let child: Option<ht::Span> = ht::with_top(|top| {
             top.event("Sending direct message response to connection manager");
-            top.child(format!("{}:{}", file!(), line!()))
+            top.child_(format!("{}:{}", file!(), line!()), |options| {
+                options.tag(ht::debug_tag("message", msg.clone())).start()
+            }).into()
         });
         let wrap_send = match child.as_ref() {
             Some(child) => child.follower("outgoing"),

@@ -17,7 +17,7 @@ pub fn invoke_send(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let span = runtime
         .call_data()
         .ok()
-        .map(|d| d.context.tracer.span("hdk invoke_send").start().into())
+        .map(|d| d.context.tracer.span("hdk invoke_send").tag(ht::debug_tag("sending", "start")).start().into())
         .unwrap_or_else(|| ht::noop("hdk invoke_send no context"));
     let _trace_guard = ht::push_span(span);
     let call_data = runtime.call_data()?;

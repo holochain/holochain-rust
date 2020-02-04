@@ -1,6 +1,7 @@
 .qmake.stash
 target
 .cargo
+.vscode
 .vagrant
 node_modules
 **/*.sock

@@ -34,7 +34,7 @@ module.exports = scenario => {
 
     // alice removes both links
     await alice.callSync('app', 'simple', 'delete_link', { base: alice.info('app').agentAddress, target: 'Posty' })
-    console.log("get links starts here");
+
     // get links from bob
     const bob_agent_posts_expect_empty = await bob.call('app', 'simple', 'get_my_links', { base: alice.info('app').agentAddress, status_request: 'Live' })
     // get links from alice

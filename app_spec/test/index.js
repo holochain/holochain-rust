@@ -43,7 +43,7 @@ require('./files/memo')(orchestrator.registerScenario)
 require('./files/crypto')(orchestrator.registerScenario)
 require('./files/offline-validation')(orchestrator.registerScenario)
 require('./multi-dna')(orchestrator.registerScenario)
-//require('./validate-agent-test')(orchestrator.registerScenario)
+// require('./validate-agent-test')(orchestrator.registerScenario)
 
 // Check to see that we haven't accidentally disabled a bunch of scenarios
 const num = orchestrator.numRegistered()

@@ -10,6 +10,7 @@ extern crate num_cpus;
 extern crate serde;
 #[macro_use]
 extern crate lazy_static;
+extern crate holochain_walkman_types;
 extern crate newrelic;
 
 #[macro_use]
@@ -21,6 +22,7 @@ mod naive_sharding;
 pub mod cache;
 pub mod connection_state;
 pub mod crypto;
+pub mod debug;
 pub mod error;
 use lib3h_protocol::types::{AgentPubKey, AspectHash, EntryHash};
 mod message_log;
@@ -31,6 +33,11 @@ pub use crate::message_log::MESSAGE_LOGGER;
 use crate::{crypto::*, error::*, naive_sharding::entry_location};
 use cache::*;
 use connection_state::*;
+use holochain_locksmith::Mutex;
+use holochain_metrics::{config::MetricPublisherConfig, Metric};
+use holochain_walkman_types::{walkman_log_sim2h, WalkmanSim2hEvent};
+use in_stream::*;
+use lib3h::rrdht_util::*;
 use lib3h_crypto_api::CryptoSystem;
 use lib3h_protocol::{
     data_types::{
@@ -50,21 +57,29 @@ use futures::{
     future::{BoxFuture, FutureExt},
     stream::StreamExt,
 };
-use in_stream::*;
 use log::*;
 use rand::{seq::SliceRandom, thread_rng};
 use std::{
     collections::{HashMap, HashSet},
     convert::TryFrom,
     sync::Arc,
+    time::Instant,
 };
-
-use holochain_locksmith::Mutex;
-use holochain_metrics::{config::MetricPublisherConfig, Metric};
+lazy_static! {
+    static ref HOLOCHAIN_WALKMAN_SIM2H: bool = std::env::var("HOLOCHAIN_WALKMAN_SIM2H").is_ok();
+}
 
 /// if we can't acquire a lock in 20 seconds, panic!
 const MAX_LOCK_TIMEOUT: u64 = 20000;
 
+fn walkman_log<F: FnOnce() -> WalkmanSim2hEvent>(event: F) {
+    if *HOLOCHAIN_WALKMAN_SIM2H {
+        let log_item = event();
+        let json =
+            serde_json::to_string(&walkman_log_sim2h(log_item)).expect("Serialized walkman event");
+        println!("<walkman>{}</walkman>", json);
+    }
+}
 //set up license_key
 new_relic_setup!("NEW_RELIC_LICENSE_KEY");
 
@@ -99,7 +114,6 @@ impl<T> SendExt<T> for crossbeam_channel::Sender<T> {
         }
     }
 }
-
 const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 30000; // 30 seconds
 
 fn conn_lifecycle(desc: &str, uuid: &str, obj: &ConnectionState, uri: &Lib3hUri) {
@@ -405,7 +419,7 @@ pub struct Sim2h {
     connection_mgr_evt_recv: ConnectionMgrEventRecv,
     num_ticks: u64,
     /// when should we try to resync nodes that are still missing aspect data
-    missing_aspects_resync: std::time::Instant,
+    missing_aspects_resync: Instant,
     dht_algorithm: DhtAlgorithm,
     recv_com: tokio::sync::mpsc::UnboundedReceiver<Sim2hCom>,
     sim2h_handle: Sim2hHandle,
@@ -502,6 +516,7 @@ impl Sim2h {
                         .connection_states
                         .insert(url.clone(), (nanoid::simple(), ConnectionState::new()));
 
+                    walkman_log(|| WalkmanSim2hEvent::Connect(url.to_string()));
                     state.connection_mgr.connect(url, wss);
                 }
             });
@@ -806,6 +821,12 @@ impl Sim2h {
                 Ok((signed_message.provenance.source().into(), wire_message))
             })() {
                 Ok((source, wire_message)) => {
+                    walkman_log(|| {
+                        let signed_message = SignedWireMessage::try_from(payload.clone()).unwrap();
+                        let msg_serialized = serde_json::to_string(&signed_message)
+                            .expect("SignedWireMessage serialized");
+                        WalkmanSim2hEvent::Message(url.to_string(), msg_serialized)
+                    });
                     sim2h_handle.handle_message(url, wire_message, source)
                 }
                 Err(error) => {

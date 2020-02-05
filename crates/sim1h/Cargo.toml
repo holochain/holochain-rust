@@ -21,7 +21,7 @@ holochain_tracing = "=0.0.13"
 uuid = { version = "0.4", features = ["v4"] }
 log = "0.4.8"
 env_logger = "=0.6.1"
-lazy_static = "1.2.0"
+lazy_static = "=1.4.0"
 holochain_persistence_api = "=0.0.13"
 holochain_json_api = "=0.0.17"
 url = "=2.1.0"

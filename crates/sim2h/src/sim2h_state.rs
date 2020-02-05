@@ -1,5 +1,4 @@
 use crate::*;
-use lib3h::rrdht_util::*;
 
 pub(crate) struct Sim2hState {
     pub(crate) crypto: Box<dyn CryptoSystem>,
@@ -86,6 +85,7 @@ impl Sim2hState {
                 }
             }
         }
+        walkman_log(|| WalkmanSim2hEvent::Disconnect(uri.0.to_string()));
         trace!("disconnect done");
     }
 

@@ -21,7 +21,7 @@ impl LoggerMetricPublisher {
 impl MetricPublisher for LoggerMetricPublisher {
     fn publish(&mut self, metric: &Metric) {
         let log_line: LogLine = metric.into();
-        debug!("{}", log_line);
+        trace!("{}", log_line);
     }
 }
 

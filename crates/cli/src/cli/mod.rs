@@ -7,6 +7,7 @@ pub mod package;
 pub mod run;
 mod sim2h_client;
 pub mod test;
+mod walkman;
 
 pub use self::{
     chain_log::{chain_list, chain_log},
@@ -18,4 +19,5 @@ pub use self::{
     run::{get_interface_type_string, hc_run_bundle_configuration, hc_run_configuration, run},
     sim2h_client::sim2h_client,
     test::{test, TEST_DIR_NAME},
+    walkman::walkman,
 };

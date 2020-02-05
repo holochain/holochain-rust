@@ -11,9 +11,9 @@ extern crate holochain_persistence_api;
 extern crate holochain_persistence_file;
 extern crate json_patch;
 extern crate lib3h_crypto_api;
-extern crate lib3h_protocol;
 extern crate lib3h_sodium;
 extern crate sim2h;
+extern crate sim2h_client;
 extern crate structopt;
 #[macro_use]
 extern crate failure;
@@ -163,6 +163,11 @@ enum Cli {
         #[structopt(long, short = "m", default_value = "ping")]
         /// message to send to the sim2h server ('ping' or 'status')
         message: String,
+    },
+    Walkman {
+        #[structopt()]
+        /// Path to walkman cassette file for playback
+        cassette: PathBuf,
     },
 }
 arg_enum! {
@@ -330,9 +335,11 @@ fn run() -> HolochainResult<()> {
         }
 
         Cli::Sim2hClient { url, message } => {
-            println!("url: {}", &url);
-            println!("message: {}", &message);
             cli::sim2h_client(url, message)?;
+        }
+
+        Cli::Walkman { cassette } => {
+            cli::walkman(cassette);
         }
     }
 

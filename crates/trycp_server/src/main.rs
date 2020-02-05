@@ -482,7 +482,7 @@ fn main() {
     let allow_replace_conductor = args.allow_replace_conductor;
     io.add_method("replace_conductor", move |params: Params| {
         if allow_replace_conductor {
-            Ok(Value::String(os_eval(&format!("curl https://github.com/holochain/holochain-tracing/releases/download/{}/{}.tar.gz | tar -xzv && cp holochain $(which holochain)",
+            Ok(Value::String(os_eval(&format!("curl https://github.com/holochain/holochain-tracing/releases/download/{}/{}.tar.gz -o holochain.tar.gz && tar -xzvf holochain.tar.gz && mv holochain $(which holochain) && rm holochain.tar.gz",
              get_as_string("tag", &unwrap_params_map(params.clone())?)?, 
              get_as_string("file_name", &unwrap_params_map(params)?)?))))
         } else {

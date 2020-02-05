@@ -678,26 +678,21 @@ fn spawn_handle_message_authoring_entry_list(
             let mut aspect_list = Vec::new();
 
             for aspect in aspects {
-                let agents_that_need_aspect = state.get_agents_that_need_aspect(
-                    &space_hash,
-                    &entry_hash,
-                    &aspect,
-                );
+                let agents_that_need_aspect =
+                    state.get_agents_that_need_aspect(&space_hash, &entry_hash, &aspect);
                 if !agents_that_need_aspect.is_empty() {
                     aspect_list.push(aspect.clone());
                 }
             }
 
             if !aspect_list.is_empty() {
-                multi_message.push(
-                    Lib3hToClient::HandleFetchEntry(FetchEntryData {
-                        request_id: "".to_string(),
-                        space_address: (&*space_hash).clone(),
-                        provider_agent_id: signer.clone(),
-                        entry_address: entry_hash.clone(),
-                        aspect_address_list: Some(aspect_list),
-                    })
-                );
+                multi_message.push(Lib3hToClient::HandleFetchEntry(FetchEntryData {
+                    request_id: "".to_string(),
+                    space_address: (&*space_hash).clone(),
+                    provider_agent_id: signer.clone(),
+                    entry_address: entry_hash.clone(),
+                    aspect_address_list: Some(aspect_list),
+                }));
             }
         }
 

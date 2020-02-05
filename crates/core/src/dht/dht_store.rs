@@ -12,7 +12,10 @@ use holochain_core_types::{
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
     entry::Entry,
     error::{HcResult, HolochainError},
-    network::{entry_aspect::EntryAspect, query::{GetLinksQueryConfiguration,SortOrder}},
+    network::{
+        entry_aspect::EntryAspect,
+        query::{GetLinksQueryConfiguration, SortOrder},
+    },
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_locksmith::RwLock;
@@ -163,16 +166,16 @@ impl DhtStore {
         link_type: String,
         tag: String,
         crud_filter: Option<CrudStatus>,
-        configuration:GetLinksQueryConfiguration,
+        configuration: GetLinksQueryConfiguration,
     ) -> Result<Vec<(EntityAttributeValueIndex, CrudStatus)>, HolochainError> {
         let get_links_query = create_get_links_eavi_query(address, link_type, tag)?;
         let filtered = self.meta_storage.read()?.fetch_eavi(&get_links_query)?;
-        let pagination  =  configuration.pagination;
-        let filter_with_sort_order : Box<dyn Iterator<Item=EntityAttributeValueIndex>>  = match configuration.sort_order.unwrap_or_default()
-        { 
-            SortOrder::Ascending => Box::new(filtered.into_iter()),
-            SortOrder::Descending => Box::new(filtered.into_iter().rev().into_iter()),
-        };
+        let pagination = configuration.pagination;
+        let filter_with_sort_order: Box<dyn Iterator<Item = EntityAttributeValueIndex>> =
+            match configuration.sort_order.unwrap_or_default() {
+                SortOrder::Ascending => Box::new(filtered.into_iter()),
+                SortOrder::Descending => Box::new(filtered.into_iter().rev().into_iter()),
+            };
         Ok(filter_with_sort_order
             .skip(
                 pagination

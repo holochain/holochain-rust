@@ -216,28 +216,28 @@ module.exports = scenario => {
     t.equal('live', bob_posts_all.Ok.links[1].status)
 
 
-    const bob_posts_asce = await bob.call('app', 'simple', 'get_my_links',
+    const bob_posts_ascending = await bob.call('app', 'simple', 'get_my_links',
     {
       base: alice.info('app').agentAddress,
       status_request: 'All',
       sort_order : "Ascending"
 
     })
-  const alice_posts_ascen = await alice.call('app', 'simple', 'get_my_links',
+  const alice_posts_ascennding = await alice.call('app', 'simple', 'get_my_links',
     {
       base: alice.info('app').agentAddress,
       status_request: 'All',
-      sort_order : "Descending"
+      sort_order : "Ascending"
     })
 
 
     // make sure we get two links with the first one being a deleted link and the second one being a live link since they are now sorted backwards
-    t.equal(2, alice_posts_all.Ok.links.length)
-    t.equal('live', alice_posts_all.Ok.links[0].status)
-    t.equal('deleted', alice_posts_all.Ok.links[1].status)
-    t.equal(2, bob_posts_all.Ok.links.length)
-    t.equal('live', bob_posts_all.Ok.links[0].status)
-    t.equal('deleted', bob_posts_all.Ok.links[1].status)
+    t.equal(2, alice_posts_ascennding.Ok.links.length)
+    t.equal('live', alice_posts_ascennding.Ok.links[0].status)
+    t.equal('deleted', alice_posts_ascennding.Ok.links[1].status)
+    t.equal(2, bob_posts_ascending.Ok.links.length)
+    t.equal('live', bob_posts_ascending.Ok.links[0].status)
+    t.equal('deleted', bob_posts_ascending.Ok.links[1].status)
   })
 
   scenario('get_links_crud_count', async (s, t) => {

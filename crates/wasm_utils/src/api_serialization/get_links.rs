@@ -1,5 +1,5 @@
 use holochain_core_types::{
-    chain_header::ChainHeader, crud_status::CrudStatus, network::query::Pagination, time::Timeout,
+    chain_header::ChainHeader, crud_status::CrudStatus, network::query::{Pagination,SortOrder},time::Timeout,
 };
 use holochain_json_api::{error::JsonError, json::*};
 use holochain_persistence_api::cas::content::Address;
@@ -18,29 +18,24 @@ pub enum LinksStatusRequestKind {
     Deleted,
     All,
 }
+
+
+
 impl Default for LinksStatusRequestKind {
     fn default() -> Self {
         LinksStatusRequestKind::Live
     }
 }
 
-#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, PartialEq, Hash, Eq)]
+#[derive(Deserialize,Default, Debug, Serialize, DefaultJson, Clone, PartialEq, Hash, Eq)]
 pub struct GetLinksOptions {
     pub status_request: LinksStatusRequestKind,
     pub headers: bool,
     pub timeout: Timeout,
     pub pagination: Option<Pagination>,
+    pub sort_order : Option<SortOrder>
 }
-impl Default for GetLinksOptions {
-    fn default() -> Self {
-        GetLinksOptions {
-            status_request: LinksStatusRequestKind::default(),
-            headers: false,
-            timeout: Default::default(),
-            pagination: Default::default(),
-        }
-    }
-}
+
 
 #[derive(Deserialize, Clone, Serialize, Debug, DefaultJson, PartialEq)]
 pub struct LinksResult {

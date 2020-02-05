@@ -45,7 +45,7 @@ fn get_links(
             link_type,
             tag,
             crud_status,
-            query_configuration.pagination.clone(),
+            query_configuration.clone(),
         )
         .unwrap_or_default()
         .into_iter()

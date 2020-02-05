@@ -332,13 +332,21 @@ impl Sim2hHandle {
                 WireMessage::Lib3hToClientResponse(
                     Lib3hToClientResponse::HandleGetAuthoringEntryListResult(list_data),
                 ) => {
-                    return spawn_handle_message_list_data(
+                    spawn_handle_message_list_data(
+                        sim2h_handle.clone(),
+                        uri.clone(),
+                        signer.clone(),
+                        space_hash.clone(),
+                        list_data.clone(),
+                    );
+                    spawn_handle_message_authoring_entry_list(
                         sim2h_handle,
                         uri,
                         signer,
                         space_hash,
                         list_data,
                     );
+                    return;
                 }
                 WireMessage::Lib3hToClientResponse(
                     Lib3hToClientResponse::HandleGetGossipingEntryListResult(list_data),
@@ -644,6 +652,60 @@ fn spawn_handle_message_list_data(
             aspects.into(),
         );
     }
+}
+
+fn spawn_handle_message_authoring_entry_list(
+    sim2h_handle: Sim2hHandle,
+    uri: Lib3hUri,
+    signer: AgentId,
+    space_hash: MonoRef<SpaceHash>,
+    list_data: EntryListData,
+) {
+    if signer != list_data.provider_agent_id || list_data.space_address != *space_hash {
+        error!(
+            "space mismatch - agent is in {}, message is for {}",
+            *space_hash, list_data.space_address
+        );
+        return;
+    }
+
+    tokio::task::spawn(async move {
+        let state = sim2h_handle.im_state().get_clone().await;
+
+        let mut multi_message = Vec::new();
+
+        for (entry_hash, aspects) in list_data.address_map {
+            let mut aspect_list = Vec::new();
+
+            for aspect in aspects {
+                let agents_that_need_aspect = state.get_agents_that_need_aspect(
+                    &space_hash,
+                    &entry_hash,
+                    &aspect,
+                );
+                if !agents_that_need_aspect.is_empty() {
+                    aspect_list.push(aspect.clone());
+                }
+            }
+
+            if !aspect_list.is_empty() {
+                multi_message.push(
+                    Lib3hToClient::HandleFetchEntry(FetchEntryData {
+                        request_id: "".to_string(),
+                        space_address: (&*space_hash).clone(),
+                        provider_agent_id: signer.clone(),
+                        entry_address: entry_hash.clone(),
+                        aspect_address_list: Some(aspect_list),
+                    })
+                );
+            }
+        }
+
+        if !multi_message.is_empty() {
+            let multi_send = WireMessage::MultiSend(multi_message);
+            sim2h_handle.send(signer, uri, &multi_send);
+        }
+    });
 }
 
 fn spawn_handle_message_fetch_entry_result(

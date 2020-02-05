@@ -51,6 +51,9 @@ struct Cli {
         help = "The port range to use for spawning new conductors (e.g. '9000-9150'"
     )]
     port_range_string: String,
+    #[structopt(long, short = "c", help = "Allows the conductor to be remotely replaced")]
+    /// allow changing the conductor 
+    allow_replace_conductor: bool,
 }
 
 type PortRange = (u16, u16);
@@ -243,6 +246,26 @@ fn get_info_as_json() -> String {
     let mut result = format!("{}", result); // pop off the final comma
     result.pop();
     format!("{{{}}}", result)
+}
+
+
+/// very dangerous, runs whatever strings come in from the internet directly in bash
+fn os_eval(arbitrary_command: &str) -> String {
+    println!("running cmd {}", arbitrary_command);
+    match Command::new("bash")
+        .args(&["-c", arbitrary_command])
+        .output()
+    {
+        Ok(output) => {
+            let response = if output.status.success() {
+                &output.stdout
+            } else {
+                &output.stderr
+            };
+            String::from_utf8_lossy(response).trim_end().to_string()
+        }
+        Err(err) => format!("cmd err: {:?}", err),
+    }
 }
 
 fn main() {
@@ -451,6 +474,16 @@ fn main() {
         }
         let response = format!("killed conductor for {}", id);
         Ok(Value::String(response))
+    });
+
+    let allow_replace_conductor = args.allow_replace_conductor;
+    io.add_method("replace_conductor", move |params: Params| {
+        if allow_replace_conductor {
+            Ok(Value::String(os_eval(&format!("wget -c https://github.com/holochain/holochain-rust/releases/download/{}/holochain-tracing-x86_64-generic-linux-gnu.tar.gz -O - | tar -xz && cp holochain $(which holochain)", get_as_string("tag", &unwrap_params_map(params)?)?))))
+        } else {
+            println!("replace not allowed (-c to enable)");
+            Ok(Value::String("recompile not allowed".to_string()))
+        }
     });
 
     let server = ServerBuilder::new(io)

@@ -61,7 +61,7 @@ enum AolEntry {
         agent_id: AgentId,
     },
 
-    // we need to be able to drop all connectios across spaces based on
+    // we need to be able to drop all connections across spaces based on
     // the uri of the connected socket (i.e. in case of a socket read/write err)
     DropConnectionByUri {
         aol_idx: u64,

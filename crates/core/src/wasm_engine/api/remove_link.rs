@@ -1,12 +1,12 @@
 use crate::{
-    wasm_engine::{api::ZomeApiResult, Runtime},
     network::{
         actions::query::{query, QueryMethod},
         query::{
-             GetLinksNetworkQuery, GetLinksNetworkResult,
-            GetLinksQueryConfiguration, NetworkQueryResult,
+            GetLinksNetworkQuery, GetLinksNetworkResult, GetLinksQueryConfiguration,
+            NetworkQueryResult,
         },
     },
+    wasm_engine::{api::ZomeApiResult, Runtime},
     workflows::author_entry::author_entry,
     NEW_RELIC_LICENSE_KEY,
 };
@@ -15,7 +15,7 @@ use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
     link::{link_data::LinkData, LinkActionKind},
-    time::Timeout
+    time::Timeout,
 };
 use holochain_wasm_utils::api_serialization::{
     get_links::{GetLinksArgs, GetLinksOptions},

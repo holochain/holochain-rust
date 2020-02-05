@@ -456,7 +456,7 @@ fn spawn_handle_message_hello(
     // versions do not match - disconnect them
     if version != WIRE_VERSION {
         warn!(
-            "Disconnecting client for bad version this WIRE_VERSIO = {}, client WIRE_VERSION = {}",
+            "Disconnecting client for bad version this WIRE_VERSION = {}, client WIRE_VERSION = {}",
             WIRE_VERSION, version
         );
         sim2h_handle.disconnect(vec![uri]);

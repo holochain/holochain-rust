@@ -14,8 +14,8 @@ base64 = "=0.10.1"
 holochain_core_types = { version = "=0.0.42-alpha5", path = "../core_types" }
 holochain_tracing_macros = "0.0.16"
 newrelic="0.2"
-lib3h_sodium = "=0.0.31"
-holochain_persistence_api = "=0.0.13"
+lib3h_sodium = "=0.0.35"
+holochain_persistence_api = "=0.0.14"
 serde = "=1.0.89"
 serde_derive = "=1.0.89"
 serde_json = { version = "=1.0.39", features = ["preserve_order"] }

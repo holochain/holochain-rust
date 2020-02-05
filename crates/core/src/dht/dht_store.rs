@@ -174,7 +174,7 @@ impl DhtStore {
         let filter_with_sort_order: Box<dyn Iterator<Item = EntityAttributeValueIndex>> =
             match configuration.sort_order.unwrap_or_default() {
                 SortOrder::Ascending => Box::new(filtered.into_iter()),
-                SortOrder::Descending => Box::new(filtered.into_iter().rev().into_iter()),
+                SortOrder::Descending => Box::new(filtered.into_iter().rev()),
             };
         Ok(filter_with_sort_order
             .skip(

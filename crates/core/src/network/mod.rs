@@ -341,15 +341,15 @@ pub mod tests {
         let links = unwrap_to!(links=>GetLinksNetworkResult::Links);
         assert_eq!(links.len(), 2, "links = {:?}", links);
         // can be in any order
-        // assert!( // cant check this right now because of the logic being moved
-        //     ((links[0].address.clone(), links[0].crud_status.clone())
-        //         == (entry_addresses[1].clone(), CrudStatus::Live)
-        //         || (links[0].address.clone(), links[0].crud_status.clone())
-        //             == (entry_addresses[2].clone(), CrudStatus::Live))
-        //         && ((links[1].address.clone(), links[0].crud_status.clone())
-        //             == (entry_addresses[1].clone(), CrudStatus::Live)
-        //             || (links[1].address.clone(), links[0].crud_status.clone())
-        //                 == (entry_addresses[2].clone(), CrudStatus::Live))
-        // );
+         assert!( // cant check this right now because of the logic being moved
+             ((links[0].address.clone(), links[0].crud_status.clone())
+                 == (entry_addresses[1].clone(), CrudStatus::Live)
+                 || (links[0].address.clone(), links[0].crud_status.clone())
+                     == (entry_addresses[2].clone(), CrudStatus::Live))
+                 && ((links[1].address.clone(), links[0].crud_status.clone())
+                     == (entry_addresses[1].clone(), CrudStatus::Live)
+                     || (links[1].address.clone(), links[0].crud_status.clone())
+                         == (entry_addresses[2].clone(), CrudStatus::Live))
+         );
     }
 }

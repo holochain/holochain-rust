@@ -69,6 +69,15 @@ pub fn handle_get_my_links_with_tag(agent : Address,status_request:LinksStatusRe
     hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_simple_posts"), LinkMatch::Exactly(&*tag),options)
 }
 
+pub fn handle_get_my_links_with_pagination(agent : Address,pagesize:usize,pagenumber:usize) ->ZomeApiResult<GetLinksResult>
+{
+    let options = GetLinksOptions{
+        pagination : Some(Pagination{page_size : pagesize,page_number : pagenumber}),
+        ..GetLinksOptions::default()
+    };
+    hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_simple_posts"), LinkMatch::Any,options)
+}
+
 pub fn handle_get_my_links_count(agent : Address,status_request : LinksStatusRequestKind,tag:String) ->ZomeApiResult<GetLinksResultCount>
 {
     let options = GetLinksOptions{
@@ -193,6 +202,11 @@ define_zome! {
             outputs: |result: ZomeApiResult<GetLinksResult>|,
             handler: handle_get_my_links_with_tag
         }
+        get_my_links_with_pagination: {
+            inputs: |base: Address,pagesize:usize,pagenumber:usize|,
+            outputs: |result: ZomeApiResult<GetLinksResult>|,
+            handler: handle_get_my_links_with_pagination
+        }
         get_my_links_count: {
             inputs: |base: Address,status_request:LinksStatusRequestKind,tag:String|,
             outputs: |result: ZomeApiResult<GetLinksResultCount>|,
@@ -216,6 +230,6 @@ define_zome! {
     ]
 
     traits: {
-        hc_public [create_anchor, get_entry, create_link, delete_link, get_my_links, test_emit_signal,get_my_links_count,create_link_with_tag,get_my_links_count_by_tag,delete_link_with_tag,get_my_links_with_tag,encrypt,decrypt]
+        hc_public [create_anchor, get_entry, create_link, delete_link, get_my_links, test_emit_signal,get_my_links_count,create_link_with_tag,get_my_links_count_by_tag,delete_link_with_tag,get_my_links_with_tag,encrypt,decrypt,get_my_links_with_pagination]
     }
 }

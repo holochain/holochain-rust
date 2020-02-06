@@ -12,7 +12,7 @@ Get Links allows the zome developer to query links from the DHT. The call accept
 `Headers`: boolean value which if set to true indicates that the link headers should also be returned.```
 `Pagination`: The pagination type has two variables which are page size and page number. These describe the page size which divides the links into pages and the page number
 which describes the page that we want to get.
-
+'Sort Order' : Allows get_links to define which order `Ascending` or `Descending` the links should be returned in
 
 # Link Results
 

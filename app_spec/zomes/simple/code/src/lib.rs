@@ -51,10 +51,11 @@ pub fn handle_delete_my_link_with_tag(base: Address,target : String,tag:String) 
 }
 
 
-pub fn handle_get_my_links(agent : Address,status_request:Option<LinksStatusRequestKind>) ->ZomeApiResult<GetLinksResult>
+pub fn handle_get_my_links(agent : Address,status_request:Option<LinksStatusRequestKind>,sort_order:Option<SortOrder>) ->ZomeApiResult<GetLinksResult>
 {
     let options = GetLinksOptions{
         status_request : status_request.unwrap_or(LinksStatusRequestKind::All),
+        sort_order,
         ..GetLinksOptions::default()
     };
     hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_simple_posts"), LinkMatch::Any,options)
@@ -193,7 +194,7 @@ define_zome! {
             handler: handle_delete_my_link_with_tag
         }
         get_my_links: {
-            inputs: |base: Address,status_request:Option<LinksStatusRequestKind>|,
+            inputs: |base: Address,status_request:Option<LinksStatusRequestKind>,sort_order:Option<SortOrder>|,
             outputs: |result: ZomeApiResult<GetLinksResult>|,
             handler: handle_get_my_links
         }

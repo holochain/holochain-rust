@@ -308,23 +308,25 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
         let t_job_send = self.job_send.clone();
         let t_job_recv = self.job_recv.clone();
         self.thread_pool.push(std::thread::spawn(move || loop {
-            if !*should_continue.lock().unwrap() {
-                return;
+            for _ in 0..100 {
+                if !*should_continue.lock().unwrap() {
+                    return;
+                }
+                let mut job = match t_job_recv.recv_timeout(std::time::Duration::from_millis(10)) {
+                    Ok(job) => job,
+                    _ => continue,
+                };
+                let start = std::time::Instant::now();
+                let result = job.job.tick(&mut job.logger);
+                job.logger
+                    .log("tick_job_elapsed_ms", start.elapsed().as_millis() as f64);
+                if result.should_continue {
+                    t_job_send.send(job).unwrap();
+                } else {
+                    *job_count.lock().unwrap() -= 1;
+                }
             }
-            let mut job = match t_job_recv.recv_timeout(std::time::Duration::from_millis(10)) {
-                Ok(job) => job,
-                _ => continue,
-            };
-            let start = std::time::Instant::now();
-            let result = job.job.tick(&mut job.logger);
-            job.logger
-                .log("tick_job_elapsed_ms", start.elapsed().as_millis() as f64);
-            if result.should_continue {
-                t_job_send.send(job).unwrap();
-            } else {
-                *job_count.lock().unwrap() -= 1;
-            }
-            std::thread::sleep(std::time::Duration::from_millis(1));
+            std::thread::yield_now();
         }));
     }
 }

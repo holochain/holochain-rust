@@ -77,6 +77,63 @@ module.exports = scenario => {
     t.ok(error.line)
   })
 
+  scenario('get_links_paginate', async (s, t) => {
+    const { alice, bob } = await s.players({ alice: one, bob: one }, true)
+
+    // commits an entry and creates two links for alice
+    await alice.callSync('app', 'simple', 'create_link',
+      { base: alice.info('app').agentAddress, target: 'Holo world' }
+    )
+    await alice.callSync('app', 'simple', 'create_link',
+      { base: alice.info('app').agentAddress, target: 'Holo world 2' }
+    )
+
+    await alice.callSync('app', 'simple', 'create_link',
+      { base: alice.info('app').agentAddress, target: 'Holo world 3' }
+    )
+    await alice.callSync('app', 'simple', 'create_link',
+      { base: alice.info('app').agentAddress, target: 'Holo world 4' }
+    )
+
+
+    // get posts for alice from bob
+    const bob_posts_live = await bob.call('app', 'simple', 'get_my_links_with_pagination',
+      {
+        base: alice.info('app').agentAddress,
+        pagesize: 3,
+        pagenumber:0
+      })
+    
+      const alice_posts_live = await alice.call('app', 'simple', 'get_my_links_with_pagination',
+      {
+        base: alice.info('app').agentAddress,
+        pagesize: 3,
+        pagenumber:0
+      })
+
+    // make sure all our links are live and they are two of them
+    console.log("alice posts live : " + JSON.stringify(alice_posts_live));
+    t.equal(3, alice_posts_live.Ok.links.length)
+    t.equal(3, bob_posts_live.Ok.links.length)
+
+    const bob_posts_live_2 = await bob.call('app', 'simple', 'get_my_links_with_pagination',
+      {
+        base: alice.info('app').agentAddress,
+        pagesize: 3,
+        pagenumber:1
+      })
+    
+      const alice_posts_live_2 = await alice.call('app', 'simple', 'get_my_links_with_pagination',
+      {
+        base: alice.info('app').agentAddress,
+        pagesize: 3,
+        pagenumber:1
+      })
+
+      t.equal(1, bob_posts_live_2.Ok.links.length)
+      t.equal(1, alice_posts_live_2.Ok.links.length)
+  })
+
   scenario('get_links_crud', async (s, t) => {
     const { alice, bob } = await s.players({ alice: one, bob: one }, true)
 
@@ -150,13 +207,13 @@ module.exports = scenario => {
         status_request: 'All'
       })
 
-    // make sure we get two links with the first one being a live link and the second one being a deleted link
+    // make sure we get two links with the first one being a deleted link and the second one being a live link since they are now sorted backwards
     t.equal(2, alice_posts_all.Ok.links.length)
-    t.equal('live', alice_posts_all.Ok.links[0].status)
-    t.equal('deleted', alice_posts_all.Ok.links[1].status)
+    t.equal('deleted', alice_posts_all.Ok.links[0].status)
+    t.equal('live', alice_posts_all.Ok.links[1].status)
     t.equal(2, bob_posts_all.Ok.links.length)
-    t.equal('live', bob_posts_all.Ok.links[0].status)
-    t.equal('deleted', bob_posts_all.Ok.links[1].status)
+    t.equal('deleted', bob_posts_all.Ok.links[0].status)
+    t.equal('live', bob_posts_all.Ok.links[1].status)
   })
 
   scenario('get_links_crud_count', async (s, t) => {

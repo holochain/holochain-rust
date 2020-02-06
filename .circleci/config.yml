@@ -298,8 +298,6 @@ workflows:
       filters:
        branches:
         only:
-         - 2019-12-23-docker-aws-push
-         - 2020-01-23-docker-sim2h-fix
          - develop
          - final-exam
          - trycp-update-hc
@@ -316,8 +314,6 @@ workflows:
         only:
          - develop
          - final-exam
-         - 2019-12-26-debug-cli-docker
-         - 2020-01-23-docker-sim2h-fix
    - docker-build-circle-build:
       requires:
        - docker-build-latest

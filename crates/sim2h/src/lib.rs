@@ -607,16 +607,16 @@ fn spawn_handle_message_publish_entry(
         let multi_message = WireMessage::MultiSend(multi_message);
 
         let state = sim2h_handle.state().get_clone().await;
-        let send_to = state
-            .get_agents_that_should_hold_entry(&space_hash, &data.entry.entry_address)
-            .unwrap(); // we know this space address exists
+        let send_to =
+            match state.get_agents_that_should_hold_entry(&space_hash, &data.entry.entry_address) {
+                None => return,
+                Some(send_to) => send_to,
+            };
 
         for agent_id in send_to {
-            sim2h_handle.send(
-                (&*agent_id).clone(),
-                state.lookup_joined(&space_hash, &agent_id).unwrap().clone(),
-                &multi_message,
-            );
+            if let Some(uri) = state.lookup_joined(&space_hash, &agent_id) {
+                sim2h_handle.send((&*agent_id).clone(), uri.clone(), &multi_message);
+            }
             sim2h_handle.state().spawn_agent_holds_aspects(
                 (&*space_hash).clone(),
                 (&*agent_id).clone(),
@@ -1229,9 +1229,10 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
 
             let gossip_agent_start = std::time::Instant::now();
 
-            let r = state
-                .get_gossip_aspects_needed_for_agent(&space_hash, &agent_id)
-                .unwrap();
+            let r = match state.get_gossip_aspects_needed_for_agent(&space_hash, &agent_id) {
+                None => continue,
+                Some(r) => r,
+            };
 
             trace!("sim2h gossip entry count: {}", r.len());
 

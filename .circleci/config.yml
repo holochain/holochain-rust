@@ -302,7 +302,16 @@ workflows:
          - 2020-01-23-docker-sim2h-fix
          - develop
          - final-exam
+         - trycp-update-hc
    - docker-build-trycp-server:
+      filters:
+       branches:
+        only:
+         - 2019-12-23-docker-aws-push
+         - 2020-01-23-docker-sim2h-fix
+         - develop
+         - final-exam
+         - trycp-update-hc
       requires:
        - docker-build-minimal
    - docker-build-sim2h-server:

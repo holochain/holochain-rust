@@ -298,10 +298,8 @@ workflows:
       filters:
        branches:
         only:
-         - 2019-12-23-docker-aws-push
          - develop
          - final-exam
-         - sim2h-im2
    - docker-build-trycp-server:
       requires:
        - docker-build-minimal
@@ -315,8 +313,6 @@ workflows:
         only:
          - develop
          - final-exam
-         - sim2h-im2
-         - 2019-12-26-debug-cli-docker
    - docker-build-circle-build:
       requires:
        - docker-build-latest

@@ -51,11 +51,11 @@ struct OptStressRunConfig {
     /// how often to output in-progress statistics
     progress_interval_ms: u64,
 
-    #[structopt(long, env = "STRESS_PING_FREQ_MS", default_value = "1000")]
+    #[structopt(long, env = "STRESS_PING_FREQ_MS", default_value = "250")]
     /// how often each job should send a ping to sim2h
     ping_freq_ms: u64,
 
-    #[structopt(long, env = "STRESS_PUBLISH_FREQ_MS", default_value = "1000")]
+    #[structopt(long, env = "STRESS_PUBLISH_FREQ_MS", default_value = "250")]
     /// how often each job should publish a new entry
     publish_freq_ms: u64,
 
@@ -63,7 +63,7 @@ struct OptStressRunConfig {
     /// how many bytes should be published each time
     publish_byte_count: usize,
 
-    #[structopt(long, env = "STRESS_DM_FREQ_MS", default_value = "1000")]
+    #[structopt(long, env = "STRESS_DM_FREQ_MS", default_value = "250")]
     /// how often each job should send a direct message to another agent
     dm_freq_ms: u64,
 
@@ -481,7 +481,8 @@ impl Job {
     fn priv_handle_msg_inner(&mut self, logger: &mut StressJobMetricLogger, msg: Lib3hToClient) {
         match msg {
             Lib3hToClient::HandleGetAuthoringEntryList(_)
-            | Lib3hToClient::HandleGetGossipingEntryList(_) => {}
+            | Lib3hToClient::HandleGetGossipingEntryList(_)
+            | Lib3hToClient::HandleFetchEntry(_) => {}
             Lib3hToClient::HandleStoreEntryAspect(aspect) => {
                 let epoch_millis = std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
@@ -654,7 +655,7 @@ fn print_stats(stats: StressStats) {
             l -> v.count,
             l -> v.min,
             l -> v.max,
-            l -> v.avg,
+            l -> format!("{:.2}", v.avg),
         ]);
     }
     table.printstd();

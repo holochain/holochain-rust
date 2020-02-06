@@ -437,7 +437,7 @@ pub mod tests {
         let expected = JsonString::from_json(
             &(format!(
                 r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}}]}}","error":"null"}}"#,
-                entry_addresses[1], "test-tag1", entry_addresses[1], "test-tag2",
+                entry_addresses[1], "test-tag2", entry_addresses[1], "test-tag1",
             ) + "\u{0}"),
         );
         assert_eq!(call_result, expected,);

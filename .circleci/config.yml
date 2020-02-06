@@ -302,6 +302,7 @@ workflows:
          - 2020-01-23-docker-sim2h-fix
          - develop
          - final-exam
+         - sim2h-im2
    - docker-build-trycp-server:
       requires:
        - docker-build-minimal
@@ -315,6 +316,7 @@ workflows:
         only:
          - develop
          - final-exam
+         - sim2h-im2
          - 2019-12-26-debug-cli-docker
          - 2020-01-23-docker-sim2h-fix
    - docker-build-circle-build:

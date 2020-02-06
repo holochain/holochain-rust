@@ -166,7 +166,7 @@ pub type Holding = im::HashMap<MonoAspectHash, im::HashSet<MonoAgentId>>;
 
 /// so we cache entry locations as well
 #[derive(Debug, Clone)]
-pub struct Entry {
+pub struct EntryInfo {
     pub entry_hash: MonoEntryHash,
     pub entry_loc: Location,
     pub aspects: Holding,
@@ -177,7 +177,7 @@ pub struct Space {
     pub crypto: Box<dyn CryptoSystem>,
     pub redundancy: u64,
     pub aspect_to_entry_hash: im::HashMap<MonoAspectHash, (MonoAspectHash, MonoEntryHash)>,
-    pub entry_to_all_aspects: im::HashMap<MonoEntryHash, Entry>,
+    pub entry_to_all_aspects: im::HashMap<MonoEntryHash, EntryInfo>,
     pub connections: im::HashMap<MonoAgentId, ConnectionState>,
     pub uri_to_connection: im::HashMap<MonoUri, MonoAgentId>,
     pub gossip_interval: u64,
@@ -378,7 +378,7 @@ impl Space {
         }
         let entry_hash: MonoEntryHash = entry_hash.clone().into();
         let entry_loc = entry_location(&self.crypto, &entry_hash);
-        let entry = Entry {
+        let entry = EntryInfo {
             entry_hash: entry_hash.clone(),
             entry_loc,
             aspects: im::HashMap::new(),

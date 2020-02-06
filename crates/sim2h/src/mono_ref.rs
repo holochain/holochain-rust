@@ -1,6 +1,8 @@
 use crate::*;
 
-/// ref counted - lets us override some debugging
+/// We could just use `Arc`s directly, but the newtype lets us override Debug
+/// in sim2h MonoRef lets us have multiple views into the same hashes
+/// without exploding our memory footprint.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct MonoRef<T>(std::sync::Arc<T>);
 
@@ -31,9 +33,9 @@ impl std::fmt::Debug for MonoRef<Lib3hUri> {
 }
 
 /*
-// WTF - why can't we make a generic one too?
+// need specialization feature to be stablelized
 impl<T: std::fmt::Debug> std::fmt::Debug for MonoRef<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    default fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.0)
     }
 }

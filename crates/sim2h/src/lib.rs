@@ -193,7 +193,7 @@ mod sim2h_im_state;
 /// A clonable reference to our Sim2h instance that can be passed
 /// into `'static` async blocks && still be able to make sim2h calls
 struct Sim2hHandle {
-    im_state: sim2h_im_state::StoreHandle,
+    state: sim2h_im_state::StoreHandle,
     dht_algorithm: DhtAlgorithm,
     metric_gen: MetricsTimerGenerator,
     connection_mgr: ConnectionMgrHandle,
@@ -213,7 +213,7 @@ impl Sim2hHandle {
             DhtAlgorithm::NaiveSharding { redundant_count } => redundant_count,
         };
         Self {
-            im_state: sim2h_im_state::Store::new(crypto, redundancy, None),
+            state: sim2h_im_state::Store::new(crypto, redundancy, None),
             dht_algorithm,
             metric_gen,
             connection_mgr,
@@ -248,8 +248,8 @@ impl Sim2hHandle {
     }
 
     /// get access to our im_state object
-    pub fn im_state(&self) -> &sim2h_im_state::StoreHandle {
-        &self.im_state
+    pub fn state(&self) -> &sim2h_im_state::StoreHandle {
+        &self.state
     }
 
     /// forward a message to be handled
@@ -259,8 +259,10 @@ impl Sim2hHandle {
 
         // these message types are allowed before joining
         let message = match message {
-            WireMessage::Lib3hToClient(_) | WireMessage::ClientToLib3hResponse(_) =>
-                panic!("This is soo wrong. Clients should never send a message that only servers can send."),
+            WireMessage::Lib3hToClient(_) | WireMessage::ClientToLib3hResponse(_) => {
+                error!("This is soo wrong. Clients should never send a message that only servers can send.");
+                return;
+            }
             WireMessage::Ping => return spawn_handle_message_ping(sim2h_handle, uri, signer),
             WireMessage::Status => return spawn_handle_message_status(sim2h_handle, uri, signer),
             WireMessage::Hello(version) => {
@@ -277,7 +279,7 @@ impl Sim2hHandle {
         tokio::task::spawn(async move {
             // -- right now each agent can only be part of a single space :/ --
 
-            let state = sim2h_handle.im_state().get_clone().await;
+            let state = sim2h_handle.state().get_clone().await;
             let (agent_id, space_hash) = match state.get_space_info_from_uri(&uri) {
                 None => {
                     error!("uri has not joined space, cannoct proceed {}", uri);
@@ -401,7 +403,7 @@ impl Sim2hHandle {
     /// disconnect an active connection
     pub fn disconnect(&self, disconnect: Vec<Lib3hUri>) {
         for d in disconnect.iter() {
-            self.im_state().spawn_drop_connection_by_uri(d.clone());
+            self.state().spawn_drop_connection_by_uri(d.clone());
             self.connection_mgr.disconnect(d.clone());
         }
     }
@@ -420,7 +422,7 @@ fn spawn_handle_message_ping(sim2h_handle: Sim2hHandle, uri: Lib3hUri, signer: A
 fn spawn_handle_message_status(sim2h_handle: Sim2hHandle, uri: Lib3hUri, signer: AgentId) {
     tokio::task::spawn(async move {
         debug!("Sending StatusResponse in response to Status");
-        let state = sim2h_handle.im_state().get_clone().await;
+        let state = sim2h_handle.state().get_clone().await;
         sim2h_handle.send(
             signer.clone(),
             uri.clone(),
@@ -477,7 +479,7 @@ fn spawn_handle_message_join_space(
     _signer: AgentId,
     data: SpaceData,
 ) {
-    sim2h_handle.im_state().spawn_new_connection(
+    sim2h_handle.state().spawn_new_connection(
         data.space_address.clone(),
         data.agent_id.clone(),
         uri.clone(),
@@ -504,6 +506,34 @@ fn spawn_handle_message_join_space(
     );
 }
 
+fn inner_spawn_handle_message_send_dmx(
+    sim2h_handle: Sim2hHandle,
+    to_agent_id: AgentId,
+    data_space_hash: SpaceHash,
+    space_hash: MonoRef<SpaceHash>,
+    message: WireMessage,
+) {
+    if data_space_hash != *space_hash {
+        error!(
+            "space mismatch - agent is in {}, message is for {}",
+            *space_hash, data_space_hash
+        );
+        return;
+    }
+
+    tokio::task::spawn(async move {
+        let state = sim2h_handle.state().get_clone().await;
+        let to_url = match state.lookup_joined(&space_hash, &to_agent_id) {
+            Some(to_url) => to_url,
+            None => {
+                error!("unvalidated proxy agent {}", &to_agent_id);
+                return;
+            }
+        };
+        sim2h_handle.send(to_agent_id, to_url.clone(), &message);
+    });
+}
+
 fn spawn_handle_message_send_dm(
     sim2h_handle: Sim2hHandle,
     _uri: Lib3hUri,
@@ -511,29 +541,15 @@ fn spawn_handle_message_send_dm(
     space_hash: MonoRef<SpaceHash>,
     data: DirectMessageData,
 ) {
-    if data.space_address != *space_hash {
-        error!(
-            "space mismatch - agent is in {}, message is for {}",
-            *space_hash, data.space_address
-        );
-        return;
-    }
-
-    tokio::task::spawn(async move {
-        let state = sim2h_handle.im_state().get_clone().await;
-        let to_url = match state.lookup_joined(&space_hash, &data.to_agent_id) {
-            Some(to_url) => to_url,
-            None => {
-                error!("unvalidated proxy agent {}", &data.to_agent_id);
-                return;
-            }
-        };
-        sim2h_handle.send(
-            data.to_agent_id.clone(),
-            to_url.clone(),
-            &WireMessage::Lib3hToClient(Lib3hToClient::HandleSendDirectMessage(data)),
-        );
-    });
+    let to_agent_id = data.to_agent_id.clone();
+    let data_space_hash = data.space_address.clone();
+    inner_spawn_handle_message_send_dmx(
+        sim2h_handle,
+        to_agent_id,
+        data_space_hash,
+        space_hash,
+        WireMessage::Lib3hToClient(Lib3hToClient::HandleSendDirectMessage(data)),
+    );
 }
 
 fn spawn_handle_message_send_dm_result(
@@ -543,29 +559,15 @@ fn spawn_handle_message_send_dm_result(
     space_hash: MonoRef<SpaceHash>,
     data: DirectMessageData,
 ) {
-    if data.space_address != *space_hash {
-        error!(
-            "space mismatch - agent is in {}, message is for {}",
-            *space_hash, data.space_address
-        );
-        return;
-    }
-
-    tokio::task::spawn(async move {
-        let state = sim2h_handle.im_state().get_clone().await;
-        let to_url = match state.lookup_joined(&space_hash, &data.to_agent_id) {
-            Some(to_url) => to_url,
-            None => {
-                error!("unvalidated proxy agent {}", &data.to_agent_id);
-                return;
-            }
-        };
-        sim2h_handle.send(
-            data.to_agent_id.clone(),
-            to_url.clone(),
-            &WireMessage::Lib3hToClient(Lib3hToClient::SendDirectMessageResult(data)),
-        );
-    });
+    let to_agent_id = data.to_agent_id.clone();
+    let data_space_hash = data.space_address.clone();
+    inner_spawn_handle_message_send_dmx(
+        sim2h_handle,
+        to_agent_id,
+        data_space_hash,
+        space_hash,
+        WireMessage::Lib3hToClient(Lib3hToClient::SendDirectMessageResult(data)),
+    );
 }
 
 fn spawn_handle_message_publish_entry(
@@ -604,7 +606,7 @@ fn spawn_handle_message_publish_entry(
         }
         let multi_message = WireMessage::MultiSend(multi_message);
 
-        let state = sim2h_handle.im_state().get_clone().await;
+        let state = sim2h_handle.state().get_clone().await;
         let send_to = state
             .get_agents_that_should_hold_entry(&space_hash, &data.entry.entry_address)
             .unwrap(); // we know this space address exists
@@ -615,7 +617,7 @@ fn spawn_handle_message_publish_entry(
                 state.lookup_joined(&space_hash, &agent_id).unwrap().clone(),
                 &multi_message,
             );
-            sim2h_handle.im_state().spawn_agent_holds_aspects(
+            sim2h_handle.state().spawn_agent_holds_aspects(
                 (&*space_hash).clone(),
                 (&*agent_id).clone(),
                 data.entry.entry_address.clone(),
@@ -645,7 +647,7 @@ fn spawn_handle_message_list_data(
     // just iter/send we don't need a new task for this
 
     for (entry_hash, aspects) in list_data.address_map {
-        sim2h_handle.im_state().spawn_agent_holds_aspects(
+        sim2h_handle.state().spawn_agent_holds_aspects(
             (&*space_hash).clone(),
             signer.clone(),
             entry_hash,
@@ -670,7 +672,7 @@ fn spawn_handle_message_authoring_entry_list(
     }
 
     tokio::task::spawn(async move {
-        let state = sim2h_handle.im_state().get_clone().await;
+        let state = sim2h_handle.state().get_clone().await;
 
         let mut multi_message = Vec::new();
 
@@ -719,7 +721,7 @@ fn spawn_handle_message_fetch_entry_result(
     }
 
     tokio::task::spawn(async move {
-        let state = sim2h_handle.im_state().get_clone().await;
+        let state = sim2h_handle.state().get_clone().await;
 
         #[allow(clippy::type_complexity)]
         let mut to_agent: std::collections::HashMap<
@@ -767,7 +769,7 @@ fn spawn_handle_message_fetch_entry_result(
             sim2h_handle.send((&*agent_id).clone(), (&*uri).clone(), &multi_send);
 
             for (entry_hash, aspects) in holding.drain() {
-                sim2h_handle.im_state().spawn_agent_holds_aspects(
+                sim2h_handle.state().spawn_agent_holds_aspects(
                     (&*space_hash).clone(),
                     (&*agent_id).clone(),
                     entry_hash,
@@ -794,7 +796,7 @@ fn spawn_handle_message_query_entry(
     }
 
     tokio::task::spawn(async move {
-        let state = sim2h_handle.im_state().get_clone().await;
+        let state = sim2h_handle.state().get_clone().await;
 
         let holding_agents = state.get_agents_for_query(
             &space_hash,
@@ -837,7 +839,7 @@ fn spawn_handle_message_query_entry_result(
         let msg_out = WireMessage::ClientToLib3hResponse(ClientToLib3hResponse::QueryEntryResult(
             query_result,
         ));
-        let state = sim2h_handle.im_state().get_clone().await;
+        let state = sim2h_handle.state().get_clone().await;
         let to_url = match state.lookup_joined(&space_hash, &req_agent_id) {
             Some(to_url) => to_url,
             None => {
@@ -1215,7 +1217,7 @@ impl Sim2h {
 async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: ScheduleGuard) {
     let gossip_full_start = std::time::Instant::now();
 
-    let agents_needing_gossip = sim2h_handle.im_state().check_gossip().await.spaces();
+    let agents_needing_gossip = sim2h_handle.state().check_gossip().await.spaces();
 
     for (space_hash, agents) in agents_needing_gossip.iter() {
         trace!("sim2h gossip agent count: {}", agents.len());
@@ -1223,7 +1225,7 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
         for agent_id in agents {
             // explicitly yield here as we don't want to hog the scheduler
             tokio::task::yield_now().await;
-            let state = sim2h_handle.im_state().get_clone().await;
+            let state = sim2h_handle.state().get_clone().await;
 
             let gossip_agent_start = std::time::Instant::now();
 
@@ -1241,6 +1243,10 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
                 let query_agents = state.get_agents_for_query(&space_hash, &entry_hash, None);
 
                 if query_agents.is_empty() {
+                    warn!(
+                        "nobody online to service gossip request for aspects in entry hash {:?}",
+                        entry_hash
+                    );
                     continue;
                 }
 

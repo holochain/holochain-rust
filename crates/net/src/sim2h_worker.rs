@@ -166,6 +166,15 @@ impl Sim2hWorker {
         self.connection = None;
         if let Ok(connection) = connect(self.server_url.clone(), self.connection_timeout_backoff) {
             self.connection = Some(connection);
+            let msg = match &self.space_data {
+                None => return,
+                Some(space_data) => {
+                    WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(space_data.clone()))
+                }
+            };
+            debug!("SENDING JOIN {:#?}", msg);
+            self.send_wire_message(msg)
+                .expect("can send JoinSpace on reconnect");
         }
     }
 
@@ -511,6 +520,16 @@ impl Sim2hWorker {
         if let Err(e) = self.send_wire_message(WireMessage::Ping) {
             debug!("Ping failed with: {:?}", e);
         }
+    }
+
+    /// test function for proving out reconnects
+    /// note this cannot be cfg(test) because we want to invoke it
+    /// from integration testing
+    pub fn test_close_connection_cause_reconnect(&mut self) {
+        self.connection = None;
+        self.time_of_last_connection_attempt = std::time::Instant::now()
+            .checked_sub(self.reconnect_interval * 2)
+            .unwrap();
     }
 }
 

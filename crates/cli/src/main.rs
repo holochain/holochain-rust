@@ -168,7 +168,6 @@ enum Cli {
 arg_enum! {
     #[derive(Debug)]
     pub enum NetworkingType {
-        N3h,
         Sim2h,
     }
 }

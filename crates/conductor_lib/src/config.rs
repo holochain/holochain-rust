@@ -25,7 +25,7 @@ use holochain_persistence_api::cas::content::AddressableContent;
 use lib3h::engine::EngineConfig;
 
 use holochain_metrics::MetricPublisherConfig;
-use holochain_net::{sim1h_worker::Sim1hConfig, sim2h_worker::Sim2hConfig};
+use holochain_net::sim2h_worker::Sim2hConfig;
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
 use std::{
@@ -847,10 +847,8 @@ fn default_address() -> String {
 #[serde(tag = "type")]
 #[allow(clippy::large_enum_variant)]
 pub enum NetworkConfig {
-    N3h(N3hConfig),
     Lib3h(EngineConfig),
     Memory(EngineConfig),
-    Sim1h(Sim1hConfig),
     Sim2h(Sim2hConfig),
 }
 
@@ -1060,11 +1058,8 @@ pub mod tests {
         id = "app spec instance"
 
     [network]
-    type = "n3h"
-    bootstrap_nodes = ["wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM"]
-    n3h_persistence_path = "/Users/cnorris/.holochain/n3h_persistence"
-    networking_config_file = "/Users/cnorris/.holochain/network_config.json"
-    n3h_log_level = "d"
+    type = "sim2h"
+    sim2h_url = "test_sim2h_url"
 
     [metric_publisher]
     type = "cloudwatchlogs"
@@ -1091,17 +1086,8 @@ pub mod tests {
         assert_eq!(format!("{:?}", config.metric_publisher), "Some(CloudWatchLogs(CloudWatchLogsConfig { region: None, log_group_name: Some(\"holochain\"), log_stream_name: Some(\"2019-11-22_20-53-31.sim2h_public\"), assume_role_arn: None }))");
         assert_eq!(
             config.network.unwrap(),
-            NetworkConfig::N3h(N3hConfig {
-                bootstrap_nodes: vec![String::from(
-                    "wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM"
-                )],
-                n3h_log_level: String::from("d"),
-                n3h_mode: String::from("REAL"),
-                n3h_persistence_path: String::from("/Users/cnorris/.holochain/n3h_persistence"),
-                n3h_ipc_uri: None,
-                networking_config_file: Some(String::from(
-                    "/Users/cnorris/.holochain/network_config.json"
-                )),
+            NetworkConfig::Sim2h(Sim2hConfig {
+                sim2h_url: "test_sim2h_url".to_string(),
             })
         );
     }

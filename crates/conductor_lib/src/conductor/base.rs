@@ -57,10 +57,7 @@ use crate::{
 use boolinator::Boolinator;
 use holochain_core::context::InstanceStats;
 use holochain_core_types::dna::bridges::BridgePresence;
-use holochain_net::{
-    p2p_config::{BackendConfig, P2pBackendKind, P2pConfig},
-    p2p_network::P2pNetwork,
-};
+use holochain_net::p2p_config::{BackendConfig, P2pBackendKind, P2pConfig};
 
 pub const MAX_DYNAMIC_PORT: u16 = std::u16::MAX;
 
@@ -126,8 +123,6 @@ pub struct Conductor {
     p2p_config: Option<P2pConfig>,
     pub passphrase_manager: Arc<PassphraseManager>,
     pub hash_config: Option<PwHashConfig>, // currently this has to be pub for testing.  would like to remove
-    // TODO: remove this when n3h gets deprecated
-    n3h_keepalive_network: Option<P2pNetwork>, // hack needed so that n3h process stays alive even if all instances get shutdown.
 }
 
 impl Drop for Conductor {
@@ -140,10 +135,6 @@ impl Drop for Conductor {
         // Do not shut down the logging thread if there is multiple concurrent conductor thread
         // like during unit testing because they all use the same registered logger
         // self.logger.shutdown();
-
-        if let Some(mut network) = self.n3h_keepalive_network.take() {
-            network.stop()
-        }
     }
 }
 
@@ -235,7 +226,6 @@ impl Conductor {
             p2p_config: None,
             passphrase_manager: Arc::new(PassphraseManager::new(passphrase_service)),
             hash_config: None,
-            n3h_keepalive_network: None,
         }
     }
 

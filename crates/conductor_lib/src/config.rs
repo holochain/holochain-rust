@@ -31,7 +31,6 @@ use serde::Deserialize;
 use std::{
     collections::{HashMap, HashSet},
     convert::TryFrom,
-    env,
     fs::File,
     io::prelude::*,
     net::Ipv4Addr,
@@ -850,54 +849,6 @@ pub enum NetworkConfig {
     Lib3h(EngineConfig),
     Memory(EngineConfig),
     Sim2h(Sim2hConfig),
-}
-
-#[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
-pub struct N3hConfig {
-    /// List of URIs that point to other nodes to bootstrap p2p connections.
-    #[serde(default)]
-    pub bootstrap_nodes: Vec<String>,
-    /// Global logging level output by N3H
-    #[serde(default = "default_n3h_log_level")]
-    pub n3h_log_level: String,
-    /// Overall mode n3h operates in.
-    /// Should be 'REAL'
-    /// REAL is the only one and what should be used in all production cases.
-    #[serde(default = "default_n3h_mode")]
-    pub n3h_mode: String,
-    /// Absolute path to the directory that n3h uses to store persisted data.
-    #[serde(default)]
-    pub n3h_persistence_path: String,
-    /// URI pointing to an n3h process that is already running and not managed by this
-    /// conductor.
-    /// If this is set the conductor does not spawn n3h itself and ignores the path
-    /// configs above. Default is None.
-    #[serde(default)]
-    pub n3h_ipc_uri: Option<String>,
-    /// filepath to the json file holding the network settings for n3h
-    #[serde(default)]
-    pub networking_config_file: Option<String>,
-}
-
-// note that this behaviour is documented within
-// holochain_common::env_vars module and should be updated
-// if this logic changes
-pub fn default_n3h_mode() -> String {
-    String::from("REAL")
-}
-
-// note that this behaviour is documented within
-// holochain_common::env_vars module and should be updated
-// if this logic changes
-pub fn default_n3h_log_level() -> String {
-    String::from("i")
-}
-
-// note that this behaviour is documented within
-// holochain_common::env_vars module and should be updated
-// if this logic changes
-pub fn default_n3h_persistence_path() -> String {
-    env::temp_dir().to_string_lossy().to_string()
 }
 
 /// Use this function to load a `Configuration` from a string.

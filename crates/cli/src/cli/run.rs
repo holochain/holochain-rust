@@ -245,7 +245,7 @@ fn logger_configuration(logging: bool) -> LoggerConfiguration {
 // NETWORKING
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn networking_configuration(networked: Option<Networking>) -> Option<NetworkConfig> {
-    // create an n3h network config if the --networked flag is set
+    // create a network config if the --networked flag is set
     let networked = match networked {
         Some(n) => n,
         None => return None,

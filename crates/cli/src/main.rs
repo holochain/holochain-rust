@@ -92,7 +92,7 @@ enum Cli {
         /// Save generated data to file system
         persist: bool,
         #[structopt(long, possible_values = &NetworkingType::variants(), case_insensitive = true)]
-        /// Use real networking use: n3h/sim2h
+        /// Use real networking use: sim2h
         networked: Option<NetworkingType>,
         #[structopt(long, default_value = "ws://localhost:9000")]
         /// Set the sim2h server url if you are using real networking.

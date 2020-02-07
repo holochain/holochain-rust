@@ -43,7 +43,7 @@ const logger = {
 }
 
 const network =
-  : networkType === 'sim2h'
+  ( networkType === 'sim2h'
   ? {
     type: 'sim2h',
     sim2h_url: 'ws://localhost:9002'

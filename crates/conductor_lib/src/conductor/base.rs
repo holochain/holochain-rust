@@ -291,10 +291,6 @@ impl Conductor {
         self
     }
 
-    pub fn p2p_bindings(&self) -> Option<Vec<String>> {
-        None
-    }
-
     pub fn config(&self) -> Configuration {
         self.config.clone()
     }

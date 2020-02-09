@@ -249,7 +249,6 @@ pub fn create_arbitrary_test_dna() -> Dna {
 #[derive(Clone, Deserialize)]
 pub enum TestNodeConfig {
     MemoryGhostEngine(Vec<url::Url>),
-    Sim1h(&'static str),
     LegacyInMemory,
 }
 
@@ -270,9 +269,6 @@ pub fn create_test_context_with_logger_and_signal(
                 .with_signals(signal);
             if let Some(network_name) = network_name {
                 let config = match test_config {
-                    TestNodeConfig::Sim1h(dynamo_db_path) => {
-                        P2pConfig::new_with_sim1h_backend(&dynamo_db_path)
-                    }
                     TestNodeConfig::MemoryGhostEngine(boostrap_nodes) => {
                         P2pConfig::new_with_memory_lib3h_backend(network_name, boostrap_nodes)
                     }
@@ -486,8 +482,6 @@ pub fn start_holochain_instance<T: Into<String>>(
         .map(|test_config| {
             if test_config == "lib3h" {
                 TestNodeConfig::MemoryGhostEngine(vec![])
-            } else if test_config == "sim1h" {
-                TestNodeConfig::Sim1h(&DYNAMO_DB_LOCAL_TEST_HOST_PATH)
             } else {
                 TestNodeConfig::LegacyInMemory
             }

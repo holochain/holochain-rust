@@ -419,7 +419,7 @@ impl Sim2hWorker {
                 ))
             }
 
-            // -- N3h specific functinonality -- //
+            // -- deprecated unctinonality -- //
             Lib3hClientProtocol::Shutdown => {
                 debug!("Got Lib3hClientProtocol::Shutdown from core in sim2h worker");
                 Ok(())

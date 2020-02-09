@@ -18,7 +18,6 @@ members = [
   "crates/net",
   "crates/stress",
   "crates/trycp_server",
-  "crates/sim1h",
   "crates/sim2h",
   "crates/sim2h_server",
   "crates/wasm_utils"

@@ -293,7 +293,7 @@ mod tests {
             tag: "link-tag".to_string(),
             id: snowflake::ProcessUniqueId::new().to_string(),
         };
-        let config = GetLinksQueryConfiguration { headers: false };
+        let config = GetLinksQueryConfiguration::default();
         let get_links_network_query = GetLinksNetworkQuery::Links(config);
         let payload = QueryPayload::Links((None, get_links_network_query));
         let action = Action::Query((QueryKey::Links(key.clone()), payload, None));

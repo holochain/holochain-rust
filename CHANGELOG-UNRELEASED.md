@@ -5,6 +5,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 {{ version-heading }}
 
 ### Added
+- Added pagination option to get_links [#2092](https://github.com/holochain/holochain-rust/pull/2092)
+- Added sort order option to get_links [#2100](https://github.com/holochain/holochain-rust/pull/2100)
 
 ### Changed
 

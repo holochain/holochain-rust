@@ -266,8 +266,6 @@ pub fn create_test_context_with_logger_and_signal(
         Arc::new({
             let mut builder = ContextBuilder::new()
                 .with_agent(agent.clone())
-                .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
-                .expect("Tempdir must be accessible")
                 .with_conductor_api(mock_signing::mock_conductor_api(agent))
                 .with_signals(signal);
             if let Some(network_name) = network_name {

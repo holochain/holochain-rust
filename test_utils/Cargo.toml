@@ -17,15 +17,15 @@ holochain_core_types = { version = "=0.0.43-alpha2", path = "../crates/core_type
 holochain_dpki = { version = "=0.0.43-alpha2", path = "../crates/dpki" }
 holochain_wasm_utils = { version = "=0.0.43-alpha2", path = "../crates/wasm_utils" }
 holochain_locksmith = { version = "=0.0.43-alpha2", path = "../crates/locksmith" }
-holochain_persistence_api = "=0.0.14"
-holochain_json_api = "=0.0.17"
-holochain_json_derive = "=0.0.17"
-lib3h_sodium = "=0.0.35"
+holochain_persistence_api = "=0.0.15"
+holochain_json_api = "=0.0.20"
+holochain_json_derive = "=0.0.20"
+lib3h_sodium = "=0.0.36"
 wabt = "=0.7.4"
 tempfile = "=3.0.7"
-serde = "=1.0.89"
-serde_json = { version = "=1.0.39", features = ["preserve_order"] }
-serde_derive = "=1.0.89"
+serde = "=1.0.100"
+serde_json = { version = "=1.0.47", features = ["preserve_order"] }
+serde_derive = "=1.0.100"
 crossbeam-channel = "=0.3.8"
 lazy_static = "=1.4.0"
 jsonrpc-ws-server = "14.0.1"

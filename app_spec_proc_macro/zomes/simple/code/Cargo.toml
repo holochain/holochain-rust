@@ -7,10 +7,10 @@ edition = "2018"
 [dependencies]
 hdk = { path = "../../../../crates/hdk" }
 hdk-proc-macros = { path = "../../../../crates/hdk_v2" }
-serde = "=1.0.89"
-serde_json = { version = "=1.0.39", features = ["preserve_order"] }
-serde_derive = "=1.0.89"
-holochain_json_derive = "=0.0.17"
+serde = "=1.0.100"
+serde_json = { version = "=1.0.47", features = ["preserve_order"] }
+serde_derive = "=1.0.100"
+holochain_json_derive = "=0.0.20"
 
 [lib]
 path = "src/lib.rs"

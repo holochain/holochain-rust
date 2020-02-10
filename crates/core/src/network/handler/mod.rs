@@ -1,4 +1,7 @@
-use crate::{agent::state::create_entry_with_header_for_header, content_store::GetContent};
+use crate::{
+    agent::state::create_entry_with_header_for_header, content_store::GetContent,
+    NEW_RELIC_LICENSE_KEY,
+};
 use holochain_logging::prelude::*;
 pub mod fetch;
 pub mod lists;
@@ -24,7 +27,9 @@ use crate::{
     workflows::get_entry_result::get_entry_with_meta_workflow,
 };
 use boolinator::Boolinator;
-use holochain_core_types::{eav::Attribute, entry::Entry, error::HolochainError, time::Timeout};
+use holochain_core_types::{
+    chain_header::ChainHeader, eav::Attribute, entry::Entry, error::HolochainError, time::Timeout,
+};
 use holochain_json_api::json::JsonString;
 use holochain_net::connection::net_connection::NetHandler;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
@@ -120,6 +125,7 @@ fn handle_failure_result(
 /// Creates the network handler.
 /// The returned closure is called by the network thread for every network event that core
 /// has to handle.
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
     let context = c.clone();
     NetHandler::new(Box::new(move |message| {
@@ -276,6 +282,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
 /// NB: this can be optimized by starting with a CAS lookup for the entry directly,
 /// to avoid traversing the chain unnecessarily in the case of a miss
 /// (https://github.com/holochain/holochain-rust/pull/1727#discussion_r330258624)
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn get_content_aspect(
     entry_address: &Address,
     context: Arc<Context>,
@@ -362,7 +369,72 @@ fn get_content_aspect(
     ))
 }
 
-fn get_meta_aspects(
+/// This function converts an entry into the right "meta" EntryAspect and the according
+/// base address to which it is meta, if the entry is the source entry of a meta aspect,
+/// i.e. a CRUD or link entry.
+/// If the entry is not that it returns None.
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+fn entry_to_meta_aspect(entry: Entry, header: ChainHeader) -> Option<(Address, EntryAspect)> {
+    match entry {
+        Entry::App(app_type, app_value) => header.link_update_delete().map(|updated_entry| {
+            (
+                updated_entry,
+                EntryAspect::Update(Entry::App(app_type, app_value), header),
+            )
+        }),
+        Entry::LinkAdd(link_data) => Some((
+            link_data.link.base().clone(),
+            EntryAspect::LinkAdd(link_data, header),
+        )),
+        Entry::LinkRemove((link_data, addresses)) => Some((
+            link_data.link.base().clone(),
+            EntryAspect::LinkRemove((link_data, addresses), header),
+        )),
+        Entry::Deletion(_) => Some((
+            header.link_update_delete().expect(""),
+            EntryAspect::Deletion(header),
+        )),
+        _ => None,
+    }
+}
+
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+fn get_meta_aspects_from_chain(
+    entry_address: &Address,
+    context: Arc<Context>,
+) -> Result<Vec<EntryAspect>, HolochainError> {
+    let state = context.state().ok_or_else(|| {
+        HolochainError::InitializationFailed(String::from(
+            "In get_meta_aspects_from_chain: no state found",
+        ))
+    })?;
+
+    Ok(state
+        .agent()
+        .iter_chain()
+        .filter(|header| header.entry_type().can_publish(&context))
+        .filter_map(
+            |header| match state.agent().chain_store().get(&header.entry_address()) {
+                Ok(maybe_entry) => {
+                    let entry = maybe_entry
+                        .expect("Could not find entry in chain CAS, but header is chain");
+                    entry_to_meta_aspect(entry, header)
+                }
+                Err(_) => None,
+            },
+        )
+        .filter_map(|(base_address, aspect)| {
+            if base_address == *entry_address {
+                Some(aspect)
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<EntryAspect>>())
+}
+
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+fn get_meta_aspects_from_dht_eav(
     entry_address: &Address,
     context: Arc<Context>,
 ) -> Result<Vec<EntryAspect>, HolochainError> {

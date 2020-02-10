@@ -2,10 +2,11 @@ use crate::{
     context::Context,
     nucleus::{
         actions::run_validation_callback::run_validation_callback,
-        ribosome::callback::links_utils,
         validation::{ValidationError, ValidationResult},
         CallbackFnCall,
     },
+    wasm_engine::callback::links_utils,
+    NEW_RELIC_LICENSE_KEY,
 };
 use boolinator::*;
 use holochain_core_types::{
@@ -18,6 +19,7 @@ use holochain_persistence_api::cas::content::AddressableContent;
 use holochain_wasm_utils::api_serialization::validation::{LinkDirection, LinkValidationArgs};
 use std::sync::Arc;
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn validate_link_entry(
     entry: Entry,
     validation_data: ValidationData,

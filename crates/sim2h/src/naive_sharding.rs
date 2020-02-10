@@ -1,11 +1,12 @@
+use crate::NEW_RELIC_LICENSE_KEY;
 use lib3h::rrdht_util::*;
 use lib3h_crypto_api::CryptoSystem;
-
-const REDUNDANT_COUNT: u64 = 50;
+use lib3h_protocol::types::EntryHash;
 
 #[allow(clippy::borrowed_box)]
 /// ack - lib3h can only convert agent_ids to locations right now
 /// work around this in a dorky manner
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 pub fn anything_to_location(crypto: &Box<dyn CryptoSystem>, anything: &str) -> Location {
     match calc_location_for_id(crypto, anything) {
         Ok(loc) => loc,
@@ -25,20 +26,31 @@ pub fn anything_to_location(crypto: &Box<dyn CryptoSystem>, anything: &str) -> L
     }
 }
 
+#[allow(clippy::borrowed_box)]
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+pub fn entry_location(crypto: &Box<dyn CryptoSystem>, entry_hash: &EntryHash) -> Location {
+    let entry_hash_str: String = entry_hash.clone().into();
+    anything_to_location(crypto, &entry_hash_str)
+}
+
 /// implement a super simple sharding algorithm
 /// to distribute data when node counts go > 50
+// NOTE - don't decorate this function with tracing
+//        it gets called often enough that performance suffers
+//#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 pub fn naive_sharding_should_store(
     agent_loc: Location,
     data_addr_loc: Location,
     node_count: u64,
+    redundant_count: u64,
 ) -> bool {
-    // if there are < 50 nodes, everyone should store everything
-    if node_count <= REDUNDANT_COUNT {
+    // if there are < `redundant_count` nodes, everyone should store everything
+    if node_count <= redundant_count {
         return true;
     }
 
-    // divide up the space so on average data will be stored by 50 nodes
-    let dist: f64 = ARC_LENGTH_MAX as f64 / (node_count as f64 / REDUNDANT_COUNT as f64);
+    // divide up the space so on average data will be stored by `redundant_count` nodes
+    let dist: f64 = ARC_LENGTH_MAX as f64 / (node_count as f64 / redundant_count as f64);
 
     // determine if this specific piece of data should be stored by this node
     agent_loc.forward_distance_to(data_addr_loc) < dist as u32
@@ -48,6 +60,8 @@ pub fn naive_sharding_should_store(
 mod tests {
     use super::*;
     use lib3h_sodium::SodiumCryptoSystem;
+    use log::*;
+    const REDUNDANT_COUNT: u64 = 50;
 
     // generate a test agent id (HcS)
     fn gen_id(crypto: &Box<dyn CryptoSystem>) -> String {
@@ -69,6 +83,8 @@ mod tests {
 
     #[test]
     fn it_should_safely_distribute_data() {
+        debug!("starting test");
+
         let thread_cont = std::sync::Arc::new(std::sync::Mutex::new(true));
         let mut hash_threads = Vec::new();
 
@@ -76,6 +92,8 @@ mod tests {
         let (addr_send, addr_recv) = crossbeam_channel::bounded::<Location>(100);
 
         for _ in 0..8 {
+            debug!("starting hash thread");
+
             let id_send_clone = id_send.clone();
             let addr_send_clone = addr_send.clone();
             let cont = thread_cont.clone();
@@ -123,23 +141,30 @@ mod tests {
         let mut mean = 0.0;
 
         // simulate a 10,000 node network, growing 20 nodes at a time
-        for _ in 0..500 {
+        for top_loop in 0..500 {
+            debug!("top loop: {}", top_loop);
+
             for _ in 0..20 {
                 let id_loc = id_recv.recv().unwrap();
-                //println!("id: {}", *id_loc);
+                //debug!("id: {}", *id_loc);
                 nodes.push(id_loc);
             }
 
             // simulate storing 100 bits of data in this network
             for _ in 0..100 {
                 let data_loc = addr_recv.recv().unwrap();
-                //println!("data: {}", *data_loc);
+                //debug!("data: {}", *data_loc);
 
                 let mut store_count = 0_u64;
 
                 // go through all the nodes
                 for agent_loc in nodes.iter() {
-                    if naive_sharding_should_store(*agent_loc, data_loc, nodes.len() as u64) {
+                    if naive_sharding_should_store(
+                        *agent_loc,
+                        data_loc,
+                        nodes.len() as u64,
+                        REDUNDANT_COUNT,
+                    ) {
                         store_count += 1;
                     }
                 }
@@ -158,20 +183,21 @@ mod tests {
                             / (nodes.len() as f64 / REDUNDANT_COUNT as f64)
                             * 100.0
                             / ARC_LENGTH_MAX as f64;
-                        println!("-- NOT STORING ENOUGH --");
-                        println!("-- dist: {}% --", dist as u64);
-                        println!(
+                        debug!("-- NOT STORING ENOUGH --");
+                        debug!("-- dist: {}% --", dist as u64);
+                        debug!(
                             "-- data loc: {}% --",
                             u64::from((data_loc.0).0) * 100 / ARC_LENGTH_MAX
                         );
                         for agent_loc in nodes.iter() {
-                            println!(
+                            debug!(
                                 "  - agent loc: {}% - {}",
                                 u64::from((agent_loc.0).0) * 100 / ARC_LENGTH_MAX,
                                 naive_sharding_should_store(
                                     *agent_loc,
                                     data_loc,
-                                    nodes.len() as u64
+                                    nodes.len() as u64,
+                                    REDUNDANT_COUNT,
                                 )
                             );
                         }
@@ -184,20 +210,21 @@ mod tests {
                             / (nodes.len() as f64 / REDUNDANT_COUNT as f64)
                             * 100.0
                             / ARC_LENGTH_MAX as f64;
-                        println!("-- STORING TOO MUCH --");
-                        println!("-- dist: {}% --", dist as u64);
-                        println!(
+                        debug!("-- STORING TOO MUCH --");
+                        debug!("-- dist: {}% --", dist as u64);
+                        debug!(
                             "-- data loc: {}% --",
                             u64::from((data_loc.0).0) * 100 / ARC_LENGTH_MAX
                         );
                         for agent_loc in nodes.iter() {
-                            println!(
+                            debug!(
                                 "  - agent loc: {}% - {}",
                                 u64::from((agent_loc.0).0) * 100 / ARC_LENGTH_MAX,
                                 naive_sharding_should_store(
                                     *agent_loc,
                                     data_loc,
-                                    nodes.len() as u64
+                                    nodes.len() as u64,
+                                    REDUNDANT_COUNT,
                                 )
                             );
                         }
@@ -216,6 +243,8 @@ mod tests {
             }
         }
 
+        debug!("shutting down threads");
+
         *thread_cont.lock().unwrap() = false;
 
         for t in hash_threads.drain(..) {
@@ -227,7 +256,7 @@ mod tests {
         // min: 25
         // max: 78
         // mean: 49.99037148594384
-        println!(
+        debug!(
             "count: {}\nmin: {}\nmax: {}\nmean: {}",
             count, min, max, mean
         );

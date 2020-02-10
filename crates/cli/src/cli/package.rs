@@ -1,7 +1,7 @@
-use crate::{config_files::Build, error::DefaultResult, util};
+use crate::{config_files::Build, error::DefaultResult, util, NEW_RELIC_LICENSE_KEY};
 use base64;
 use colored::*;
-use holochain_core::nucleus::ribosome::{run_dna, WasmCallData};
+use holochain_core::wasm_engine::{run_dna, WasmCallData};
 use holochain_core_types::dna::Dna;
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::AddressableContent;
@@ -28,6 +28,7 @@ const CARGO_FILE_NAME: &str = "Cargo.toml";
 
 pub type Object = Map<String, Value>;
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn hdk_version_compare(hdk_version: &HDKVersion, cargo_toml: &str) -> DefaultResult<bool> {
     let toml: Value = toml::from_str(cargo_toml)?;
     let dependancies = toml
@@ -47,6 +48,7 @@ fn hdk_version_compare(hdk_version: &HDKVersion, cargo_toml: &str) -> DefaultRes
 
 struct Packager {}
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 impl Packager {
     fn new() -> Packager {
         Packager {}
@@ -259,6 +261,7 @@ impl Packager {
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 pub fn package(output: PathBuf, properties: serde_json::Value) -> DefaultResult<()> {
     Packager::package(output, properties)
 }

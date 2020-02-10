@@ -95,8 +95,9 @@ impl<Sub: InStreamListenerStd> InStreamListener<&mut [u8], &[u8]> for InStreamLi
     fn accept(&mut self) -> Result<<Self as InStreamListener<&mut [u8], &[u8]>>::Stream> {
         // get e.g. an InStreamTcp
         let stream: Sub::StreamStd = self.sub.accept_std()?;
-
-        let res = self.acceptor.accept(stream.into_std_stream());
+        let s = stream.into_std_stream();
+        log::trace!("tls: calling accept on {:?}", s);
+        let res = self.acceptor.accept(s);
         let mut out = InStreamTls::priv_new();
         match out.priv_proc_tls_result(res) {
             Ok(_) => Ok(out),
@@ -186,9 +187,10 @@ impl<Sub: InStreamStd> InStreamTls<Sub> {
                     self.state = Some(TlsState::MidHandshake(mid));
                     Err(Error::with_would_block())
                 }
-                native_tls::HandshakeError::Failure(e) => {
-                    Err(Error::new(ErrorKind::ConnectionRefused, format!("{:?}", e)))
-                }
+                native_tls::HandshakeError::Failure(e) => Err(Error::new(
+                    ErrorKind::ConnectionRefused,
+                    format!("tls: {:?}", e),
+                )),
             },
         }
     }
@@ -257,6 +259,14 @@ impl<Sub: InStreamStd> InStream<&mut [u8], &[u8]> for InStreamTls<Sub> {
             Ok(_) => Ok(out),
             Err(e) if e.would_block() => Ok(out),
             Err(e) => Err(e),
+        }
+    }
+
+    fn check_ready(&mut self) -> Result<bool> {
+        self.priv_process()?;
+        match self.state {
+            Some(TlsState::Ready(_)) => Ok(true),
+            _ => Ok(false),
         }
     }
 

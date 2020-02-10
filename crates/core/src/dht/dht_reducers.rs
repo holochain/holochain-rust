@@ -6,6 +6,7 @@ use crate::{
         dht_store::DhtStore,
         pending_validations::{PendingValidationWithTimeout, ValidationTimeout},
     },
+    NEW_RELIC_LICENSE_KEY,
 };
 use std::sync::Arc;
 
@@ -16,12 +17,14 @@ use super::dht_inner_reducers::{
 
 use holochain_core_types::{entry::Entry, network::entry_aspect::EntryAspect};
 use holochain_persistence_api::cas::content::AddressableContent;
-
+use itertools::Itertools;
+use std::collections::VecDeque;
 // A function that might return a mutated DhtStore
 type DhtReducer = fn(&DhtStore, &ActionWrapper) -> Option<DhtStore>;
 
 /// DHT state-slice Reduce entry point.
 /// Note: Can't block when dispatching action here because we are inside the reduce's mutex
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce(old_store: Arc<DhtStore>, action_wrapper: &ActionWrapper) -> Arc<DhtStore> {
     // Get reducer
     let reducer = match resolve_reducer(action_wrapper) {
@@ -38,16 +41,19 @@ pub fn reduce(old_store: Arc<DhtStore>, action_wrapper: &ActionWrapper) -> Arc<D
 }
 
 /// Maps incoming action to the correct reducer
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
     match action_wrapper.action() {
         Action::Commit(_) => Some(reduce_commit_entry),
         Action::HoldAspect(_) => Some(reduce_hold_aspect),
         Action::QueueHoldingWorkflow(_) => Some(reduce_queue_holding_workflow),
         Action::RemoveQueuedHoldingWorkflow(_) => Some(reduce_remove_queued_holding_workflow),
+        Action::Prune => Some(reduce_prune),
         _ => None,
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn reduce_commit_entry(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
@@ -63,6 +69,7 @@ pub(crate) fn reduce_commit_entry(
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn reduce_hold_aspect(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
@@ -93,7 +100,7 @@ pub(crate) fn reduce_hold_aspect(
             let entry = Entry::LinkAdd(link_data.clone());
             match reduce_add_remove_link_inner(
                 &mut new_store,
-                link_data.link(),
+                link_data,
                 &entry.address(),
                 LinkModification::Add,
             ) {
@@ -108,10 +115,9 @@ pub(crate) fn reduce_hold_aspect(
             links_to_remove
                 .iter()
                 .fold(new_store, |mut store, link_addresses| {
-                    let link = link_data.link();
                     let _ = reduce_add_remove_link_inner(
                         &mut store,
-                        link,
+                        link_data,
                         link_addresses,
                         LinkModification::Remove,
                     );
@@ -145,6 +151,7 @@ pub(crate) fn reduce_hold_aspect(
 }
 
 #[allow(dead_code)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn reduce_get_links(
     _old_store: &DhtStore,
     _action_wrapper: &ActionWrapper,
@@ -155,6 +162,7 @@ pub(crate) fn reduce_get_links(
 
 #[allow(unknown_lints)]
 #[allow(clippy::needless_pass_by_value)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_queue_holding_workflow(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
@@ -166,19 +174,48 @@ pub fn reduce_queue_holding_workflow(
         error!("Tried to add pending validation to queue which is already held!");
         None
     } else {
+        if old_store.has_same_queued_holding_worfkow(pending) {
+            warn!("Tried to add pending validation to queue which is already queued!");
+            None
+        } else {
+            let mut new_store = (*old_store).clone();
+            new_store
+                .queued_holding_workflows
+                .push_back(PendingValidationWithTimeout::new(
+                    pending.clone(),
+                    maybe_delay.map(ValidationTimeout::from),
+                ));
+            Some(new_store)
+        }
+    }
+}
+
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+pub fn reduce_prune(old_store: &DhtStore, _action_wrapper: &ActionWrapper) -> Option<DhtStore> {
+    let pruned_queue = old_store
+        .queued_holding_workflows
+        .iter()
+        .unique_by(|p| {
+            (
+                p.pending.workflow.clone(),
+                p.pending.entry_with_header.header.entry_address(),
+            )
+        })
+        .cloned()
+        .collect::<VecDeque<_>>();
+
+    if pruned_queue.len() < old_store.queued_holding_workflows.len() {
         let mut new_store = (*old_store).clone();
-        new_store
-            .queued_holding_workflows
-            .push_back(PendingValidationWithTimeout::new(
-                pending.clone(),
-                maybe_delay.map(ValidationTimeout::from),
-            ));
+        new_store.queued_holding_workflows = pruned_queue;
         Some(new_store)
+    } else {
+        None
     }
 }
 
 #[allow(unknown_lints)]
 #[allow(clippy::needless_pass_by_value)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_remove_queued_holding_workflow(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
@@ -536,7 +573,7 @@ pub mod tests {
         let store = reduce_queue_holding_workflow(&store, &action).unwrap();
 
         assert_eq!(store.queued_holding_workflows().len(), 1);
-        assert!(store.has_queued_holding_workflow(&hold));
+        assert!(store.has_exact_queued_holding_workflow(&hold));
 
         let test_link = String::from("test_link");
         let test_tag = String::from("test-tag");
@@ -559,7 +596,7 @@ pub mod tests {
         let store = reduce_queue_holding_workflow(&store, &action).unwrap();
 
         assert_eq!(store.queued_holding_workflows().len(), 2);
-        assert!(store.has_queued_holding_workflow(&hold_link));
+        assert!(store.has_exact_queued_holding_workflow(&hold_link));
 
         // the link won't validate while the entry is pending so we have to remove it
         let action = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow(hold.clone()));
@@ -573,17 +610,17 @@ pub mod tests {
         let store = reduce_queue_holding_workflow(&store, &action).unwrap();
 
         assert_eq!(store.queued_holding_workflows().len(), 2);
-        assert!(!store.has_queued_holding_workflow(&hold));
-        assert!(store.has_queued_holding_workflow(&update));
-        assert!(store.has_queued_holding_workflow(&hold_link));
+        assert!(!store.has_exact_queued_holding_workflow(&hold));
+        assert!(store.has_exact_queued_holding_workflow(&update));
+        assert!(store.has_exact_queued_holding_workflow(&hold_link));
 
         let action = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow(hold_link.clone()));
         let store = reduce_remove_queued_holding_workflow(&store, &action).unwrap();
 
         assert_eq!(store.queued_holding_workflows().len(), 1);
-        assert!(!store.has_queued_holding_workflow(&hold));
-        assert!(!store.has_queued_holding_workflow(&hold_link));
-        assert!(store.has_queued_holding_workflow(&update));
+        assert!(!store.has_exact_queued_holding_workflow(&hold));
+        assert!(!store.has_exact_queued_holding_workflow(&hold_link));
+        assert!(store.has_exact_queued_holding_workflow(&update));
 
         let (next_pending, _) = store.next_queued_holding_workflow().unwrap();
         assert_eq!(update, next_pending);

@@ -7,23 +7,17 @@ const dna = Config.dna(dnaPath, 'app-spec')
 const dna2 = Config.dna(dnaPath, 'app-spec', { uuid: 'altered-dna' })
 
 const networkType = process.env.APP_SPEC_NETWORK_TYPE
-const network = 
+const network =
   ( networkType === 'websocket'
   ? Config.network('websocket')
 
   : networkType === 'memory'
   ? Config.network('memory')
 
-  : networkType === 'sim1h'
-  ? {
-    type: 'sim1h',
-    dynamo_url: 'http://localhost:8000'
-  }
-
   : networkType === 'sim2h'
   ? {
     type: 'sim2h',
-    sim2h_url: 'wss://localhost:9000'
+    sim2h_url: 'ws://localhost:9000'
   }
 
   : (() => {throw new Error(`Unsupported network type: ${networkType}`)})()

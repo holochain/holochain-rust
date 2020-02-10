@@ -1,54 +1,61 @@
 #![feature(vec_remove_item)]
+
+extern crate backtrace;
 extern crate env_logger;
 extern crate lib3h_crypto_api;
 extern crate log;
 extern crate nanoid;
+extern crate num_cpus;
 #[macro_use]
 extern crate serde;
 #[macro_use]
 extern crate lazy_static;
+extern crate newrelic;
+
+#[macro_use]
+extern crate holochain_common;
 
 #[allow(dead_code)]
 mod naive_sharding;
-
-pub mod cache;
+#[allow(dead_code)]
+mod schedule;
+#[allow(unused_imports)]
+use schedule::*;
 pub mod connection_state;
 pub mod crypto;
 pub mod error;
-use lib3h_protocol::types::{AgentPubKey, AspectHash, EntryHash};
+use lib3h_protocol::types::*;
 mod message_log;
 pub mod websocket;
 pub mod wire_message;
 
 pub use crate::message_log::MESSAGE_LOGGER;
-use crate::{crypto::*, error::*};
-use cache::*;
+use crate::{crypto::*, error::*, naive_sharding::entry_location};
 use connection_state::*;
 use lib3h_crypto_api::CryptoSystem;
-use lib3h_protocol::{
-    data_types::{EntryData, FetchEntryData, GetListData, Opaque, SpaceData, StoreEntryAspectData},
-    protocol::*,
-    types::SpaceHash,
-    uri::Lib3hUri,
+use lib3h_protocol::{data_types::*, protocol::*, types::SpaceHash, uri::Lib3hUri};
+
+pub use wire_message::{
+    HelloData, StatusData, WireError, WireMessage, WireMessageVersion, WIRE_VERSION,
 };
-use url2::prelude::*;
 
-pub use wire_message::{WireError, WireMessage};
-
+use futures::{
+    future::{BoxFuture, FutureExt},
+    stream::StreamExt,
+};
 use in_stream::*;
 use log::*;
-use parking_lot::RwLock;
 use rand::{seq::SliceRandom, thread_rng};
-use std::{
-    collections::{HashMap, HashSet},
-    convert::TryFrom,
-    sync::Arc,
-};
+use std::convert::TryFrom;
 
 use holochain_locksmith::Mutex;
+use holochain_metrics::{config::MetricPublisherConfig, Metric};
 
 /// if we can't acquire a lock in 20 seconds, panic!
 const MAX_LOCK_TIMEOUT: u64 = 20000;
+
+//set up license_key
+new_relic_setup!("NEW_RELIC_LICENSE_KEY");
 
 /// extention trait for making sure deadlocks are fatal
 pub(crate) trait MutexExt<T> {
@@ -76,813 +83,1199 @@ pub(crate) trait SendExt<T> {
 
 impl<T> SendExt<T> for crossbeam_channel::Sender<T> {
     fn f_send(&self, v: T) {
-        self.send(v).expect("failed to send on crossbeam_channel");
+        if let Err(e) = self.send(v) {
+            error!("failed to send on channel -- shutting down? {:?}", e);
+        }
     }
 }
 
-const RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS: u64 = 20000; // 20 seconds
-const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 10000; // 10 seconds
+//const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 30000; // 30 seconds
+/// actual timing is handled by sim2h_im_state
+/// but it does cause a mutate, so we don't want to spam it too hard
+const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 500; // half second
 
-pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>>;
-pub(crate) type TcpWss = InStreamWss<InStreamTls<InStreamTcp>>;
-
-mod job;
-use job::*;
-
-pub struct Sim2h {
-    crypto: Box<dyn CryptoSystem>,
-    pub bound_uri: Option<Lib3hUri>,
-    connection_states: RwLock<HashMap<Lib3hUri, ConnectionState>>,
-    spaces: HashMap<SpaceHash, RwLock<Space>>,
-    pool: Pool,
-    wss_recv: crossbeam_channel::Receiver<TcpWss>,
-    msg_send: crossbeam_channel::Sender<(Url2, FrameResult)>,
-    msg_recv: crossbeam_channel::Receiver<(Url2, FrameResult)>,
-    open_connections: HashMap<
-        Lib3hUri,
-        (
-            Arc<Mutex<ConnectionJob>>,
-            crossbeam_channel::Sender<WsFrame>,
-        ),
-    >,
-    num_ticks: u64,
-    /// when should we recalculated the rrdht_arc_radius
-    rrdht_arc_radius_recalc: std::time::Instant,
-    /// when should we try to resync nodes that are still missing aspect data
-    missing_aspects_resync: std::time::Instant,
+fn open_lifecycle(desc: &str, uuid: &str, uri: &Lib3hUri) {
+    debug!("connection event open_conns: {} for {}@{}", desc, uuid, uri);
 }
 
-impl Sim2h {
-    pub fn new(crypto: Box<dyn CryptoSystem>, bind_spec: Lib3hUri) -> Self {
-        let pool = Pool::new();
-        pool.push_job(Box::new(Arc::new(Mutex::new(Tick::new()))));
+#[derive(Clone)]
+struct MetricsTimerGenerator {
+    sender: tokio::sync::mpsc::UnboundedSender<(&'static str, f64)>,
+}
 
-        let (wss_send, wss_recv) = crossbeam_channel::unbounded();
-        let (msg_send, msg_recv) = crossbeam_channel::unbounded();
+impl MetricsTimerGenerator {
+    pub fn new() -> (Self, BoxFuture<'static, ()>) {
+        let (sender, mut recv) = tokio::sync::mpsc::unbounded_channel::<(&'static str, f64)>();
+        let out = async move {
+            let metric_publisher = MetricPublisherConfig::default().create_metric_publisher();
+            loop {
+                let msg = match recv.next().await {
+                    None => return,
+                    Some(msg) => msg,
+                };
+                // TODO - this write is technically blocking
+                //        move to spawn_blocking?? use tokio::sync::Mutex??
+                metric_publisher
+                    .write()
+                    .unwrap()
+                    .publish(&Metric::new_timestamped_now(msg.0, None, msg.1));
+            }
+        }
+        .boxed();
+        (Self { sender }, out)
+    }
 
-        let mut sim2h = Sim2h {
-            crypto,
-            bound_uri: None,
-            connection_states: RwLock::new(HashMap::new()),
-            spaces: HashMap::new(),
-            pool,
-            wss_recv,
-            msg_send,
-            msg_recv,
-            open_connections: HashMap::new(),
-            num_ticks: 0,
-            rrdht_arc_radius_recalc: std::time::Instant::now(),
-            missing_aspects_resync: std::time::Instant::now(),
+    pub fn timer(&self, tag: &'static str) -> MetricsTimer {
+        MetricsTimer::new(tag, self.sender.clone())
+    }
+}
+
+struct MetricsTimer {
+    tag: &'static str,
+    create_time: std::time::Instant,
+    sender: tokio::sync::mpsc::UnboundedSender<(&'static str, f64)>,
+}
+
+impl MetricsTimer {
+    pub fn new(
+        tag: &'static str,
+        sender: tokio::sync::mpsc::UnboundedSender<(&'static str, f64)>,
+    ) -> Self {
+        Self {
+            tag,
+            create_time: std::time::Instant::now(),
+            sender,
+        }
+    }
+}
+
+impl Drop for MetricsTimer {
+    fn drop(&mut self) {
+        let elapsed = self.create_time.elapsed().as_millis() as f64;
+        if elapsed >= 1000.0 {
+            error!("VERY SLOW metric - {} - {} ms", self.tag, elapsed);
+        } else if elapsed >= 100.0 {
+            warn!("SLOW metric - {} - {} ms", self.tag, elapsed);
+        } else if elapsed >= 10.0 {
+            info!("metric - {} - {} ms", self.tag, elapsed);
+        }
+        if let Err(e) = self.sender.send((self.tag, elapsed)) {
+            error!(
+                "failed to send metric - shutting down? {} {:?}",
+                self.tag, e
+            );
+        }
+    }
+}
+
+//pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>>;
+//pub(crate) type TcpWss = InStreamWss<InStreamTls<InStreamTcp>>;
+pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTcp>;
+pub type TcpWss = InStreamWss<InStreamTcp>;
+
+mod connection_mgr;
+use connection_mgr::*;
+
+#[derive(Clone)]
+pub enum DhtAlgorithm {
+    FullSync,
+    NaiveSharding { redundant_count: u64 },
+}
+
+#[allow(dead_code)]
+mod mono_ref;
+use mono_ref::*;
+
+#[allow(dead_code)]
+mod sim2h_im_state;
+
+#[derive(Clone)]
+/// A clonable reference to our Sim2h instance that can be passed
+/// into `'static` async blocks && still be able to make sim2h calls
+struct Sim2hHandle {
+    state: sim2h_im_state::StoreHandle,
+    dht_algorithm: DhtAlgorithm,
+    metric_gen: MetricsTimerGenerator,
+    connection_mgr: ConnectionMgrHandle,
+    connection_count: ConnectionCount,
+}
+
+impl Sim2hHandle {
+    pub fn new(
+        crypto: Box<dyn CryptoSystem>,
+        dht_algorithm: DhtAlgorithm,
+        metric_gen: MetricsTimerGenerator,
+        connection_mgr: ConnectionMgrHandle,
+        connection_count: ConnectionCount,
+    ) -> Self {
+        let redundancy = match dht_algorithm {
+            DhtAlgorithm::FullSync => 0,
+            DhtAlgorithm::NaiveSharding { redundant_count } => redundant_count,
+        };
+        Self {
+            state: sim2h_im_state::Store::new(crypto, redundancy, None),
+            dht_algorithm,
+            metric_gen,
+            connection_mgr,
+            connection_count,
+        }
+    }
+
+    /// generate a new metrics timer
+    pub fn metric_timer(&self, tag: &'static str) -> MetricsTimer {
+        self.metric_gen.timer(tag)
+    }
+
+    /// get our current dht algorithm
+    pub fn dht_algorithm(&self) -> &DhtAlgorithm {
+        &self.dht_algorithm
+    }
+
+    /// access our connection manager handle
+    pub fn connection_mgr(&self) -> &ConnectionMgrHandle {
+        &self.connection_mgr
+    }
+
+    /// send a message to another connected agent
+    pub fn send(&self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) {
+        debug!(">>OUT>> {} to {}", msg.message_type(), uri);
+        MESSAGE_LOGGER
+            .lock()
+            .log_out(agent, uri.clone(), msg.clone());
+        let payload: Opaque = msg.clone().into();
+        self.connection_mgr
+            .send_data(uri, payload.as_bytes().into());
+    }
+
+    /// get access to our im_state object
+    pub fn state(&self) -> &sim2h_im_state::StoreHandle {
+        &self.state
+    }
+
+    /// forward a message to be handled
+    pub fn handle_message(&self, uri: Lib3hUri, message: WireMessage, signer: AgentId) {
+        // dispatch to correct handler
+        let sim2h_handle = self.clone();
+
+        // these message types are allowed before joining
+        let message = match message {
+            WireMessage::Lib3hToClient(_) | WireMessage::ClientToLib3hResponse(_) => {
+                error!("This is soo wrong. Clients should never send a message that only servers can send.");
+                return;
+            }
+            WireMessage::Ping => return spawn_handle_message_ping(sim2h_handle, uri, signer),
+            WireMessage::Status => return spawn_handle_message_status(sim2h_handle, uri, signer),
+            WireMessage::Hello(version) => {
+                return spawn_handle_message_hello(sim2h_handle, uri, signer, version)
+            }
+            WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(data)) => {
+                return spawn_handle_message_join_space(sim2h_handle, uri, signer, data)
+            }
+            message @ _ => message,
         };
 
-        sim2h.priv_bind_listening_socket(url::Url::from(bind_spec).into(), wss_send);
+        // you have to be in a space to proceed further
+
+        tokio::task::spawn(async move {
+            // -- right now each agent can only be part of a single space :/ --
+
+            let state = sim2h_handle.state().get_clone().await;
+            let (agent_id, space_hash) = match state.get_space_info_from_uri(&uri) {
+                None => {
+                    error!("uri has not joined space, cannoct proceed {}", uri);
+                    return;
+                }
+                Some((agent_id, space_hash)) => (agent_id, space_hash),
+            };
+
+            if *agent_id != signer {
+                error!(
+                    "signer {} does not match joined agent {:?}",
+                    signer, agent_id
+                );
+                return;
+            }
+
+            match message {
+                WireMessage::ClientToLib3h(ClientToLib3h::LeaveSpace(_data)) => {
+                    // for now, just disconnect on LeaveSpace
+                    sim2h_handle.disconnect(vec![uri.clone()]);
+                    return;
+                }
+                WireMessage::ClientToLib3h(ClientToLib3h::SendDirectMessage(dm_data)) => {
+                    return spawn_handle_message_send_dm(
+                        sim2h_handle,
+                        uri,
+                        signer,
+                        space_hash,
+                        dm_data,
+                    );
+                }
+                WireMessage::Lib3hToClientResponse(
+                    Lib3hToClientResponse::HandleSendDirectMessageResult(dm_data),
+                ) => {
+                    return spawn_handle_message_send_dm_result(
+                        sim2h_handle,
+                        uri,
+                        signer,
+                        space_hash,
+                        dm_data,
+                    );
+                }
+                WireMessage::ClientToLib3h(ClientToLib3h::PublishEntry(data)) => {
+                    return spawn_handle_message_publish_entry(
+                        sim2h_handle,
+                        uri,
+                        signer,
+                        space_hash,
+                        data,
+                    );
+                }
+                WireMessage::Lib3hToClientResponse(
+                    Lib3hToClientResponse::HandleGetAuthoringEntryListResult(list_data),
+                ) => {
+                    spawn_handle_message_list_data(
+                        sim2h_handle.clone(),
+                        uri.clone(),
+                        signer.clone(),
+                        space_hash.clone(),
+                        list_data.clone(),
+                    );
+                    spawn_handle_message_authoring_entry_list(
+                        sim2h_handle,
+                        uri,
+                        signer,
+                        space_hash,
+                        list_data,
+                    );
+                    return;
+                }
+                WireMessage::Lib3hToClientResponse(
+                    Lib3hToClientResponse::HandleGetGossipingEntryListResult(list_data),
+                ) => {
+                    return spawn_handle_message_list_data(
+                        sim2h_handle,
+                        uri,
+                        signer,
+                        space_hash,
+                        list_data,
+                    );
+                }
+                WireMessage::Lib3hToClientResponse(
+                    Lib3hToClientResponse::HandleFetchEntryResult(fetch_result),
+                ) => {
+                    return spawn_handle_message_fetch_entry_result(
+                        sim2h_handle,
+                        uri,
+                        signer,
+                        space_hash,
+                        fetch_result,
+                    );
+                }
+                WireMessage::ClientToLib3h(ClientToLib3h::QueryEntry(query_data)) => {
+                    return spawn_handle_message_query_entry(
+                        sim2h_handle,
+                        uri,
+                        signer,
+                        space_hash,
+                        query_data,
+                    );
+                }
+                WireMessage::Lib3hToClientResponse(
+                    Lib3hToClientResponse::HandleQueryEntryResult(query_result),
+                ) => {
+                    return spawn_handle_message_query_entry_result(
+                        sim2h_handle,
+                        uri,
+                        signer,
+                        space_hash,
+                        query_result,
+                    );
+                }
+                message @ _ => {
+                    error!("unhandled message type {:?}", message);
+                    return;
+                }
+            }
+        });
+    }
+
+    /// disconnect an active connection
+    pub fn disconnect(&self, disconnect: Vec<Lib3hUri>) {
+        for d in disconnect.iter() {
+            self.state().spawn_drop_connection_by_uri(d.clone());
+            self.connection_mgr.disconnect(d.clone());
+        }
+    }
+}
+
+fn spawn_handle_message_ping(sim2h_handle: Sim2hHandle, uri: Lib3hUri, signer: AgentId) {
+    /*
+    tokio::task::spawn(async move {
+    });
+    */
+    // no processing here, don't bother actually spawning
+    debug!("Sending Pong in response to Ping");
+    sim2h_handle.send(signer, uri, &WireMessage::Pong);
+}
+
+fn spawn_handle_message_status(sim2h_handle: Sim2hHandle, uri: Lib3hUri, signer: AgentId) {
+    tokio::task::spawn(async move {
+        debug!("Sending StatusResponse in response to Status");
+        let state = sim2h_handle.state().get_clone().await;
+        sim2h_handle.send(
+            signer.clone(),
+            uri.clone(),
+            &WireMessage::StatusResponse(StatusData {
+                spaces: state.spaces_count(),
+                connections: sim2h_handle.connection_count.get().await,
+                redundant_count: match sim2h_handle.dht_algorithm() {
+                    DhtAlgorithm::FullSync => 0,
+                    DhtAlgorithm::NaiveSharding { redundant_count } => *redundant_count,
+                },
+                version: WIRE_VERSION,
+            }),
+        );
+    });
+}
+
+fn spawn_handle_message_hello(
+    sim2h_handle: Sim2hHandle,
+    uri: Lib3hUri,
+    signer: AgentId,
+    version: u32,
+) {
+    /*
+    tokio::task::spawn(async move {
+    });
+    */
+    // no processing here, don't bother actually spawning
+    debug!("Sending HelloResponse in response to Hello({})", version);
+    sim2h_handle.send(
+        signer,
+        uri.clone(),
+        &WireMessage::HelloResponse(HelloData {
+            redundant_count: match sim2h_handle.dht_algorithm() {
+                DhtAlgorithm::FullSync => 0,
+                DhtAlgorithm::NaiveSharding { redundant_count } => *redundant_count,
+            },
+            version: WIRE_VERSION,
+            extra: None,
+        }),
+    );
+    // versions do not match - disconnect them
+    if version != WIRE_VERSION {
+        warn!(
+            "Disconnecting client for bad version this WIRE_VERSION = {}, client WIRE_VERSION = {}",
+            WIRE_VERSION, version
+        );
+        sim2h_handle.disconnect(vec![uri]);
+    }
+}
+
+fn spawn_handle_message_join_space(
+    sim2h_handle: Sim2hHandle,
+    uri: Lib3hUri,
+    _signer: AgentId,
+    data: SpaceData,
+) {
+    sim2h_handle.state().spawn_new_connection(
+        data.space_address.clone(),
+        data.agent_id.clone(),
+        uri.clone(),
+    );
+
+    sim2h_handle.send(
+        data.agent_id.clone(),
+        uri.clone(),
+        &WireMessage::Lib3hToClient(Lib3hToClient::HandleGetGossipingEntryList(GetListData {
+            request_id: "".into(),
+            space_address: data.space_address.clone(),
+            provider_agent_id: data.agent_id.clone(),
+        })),
+    );
+
+    sim2h_handle.send(
+        data.agent_id.clone(),
+        uri,
+        &WireMessage::Lib3hToClient(Lib3hToClient::HandleGetAuthoringEntryList(GetListData {
+            request_id: "".into(),
+            space_address: data.space_address.clone(),
+            provider_agent_id: data.agent_id,
+        })),
+    );
+}
+
+fn inner_spawn_handle_message_send_dmx(
+    sim2h_handle: Sim2hHandle,
+    to_agent_id: AgentId,
+    data_space_hash: SpaceHash,
+    space_hash: MonoRef<SpaceHash>,
+    message: WireMessage,
+) {
+    if data_space_hash != *space_hash {
+        error!(
+            "space mismatch - agent is in {}, message is for {}",
+            *space_hash, data_space_hash
+        );
+        return;
+    }
+
+    tokio::task::spawn(async move {
+        let state = sim2h_handle.state().get_clone().await;
+        let to_url = match state.lookup_joined(&space_hash, &to_agent_id) {
+            Some(to_url) => to_url,
+            None => {
+                error!("unvalidated proxy agent {}", &to_agent_id);
+                return;
+            }
+        };
+        sim2h_handle.send(to_agent_id, to_url.clone(), &message);
+    });
+}
+
+fn spawn_handle_message_send_dm(
+    sim2h_handle: Sim2hHandle,
+    _uri: Lib3hUri,
+    _signer: AgentId,
+    space_hash: MonoRef<SpaceHash>,
+    data: DirectMessageData,
+) {
+    let to_agent_id = data.to_agent_id.clone();
+    let data_space_hash = data.space_address.clone();
+    inner_spawn_handle_message_send_dmx(
+        sim2h_handle,
+        to_agent_id,
+        data_space_hash,
+        space_hash,
+        WireMessage::Lib3hToClient(Lib3hToClient::HandleSendDirectMessage(data)),
+    );
+}
+
+fn spawn_handle_message_send_dm_result(
+    sim2h_handle: Sim2hHandle,
+    _uri: Lib3hUri,
+    _signer: AgentId,
+    space_hash: MonoRef<SpaceHash>,
+    data: DirectMessageData,
+) {
+    let to_agent_id = data.to_agent_id.clone();
+    let data_space_hash = data.space_address.clone();
+    inner_spawn_handle_message_send_dmx(
+        sim2h_handle,
+        to_agent_id,
+        data_space_hash,
+        space_hash,
+        WireMessage::Lib3hToClient(Lib3hToClient::SendDirectMessageResult(data)),
+    );
+}
+
+fn spawn_handle_message_publish_entry(
+    sim2h_handle: Sim2hHandle,
+    _uri: Lib3hUri,
+    signer: AgentId,
+    space_hash: MonoRef<SpaceHash>,
+    data: ProvidedEntryData,
+) {
+    if data.space_address != *space_hash {
+        error!(
+            "space mismatch - agent is in {}, message is for {}",
+            *space_hash, data.space_address
+        );
+        return;
+    }
+
+    tokio::task::spawn(async move {
+        let aspect_list: im::HashSet<AspectHash> = data
+            .entry
+            .aspect_list
+            .iter()
+            .map(|a| a.aspect_address.clone())
+            .collect();
+        let mut multi_message = Vec::new();
+        for aspect in data.entry.aspect_list {
+            multi_message.push(Lib3hToClient::HandleStoreEntryAspect(
+                StoreEntryAspectData {
+                    request_id: "".into(),
+                    space_address: (&*space_hash).clone(),
+                    provider_agent_id: signer.clone(),
+                    entry_address: data.entry.entry_address.clone(),
+                    entry_aspect: aspect,
+                },
+            ));
+        }
+        let multi_message = WireMessage::MultiSend(multi_message);
+
+        let state = sim2h_handle.state().get_clone().await;
+        let send_to =
+            match state.get_agents_that_should_hold_entry(&space_hash, &data.entry.entry_address) {
+                None => return,
+                Some(send_to) => send_to,
+            };
+
+        for agent_id in send_to {
+            if let Some(uri) = state.lookup_joined(&space_hash, &agent_id) {
+                sim2h_handle.send((&*agent_id).clone(), uri.clone(), &multi_message);
+            }
+            sim2h_handle.state().spawn_agent_holds_aspects(
+                (&*space_hash).clone(),
+                (&*agent_id).clone(),
+                data.entry.entry_address.clone(),
+                aspect_list.clone(),
+            );
+        }
+    });
+}
+
+fn spawn_handle_message_list_data(
+    sim2h_handle: Sim2hHandle,
+    _uri: Lib3hUri,
+    signer: AgentId,
+    space_hash: MonoRef<SpaceHash>,
+    list_data: EntryListData,
+) {
+    if signer != list_data.provider_agent_id || list_data.space_address != *space_hash {
+        error!(
+            "space mismatch - agent is in {}, message is for {}",
+            *space_hash, list_data.space_address
+        );
+        return;
+    }
+
+    //tokio::task::spawn(async move {
+    //});
+    // just iter/send we don't need a new task for this
+
+    for (entry_hash, aspects) in list_data.address_map {
+        sim2h_handle.state().spawn_agent_holds_aspects(
+            (&*space_hash).clone(),
+            signer.clone(),
+            entry_hash,
+            aspects.into(),
+        );
+    }
+}
+
+fn spawn_handle_message_authoring_entry_list(
+    sim2h_handle: Sim2hHandle,
+    uri: Lib3hUri,
+    signer: AgentId,
+    space_hash: MonoRef<SpaceHash>,
+    list_data: EntryListData,
+) {
+    if signer != list_data.provider_agent_id || list_data.space_address != *space_hash {
+        error!(
+            "space mismatch - agent is in {}, message is for {}",
+            *space_hash, list_data.space_address
+        );
+        return;
+    }
+
+    tokio::task::spawn(async move {
+        let state = sim2h_handle.state().get_clone().await;
+
+        let mut multi_message = Vec::new();
+
+        for (entry_hash, aspects) in list_data.address_map {
+            let mut aspect_list = Vec::new();
+
+            for aspect in aspects {
+                let agents_that_need_aspect =
+                    state.get_agents_that_need_aspect(&space_hash, &entry_hash, &aspect);
+                if !agents_that_need_aspect.is_empty() {
+                    aspect_list.push(aspect.clone());
+                }
+            }
+
+            if !aspect_list.is_empty() {
+                multi_message.push(Lib3hToClient::HandleFetchEntry(FetchEntryData {
+                    request_id: "".to_string(),
+                    space_address: (&*space_hash).clone(),
+                    provider_agent_id: signer.clone(),
+                    entry_address: entry_hash.clone(),
+                    aspect_address_list: Some(aspect_list),
+                }));
+            }
+        }
+
+        if !multi_message.is_empty() {
+            let multi_send = WireMessage::MultiSend(multi_message);
+            sim2h_handle.send(signer, uri, &multi_send);
+        }
+    });
+}
+
+fn spawn_handle_message_fetch_entry_result(
+    sim2h_handle: Sim2hHandle,
+    _uri: Lib3hUri,
+    signer: AgentId,
+    space_hash: MonoRef<SpaceHash>,
+    fetch_result: FetchEntryResultData,
+) {
+    if signer != fetch_result.provider_agent_id || fetch_result.space_address != *space_hash {
+        error!(
+            "space mismatch - agent is in {}, message is for {}",
+            *space_hash, fetch_result.space_address
+        );
+        return;
+    }
+
+    tokio::task::spawn(async move {
+        let state = sim2h_handle.state().get_clone().await;
+
+        #[allow(clippy::type_complexity)]
+        let mut to_agent: std::collections::HashMap<
+            MonoRef<AgentId>,
+            (
+                Vec<Lib3hToClient>,
+                std::collections::HashMap<EntryHash, im::HashSet<AspectHash>>,
+            ),
+        > = std::collections::HashMap::new();
+
+        for aspect in fetch_result.entry.aspect_list {
+            let agents_that_need_aspect = state.get_agents_that_need_aspect(
+                &space_hash,
+                &fetch_result.entry.entry_address,
+                &aspect.aspect_address.clone(),
+            );
+
+            for agent_id in agents_that_need_aspect {
+                let m = to_agent.entry(agent_id.clone()).or_default();
+                m.0.push(Lib3hToClient::HandleStoreEntryAspect(
+                    StoreEntryAspectData {
+                        request_id: "".into(),
+                        space_address: (&*space_hash).clone(),
+                        provider_agent_id: (&*agent_id).clone(),
+                        entry_address: fetch_result.entry.entry_address.clone(),
+                        entry_aspect: aspect.clone(),
+                    },
+                ));
+
+                let e =
+                    m.1.entry(fetch_result.entry.entry_address.clone())
+                        .or_default();
+                e.insert(aspect.aspect_address.clone());
+            }
+        }
+
+        for (agent_id, (multi_message, mut holding)) in to_agent.drain() {
+            let uri = match state.lookup_joined(&space_hash, &agent_id) {
+                None => continue,
+                Some(uri) => uri,
+            };
+
+            let multi_send = WireMessage::MultiSend(multi_message);
+
+            sim2h_handle.send((&*agent_id).clone(), (&*uri).clone(), &multi_send);
+
+            for (entry_hash, aspects) in holding.drain() {
+                sim2h_handle.state().spawn_agent_holds_aspects(
+                    (&*space_hash).clone(),
+                    (&*agent_id).clone(),
+                    entry_hash,
+                    aspects,
+                );
+            }
+        }
+    });
+}
+
+fn spawn_handle_message_query_entry(
+    sim2h_handle: Sim2hHandle,
+    _uri: Lib3hUri,
+    signer: AgentId,
+    space_hash: MonoRef<SpaceHash>,
+    query_data: QueryEntryData,
+) {
+    if signer != query_data.requester_agent_id || query_data.space_address != *space_hash {
+        error!(
+            "space mismatch - agent is in {}, message is for {}",
+            *space_hash, query_data.space_address
+        );
+        return;
+    }
+
+    tokio::task::spawn(async move {
+        let state = sim2h_handle.state().get_clone().await;
+
+        let holding_agents = state.get_agents_for_query(
+            &space_hash,
+            &query_data.entry_address,
+            Some(&query_data.requester_agent_id),
+        );
+        // TODO db - send it out to more than one node
+        //           then give it some aggregation time
+        let query_target = holding_agents[0].clone();
+
+        let url = match state.lookup_joined(&space_hash, &query_target) {
+            None => {
+                error!("AHH - the query_target we found doesn't exist");
+                return;
+            }
+            Some(url) => url,
+        };
+        let query_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleQueryEntry(query_data));
+        sim2h_handle.send((&*query_target).clone(), url.clone(), &query_message);
+    });
+}
+
+fn spawn_handle_message_query_entry_result(
+    sim2h_handle: Sim2hHandle,
+    _uri: Lib3hUri,
+    signer: AgentId,
+    space_hash: MonoRef<SpaceHash>,
+    query_result: QueryEntryResultData,
+) {
+    if signer != query_result.responder_agent_id || query_result.space_address != *space_hash {
+        error!(
+            "space mismatch - agent is in {}, message is for {}",
+            *space_hash, query_result.space_address
+        );
+        return;
+    }
+
+    tokio::task::spawn(async move {
+        let req_agent_id = query_result.requester_agent_id.clone();
+        let msg_out = WireMessage::ClientToLib3hResponse(ClientToLib3hResponse::QueryEntryResult(
+            query_result,
+        ));
+        let state = sim2h_handle.state().get_clone().await;
+        let to_url = match state.lookup_joined(&space_hash, &req_agent_id) {
+            Some(to_url) => to_url,
+            None => {
+                error!("unvalidated proxy agent {}", &req_agent_id);
+                return;
+            }
+        };
+        sim2h_handle.send(req_agent_id, to_url.clone(), &msg_out);
+    });
+}
+
+/// creates a tokio runtime and executes the Sim2h instance within it
+/// returns the runtime so the user can choose how to manage the main loop
+pub fn run_sim2h(
+    crypto: Box<dyn CryptoSystem>,
+    bind_spec: Lib3hUri,
+    dht_algorithm: DhtAlgorithm,
+) -> (
+    tokio::runtime::Runtime,
+    tokio::sync::oneshot::Receiver<Lib3hUri>,
+) {
+    let rt = tokio::runtime::Builder::new()
+        .enable_all()
+        .threaded_scheduler()
+        .core_threads(num_cpus::get())
+        .thread_name("sim2h-tokio-thread")
+        .build()
+        .expect("can build tokio runtime");
+
+    let (bind_send, bind_recv) = tokio::sync::oneshot::channel();
+
+    rt.spawn(async move {
+        let sim2h = Sim2h::new(crypto, bind_spec, dht_algorithm);
+        let _ = bind_send.send(sim2h.bound_uri.clone().unwrap());
+
+        /*
+        tokio::task::spawn(async move {
+            let mut listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+                .await
+                .expect("failed to bind");
+            warn!("TT BOUND TO: {:?}", listener.local_addr());
+            while let Ok((stream, addr)) = listener.accept().await {
+                let stream: tokio::net::TcpStream = stream;
+                tokio::task::spawn(async move {
+                    warn!("GOT TT CONNECTION: {:?}", addr);
+                    let ws_stream = tokio_tungstenite::accept_async(stream)
+                        .await
+                        .expect("failed to handshake websocket");
+                    let (write, read) = ws_stream.split();
+                    read.forward(write)
+                        .await
+                        .expect("failed to forward message")
+                });
+            }
+        });
+        */
+
+        let gen_blocking_fn = move |mut sim2h: Sim2h| {
+            move || {
+                let res = sim2h.process();
+                (sim2h, res)
+            }
+        };
+        let mut blocking_fn = Some(gen_blocking_fn(sim2h));
+        loop {
+            // NOTE - once we move everything in sim2h to futures
+            //        we can get rid of the `process()` function
+            //        and remove this spawn_blocking code
+            let sim2h = match tokio::task::spawn_blocking(blocking_fn.take().unwrap()).await {
+                Err(e) => {
+                    // sometimes we get errors on shutdown...
+                    // we can't recover because the sim2h instance is lost
+                    // but don't panic... just exit
+                    error!("sim2h process failed: {:?}", e);
+                    return;
+                }
+                Ok((sim2h, Err(e))) => {
+                    if e.to_string().contains("Bind error:") {
+                        println!("{:?}", e);
+                        std::process::exit(1);
+                    } else {
+                        error!("{}", e.to_string())
+                    }
+                    sim2h
+                }
+                Ok((sim2h, Ok(did_work))) => {
+                    if did_work {
+                        tokio::task::yield_now().await;
+                    } else {
+                        tokio::time::delay_for(std::time::Duration::from_millis(1)).await;
+                    }
+                    sim2h
+                }
+            };
+            blocking_fn = Some(gen_blocking_fn(sim2h));
+        }
+    });
+
+    (rt, bind_recv)
+}
+
+/// a Sim2h server instance - manages connections between holochain instances
+pub struct Sim2h {
+    bound_listener: Option<TcpWssServer>,
+    metric_task: Option<BoxFuture<'static, ()>>,
+    pub bound_uri: Option<Lib3hUri>,
+    wss_send: crossbeam_channel::Sender<TcpWss>,
+    wss_recv: crossbeam_channel::Receiver<TcpWss>,
+    connection_mgr_evt_recv: ConnectionMgrEventRecv,
+    num_ticks: u64,
+    /// when should we try to resync nodes that are still missing aspect data
+    missing_aspects_resync_schedule: Schedule,
+    sim2h_handle: Sim2hHandle,
+    metric_gen: MetricsTimerGenerator,
+}
+
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+impl Sim2h {
+    /// create a new Sim2h server instance
+    pub fn new(
+        crypto: Box<dyn CryptoSystem>,
+        bind_spec: Lib3hUri,
+        dht_algorithm: DhtAlgorithm,
+    ) -> Self {
+        let (metric_gen, metric_task) = MetricsTimerGenerator::new();
+
+        let (connection_mgr, connection_mgr_evt_recv, connection_count) = ConnectionMgr::new();
+
+        let (wss_send, wss_recv) = crossbeam_channel::unbounded();
+        let sim2h_handle = Sim2hHandle::new(
+            crypto.box_clone(),
+            dht_algorithm,
+            metric_gen.clone(),
+            connection_mgr,
+            connection_count,
+        );
+
+        let config = TcpBindConfig::default();
+        //        let config = TlsBindConfig::new(config).dev_certificate();
+        let config = WssBindConfig::new(config);
+        let url = url::Url::from(bind_spec).into();
+        let listen: TcpWssServer = InStreamListenerWss::bind(&url, config).unwrap();
+        let bound_uri = Some(url::Url::from(listen.binding()).into());
+
+        let sim2h = Sim2h {
+            // TODO - (db) - Sim2h::new() is now called inside tokio runtime
+            //               we can move these back into the constructor
+            bound_listener: Some(listen),
+            metric_task: Some(metric_task),
+            bound_uri,
+            wss_send,
+            wss_recv,
+            connection_mgr_evt_recv,
+            num_ticks: 0,
+            missing_aspects_resync_schedule: Schedule::new(std::time::Duration::from_millis(
+                RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS,
+            )),
+            sim2h_handle,
+            metric_gen,
+        };
+
+        // trigger an initial schedule ready event
+        let _ = sim2h.missing_aspects_resync_schedule.get_guard();
 
         sim2h
     }
 
-    /// bind a listening socket, and set up the polling job to accept connections
-    fn priv_bind_listening_socket(
-        &mut self,
-        url: Url2,
-        wss_send: crossbeam_channel::Sender<TcpWss>,
-    ) {
-        let config = TcpBindConfig::default();
-        let config = TlsBindConfig::new(config).dev_certificate();
-        let config = WssBindConfig::new(config);
-        let listen: TcpWssServer = InStreamListenerWss::bind(&url, config).unwrap();
-        self.bound_uri = Some(url::Url::from(listen.binding()).into());
-        self.pool
-            .push_job(Box::new(Arc::new(Mutex::new(ListenJob::new(
-                listen, wss_send,
-            )))));
-    }
-
     /// if our listening socket has accepted any new connections, set them up
-    fn priv_check_incoming_connections(&mut self) {
-        if let Ok(wss) = self.wss_recv.try_recv() {
-            let url: Lib3hUri = url::Url::from(wss.remote_url()).into();
-            let (job, outgoing_send) = ConnectionJob::new(wss, self.msg_send.clone());
-            let job = Arc::new(Mutex::new(job));
-            if let Err(error) = self.handle_incoming_connect(url.clone()) {
-                error!("Error handling incoming connection: {:?}", error);
-                return;
+    fn priv_check_incoming_connections(&mut self) -> bool {
+        let _m = self
+            .metric_gen
+            .timer("sim2h-priv_check_incoming_connections");
+
+        let mut did_work = false;
+        let mut wss_list = Vec::new();
+        for _ in 0..100 {
+            if let Ok(wss) = self.wss_recv.try_recv() {
+                did_work = true;
+                wss_list.push(wss);
+            } else {
+                break;
             }
-            self.open_connections
-                .insert(url, (job.clone(), outgoing_send));
-            self.pool.push_job(Box::new(job));
         }
+        if !wss_list.is_empty() {
+            let sim2h_handle = self.sim2h_handle.clone();
+            tokio::task::spawn(async move {
+                let _m =
+                    sim2h_handle.metric_timer("sim2h-priv_check_incoming_connections-async-add");
+
+                for wss in wss_list.drain(..) {
+                    let url: Lib3hUri = url::Url::from(wss.remote_url()).into();
+                    let uuid = nanoid::simple();
+                    open_lifecycle("adding conn job", &uuid, &url);
+
+                    sim2h_handle.connection_mgr().connect(url, wss);
+                }
+            });
+        }
+        did_work
     }
 
     /// we received some kind of error related to a stream/socket
     /// print some debugging and disconnect it
     fn priv_drop_connection_for_error(&mut self, uri: Lib3hUri, error: Sim2hError) {
-        error!(
-            "Transport error occurred on connection to {}: {:?}",
+        debug!(
+            "dropping connection to {} because of error: {:?}",
             uri, error,
         );
-        info!("Dropping connection to {} because of error", uri);
-        self.disconnect(&uri);
+        self.sim2h_handle.disconnect(vec![uri]);
     }
 
     /// if our connections sent us any data, process it
-    fn priv_check_incoming_messages(&mut self) {
-        if let Ok((url, msg)) = self.msg_recv.try_recv() {
-            let url: Lib3hUri = url::Url::from(url).into();
-            match msg {
-                Ok(frame) => match frame {
-                    WsFrame::Text(s) => self.priv_drop_connection_for_error(
-                        url,
-                        format!("unexpected text message: {:?}", s).into(),
-                    ),
-                    WsFrame::Binary(b) => {
-                        let payload: Opaque = b.into();
-                        match Sim2h::verify_payload(payload.clone()) {
-                            Ok((source, wire_message)) => {
-                                if let Err(error) = self.handle_message(&url, wire_message, &source)
-                                {
-                                    error!("Error handling message: {:?}", error);
-                                }
-                            }
-                            Err(error) => error!(
-                                "Could not verify payload!\nError: {:?}\nPayload was: {:?}",
-                                error, payload
-                            ),
+    fn priv_check_incoming_messages(&mut self) -> bool {
+        let _m = self.metric_gen.timer("sim2h-priv_check_incoming_messages");
+        let mut did_work = false;
+
+        let loop_start = std::time::Instant::now();
+        let mut msg_count = 0;
+
+        let mut disconnect = Vec::new();
+        for _ in 0..100 {
+            match self.connection_mgr_evt_recv.try_recv() {
+                Ok(evt) => {
+                    msg_count += 1;
+                    did_work = true;
+                    match evt {
+                        ConMgrEvent::Disconnect(uri, maybe_err) => {
+                            debug!("disconnect {} {:?}", uri, maybe_err);
+                            disconnect.push(uri);
+                        }
+                        ConMgrEvent::ReceiveData(uri, data) => {
+                            self.priv_handle_recv_data(uri, data);
                         }
                     }
-                    // TODO - we should use websocket ping/pong
-                    //        instead of rolling our own on top of Binary
-                    WsFrame::Ping(_) => (),
-                    WsFrame::Pong(_) => (),
-                    WsFrame::Close(c) => {
-                        debug!("Disconnecting {} after connection reset {:?}", url, c);
-                        self.disconnect(&url);
-                    }
-                },
-                Err(e) => self.priv_drop_connection_for_error(url, e),
-            }
-        }
-    }
-
-    /// recalculate arc radius for our connections
-    fn recalc_rrdht_arc_radius(&mut self) {
-        for (_, space) in self.spaces.iter_mut() {
-            space.write().recalc_rrdht_arc_radius();
-        }
-    }
-
-    fn request_authoring_list(
-        &mut self,
-        uri: Lib3hUri,
-        space_address: SpaceHash,
-        provider_agent_id: AgentId,
-    ) {
-        let wire_message =
-            WireMessage::Lib3hToClient(Lib3hToClient::HandleGetAuthoringEntryList(GetListData {
-                request_id: "".into(),
-                space_address,
-                provider_agent_id: provider_agent_id.clone(),
-            }));
-        self.send(provider_agent_id, uri, &wire_message);
-    }
-
-    fn request_gossiping_list(
-        &mut self,
-        uri: Lib3hUri,
-        space_address: SpaceHash,
-        provider_agent_id: AgentId,
-    ) {
-        let wire_message =
-            WireMessage::Lib3hToClient(Lib3hToClient::HandleGetGossipingEntryList(GetListData {
-                request_id: "".into(),
-                space_address,
-                provider_agent_id: provider_agent_id.clone(),
-            }));
-        self.send(provider_agent_id, uri, &wire_message);
-    }
-
-    fn get_or_create_space(&mut self, space_address: &SpaceHash) -> &RwLock<Space> {
-        if !self.spaces.contains_key(space_address) {
-            self.spaces.insert(
-                space_address.clone(),
-                RwLock::new(Space::new(self.crypto.box_clone())),
-            );
-            info!(
-                "\n\n+++++++++++++++\nNew Space: {}\n+++++++++++++++\n",
-                space_address
-            );
-        }
-        self.spaces.get(space_address).unwrap()
-    }
-
-    // adds an agent to a space
-    fn join(&mut self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
-        trace!("join entered");
-        let result =
-            if let Some(ConnectionState::Limbo(pending_messages)) = self.get_connection(uri) {
-                let _ = self.connection_states.write().insert(
-                    uri.clone(),
-                    ConnectionState::new_joined(data.space_address.clone(), data.agent_id.clone())?,
-                );
-
-                self.get_or_create_space(&data.space_address)
-                    .write()
-                    .join_agent(data.agent_id.clone(), uri.clone())?;
-                info!(
-                    "Agent {:?} joined space {:?}",
-                    data.agent_id, data.space_address
-                );
-                self.request_authoring_list(
-                    uri.clone(),
-                    data.space_address.clone(),
-                    data.agent_id.clone(),
-                );
-                self.request_gossiping_list(
-                    uri.clone(),
-                    data.space_address.clone(),
-                    data.agent_id.clone(),
-                );
-                for message in *pending_messages {
-                    if let Err(err) = self.handle_message(uri, message.clone(), &data.agent_id) {
-                        error!(
-                            "Error while handling limbo pending message {:?} for {}: {}",
-                            message, uri, err
-                        );
-                    }
                 }
-                Ok(())
-            } else {
-                Err(format!("no agent found in limbo at {} ", uri).into())
-            };
-        trace!("join done");
-        result
-    }
-
-    // removes an agent from a space
-    fn leave(&mut self, uri: &Lib3hUri, data: &SpaceData) -> Sim2hResult<()> {
-        if let Some(ConnectionState::Joined(space_address, agent_id)) = self.get_connection(uri) {
-            if (data.agent_id != agent_id) || (data.space_address != space_address) {
-                Err(SPACE_MISMATCH_ERR_STR.into())
-            } else {
-                self.disconnect(uri);
-                Ok(())
-            }
-        } else {
-            Err(format!("no joined agent found at {} ", &uri).into())
-        }
-    }
-
-    // removes a uri from connection and from spaces
-    fn disconnect(&mut self, uri: &Lib3hUri) {
-        trace!("disconnect entered");
-
-        if let Some((con, _outgoing_send)) = self.open_connections.remove(uri) {
-            con.f_lock().stop();
-        }
-
-        if let Some(ConnectionState::Joined(space_address, agent_id)) =
-            self.connection_states.write().remove(uri)
-        {
-            if let Some(space_lock) = self.spaces.get(&space_address) {
-                if space_lock.write().remove_agent(&agent_id) == 0 {
-                    self.spaces.remove(&space_address);
+                Err(tokio::sync::mpsc::error::TryRecvError::Empty) => break,
+                Err(tokio::sync::mpsc::error::TryRecvError::Closed) => {
+                    error!("broken channel, shutting down?");
+                    return true;
                 }
             }
         }
-        trace!("disconnect done");
-    }
 
-    // get the connection status of an agent
-    fn get_connection(&self, uri: &Lib3hUri) -> Option<ConnectionState> {
-        let reader = self.connection_states.read();
-        reader.get(uri).map(|ca| (*ca).clone())
-    }
-
-    // find out if an agent is in a space or not and return its URI
-    fn lookup_joined(&self, space_address: &SpaceHash, agent_id: &AgentId) -> Option<Lib3hUri> {
-        self.spaces
-            .get(space_address)?
-            .read()
-            .agent_id_to_uri(agent_id)
-    }
-
-    // handler for incoming connections
-    fn handle_incoming_connect(&self, uri: Lib3hUri) -> Sim2hResult<bool> {
-        trace!("handle_incoming_connect entered");
-        info!("New connection from {:?}", uri);
-        if let Some(_old) = self
-            .connection_states
-            .write()
-            .insert(uri.clone(), ConnectionState::new())
-        {
-            println!("TODO should remove {}", uri); //TODO
-        };
-        trace!("handle_incoming_connect done");
-        Ok(true)
-    }
-
-    // handler for messages sent to sim2h
-    fn handle_message(
-        &mut self,
-        uri: &Lib3hUri,
-        message: WireMessage,
-        signer: &AgentId,
-    ) -> Sim2hResult<()> {
-        // TODO: anyway, but especially with this Ping/Pong, mitigate DoS attacks.
-        if message == WireMessage::Ping {
-            trace!("Ping -> Pong");
-            self.send(signer.clone(), uri.clone(), &WireMessage::Pong);
-            return Ok(());
+        if !disconnect.is_empty() {
+            self.sim2h_handle.disconnect(disconnect);
         }
-        MESSAGE_LOGGER
-            .lock()
-            .log_in(signer.clone(), uri.clone(), message.clone());
-        trace!("handle_message entered");
-        let mut agent = self
-            .get_connection(uri)
-            .ok_or_else(|| format!("no connection for {}", uri))?;
 
-        match agent {
-            // if the agent sending the message is in limbo, then the only message
-            // allowed is a join message.
-            ConnectionState::Limbo(ref mut pending_messages) => {
-                if let WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(data)) = message {
-                    if &data.agent_id != signer {
-                        return Err(SIGNER_MISMATCH_ERR_STR.into());
-                    }
-                    self.join(uri, &data)
-                } else {
-                    // TODO: maybe have some upper limit on the number of messages
-                    // we allow to queue before dropping the connections
-                    pending_messages.push(message);
-                    let _ = self.connection_states.write().insert(uri.clone(), agent);
-                    self.send(
-                        signer.clone(),
-                        uri.clone(),
-                        &WireMessage::Err(WireError::MessageWhileInLimbo),
+        trace!(
+            "sim2h lib processed {} incoming messages in {} ms",
+            msg_count,
+            loop_start.elapsed().as_millis(),
+        );
+
+        did_work
+    }
+
+    /// process an actual incoming message
+    fn priv_handle_recv_data(&mut self, uri: Lib3hUri, data: WsFrame) {
+        match data {
+            WsFrame::Text(s) => self.priv_drop_connection_for_error(
+                uri,
+                format!("unexpected text message: {:?}", s).into(),
+            ),
+            WsFrame::Binary(b) => {
+                trace!(
+                    "priv_check_incoming_messages: received a frame from {}",
+                    uri
+                );
+                let payload: Opaque = b.into();
+                Sim2h::handle_payload(self.sim2h_handle.clone(), uri, payload);
+            }
+            // TODO - we should use websocket ping/pong
+            //        instead of rolling our own on top of Binary
+            WsFrame::Ping(_) => (),
+            WsFrame::Pong(_) => (),
+            WsFrame::Close(c) => {
+                debug!("Disconnecting {} after connection reset {:?}", uri, c);
+                self.sim2h_handle.disconnect(vec![uri]);
+            }
+        }
+    }
+
+    fn handle_payload(sim2h_handle: Sim2hHandle, url: Lib3hUri, payload: Opaque) {
+        tokio::task::spawn(async move {
+            let _m = sim2h_handle.metric_timer("sim2h-handle_payload");
+            match (|| -> Sim2hResult<(AgentId, WireMessage)> {
+                let signed_message = SignedWireMessage::try_from(payload.clone())?;
+                let result = signed_message.verify().unwrap();
+                if !result {
+                    return Err(VERIFY_FAILED_ERR_STR.into());
+                }
+                let wire_message = WireMessage::try_from(signed_message.payload)?;
+                Ok((signed_message.provenance.source().into(), wire_message))
+            })() {
+                Ok((source, wire_message)) => {
+                    sim2h_handle.handle_message(url, wire_message, source)
+                }
+                Err(error) => {
+                    error!(
+                        "Could not verify payload from {}!\nError: {:?}\nPayload was: {:?}",
+                        url, error, payload
                     );
-                    Ok(())
+                    sim2h_handle.disconnect(vec![url]);
                 }
             }
+        });
+    }
 
-            // if the agent sending the messages has been vetted and is in the space
-            // then build a message to be proxied to the correct destination, and forward it
-            ConnectionState::Joined(space_address, agent_id) => {
-                if &agent_id != signer {
-                    return Err(SIGNER_MISMATCH_ERR_STR.into());
+    /// process transport and incoming messages from it
+    pub fn process(&mut self) -> Sim2hResult<bool> {
+        let _m = self.metric_gen.timer("sim2h-process");
+        if self.bound_listener.is_some() {
+            let mut listen = self.bound_listener.take().unwrap();
+            let wss_send = self.wss_send.clone();
+            tokio::task::spawn(async move {
+                loop {
+                    let mut did_work = false;
+                    for _ in 0..100 {
+                        match listen.accept() {
+                            Ok(wss) => {
+                                wss_send.f_send(wss);
+                                did_work = true;
+                            }
+                            Err(e) if e.would_block() => {
+                                break;
+                            }
+                            Err(e) => {
+                                error!(
+                                    "LISTEN ACCEPT FAIL: {:?}\nbacktrace: {:?}",
+                                    e,
+                                    backtrace::Backtrace::new()
+                                );
+                                did_work = true;
+                            }
+                        }
+                    }
+                    if did_work {
+                        tokio::task::yield_now().await;
+                    } else {
+                        tokio::time::delay_for(std::time::Duration::from_millis(10)).await;
+                    }
                 }
-                self.handle_joined(uri, &space_address, &agent_id, message)
-            }
+            });
         }
-    }
-
-    fn verify_payload(payload: Opaque) -> Sim2hResult<(AgentId, WireMessage)> {
-        let signed_message = SignedWireMessage::try_from(payload)?;
-        let result = signed_message.verify().unwrap();
-        if !result {
-            return Err(VERIFY_FAILED_ERR_STR.into());
+        if self.metric_task.is_some() {
+            tokio::task::spawn(self.metric_task.take().unwrap());
         }
-        let wire_message = WireMessage::try_from(signed_message.payload)?;
-        Ok((signed_message.provenance.source().into(), wire_message))
-    }
 
-    // process transport and  incoming messages from it
-    pub fn process(&mut self) -> Sim2hResult<()> {
-        trace!("process");
+        let mut did_work = false;
+
         self.num_ticks += 1;
         if self.num_ticks % 60000 == 0 {
             debug!(".");
             self.num_ticks = 0;
         }
 
-        self.priv_check_incoming_connections();
-        self.priv_check_incoming_messages();
-
-        if std::time::Instant::now() >= self.rrdht_arc_radius_recalc {
-            self.rrdht_arc_radius_recalc = std::time::Instant::now()
-                .checked_add(std::time::Duration::from_millis(
-                    RECALC_RRDHT_ARC_RADIUS_INTERVAL_MS,
-                ))
-                .expect("can add interval ms");
-
-            self.recalc_rrdht_arc_radius();
-            //trace!("recalc rrdht_arc_radius got: {}", self.rrdht_arc_radius);
+        if self.priv_check_incoming_connections() {
+            did_work = true;
         }
 
-        if std::time::Instant::now() >= self.missing_aspects_resync {
-            self.missing_aspects_resync = std::time::Instant::now()
-                .checked_add(std::time::Duration::from_millis(
-                    RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS,
-                ))
-                .expect("can add interval ms");
-
-            self.retry_sync_missing_aspects();
+        if self.priv_check_incoming_messages() {
+            did_work = true;
         }
 
-        trace!("process done");
-        Ok(())
+        if self.missing_aspects_resync_schedule.should_proceed() {
+            let schedule_guard = self.missing_aspects_resync_schedule.get_guard();
+            let sim2h_handle = self.sim2h_handle.clone();
+            tokio::task::spawn(missing_aspects_resync(sim2h_handle, schedule_guard));
+        }
+
+        Ok(did_work)
     }
+}
 
-    // given an incoming messages, prepare a proxy message and whether it's an publish or request
-    fn handle_joined(
-        &mut self,
-        uri: &Lib3hUri,
-        space_address: &SpaceHash,
-        agent_id: &AgentId,
-        message: WireMessage,
-    ) -> Sim2hResult<()> {
-        trace!("handle_joined entered");
-        debug!(
-            "<<IN<< {} from {}",
-            message.message_type(),
-            agent_id.to_string()
-        );
-        match message {
-            // First make sure we are not receiving a message in the wrong direction.
-            // Panic for now so we can easily spot a mistake.
-            // Should maybe break up WireMessage into two different structs so we get the
-            // error already when parsing an incoming payload.
-            WireMessage::Lib3hToClient(_) | WireMessage::ClientToLib3hResponse(_) =>
-                panic!("This is soo wrong. Clients should never send a message that only servers can send."),
-            // -- Space -- //
-            WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(_)) => {
-                Err("join message should have been processed elsewhere and can't be proxied".into())
-            }
-            WireMessage::ClientToLib3h(ClientToLib3h::LeaveSpace(data)) => {
-                self.leave(uri, &data)
-            }
+async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: ScheduleGuard) {
+    let gossip_full_start = std::time::Instant::now();
 
-            // -- Direct Messaging -- //
-            // Send a message directly to another agent on the network
-            WireMessage::ClientToLib3h(ClientToLib3h::SendDirectMessage(dm_data)) => {
-                if (dm_data.from_agent_id != *agent_id) || (dm_data.space_address != *space_address)
-                {
-                    return Err(SPACE_MISMATCH_ERR_STR.into());
+    let agents_needing_gossip = sim2h_handle.state().check_gossip().await.spaces();
+
+    for (space_hash, agents) in agents_needing_gossip.iter() {
+        trace!("sim2h gossip agent count: {}", agents.len());
+
+        for agent_id in agents {
+            // explicitly yield here as we don't want to hog the scheduler
+            tokio::task::yield_now().await;
+            let state = sim2h_handle.state().get_clone().await;
+
+            let gossip_agent_start = std::time::Instant::now();
+
+            let r = match state.get_gossip_aspects_needed_for_agent(&space_hash, &agent_id) {
+                None => continue,
+                Some(r) => r,
+            };
+
+            trace!("sim2h gossip entry count: {}", r.len());
+
+            for (entry_hash, aspects) in r.iter() {
+                if aspects.is_empty() {
+                    continue;
                 }
-                let to_url = self
-                    .lookup_joined(space_address, &dm_data.to_agent_id)
-                    .ok_or_else(|| format!("unvalidated proxy agent {}", &dm_data.to_agent_id))?;
-                self.send(
-                    dm_data.to_agent_id.clone(),
-                    to_url,
-                    &WireMessage::Lib3hToClient(Lib3hToClient::HandleSendDirectMessage(dm_data))
-                );
-                Ok(())
-            }
-            // Direct message response
-            WireMessage::Lib3hToClientResponse(Lib3hToClientResponse::HandleSendDirectMessageResult(
-                dm_data,
-            )) => {
-                if (dm_data.from_agent_id != *agent_id) || (dm_data.space_address != *space_address)
-                {
-                    return Err(SPACE_MISMATCH_ERR_STR.into());
-                }
-                let to_url = self
-                    .lookup_joined(space_address, &dm_data.to_agent_id)
-                    .ok_or_else(|| format!("unvalidated proxy agent {}", &dm_data.to_agent_id))?;
-                self.send(
-                    dm_data.to_agent_id.clone(),
-                    to_url,
-                    &WireMessage::Lib3hToClient(Lib3hToClient::SendDirectMessageResult(dm_data))
-                );
-                Ok(())
-            }
-            WireMessage::ClientToLib3h(ClientToLib3h::PublishEntry(data)) => {
-                if (data.provider_agent_id != *agent_id) || (data.space_address != *space_address) {
-                    return Err(SPACE_MISMATCH_ERR_STR.into());
-                }
-                self.handle_new_entry_data(data.entry, space_address.clone(), agent_id.clone());
-                Ok(())
-            }
-            WireMessage::Lib3hToClientResponse(Lib3hToClientResponse::HandleGetAuthoringEntryListResult(list_data)) => {
-                debug!("GOT AUTHORING LIST from {}", agent_id);
-                if (list_data.provider_agent_id != *agent_id) || (list_data.space_address != *space_address) {
-                    return Err(SPACE_MISMATCH_ERR_STR.into());
-                }
-                let unseen_aspects = AspectList::from(list_data.address_map)
-                    .diff(self
-                        .get_or_create_space(&space_address)
-                        .read()
-                        .all_aspects()
+
+                let query_agents = state.get_agents_for_query(&space_hash, &entry_hash, None);
+
+                if query_agents.is_empty() {
+                    warn!(
+                        "nobody online to service gossip request for aspects in entry hash {:?}",
+                        entry_hash
                     );
-                debug!("UNSEEN ASPECTS:\n{}", unseen_aspects.pretty_string());
-                for entry_address in unseen_aspects.entry_addresses() {
-                    if let Some(aspect_address_list) = unseen_aspects.per_entry(entry_address) {
-                        let wire_message = WireMessage::Lib3hToClient(
-                            Lib3hToClient::HandleFetchEntry(FetchEntryData {
-                                request_id: "".into(),
-                                space_address: space_address.clone(),
-                                provider_agent_id: agent_id.clone(),
-                                entry_address: entry_address.clone(),
-                                aspect_address_list: Some(aspect_address_list.clone())
-                            })
-                        );
-                        self.send(agent_id.clone(), uri.clone(), &wire_message);
-                    }
+                    continue;
                 }
-                Ok(())
-            }
-            WireMessage::Lib3hToClientResponse(Lib3hToClientResponse::HandleGetGossipingEntryListResult(list_data)) => {
-                debug!("GOT GOSSIPING LIST from {}", agent_id);
-                if (list_data.provider_agent_id != *agent_id) || (list_data.space_address != *space_address) {
-                    return Err(SPACE_MISMATCH_ERR_STR.into());
-                }
-                let (mut agents_in_space, aspects_missing_at_node) = {
-                    let space = self
-                        .get_or_create_space(&space_address)
-                        .read();
-                    let aspects_missing_at_node = space
-                        .all_aspects()
-                        .diff(&AspectList::from(list_data.address_map));
 
-                    warn!("MISSING ASPECTS at {}:\n{}", agent_id, aspects_missing_at_node.pretty_string());
+                // TODO - if we have multiple options,
+                // do we want to fire off more than one?
+                let query_agent = query_agents[0].clone();
 
-                    // NB: agents_in_space may be randomly shuffled later, do not depend on ordering!
-                    let agents_in_space = space
-                        .all_agents()
-                        .keys()
-                        .cloned()
-                        .collect::<Vec<AgentPubKey>>();
-                    (agents_in_space, aspects_missing_at_node)
+                let uri = match state.lookup_joined(space_hash, &query_agent) {
+                    None => continue,
+                    Some(uri) => uri,
                 };
 
-                let missing_hashes: HashSet<(EntryHash, AspectHash)> = (&aspects_missing_at_node).into();
-                if missing_hashes.len() > 0 {
-                    let mut space = self
-                        .get_or_create_space(&space_address)
-                        .write();
-                    for (entry_hash, aspect_hash) in missing_hashes {
-                        space.add_missing_aspect(agent_id.clone(), entry_hash, aspect_hash);
-                    }
-                }
+                let wire_message =
+                    WireMessage::Lib3hToClient(Lib3hToClient::HandleFetchEntry(FetchEntryData {
+                        request_id: "".to_string(),
+                        space_address: (&**space_hash).clone(),
+                        provider_agent_id: (&*query_agent).clone(),
+                        entry_address: (&**entry_hash).clone(),
+                        aspect_address_list: Some(aspects.iter().map(|a| (&**a).clone()).collect()),
+                    }));
 
-                if agents_in_space.len() == 1 {
-                    error!("MISSING ASPECTS and no way to get them. Agent is alone in space..");
-                } else {
-                    let agents_slice = &mut agents_in_space[..];
-                    agents_slice.shuffle(&mut thread_rng());
-                    self.fetch_aspects_from_arbitrary_agent(aspects_missing_at_node, agent_id.clone(), agents_slice, space_address.clone());
-                }
-                Ok(())
+                sim2h_handle.send((&*query_agent).clone(), (&*uri).clone(), &wire_message);
             }
-            WireMessage::Lib3hToClientResponse(
-                Lib3hToClientResponse::HandleFetchEntryResult(fetch_result)) => {
-                if (fetch_result.provider_agent_id != *agent_id) || (fetch_result.space_address != *space_address) {
-                    return Err(SPACE_MISMATCH_ERR_STR.into());
-                }
-                debug!("HANDLE FETCH ENTRY RESULT: {:?}", fetch_result);
-                if fetch_result.request_id == "" {
-                    debug!("Got FetchEntry result form {} without request id - must be from authoring list", agent_id);
-                    self.handle_new_entry_data(fetch_result.entry, space_address.clone(), agent_id.clone());
-                } else {
-                    debug!("Got FetchEntry result with request id {} - this is for gossiping to agent with incomplete data", fetch_result.request_id);
-                    let to_agent_id = AgentPubKey::from(fetch_result.request_id);
-                    let maybe_url = self.lookup_joined(space_address, &to_agent_id);
-                    if maybe_url.is_none() {
-                        error!("Got FetchEntryResult with request id that is not a known agent id. I guess we lost that agent before we could deliver missing aspects.");
-                        return Ok(())
-                    }
-                    let url = maybe_url.unwrap();
-                    for aspect in fetch_result.entry.aspect_list {
-                        self
-                            .get_or_create_space(&space_address)
-                            .write()
-                            .remove_missing_aspect(&to_agent_id, &fetch_result.entry.entry_address, &aspect.aspect_address);
-                        let store_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleStoreEntryAspect(
-                            StoreEntryAspectData {
-                                request_id: "".into(),
-                                space_address: space_address.clone(),
-                                provider_agent_id: agent_id.clone(),
-                                entry_address: fetch_result.entry.entry_address.clone(),
-                                entry_aspect: aspect,
-                            },
-                        ));
-                        self.send(to_agent_id.clone(), url.clone(), &store_message);
-                    }
-                }
-
-                Ok(())
-            }
-            _ => {
-                warn!("Ignoring unimplemented message: {:?}", message );
-                Err(format!("Message not implemented: {:?}", message).into())
-            }
+            trace!(
+                "sim2h gossip agent in {} ms",
+                gossip_agent_start.elapsed().as_millis()
+            );
         }
     }
-
-    fn fetch_aspects_from_arbitrary_agent(
-        &mut self,
-        aspects_to_fetch: AspectList,
-        for_agent_id: AgentId,
-        agent_pool: &[AgentId],
-        space_address: SpaceHash,
-    ) {
-        for entry_address in aspects_to_fetch.entry_addresses() {
-            if let Some(aspect_address_list) = aspects_to_fetch.per_entry(entry_address) {
-                if let Some(arbitrary_agent) = self.get_agent_not_missing_aspects(
-                    entry_address,
-                    aspect_address_list,
-                    &for_agent_id,
-                    agent_pool,
-                    &space_address,
-                ) {
-                    debug!(
-                        "FETCHING missing contents from RANDOM AGENT: {}",
-                        arbitrary_agent
-                    );
-
-                    let maybe_url = self.lookup_joined(&space_address, &arbitrary_agent);
-                    if maybe_url.is_none() {
-                        error!("Could not find URL for randomly selected agent. This should not happen!");
-                        return;
-                    }
-                    let random_url = maybe_url.unwrap();
-
-                    let wire_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleFetchEntry(
-                        FetchEntryData {
-                            request_id: for_agent_id.clone().into(),
-                            space_address: space_address.clone(),
-                            provider_agent_id: arbitrary_agent.clone(),
-                            entry_address: entry_address.clone(),
-                            aspect_address_list: Some(aspect_address_list.clone()),
-                        },
-                    ));
-                    debug!("SENDING fetch with request ID: {:?}", wire_message);
-                    self.send(arbitrary_agent.clone(), random_url.clone(), &wire_message);
-                } else {
-                    warn!("Could not find an agent that has any of the missing aspects. Trying again later...")
-                }
-            }
-        }
-    }
-
-    /// Get an agent who has at least one of the aspects specified, and who is not the same as for_agent_id.
-    /// `agent_pool` is expected to be randomly shuffled, to ensure that no hotspots are created.
-    fn get_agent_not_missing_aspects(
-        &self,
-        entry_hash: &EntryHash,
-        aspects: &Vec<AspectHash>,
-        for_agent_id: &AgentId,
-        agent_pool: &[AgentId],
-        space_address: &SpaceHash,
-    ) -> Option<AgentId> {
-        let space_lock = self.spaces.get(space_address)?.read();
-        agent_pool
-            .into_iter()
-            // We ignore all agents that are missing all of the same aspects as well since
-            // they can't help us.
-            .find(|a| {
-                **a != *for_agent_id
-                    && !space_lock.agent_is_missing_all_aspects(*a, entry_hash, aspects)
-            })
-            .cloned()
-    }
-
-    fn handle_new_entry_data(
-        &mut self,
-        entry_data: EntryData,
-        space_address: SpaceHash,
-        provider: AgentPubKey,
-    ) {
-        let aspect_addresses = entry_data
-            .aspect_list
-            .iter()
-            .cloned()
-            .map(|aspect_data| aspect_data.aspect_address)
-            .collect::<Vec<_>>();
-        let mut map = HashMap::new();
-        map.insert(entry_data.entry_address.clone(), aspect_addresses);
-        let aspect_list = AspectList::from(map);
-        debug!("GOT NEW ASPECTS:\n{}", aspect_list.pretty_string());
-
-        for aspect in entry_data.aspect_list {
-            // 1. Add hashes to our global list of all aspects in this space:
-            {
-                let mut space = self.get_or_create_space(&space_address).write();
-                space.add_aspect(
-                    entry_data.entry_address.clone(),
-                    aspect.aspect_address.clone(),
-                );
-                debug!(
-                    "Space {} now knows about these aspects:\n{}",
-                    space_address,
-                    space.all_aspects().pretty_string()
-                );
-            }
-
-            // 2. Create store message
-            let store_message = WireMessage::Lib3hToClient(Lib3hToClient::HandleStoreEntryAspect(
-                StoreEntryAspectData {
-                    request_id: "".into(),
-                    space_address: space_address.clone(),
-                    provider_agent_id: provider.clone(),
-                    entry_address: entry_data.entry_address.clone(),
-                    entry_aspect: aspect,
-                },
-            ));
-            // 3. Send store message to everybody in this space
-            if let Err(e) = self.broadcast(space_address.clone(), &store_message, Some(&provider)) {
-                error!("Error during broadcast: {:?}", e);
-            }
-        }
-    }
-
-    fn broadcast(
-        &mut self,
-        space: SpaceHash,
-        msg: &WireMessage,
-        except: Option<&AgentId>,
-    ) -> Sim2hResult<()> {
-        debug!("Broadcast in space: {:?}", space);
-        let all_agents = self
-            .spaces
-            .get(&space)
-            .ok_or("No such space")?
-            .read()
-            .all_agents()
-            .clone()
-            .into_iter()
-            .filter(|(a, _)| {
-                if let Some(exception) = except {
-                    *a != *exception
-                } else {
-                    true
-                }
-            })
-            .collect::<Vec<(AgentId, AgentInfo)>>();
-        for (agent, info) in all_agents {
-            debug!("Broadcast: Sending to {:?}", info.uri);
-            self.send(agent, info.uri, msg);
-        }
-        Ok(())
-    }
-
-    fn send(&mut self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) {
-        match msg {
-            WireMessage::Ping | WireMessage::Pong => debug!("PingPong: {} at {}", agent, uri),
-            _ => {
-                debug!(">>OUT>> {} to {}", msg.message_type(), uri);
-                MESSAGE_LOGGER
-                    .lock()
-                    .log_out(agent, uri.clone(), msg.clone());
-            }
-        }
-
-        let payload: Opaque = msg.clone().into();
-
-        match self.open_connections.get_mut(&uri) {
-            None => {
-                error!("FAILED TO SEND, NO ROUTE: {}", uri);
-                return;
-            }
-            Some((_con, outgoing_send)) => {
-                if let Err(_) = outgoing_send.send(payload.as_bytes().into()) {
-                    self.disconnect(&uri);
-                }
-            }
-        }
-
-        match msg {
-            WireMessage::Ping | WireMessage::Pong => {}
-            _ => debug!("sent."),
-        }
-    }
-
-    fn retry_sync_missing_aspects(&mut self) {
-        debug!("Checking for nodes with missing aspects to retry sync...");
-        // Extract all needed info for the call to self.request_gossiping_list() below
-        // as copies so we don't have to keep a reference to self.
-        let spaces_with_agents_and_uris = self
-            .spaces
-            .iter()
-            .filter_map(|(space_hash, space_lock)| {
-                let space = space_lock.read();
-                let agents = space.agents_with_missing_aspects();
-                // If this space doesn't have any agents with missing aspects,
-                // ignore it:
-                if agents.is_empty() {
-                    None
-                } else {
-                    // For spaces with agents with missing aspects,
-                    // annotate all agent IDs with their corresponding URI:
-                    let agent_ids_with_uris: Vec<(AgentId, Lib3hUri)> = agents
-                        .iter()
-                        .filter_map(|agent_id| {
-                            space
-                                .agent_id_to_uri(agent_id)
-                                .map(|uri| (agent_id.clone(), uri))
-                        })
-                        .collect();
-
-                    Some((space_hash.clone(), agent_ids_with_uris))
-                }
-            })
-            .collect::<HashMap<SpaceHash, Vec<_>>>();
-
-        for (space_hash, agents) in spaces_with_agents_and_uris {
-            for (agent_id, uri) in agents {
-                debug!("Re-requesting gossip list from {} at {}", agent_id, uri);
-                self.request_gossiping_list(uri, space_hash.clone(), agent_id);
-            }
-        }
-    }
+    trace!("sim2h gossip full loop in {} ms (ok to be long, this task is broken into multiple sub-loops)", gossip_full_start.elapsed().as_millis());
 }

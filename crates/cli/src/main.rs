@@ -1,4 +1,5 @@
 #![warn(unused_extern_crates)]
+#[macro_use]
 extern crate holochain_common;
 extern crate holochain_conductor_lib;
 extern crate holochain_core;
@@ -9,7 +10,10 @@ extern crate holochain_net;
 extern crate holochain_persistence_api;
 extern crate holochain_persistence_file;
 extern crate json_patch;
+extern crate lib3h_crypto_api;
+extern crate lib3h_protocol;
 extern crate lib3h_sodium;
+extern crate sim2h;
 extern crate structopt;
 #[macro_use]
 extern crate failure;
@@ -20,13 +24,16 @@ extern crate colored;
 extern crate semver;
 #[macro_use]
 extern crate serde_json;
+extern crate dns_lookup;
 extern crate flate2;
 extern crate glob;
 extern crate ignore;
+extern crate in_stream;
 extern crate rpassword;
 extern crate tar;
 extern crate tempfile;
 extern crate tera;
+extern crate url2;
 
 mod cli;
 mod config_files;
@@ -37,6 +44,7 @@ use crate::error::{HolochainError, HolochainResult};
 use holochain_conductor_lib::happ_bundle::HappBundle;
 use std::{fs::File, io::Read, path::PathBuf, str::FromStr};
 use structopt::{clap::arg_enum, StructOpt};
+new_relic_setup!("NEW_RELIC_LICENSE_KEY");
 
 #[derive(StructOpt)]
 /// A command line for Holochain
@@ -84,9 +92,9 @@ enum Cli {
         /// Save generated data to file system
         persist: bool,
         #[structopt(long, possible_values = &NetworkingType::variants(), case_insensitive = true)]
-        /// Use real networking use: n3h/sim2h
+        /// Use real networking use: sim2h
         networked: Option<NetworkingType>,
-        #[structopt(long, default_value = "wss://localhost:9000")]
+        #[structopt(long, default_value = "ws://localhost:9000")]
         /// Set the sim2h server url if you are using real networking.
         sim2h_server: String,
         #[structopt(long, short, default_value = "websocket")]
@@ -148,15 +156,23 @@ enum Cli {
         /// Property (in the form 'name=value') that gets set/overwritten before calculating hash
         property: Option<Vec<String>>,
     },
+    Sim2hClient {
+        #[structopt(long, short = "u")]
+        /// url of the sim2h server
+        url: String,
+        #[structopt(long, short = "m", default_value = "ping")]
+        /// message to send to the sim2h server ('ping' or 'status')
+        message: String,
+    },
 }
 arg_enum! {
     #[derive(Debug)]
     pub enum NetworkingType {
-        N3h,
         Sim2h,
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn main() {
     lib3h_sodium::check_init();
     run().unwrap_or_else(|err| {
@@ -166,6 +182,7 @@ fn main() {
     });
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn run() -> HolochainResult<()> {
     let args = Cli::from_args();
 
@@ -309,6 +326,12 @@ fn run() -> HolochainResult<()> {
             let dna_hash = cli::hash_dna(&dna_path, property)
                 .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
             println!("DNA Hash: {}", dna_hash);
+        }
+
+        Cli::Sim2hClient { url, message } => {
+            println!("url: {}", &url);
+            println!("message: {}", &message);
+            cli::sim2h_client(url, message)?;
         }
     }
 

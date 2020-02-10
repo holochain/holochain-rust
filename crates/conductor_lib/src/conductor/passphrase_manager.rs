@@ -1,3 +1,4 @@
+use crate::NEW_RELIC_LICENSE_KEY;
 use crossbeam_channel::{unbounded, Sender};
 use holochain_core_types::error::HolochainError;
 use holochain_locksmith::Mutex;
@@ -31,6 +32,7 @@ pub struct PassphraseManager {
     timeout_kill_switch: Sender<()>,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl PassphraseManager {
     pub fn new(passphrase_service: Arc<Mutex<dyn PassphraseService + Send>>) -> Self {
         let (kill_switch_tx, kill_switch_rx) = unbounded::<()>();

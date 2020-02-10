@@ -12,7 +12,7 @@
 /// Depending on the specific (application) use-case, the context in which a Holochain instance
 /// is run may vary drastically. Application developers may want to bundle Holochain with
 /// and statically link the core library into their custom made executable.
-/// In such a case, [holochain.rs](conductor_api/src/holochain.rs) may be used directly as a
+/// In such a case, #[holochain.rs](conductor_api/src/holochain.rs) may be used directly as a
 /// wrapper around a single instance.
 ///
 /// In the general case, many different DNAs are being executed alongside each other in the
@@ -99,6 +99,7 @@ extern crate log;
 extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
+#[cfg(test)]
 #[macro_use]
 extern crate maplit;
 #[macro_use]
@@ -108,6 +109,8 @@ extern crate lazy_static;
 extern crate pretty_assertions;
 #[macro_use]
 extern crate nickel;
+#[macro_use]
+extern crate holochain_common;
 
 pub mod conductor;
 pub mod config;
@@ -129,3 +132,5 @@ pub mod static_file_server;
 pub mod static_server_impls;
 
 pub use crate::holochain::Holochain;
+
+new_relic_setup!("NEW_RELIC_LICENSE_KEY");

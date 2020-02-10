@@ -2,6 +2,172 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.43-alpha1] - 2020-02-09
+
+### Added
+- Added pagination option to get_links [#2092](https://github.com/holochain/holochain-rust/pull/2092)
+- Added sort order option to get_links [#2100](https://github.com/holochain/holochain-rust/pull/2100)
+- Removed networking support for sim1h [#2101](https://github.com/holochain/holochain-rust/pull/2101)
+- Removed networking support for n3h [#2101](https://github.com/holochain/holochain-rust/pull/2101)
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.42-alpha5] - 2020-01-07
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+- Fixes a panic in the conductor that happens when a get links times out [#2046](https://github.com/holochain/holochain-rust/pull/2046)
+- Fixes a problem in MacOS with establishing network connections [#2047](https://github.com/holochain/holochain-rust/pull/2047)
+
+### Security
+
+## [0.0.42-alpha4] - 2020-01-07
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+- Websocket Connection Error on macOs
+
+### Security
+
+## [0.0.42-alpha3] - 2020-01-05
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.42-alpha2] - 2020-01-02
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+- Fixes bugs in the sim2 connecting handling. Backoff timing and reset was broken.
+
+### Security
+
+## [0.0.42-alpha1] - 2019-12-30
+
+### Added
+
+### Changed
+
+- `hc` now passes arguments to bash at runtime [#2019](https://github.com/holochain/holochain-rust/pull/2019).
+- `artifact` in `.hcbuild` now evaluates bash strings and does not force relative paths [#2020](https://github.com/holochain/holochain-rust/pull/2020)
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.41-alpha4] - 2019-12-20
+
+### Added
+
+- Added `print-metric-stats` and `print-cloudwatch-metrics` commands to `holochain_metrics` [#1972](https://github.com/holochain/holochain-rust/pull/1972).
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.41-alpha3] - 2019-12-19
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.41-alpha2] - 2019-12-19
+
+### Added
+- Adds support for setting the agent name and id via a parameter with hc run by calling `hc run --agent-name MyAgentName`. The `%agent_id` is generated from the name. This allows multiple hc run conductors to be used on the same machine. It will be overwritten by the `HC_AGENT` environment variable.
+- Adds support for sim2h with hc run by calling `hc run --networked sim2h --sim2h-server wss://localhost:9000`.
+- Adds support for [hApp-bundles](https://github.com/holochain/holoscape/tree/master/example-bundles) to `hc run`. This enables complex hApp setups with multiple DNAs and bridges to be easily run during development without having to write/maintain a conductor config file. [#1939](https://github.com/holochain/holochain-rust/pull/1939)
+- Adds ability to validate entries with full chain validation when author is offline [#1932](https://github.com/holochain/holochain-rust/pull/1932)
+- Adds a conductor level stats-signal that sends an overview of instance data (number of held entries etc.) over admin interfaces. [#1954](https://github.com/holochain/holochain-rust/pull/1954)
+- Adds parameters to conductor RPC function `debug/state_dump` to select portions of the state to be send instead of always receiving the full dump (which can get big if the instance holds many entries). [#1954](https://github.com/holochain/holochain-rust/pull/1954)
+- Added new docker boxes dedicated to faster CI tasks through incremental compilation
+- Added `CARGO_CACHE_RUSTC_INFO=1` to nix shell
+
+### Changed
+
+- data sent via jsonrpc to the conductor interface for agent/sign, agent/encrypt and agent/decrypt must now be base64 encoded
+- circleci config now uses version 2.1 syntax
+- added the `-x` flag to several nix-shell commands
+- using `command -v` instead of `which` in app spec `build_and_test.sh`
+- standardised all app (proc) spec commands into a single paramaterised command `hc-test-app-spec`
+- updated to holonix `v0.0.54`
+- `$CARGO_TARGET_DIR` is now set explicitly in the nix shell hook
+- renamed `hc-conductor-wasm-install` to `hc-conductor-wasm-bindgen-install`
+- core `shellHook` can now override holonix `shellHook`
+- several `--target-dir` flags are removed in favour of `$CARGO_TARGET_DIR`
+- the passphrase hashing config is now set to faster and less secure parameters to reduce the start-up time of conductors a lot, esp. on slow devices. (will become a setting the user can choose in the future - faster and less secure config is fine for now and throughout alpha and beta) [#1986](https://github.com/holochain/holochain-rust/pull/1986)
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+- paths in cluster test are no longer hardcoded in a way that breaks `$CARGO_TARGET_DIR`
+- `cli` and `conductor` are now both uninstalled again after running app spec tests
+- Fixes a panic in the sim2h server that can happen if the last node of a space leaves just as a second node connects. [#1977](https://github.com/holochain/holochain-rust/pull/1977)
+
+### Security
+
 ## [0.0.40-alpha1] - 2019-12-01
 
 ### Added

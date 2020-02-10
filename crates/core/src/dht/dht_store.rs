@@ -4,6 +4,7 @@ use crate::{
         aspect_map::{AspectMap, AspectMapBare},
         pending_validations::{PendingValidationWithTimeout, ValidationTimeout},
     },
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
@@ -11,7 +12,10 @@ use holochain_core_types::{
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
     entry::Entry,
     error::{HcResult, HolochainError},
-    network::entry_aspect::EntryAspect,
+    network::{
+        entry_aspect::EntryAspect,
+        query::{GetLinksQueryConfiguration, SortOrder},
+    },
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_locksmith::RwLock;
@@ -92,6 +96,7 @@ impl AddressableContent for DhtStoreSnapshot {
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn create_get_links_eavi_query<'a>(
     address: Address,
     link_type: String,
@@ -112,10 +117,18 @@ pub fn create_get_links_eavi_query<'a>(
         }),
         None.into(),
         IndexFilter::LatestByAttribute,
-        Some(EavFilter::single(Attribute::RemovedLink(link_type, tag))),
+        Some(EavFilter::predicate(move |attr: Attribute| match attr {
+            //the problem with this is the tombstone match will be matching against regex
+            //at this stage of the eavi_query all three vectors (e,a,v) have already been matched
+            //it would be safe to assume at this point that any value that we match using this method
+            //will be a tombstone
+            Attribute::RemovedLink(_, _) => true,
+            _ => false,
+        })),
     ))
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl DhtStore {
     // LifeCycle
     // =========
@@ -146,17 +159,35 @@ impl DhtStore {
     ///this means no matter how many links are added after one is removed, we will always say that the link has been removed.
     ///One thing to remember is that LinkAdd entries occupy the "Value" aspect of our EAVI link stores.
     ///When that set is obtained, we filter based on the LinkTag and RemovedLink attributes to evaluate if they are "live" or "deleted". A reminder that links cannot be modified
+    //returns a vector so that the view is maintained and not sorted by a btreeset
     pub fn get_links(
         &self,
         address: Address,
         link_type: String,
         tag: String,
         crud_filter: Option<CrudStatus>,
-    ) -> Result<BTreeSet<(EntityAttributeValueIndex, CrudStatus)>, HolochainError> {
+        configuration: GetLinksQueryConfiguration,
+    ) -> Result<Vec<(EntityAttributeValueIndex, CrudStatus)>, HolochainError> {
         let get_links_query = create_get_links_eavi_query(address, link_type, tag)?;
         let filtered = self.meta_storage.read()?.fetch_eavi(&get_links_query)?;
-        Ok(filtered
-            .into_iter()
+        let pagination = configuration.pagination;
+        let filter_with_sort_order: Box<dyn Iterator<Item = EntityAttributeValueIndex>> =
+            match configuration.sort_order.unwrap_or_default() {
+                SortOrder::Ascending => Box::new(filtered.into_iter()),
+                SortOrder::Descending => Box::new(filtered.into_iter().rev()),
+            };
+        Ok(filter_with_sort_order
+            .skip(
+                pagination
+                    .clone()
+                    .map(|page| page.page_size * page.page_number)
+                    .unwrap_or(0),
+            )
+            .take(
+                pagination
+                    .map(|page| page.page_size)
+                    .unwrap_or(std::usize::MAX),
+            )
             .map(|s| match s.attribute() {
                 Attribute::LinkTag(_, _) => (s, CrudStatus::Live),
                 _ => (s, CrudStatus::Deleted),
@@ -265,14 +296,13 @@ impl DhtStore {
     pub(crate) fn next_queued_holding_workflow(
         &self,
     ) -> Option<(PendingValidation, Option<Duration>)> {
-        // calculate the leaf dependencies (the things we can validate right now)
-        let free_dependencies = get_free_dependencies(&self.queued_holding_workflows);
-
-        // respect the delays on the leaf nodes
-        free_dependencies
+        self.queued_holding_workflows
+            .clone()
             .into_iter()
+            // filter so only free pending (those without dependencies also pending) are considered
+            .filter(free_pending_filter(&self.queued_holding_workflows))
+            // skip those for which the sleep delay has not elapsed
             .skip_while(|PendingValidationWithTimeout { timeout, .. }| {
-                // skip pending validation with an unelapsed delay
                 if let Some(ValidationTimeout {
                     time_of_dispatch,
                     delay,
@@ -293,11 +323,23 @@ impl DhtStore {
             .next()
     }
 
-    pub(crate) fn has_queued_holding_workflow(&self, pending: &PendingValidation) -> bool {
+    pub(crate) fn has_exact_queued_holding_workflow(&self, pending: &PendingValidation) -> bool {
         self.queued_holding_workflows.iter().any(
             |PendingValidationWithTimeout {
                  pending: current, ..
              }| current == pending,
+        )
+    }
+
+    pub(crate) fn has_same_queued_holding_worfkow(&self, pending: &PendingValidation) -> bool {
+        self.queued_holding_workflows.iter().any(
+            |PendingValidationWithTimeout {
+                 pending: current, ..
+             }| {
+                current.entry_with_header.header.entry_address()
+                    == pending.entry_with_header.header.entry_address()
+                    && current.workflow == pending.workflow
+            },
         )
     }
 
@@ -306,45 +348,25 @@ impl DhtStore {
     }
 }
 
-use petgraph::{graph::DiGraph, prelude::NodeIndex, Direction::Outgoing};
-use std::collections::HashMap;
+use im::HashSet;
 
-fn get_free_dependencies<I>(pending: &I) -> Vec<PendingValidationWithTimeout>
+fn free_pending_filter<I>(pending: &I) -> Box<dyn Fn(&PendingValidationWithTimeout) -> bool>
 where
     I: IntoIterator<Item = PendingValidationWithTimeout> + Clone,
 {
-    let mut graph = DiGraph::<(), ()>::new();
-    let mut index_map: HashMap<Address, NodeIndex> = HashMap::new();
-    let mut index_reverse_map: HashMap<NodeIndex, PendingValidationWithTimeout> = HashMap::new();
+    // collect up the address of everything we have in the pending queue
+    let unique_pending: HashSet<Address> = pending
+        .clone()
+        .into_iter()
+        .map(|p| p.pending.entry_with_header.entry.address())
+        .collect();
 
-    // add the nodes
-    for p in pending.clone() {
-        let node_index = graph.add_node(());
-        index_map.insert(p.pending.entry_with_header.entry.address(), node_index);
-        index_reverse_map.insert(node_index, p);
-    }
-
-    // add the edges
-    for p in pending.clone() {
-        let from = index_map
-            .get(&p.pending.entry_with_header.entry.address())
-            .expect("we literally just added this");
-        for to_addr in p.pending.dependencies.clone() {
-            // only add the dependencies that are also in the pending validation list
-            if let Some(to) = index_map.get(&to_addr) {
-                graph.add_edge(*from, *to, ());
-            }
-        }
-    }
-
-    // TODO: Check for cyles in the graph and remove those pending entries
-
-    // return only the pending valiations that don't have dependencies that are also pending
-    // i.e. the leaf nodes or 'sinks' of the graph
-    graph
-        .externals(Outgoing)
-        .map(|i| index_reverse_map.get(&i).unwrap().clone())
-        .collect()
+    Box::new(move |p| {
+        p.pending
+            .dependencies
+            .iter()
+            .all(|dep_addr| !unique_pending.contains(dep_addr))
+    })
 }
 
 impl GetContent for DhtStore {
@@ -412,8 +434,13 @@ pub mod tests {
         // A and B have no dependencies. Both should be free
         let a = pending_validation_for_entry(test_entry_a(), Vec::new());
         let b = pending_validation_for_entry(test_entry_b(), Vec::new());
+        let pending_list = vec![a.clone(), b.clone()];
         assert_eq!(
-            get_free_dependencies(&vec![a.clone(), b.clone()]),
+            pending_list
+                .clone()
+                .into_iter()
+                .filter(free_pending_filter(&pending_list))
+                .collect::<Vec<_>>(),
             vec![a, b]
         );
     }
@@ -424,9 +451,13 @@ pub mod tests {
         let a = pending_validation_for_entry(test_entry_a(), vec![test_entry_b().address()]);
         let b = pending_validation_for_entry(test_entry_b(), vec![test_entry_c().address()]);
         let c = pending_validation_for_entry(test_entry_c(), vec![]);
-
+        let pending_list = vec![a.clone(), b.clone(), c.clone()];
         assert_eq!(
-            get_free_dependencies(&vec![a.clone(), b.clone(), c.clone()]),
+            pending_list
+                .clone()
+                .into_iter()
+                .filter(free_pending_filter(&pending_list))
+                .collect::<Vec<_>>(),
             vec![c]
         );
     }
@@ -440,9 +471,13 @@ pub mod tests {
         );
         let b = pending_validation_for_entry(test_entry_b(), vec![]);
         let c = pending_validation_for_entry(test_entry_c(), vec![]);
-
+        let pending_list = vec![a.clone(), b.clone(), c.clone()];
         assert_eq!(
-            get_free_dependencies(&vec![a.clone(), b.clone(), c.clone()]),
+            pending_list
+                .clone()
+                .into_iter()
+                .filter(free_pending_filter(&pending_list))
+                .collect::<Vec<_>>(),
             vec![b, c]
         );
     }

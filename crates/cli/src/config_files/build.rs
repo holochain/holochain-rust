@@ -1,4 +1,4 @@
-use crate::{error::DefaultResult, util};
+use crate::{error::DefaultResult, util, NEW_RELIC_LICENSE_KEY};
 use base64;
 use serde_json;
 use std::{
@@ -19,6 +19,7 @@ pub struct Build {
     pub artifact: PathBuf,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 impl Build {
     /// Creates a Build struct from a .hcbuild JSON file and returns it
     pub fn from_file<T: AsRef<Path>>(path: T) -> DefaultResult<Build> {
@@ -34,13 +35,26 @@ impl Build {
         for build_step in &self.steps {
             let slice_vec: Vec<_> = build_step.arguments.iter().map(|e| e.as_str()).collect();
             util::run_cmd(
-                base_path.to_path_buf(),
+                &base_path.to_path_buf(),
                 build_step.command.clone(),
                 &slice_vec[..],
             )?;
         }
 
-        let artifact_path = base_path.join(&self.artifact);
+        let artifact_path_bashed = std::process::Command::new("bash")
+            .args(&["-c", &format!("echo {}", self.artifact.to_string_lossy(),)])
+            .output()?
+            .stdout;
+
+        let artifact_path_str = std::str::from_utf8(&artifact_path_bashed)?.trim_end();
+
+        let artifact_path_buf = PathBuf::from(artifact_path_str);
+
+        let artifact_path = if artifact_path_buf.is_absolute() {
+            artifact_path_buf
+        } else {
+            base_path.join(artifact_path_buf)
+        };
 
         if artifact_path.exists() && artifact_path.is_file() {
             let mut wasm_buf = Vec::new();

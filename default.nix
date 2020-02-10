@@ -32,7 +32,6 @@ with holonix.pkgs;
     export AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
     # config file used by aws cli tool
     export AWS_CONFIG_FILE=`pwd`/.aws/config
-    RUST_LOG=sim1h=trace
     export HC_TARGET_PREFIX=$NIX_ENV_PREFIX
     export CARGO_TARGET_DIR="$HC_TARGET_PREFIX/target"
     export CARGO_CACHE_RUSTC_INFO=1
@@ -41,10 +40,6 @@ with holonix.pkgs;
 
   buildInputs = [ holonix.pkgs.libiconv ]
    ++ holonix.shell.buildInputs
-
-   ++ (holonix.pkgs.callPackage ./app_spec {
-    pkgs = holonix.pkgs;
-   }).buildInputs
 
    ++ (holonix.pkgs.callPackage ./app_spec_proc_macro {
     pkgs = holonix.pkgs;

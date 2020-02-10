@@ -1,4 +1,4 @@
-use crate::error::DefaultResult;
+use crate::{error::DefaultResult, NEW_RELIC_LICENSE_KEY};
 use flate2::read::GzDecoder;
 use glob::glob;
 use std::{
@@ -17,6 +17,7 @@ const RUST_PROC_TEMPLATE_TARBALL_URL: &str =
 
 const HOLOCHAIN_VERSION: &str = env!("CARGO_PKG_VERSION");
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 pub fn generate(zome_path: &PathBuf, scaffold: &String) -> DefaultResult<()> {
     let zome_name = zome_path
         .components()
@@ -80,6 +81,7 @@ pub fn generate(zome_path: &PathBuf, scaffold: &String) -> DefaultResult<()> {
     Ok(())
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn apply_template_substitution(root_path: &PathBuf, context: Context) -> DefaultResult<()> {
     let zome_name_component = root_path
         .components()

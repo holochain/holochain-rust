@@ -21,7 +21,7 @@ use lib3h_sodium::{
     secbuf::SecBuf,
 };
 
-use crate::conductor::passphrase_manager::PassphraseManager;
+use crate::{conductor::passphrase_manager::PassphraseManager, NEW_RELIC_LICENSE_KEY};
 use holochain_dpki::{password_encryption::PwHashConfig, seed::SeedType};
 use std::{
     collections::{BTreeMap, HashMap},
@@ -114,13 +114,17 @@ fn make_passphrase_check(
     encrypt_with_passphrase_buf(&mut check_buf, passphrase, hash_config)
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl Keystore {
     /// Create a new keystore.
     /// This will query `passphrase_manager` immediately to set a passphrase for the keystore.
     pub fn new(
         passphrase_manager: Arc<PassphraseManager>,
-        hash_config: Option<PwHashConfig>,
+        mut hash_config: Option<PwHashConfig>,
     ) -> HcResult<Self> {
+        if hash_config.is_none() {
+            hash_config = test_hash_config()
+        }
         Ok(Keystore {
             passphrase_check: make_passphrase_check(
                 &mut passphrase_manager.get_passphrase()?,
@@ -157,7 +161,7 @@ impl Keystore {
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
         let mut keystore: Keystore = serde_json::from_str(&contents)?;
-        keystore.hash_config = hash_config;
+        keystore.hash_config = hash_config.or_else(|| test_hash_config());
         keystore.passphrase_manager = Some(passphrase_manager);
         Ok(keystore)
     }
@@ -296,12 +300,17 @@ impl Keystore {
 
     /// adds a random root seed into the keystore
     pub fn add_random_seed(&mut self, dst_id_str: &str, size: usize) -> HcResult<()> {
-        let dst_id = self.check_dst_identifier(dst_id_str)?;
         let seed_buf = generate_random_buf(size);
         let secret = Arc::new(Mutex::new(Secret::Seed(seed_buf)));
-        self.cache.insert(dst_id.clone(), secret);
-        self.encrypt(&dst_id)?;
-        Ok(())
+        self.add(dst_id_str, secret)
+    }
+
+    /// adds a provided root seed into the keystore
+    pub fn add_seed(&mut self, dst_id_str: &str, seed: &[u8]) -> HcResult<()> {
+        let mut seed_buf = SecBuf::with_secure(seed.len());
+        seed_buf.from_array(seed)?;
+        let secret = Arc::new(Mutex::new(Secret::Seed(seed_buf)));
+        self.add(dst_id_str, secret)
     }
 
     fn check_dst_identifier(&self, dst_id_str: &str) -> HcResult<String> {
@@ -576,8 +585,17 @@ pub mod tests {
     fn test_save_load_roundtrip() {
         let random_passphrase = random_test_passphrase();
         let mut keystore = new_test_keystore(random_passphrase.clone());
+        let zero = [
+            0u8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0,
+        ];
+        assert_eq!(keystore.add_seed("my_zero_seed", &zero), Ok(()));
+        assert_eq!(keystore.list(), vec!["my_zero_seed".to_string()]);
         assert_eq!(keystore.add_random_seed("my_root_seed", SEED_SIZE), Ok(()));
-        assert_eq!(keystore.list(), vec!["my_root_seed".to_string()]);
+        assert_eq!(
+            keystore.list(),
+            vec!["my_root_seed".to_string(), "my_zero_seed".to_string()]
+        );
 
         let mut path = PathBuf::new();
         path.push("tmp-test/test-keystore");
@@ -589,7 +607,10 @@ pub mod tests {
             test_hash_config(),
         )
         .unwrap();
-        assert_eq!(loaded_keystore.list(), vec!["my_root_seed".to_string()]);
+        assert_eq!(
+            loaded_keystore.list(),
+            vec!["my_root_seed".to_string(), "my_zero_seed".to_string()]
+        );
 
         let secret1 = keystore.get("my_root_seed").unwrap();
         let expected_seed = match *secret1.lock().unwrap() {
@@ -610,6 +631,16 @@ pub mod tests {
         };
 
         assert_eq!(expected_seed, loaded_seed);
+
+        let secret_zero = loaded_keystore.get("my_zero_seed").unwrap();
+        let loaded_zero = match *secret_zero.lock().unwrap() {
+            Secret::Seed(ref mut buf) => {
+                let lock = buf.read_lock();
+                (&**lock).to_owned()
+            }
+            _ => unreachable!(),
+        };
+        assert_eq!(&zero, &loaded_zero[..])
     }
 
     #[test]
@@ -821,14 +852,14 @@ pub mod tests {
 
         assert_eq!(
             key_bundle.sign_keys.public(),
-            "HcSCIowJEUHintsxps7dnz5V38ypdDoadU986V476InyYicyWQBx937Y8dxQrgi"
+            "HcSCIcOIYdE5spsmimrFfD9um6Pe7p9piu6g36TsaP55Us4docRdyj4dAnmbaui"
         );
         assert_eq!(
             key_bundle.enc_keys.public(),
             "HcKciaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         );
 
-        assert_eq!(base64::encode(&**key_bundle.sign_keys.private().read_lock()), "1cqLOpr5Zs7ZgEN3R+ocYQ0ygJf0It1MCFaxMWQpXU42qSTOhko2dHo2Y3TPruGNoBz/7lNd4hl7oFerw2/ntw==".to_string());
+        assert_eq!(base64::encode(&**key_bundle.sign_keys.private().read_lock()), "4qBbA4Bs+5Z7GLrOY67lUEtr5PX8MnPzhFwGZsKrUn4JqLjJuLorQuBSj/NfHE677kT4bPJRA7e5x0NooDunQw==".to_string());
         assert_eq!(
             base64::encode(&**key_bundle.enc_keys.private().read_lock()),
             "VX4j1zRvIT7FojcTsqJJfu81NU1bUgiKxqWZOl/bCR4=".to_string()

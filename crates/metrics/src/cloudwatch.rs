@@ -12,10 +12,10 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use std::collections::{HashMap, HashSet};
-use structopt::StructOpt;
-
+use chrono::prelude::*;
 use rusoto_sts::{StsAssumeRoleSessionCredentialsProvider, StsClient};
+use std::collections::HashMap;
+use structopt::StructOpt;
 
 pub const DEFAULT_REGION: Region = Region::EuCentral1;
 
@@ -46,6 +46,76 @@ impl TryFrom<&ResultField> for Metric {
     }
 }
 
+impl TryFrom<Vec<ResultField>> for Metric {
+    type Error = ParseError;
+    fn try_from(result_fields: Vec<ResultField>) -> Result<Self, Self::Error> {
+        let mut stream_id: Option<String> = None;
+        let mut timestamp: Option<DateTime<Utc>> = None;
+        let mut metric = None;
+        for result_field in result_fields {
+            let r: Result<Self, Self::Error> = result_field.clone().try_into();
+
+            match r {
+                Ok(m) => {
+                    metric.replace(m);
+                }
+                Err(e) => {
+                    let field = result_field.field.clone().unwrap_or_else(String::new);
+
+                    if field == "@message" {
+                        return Err(e);
+                    } else if field == "@logStream" {
+                        stream_id = result_field.value;
+                    } else if field == "@timestamp" {
+                        let timestamp2 = result_field.clone().value.and_then(|x| {
+                            let aws_date: Option<AwsDate> = x
+                                .try_into()
+                                .map_err(|e| {
+                                    warn!(
+                                        "Couldn't parse aws date from field {:?}: {:?}",
+                                        result_field, e
+                                    )
+                                })
+                                .ok();
+                            aws_date.map(|x| *x)
+                        });
+                        timestamp = timestamp2.map(|x| DateTime::from_utc(x, Utc));
+                    }
+                }
+            }
+        }
+        metric
+            .map(|mut m| {
+                m.stream_id = stream_id;
+                m.timestamp = timestamp;
+                Ok(m)
+            })
+            .unwrap_or_else(|| {
+                Err(ParseError::new(
+                    "@message field not present in query results",
+                ))
+            })
+    }
+}
+
+/// A date sourced from an AWS logs query
+#[derive(Debug, Clone, Shrinkwrap)]
+struct AwsDate(NaiveDateTime);
+
+impl AwsDate {
+    pub fn new(dt: NaiveDateTime) -> Self {
+        Self(dt)
+    }
+}
+
+/// Converts an raw aws log timeestamp to a `NaiveDateTime`.
+impl TryFrom<String> for AwsDate {
+    type Error = chrono::format::ParseError;
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        NaiveDateTime::parse_from_str(s.as_str(), "%Y-%m-%d %H:%M:%S%.3f").map(AwsDate::new)
+    }
+}
+
 /// A cloud watch logger instance with some
 /// configuration and state as needed by
 /// various service calls.
@@ -66,6 +136,7 @@ impl Drop for CloudWatchLogger {
     }
 }
 
+/// Arguments specific to a cloudwatch query
 #[derive(Clone, Debug, Default, StructOpt)]
 pub struct QueryArgs {
     #[structopt(name = "start_time")]
@@ -80,6 +151,32 @@ pub struct QueryArgs {
     pub log_stream_pat: Option<String>,
 }
 
+/// Commonly used options for cloudwatch related services
+#[derive(Clone, Debug, Default, StructOpt)]
+pub struct CloudwatchLogsOptions {
+    #[structopt(
+        name = "region",
+        short = "r",
+        help = "The AWS region, defaults to eu-central-1."
+    )]
+    pub region: Option<Region>,
+    #[structopt(
+        name = "log_group_name",
+        short = "l",
+        help = "The AWS log group name to query over."
+    )]
+    pub log_group_name: Option<String>,
+    #[structopt(
+        name = "assume_role_arn",
+        short = "a",
+        help = "Optional override for the amazon role to assume when querying"
+    )]
+    pub assume_role_arn: Option<String>,
+    #[structopt(flatten)]
+    pub query_args: QueryArgs,
+}
+
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_METRICS)]
 impl CloudWatchLogger {
     /// Query the cloudwatch logger given a start and stop time interval.
     /// Produces a raw vector of result field rows (each as a vector).
@@ -91,11 +188,11 @@ impl CloudWatchLogger {
         if let Some(log_stream_pat) = &query_args.log_stream_pat {
             query_string =
                 format!(
-                "fields @message, @logStream | filter @message like '{}' and @logStream like /{}/",
+                "fields @message, @logStream, @timestamp | filter @message like '{}' and @logStream like /{}/ | sort @timestamp",
                 logger::METRIC_TAG, log_stream_pat);
         } else {
             query_string = format!(
-                "fields @message | filter @message like '{}'",
+                "fields @message, @timestamp | filter @message like '{}' | sort @timestamp",
                 logger::METRIC_TAG
             );
         }
@@ -147,37 +244,19 @@ impl CloudWatchLogger {
     }
 
     /// Converts raw result fields to in iterator over metric samples
-    pub fn metrics_of_query<'a>(
-        query: Vec<Vec<ResultField>>,
-    ) -> Box<dyn Iterator<Item = (String, Metric)> + 'a> {
+    pub fn metrics_of_query<'a, I: IntoIterator<Item = Vec<ResultField>> + 'a>(
+        query: I,
+    ) -> Box<dyn Iterator<Item = Metric> + 'a> {
         let iterator = query.into_iter().filter_map(|result_vec| {
-            let (log_stream_name, metric) = result_vec.into_iter().fold(
-                (None, None),
-                |(log_stream_name, metric), result_field| {
-                    let field = result_field.clone().field.unwrap_or_default();
-                    if field == "@message" {
-                        let metric: Metric = result_field.try_into().unwrap();
-                        (log_stream_name, Some(metric))
-                    } else if field == "@logStream" {
-                        (result_field.value, metric)
-                    } else {
-                        (log_stream_name, metric)
-                    }
-                },
-            );
-
-            log_stream_name
-                .and_then(|log_stream_name| metric.map(|metric| (log_stream_name, metric)))
+            let metric = result_vec.try_into();
+            metric.ok()
         });
         Box::new(iterator)
     }
 
     /// Queries cloudwatch logs given a start and end time interval and produces
     /// all metric samples observed during the interval
-    pub fn query_metrics(
-        &self,
-        query_args: &QueryArgs,
-    ) -> Box<dyn Iterator<Item = (String, Metric)>> {
+    pub fn query_metrics(&self, query_args: &QueryArgs) -> Box<dyn Iterator<Item = Metric>> {
         let query = self.query(query_args);
         Self::metrics_of_query(query)
     }
@@ -187,8 +266,11 @@ impl CloudWatchLogger {
     pub fn query_and_aggregate(&self, query_args: &QueryArgs) -> StatsByMetric<OnlineStats> {
         let mut hash_map = HashMap::new();
 
-        for (log_stream, metric) in self.query_metrics(query_args) {
-            let entry = hash_map.entry(GroupingKey::new(log_stream, metric.name));
+        for metric in self.query_metrics(query_args) {
+            let entry = hash_map.entry(GroupingKey::new(
+                metric.stream_id.unwrap_or_else(String::new),
+                metric.name,
+            ));
 
             let stats = entry.or_insert_with(OnlineStats::empty);
             stats.add(metric.value);
@@ -205,7 +287,7 @@ impl CloudWatchLogger {
     }
 
     pub fn default_log_group() -> String {
-        "/aws/ec2/holochain/performance/".to_string()
+        "/holochain/trycp/".to_string()
     }
 
     pub fn default_start_time() -> i64 {
@@ -312,8 +394,9 @@ impl CloudWatchLogger {
     }
 }
 
-const PUBLISH_CHUNK_SIZE: usize = 100;
+const PUBLISH_CHUNK_SIZE: usize = 10;
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_METRICS)]
 impl MetricPublisher for CloudWatchLogger {
     fn publish(&mut self, metric: &Metric) {
         self.metrics_to_publish.push(metric.clone());
@@ -325,6 +408,7 @@ impl MetricPublisher for CloudWatchLogger {
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_METRICS)]
 impl CloudWatchLogger {
     fn publish_internal(&mut self) {
         let log_events = self
@@ -359,13 +443,15 @@ impl CloudWatchLogger {
             sequence_token: self.sequence_token.clone(),
         };
 
-        let result = self
-            .client
-            .put_log_events(put_log_events_request)
-            .sync()
-            .unwrap();
-
-        self.sequence_token = result.next_sequence_token
+        let maybe_result = self.client.put_log_events(put_log_events_request).sync();
+        match maybe_result {
+            Ok(result) => {
+                self.sequence_token = result.next_sequence_token;
+            }
+            Err(err) => {
+                error!("got error when putting log event: {:?}", err);
+            }
+        }
     }
 
     pub fn get_log_stream_names<S: Into<String>>(
@@ -416,89 +502,11 @@ impl Default for CloudWatchLogger {
     }
 }
 
-const LOG_STREAM_SEPARATOR: &str = ".";
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct ScenarioData {
-    run_name: String,
-    net_name: String,
-    dna_name: String,
-    scenario_name: String,
-    player_name: String,
-}
-
-impl Into<String> for ScenarioData {
-    fn into(self: Self) -> String {
-        let s = self;
-        format!(
-            "{}.{}.{}.{}.{}",
-            s.run_name, s.net_name, s.dna_name, s.scenario_name, s.player_name
-        )
-    }
-}
-
-impl TryFrom<String> for ScenarioData {
-    type Error = String;
-
-    fn try_from(s: String) -> Result<Self, Self::Error> {
-        let split = s.split(LOG_STREAM_SEPARATOR).collect::<Vec<_>>();
-        if split.len() < 4 {
-            return Err(format!(
-                "Log stream name doesn't have at least 4 path elements: {:?}",
-                split
-            ));
-        }
-        Ok(Self {
-            run_name: split[0].into(),
-            net_name: split[1].into(),
-            dna_name: split[2].into(),
-            scenario_name: split[3].into(),
-            player_name: split[4].into(),
-        })
-    }
-}
-
-impl TryFrom<LogStream> for ScenarioData {
-    type Error = String;
-    fn try_from(log_stream: LogStream) -> Result<Self, Self::Error> {
-        let result: Result<Self, Self::Error> = log_stream
-            .log_stream_name
-            .map(|x| Ok(x))
-            .unwrap_or_else(|| Err("Log stream name missing".into()))
-            .and_then(TryFrom::try_from);
-        result
-    }
-}
-impl ScenarioData {
-    /// Groups by everything _but_ the player name
-    fn without_player_name(&self) -> String {
-        format!(
-            "{}.{}.{}.{}",
-            self.run_name, self.net_name, self.dna_name, self.scenario_name
-        )
-    }
-}
-
-/// Groups a log stream name by its scenario name, which is by convention is the 2nd to last field.
-/// Eg. "2019-12-06_01-54-47_stress_10_1_2.sim2h.smoke.9"
-pub fn group_by_scenario(
-    log_stream_names: &mut dyn Iterator<Item = String>,
-) -> HashMap<String, HashSet<ScenarioData>> {
-    log_stream_names.fold(HashMap::new(), |mut grouped, log_stream_name| {
-        let scenario_data: Result<ScenarioData, _> = log_stream_name.try_into();
-        if let Ok(scenario_data) = scenario_data {
-            grouped
-                .entry(scenario_data.without_player_name())
-                .or_insert_with(HashSet::new)
-                .insert(scenario_data);
-        }
-        grouped
-    })
-}
-
 pub const FINAL_EXAM_NODE_ROLE: &str =
     "arn:aws:iam::024992937548:role/ecs-stress-test-lambda-role-eu-central-1";
 
+/// Calls the AWS assume role service to obtain credentials
+/// for cloudwatch related queries
 pub fn assume_role(region: &Region, role_arn: &str) -> StsAssumeRoleSessionCredentialsProvider {
     let sts = StsClient::new_with(
         rusoto_core::request::HttpClient::new().unwrap(),
@@ -519,4 +527,18 @@ pub fn assume_role(region: &Region, role_arn: &str) -> StsAssumeRoleSessionCrede
         None,
     );
     provider
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    #[test]
+    fn can_parse_aws_timestamp() {
+        let raw = "2019-12-13 05:47:07.318".to_string();
+
+        let aws_date: Result<AwsDate, _> = raw.try_into();
+
+        assert!(aws_date.is_ok(), format!("{:?}", aws_date));
+    }
 }

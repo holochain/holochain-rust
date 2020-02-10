@@ -4,16 +4,18 @@ use crate::{
     entry::CanPublish,
     instance::dispatch_action,
     network::query::{
-        GetLinkData, GetLinksNetworkQuery, GetLinksNetworkResult, NetworkQuery, NetworkQueryResult,
+        GetLinksNetworkQuery, GetLinksNetworkResult, NetworkQuery, NetworkQueryResult,
     },
     nucleus,
     workflows::get_entry_result::get_entry_result_workflow,
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     crud_status::CrudStatus,
     eav::Attribute,
     entry::{Entry, EntryWithMetaAndHeader},
     error::HolochainError,
+    network::query::{GetLinkData, GetLinksQueryConfiguration},
 };
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::Address;
@@ -23,19 +25,28 @@ use holochain_wasm_utils::api_serialization::get_entry::{
 use lib3h_protocol::data_types::{QueryEntryData, QueryEntryResultData};
 use std::{convert::TryInto, sync::Arc};
 
+pub type LinkTag = String;
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn get_links(
     context: &Arc<Context>,
     base: Address,
     link_type: String,
     tag: String,
     crud_status: Option<CrudStatus>,
-    headers: bool,
+    query_configuration: GetLinksQueryConfiguration,
 ) -> Result<Vec<GetLinkData>, HolochainError> {
     //get links
     let dht_store = context.state().unwrap().dht();
 
     let (get_link, error): (Vec<_>, Vec<_>) = dht_store
-        .get_links(base, link_type, tag, crud_status)
+        .get_links(
+            base,
+            link_type,
+            tag,
+            crud_status,
+            query_configuration.clone(),
+        )
         .unwrap_or_default()
         .into_iter()
         //get tag
@@ -60,7 +71,7 @@ fn get_links(
             let link_add_entry_args = GetEntryArgs {
                 address: link_add_address.clone(),
                 options: GetEntryOptions {
-                    headers,
+                    headers: query_configuration.headers,
                     ..Default::default()
                 },
             };
@@ -72,7 +83,7 @@ fn get_links(
                 ))
                 .map(|get_entry_result| match get_entry_result.result {
                     GetEntryResultType::Single(entry_with_meta_and_headers) => {
-                        let maybe_entry_headers = if headers {
+                        let maybe_entry_headers = if query_configuration.headers {
                             Some(entry_with_meta_and_headers.headers)
                         } else {
                             None
@@ -104,10 +115,11 @@ fn get_links(
                         "Single Entry required for Get Entry".to_string(),
                     )),
                 })
-                .unwrap_or_else(|_| {
-                    Err(HolochainError::ErrorGeneric(
-                        "Could Not Get Entry for Link Data".to_string(),
-                    ))
+                .unwrap_or_else(|e| {
+                    Err(HolochainError::ErrorGeneric(format!(
+                        "Could not get entry for Link Data {:?}",
+                        e
+                    )))
                 })
         })
         .partition(Result::is_ok);
@@ -128,6 +140,7 @@ fn get_links(
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAndHeader> {
     nucleus::actions::get_entry::get_entry_with_meta(&context, address.clone())
         .map(|entry_with_meta_opt| {
@@ -165,29 +178,40 @@ fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAn
 
 /// The network has sent us a query for entry data, so we need to examine
 /// the query and create appropriate actions for the different variants
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>) {
     let query_json =
         JsonString::from_json(&std::str::from_utf8(&*query_data.query.clone()).unwrap());
     let action_wrapper = match query_json.clone().try_into() {
         Ok(NetworkQuery::GetLinks(link_type, tag, options, query)) => {
-            let links = get_links(
+            match get_links(
                 &context,
                 query_data.entry_address.clone().into(),
                 link_type.clone(),
                 tag.clone(),
                 options,
                 match query.clone() {
-                    GetLinksNetworkQuery::Links(get_headers) => get_headers.headers,
-                    _ => false,
+                    GetLinksNetworkQuery::Links(configuration) => configuration,
+                    _ => GetLinksQueryConfiguration::default(),
                 },
-            )
-            .expect("Could not get_links from dht node");
-            let links_result = match query {
-                GetLinksNetworkQuery::Links(_) => GetLinksNetworkResult::Links(links),
-                GetLinksNetworkQuery::Count => GetLinksNetworkResult::Count(links.len()),
-            };
-            let respond_links = NetworkQueryResult::Links(links_result, link_type, tag);
-            ActionWrapper::new(Action::RespondQuery((query_data, respond_links)))
+            ) {
+                Ok(links) => {
+                    let links_result = match query {
+                        GetLinksNetworkQuery::Links(_) => GetLinksNetworkResult::Links(links),
+                        GetLinksNetworkQuery::Count => GetLinksNetworkResult::Count(links.len()),
+                    };
+                    let respond_links = NetworkQueryResult::Links(links_result, link_type, tag);
+                    ActionWrapper::new(Action::RespondQuery((query_data, respond_links)))
+                }
+                Err(err) => {
+                    log_error!(
+                        context,
+                        "net: Error ({:?}) getting links from dht node",
+                        err,
+                    );
+                    return;
+                }
+            }
         }
         Ok(NetworkQuery::GetEntry) => {
             let maybe_entry = get_entry(&context, query_data.entry_address.clone().into());
@@ -209,6 +233,7 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
 
 /// The network comes back with a result to our previous query with a result, so we
 /// examine the query result for its type and dispatch different actions according to variant
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, context: Arc<Context>) {
     let query_result_json = JsonString::from_json(
         std::str::from_utf8(&*query_result_data.clone().query_result).unwrap(),

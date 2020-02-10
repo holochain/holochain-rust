@@ -6,6 +6,7 @@ use crate::{
     persister::Persister,
     signal::{Signal, SignalSender},
     state::StateWrapper,
+    NEW_RELIC_LICENSE_KEY,
 };
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use futures::{
@@ -73,6 +74,7 @@ pub struct InstanceStats {
     pub number_held_entries: usize,
     pub number_held_aspects: usize,
     pub number_pending_validations: usize,
+    pub number_delayed_validations: usize,
     pub number_running_zome_calls: usize,
     pub offline: bool,
 }
@@ -102,6 +104,7 @@ pub struct Context {
     pub metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Context {
     // test_check_conductor_api() is used to inject a conductor_api with a working
     // mock of agent/sign to be used in tests.
@@ -412,6 +415,11 @@ impl Context {
                 .values()
                 .fold(0, |acc, aspect_set| acc + aspect_set.len()),
             number_pending_validations: dht_store.queued_holding_workflows().len(),
+            number_delayed_validations: dht_store
+                .queued_holding_workflows
+                .iter()
+                .filter(|p| p.timeout.is_some())
+                .count(),
             number_running_zome_calls: state.nucleus().running_zome_calls.len(),
             offline: false,
         })

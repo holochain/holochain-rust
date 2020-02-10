@@ -10,7 +10,7 @@ use crate::{
     key_loaders::test_keystore,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
     port_utils::{try_with_port, INTERFACE_CONNECT_ATTEMPTS_MAX},
-    Holochain,
+    Holochain, NEW_RELIC_LICENSE_KEY,
 };
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_common::paths::DNA_EXTENSION;
@@ -49,7 +49,6 @@ use crate::{
     },
     config::{AgentConfiguration, PassphraseServiceConfig},
     interface::{ConductorApiBuilder, InstanceMap, Interface},
-    keystore::test_hash_config,
     port_utils::get_free_port,
     signal_wrapper::SignalWrapper,
     static_file_server::ConductorStaticFileServer,
@@ -58,12 +57,7 @@ use crate::{
 use boolinator::Boolinator;
 use holochain_core::context::InstanceStats;
 use holochain_core_types::dna::bridges::BridgePresence;
-use holochain_net::{
-    connection::net_connection::NetHandler,
-    ipc::spawn::{ipc_spawn, SpawnResult},
-    p2p_config::{BackendConfig, P2pBackendKind, P2pConfig},
-    p2p_network::P2pNetwork,
-};
+use holochain_net::p2p_config::{BackendConfig, P2pBackendKind, P2pConfig};
 
 pub const MAX_DYNAMIC_PORT: u16 = std::u16::MAX;
 
@@ -127,21 +121,12 @@ pub struct Conductor {
     signal_tx: Option<SignalSender>,
     logger: FastLogger,
     p2p_config: Option<P2pConfig>,
-    network_spawn: Option<SpawnResult>,
     pub passphrase_manager: Arc<PassphraseManager>,
     pub hash_config: Option<PwHashConfig>, // currently this has to be pub for testing.  would like to remove
-    // TODO: remove this when n3h gets deprecated
-    n3h_keepalive_network: Option<P2pNetwork>, // hack needed so that n3h process stays alive even if all instances get shutdown.
 }
 
 impl Drop for Conductor {
     fn drop(&mut self) {
-        if let Some(ref mut network_spawn) = self.network_spawn {
-            if let Some(mut kill) = network_spawn.kill.take() {
-                kill();
-            }
-        }
-
         self.shutdown()
             .unwrap_or_else(|err| println!("Error during shutdown, continuing anyway: {:?}", err));
 
@@ -150,10 +135,6 @@ impl Drop for Conductor {
         // Do not shut down the logging thread if there is multiple concurrent conductor thread
         // like during unit testing because they all use the same registered logger
         // self.logger.shutdown();
-
-        if let Some(mut network) = self.n3h_keepalive_network.take() {
-            network.stop()
-        }
     }
 }
 
@@ -178,6 +159,7 @@ pub fn notify(msg: String) {
     println!("{}", msg);
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl Conductor {
     pub fn from_config(config: Configuration) -> Self {
         lib3h_sodium::check_init();
@@ -242,10 +224,8 @@ impl Conductor {
             signal_tx: None,
             logger,
             p2p_config: None,
-            network_spawn: None,
             passphrase_manager: Arc::new(PassphraseManager::new(passphrase_service)),
-            hash_config: test_hash_config(),
-            n3h_keepalive_network: None,
+            hash_config: None,
         }
     }
 
@@ -309,12 +289,6 @@ impl Conductor {
         }
         self.signal_tx = Some(signal_tx);
         self
-    }
-
-    pub fn p2p_bindings(&self) -> Option<Vec<String>> {
-        self.network_spawn
-            .as_ref()
-            .map(|spawn| spawn.p2p_bindings.clone())
     }
 
     pub fn config(&self) -> Configuration {
@@ -640,48 +614,6 @@ impl Conductor {
         Ok(())
     }
 
-    pub fn spawn_network(&mut self) -> Result<SpawnResult, HolochainError> {
-        let network_config = self.config.clone().network.ok_or_else(|| {
-            HolochainError::ErrorGeneric("attempt to spawn network when not configured".to_string())
-        })?;
-
-        match network_config {
-            NetworkConfig::N3h(config) => {
-                println!(
-                    "Spawning network with working directory: {}",
-                    config.n3h_persistence_path
-                );
-                let spawn_result = ipc_spawn(
-                    config.n3h_persistence_path.clone(),
-                    P2pConfig::load_end_user_config(config.networking_config_file).to_string(),
-                    hashmap! {
-                        String::from("N3H_MODE") => config.n3h_mode.clone(),
-                        String::from("N3H_WORK_DIR") => config.n3h_persistence_path.clone(),
-                        String::from("N3H_IPC_SOCKET") => String::from("tcp://127.0.0.1:*"),
-                        String::from("N3H_LOG_LEVEL") => config.n3h_log_level.clone(),
-                    },
-                    2000,
-                    true,
-                )
-                .map_err(|error| {
-                    println!("Error while spawning network process: {:?}", error);
-                    HolochainError::ErrorGeneric(error.to_string())
-                })?;
-                println!(
-                    "Network spawned with bindings:\n\t - ipc: {}\n\t - p2p: {:?}",
-                    spawn_result.ipc_binding, spawn_result.p2p_bindings
-                );
-                Ok(spawn_result)
-            }
-            NetworkConfig::Memory(_) => unimplemented!(),
-            NetworkConfig::Sim1h(_) => unimplemented!(),
-            NetworkConfig::Sim2h(_) => unimplemented!(),
-            NetworkConfig::Lib3h(_) => Err(HolochainError::ErrorGeneric(
-                "Lib3h Network not implemented".to_string(),
-            )),
-        }
-    }
-
     fn get_p2p_config(&self) -> P2pConfig {
         self.p2p_config.clone().map(|p2p_config| {
 
@@ -730,34 +662,6 @@ impl Conductor {
         // the ipc_uri for it and save it for future calls to `load_config` or
         // we use a (non-empty) uri value that was created from previous calls!
         match self.config.network.clone().unwrap() {
-            NetworkConfig::N3h(config) => {
-                let uri = config
-                    .n3h_ipc_uri
-                    .clone()
-                    .and_then(|v| if v == "" { None } else { Some(v) })
-                    .or_else(|| {
-                        self.network_spawn = self.spawn_network().ok();
-                        self.network_spawn
-                            .as_ref()
-                            .map(|spawn| spawn.ipc_binding.clone())
-                    });
-                let config = P2pConfig::new_ipc_uri(
-                    uri,
-                    &config.bootstrap_nodes,
-                    config.networking_config_file,
-                );
-                // create an empty network with this config just so the n3h process doesn't
-                // kill itself in the case that all instances are closed down (as happens in app-spec)
-                let network = P2pNetwork::new(
-                    NetHandler::new(Box::new(|_r| Ok(()))),
-                    config.clone(),
-                    None,
-                    None,
-                )
-                .expect("unable to create conductor keepalive P2pNetwork");
-                self.n3h_keepalive_network = Some(network);
-                config
-            }
             NetworkConfig::Memory(config) => P2pConfig {
                 backend_kind: P2pBackendKind::GhostEngineMemory,
                 backend_config: BackendConfig::Memory(config),
@@ -766,11 +670,6 @@ impl Conductor {
             NetworkConfig::Lib3h(config) => P2pConfig {
                 backend_kind: P2pBackendKind::LIB3H,
                 backend_config: BackendConfig::Lib3h(config),
-                maybe_end_user_config: None,
-            },
-            NetworkConfig::Sim1h(config) => P2pConfig {
-                backend_kind: P2pBackendKind::SIM1H,
-                backend_config: BackendConfig::Sim1h(config),
                 maybe_end_user_config: None,
             },
             NetworkConfig::Sim2h(config) => P2pConfig {
@@ -919,13 +818,15 @@ impl Conductor {
                     context_builder = context_builder.with_state_dump_logging();
                 }
 
+                context_builder = context_builder.with_instance_name(&instance_name);
+
                 if let Some(metric_publisher_config) = &self.config.metric_publisher {
                     debug!("Setting metric publisher in context_builder to: {:?}", metric_publisher_config);
                     context_builder = context_builder.with_metric_publisher(&metric_publisher_config);
                 };
 
                 // Spawn context
-                let context = context_builder.with_instance_name(&instance_name).spawn();
+                let context = context_builder.spawn();
 
                 // Get DNA
 
@@ -1519,6 +1420,7 @@ fn _make_interface(interface_config: &InterfaceConfiguration) -> Box<dyn Interfa
 }
 
 #[allow(dead_code)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 fn with_port_heuristic<T, F: FnOnce() -> T>(
     wanted_port: u16,
     find_free_port: bool,
@@ -1534,6 +1436,7 @@ fn with_port_heuristic<T, F: FnOnce() -> T>(
     Ok(try_with_port(port, f))
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 fn run_interface(
     interface_config: &InterfaceConfiguration,
     handler: IoHandler,

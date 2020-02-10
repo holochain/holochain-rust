@@ -1,4 +1,3 @@
-use crate::content_store::{AddContent, GetContent};
 ///
 /// Inner DHT reducers are not pure functions but rather functions designed to make the required
 /// mutations to a newly cloned DhtState object. Unlike the reducers they do not need a specific signature.
@@ -9,12 +8,16 @@ use crate::content_store::{AddContent, GetContent};
 /// It is up to the calling reducer function whether the new state object should be kept and what to do with the return value
 ///
 use crate::dht::dht_store::DhtStore;
+use crate::{
+    content_store::{AddContent, GetContent},
+    NEW_RELIC_LICENSE_KEY,
+};
 use holochain_core_types::{
     crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus},
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
     entry::Entry,
     error::{HcResult, HolochainError},
-    link::Link,
+    link::link_data::LinkData,
 };
 
 use holochain_persistence_api::{
@@ -22,6 +25,7 @@ use holochain_persistence_api::{
     eav::IndexFilter,
 };
 
+use chrono::{DateTime, FixedOffset};
 use std::{collections::BTreeSet, str::FromStr};
 
 pub(crate) enum LinkModification {
@@ -30,6 +34,7 @@ pub(crate) enum LinkModification {
 }
 
 /// Used as the inner function for both commit and hold reducers
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn reduce_store_entry_inner(store: &mut DhtStore, entry: &Entry) -> HcResult<()> {
     match store.add(entry) {
         Ok(()) => create_crud_status_eav(&entry.address(), CrudStatus::Live).map(|status_eav| {
@@ -41,24 +46,33 @@ pub(crate) fn reduce_store_entry_inner(store: &mut DhtStore, entry: &Entry) -> H
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn reduce_add_remove_link_inner(
     store: &mut DhtStore,
-    link: &Link,
+    link: &LinkData,
     address: &Address,
     link_modification: LinkModification,
 ) -> HcResult<Address> {
-    if store.contains(link.base())? {
+    if store.contains(link.link().base())? {
         let attr = match link_modification {
-            LinkModification::Add => {
-                Attribute::LinkTag(link.link_type().to_string(), link.tag().to_string())
-            }
-            LinkModification::Remove => {
-                Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_string())
-            }
+            LinkModification::Add => Attribute::LinkTag(
+                link.link().link_type().to_string(),
+                link.link().tag().to_string(),
+            ),
+            LinkModification::Remove => Attribute::RemovedLink(
+                link.link().link_type().to_string(),
+                link.link().tag().to_string(),
+            ),
         };
-        let eav = EntityAttributeValueIndex::new(link.base(), &attr, address)?;
+        let link_created_time: DateTime<FixedOffset> = link.top_chain_header.timestamp().into();
+        let eav = EntityAttributeValueIndex::new_with_index(
+            &link.link().base().clone(),
+            &attr,
+            address,
+            link_created_time.timestamp_nanos(),
+        )?;
         store.add_eavi(&eav)?;
-        Ok(link.base().clone())
+        Ok(link.link().base().clone())
     } else {
         Err(HolochainError::ErrorGeneric(String::from(
             "Base for link not found",
@@ -66,6 +80,7 @@ pub(crate) fn reduce_add_remove_link_inner(
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn reduce_update_entry_inner(
     store: &mut DhtStore,
     old_address: &Address,
@@ -81,6 +96,7 @@ pub(crate) fn reduce_update_entry_inner(
     Ok(new_address.clone())
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn reduce_remove_entry_inner(
     store: &mut DhtStore,
     latest_deleted_address: &Address,

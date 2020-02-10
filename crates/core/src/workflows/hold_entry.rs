@@ -1,6 +1,7 @@
 use crate::{
     context::Context, dht::actions::hold_aspect::hold_aspect,
     network::entry_with_header::EntryWithHeader, nucleus::validation::validate_entry,
+    NEW_RELIC_LICENSE_KEY,
 };
 
 use crate::{nucleus::validation::ValidationError, workflows::validation_package};
@@ -14,6 +15,7 @@ use holochain_persistence_api::cas::content::AddressableContent;
 
 use std::sync::Arc;
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn hold_entry_workflow(
     entry_with_header: &EntryWithHeader,
     context: Arc<Context>,

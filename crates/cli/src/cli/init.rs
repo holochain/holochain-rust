@@ -6,6 +6,7 @@ use crate::{
     config_files::App as AppConfig,
     error::DefaultResult,
     util::DIST_DIR_NAME,
+    NEW_RELIC_LICENSE_KEY,
 };
 use colored::*;
 use serde_json;
@@ -16,6 +17,7 @@ use std::{
     path::PathBuf,
 };
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn create_test_file(
     test_folder_path: &PathBuf,
     test_file_name: &str,

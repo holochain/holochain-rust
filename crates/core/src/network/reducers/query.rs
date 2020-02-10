@@ -2,11 +2,13 @@ use crate::{
     action::{ActionWrapper, QueryKey},
     network::{query::NetworkQuery, reducers::send, state::NetworkState},
     state::State,
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
 use lib3h_protocol::{data_types::QueryEntryData, protocol_client::Lib3hClientProtocol};
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn reduce_query_inner(
     network_state: &mut NetworkState,
     key: QueryKey,
@@ -29,6 +31,8 @@ fn reduce_query_inner(
         }),
     )
 }
+
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_query(
     network_state: &mut NetworkState,
     _root_state: &State,
@@ -58,6 +62,7 @@ pub fn reduce_query(
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_query_timeout(
     network_state: &mut NetworkState,
     _root_state: &State,
@@ -287,7 +292,7 @@ mod tests {
             tag: "link-tag".to_string(),
             id: snowflake::ProcessUniqueId::new().to_string(),
         };
-        let config = GetLinksQueryConfiguration { headers: false };
+        let config = GetLinksQueryConfiguration::default();
         let get_links_network_query = GetLinksNetworkQuery::Links(config);
         let payload = QueryPayload::Links((None, get_links_network_query));
         let action = Action::Query((QueryKey::Links(key.clone()), payload, None));

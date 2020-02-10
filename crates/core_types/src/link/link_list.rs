@@ -5,7 +5,7 @@ use holochain_json_api::{error::JsonError, json::JsonString};
 // LinkList
 //-------------------------------------------------------------------------------------------------
 //
-#[derive(Serialize, Deserialize, PartialEq, Clone, Debug, DefaultJson)]
+#[derive(Serialize, Deserialize, PartialEq, Clone, Debug, DefaultJson, Eq)]
 pub struct LinkList {
     links: Vec<Link>,
 }

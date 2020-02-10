@@ -11,11 +11,8 @@ process.on('unhandledRejection', error => {
 
 
 const networkType = process.env.APP_SPEC_NETWORK_TYPE
-const middleware = 
+const middleware =
   ( networkType === 'websocket'
-  ? combine(tapeExecutor(require('tape')), localOnly, callSync)
-
-  : networkType === 'sim1h'
   ? combine(tapeExecutor(require('tape')), localOnly, callSync)
 
   : networkType === 'sim2h'
@@ -31,7 +28,7 @@ const orchestrator = new Orchestrator({
   middleware,
   waiter: {
     softTimeout: 10000,
-    hardTimeout: 20000
+    hardTimeout: 20000,
   }
 })
 

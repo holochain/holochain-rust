@@ -1,6 +1,7 @@
 use crate::{
     dht::pending_validations::ValidatingWorkflow,
     nucleus::{actions::initialize::Initialization, HdkFnCall, HdkFnCallResult, ZomeFnCall},
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{dna::Dna, error::HolochainError};
 
@@ -106,6 +107,7 @@ pub struct NucleusState {
     pub zome_call_results: HashMap<ZomeFnCall, Result<JsonString, HolochainError>>,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl NucleusState {
     pub fn new() -> Self {
         NucleusState {
@@ -236,7 +238,7 @@ impl ZomeFnCallState {
 pub mod tests {
 
     use super::{HdkFnCall, NucleusState, ZomeFnCallState};
-    use crate::nucleus::ribosome::api::ZomeApiFunction;
+    use crate::wasm_engine::api::ZomeApiFunction;
 
     /// dummy nucleus state
     pub fn test_nucleus_state() -> NucleusState {

@@ -1,4 +1,4 @@
-use crate::{conductor::broadcaster::Broadcaster, interface::Interface};
+use crate::{conductor::broadcaster::Broadcaster, interface::Interface, NEW_RELIC_LICENSE_KEY};
 use crossbeam_channel::Receiver;
 use jsonrpc_core::IoHandler;
 use jsonrpc_ws_server::ServerBuilder;
@@ -22,6 +22,7 @@ impl WebsocketInterface {
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl Interface for WebsocketInterface {
     fn run(
         &mut self,

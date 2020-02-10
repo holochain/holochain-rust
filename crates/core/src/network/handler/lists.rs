@@ -5,9 +5,12 @@ use crate::{
     dht::aspect_map::{AspectMap, AspectMapBare},
     entry::CanPublish,
     instance::dispatch_action,
-    network::{entry_aspect::EntryAspect, handler::get_content_aspect},
+    network::{
+        entry_aspect::EntryAspect,
+        handler::{entry_to_meta_aspect, get_content_aspect},
+    },
+    NEW_RELIC_LICENSE_KEY,
 };
-use holochain_core_types::entry::Entry;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use im::HashSet;
 use lib3h_protocol::{
@@ -16,6 +19,7 @@ use lib3h_protocol::{
 };
 use std::sync::Arc;
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Context>) {
     let c = context.clone();
     let closure = async move || {
@@ -34,6 +38,7 @@ pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Contex
     c.spawn_task(future);
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn create_authoring_map(context: Arc<Context>) -> AspectMap {
     let mut address_map: AspectMapBare = AspectMapBare::new();
     for entry_address in get_all_public_chain_entries(context.clone()) {
@@ -57,27 +62,7 @@ fn create_authoring_map(context: Arc<Context>) -> AspectMap {
 
         // And then we deduce the according base entry and meta aspect from that entry
         // and its header:
-        let maybe_meta_aspect = match entry {
-            Entry::App(app_type, app_value) => header.link_update_delete().map(|updated_entry| {
-                (
-                    updated_entry,
-                    EntryAspect::Update(Entry::App(app_type, app_value), header),
-                )
-            }),
-            Entry::LinkAdd(link_data) => Some((
-                link_data.link.base().clone(),
-                EntryAspect::LinkAdd(link_data, header),
-            )),
-            Entry::LinkRemove((link_data, addresses)) => Some((
-                link_data.link.base().clone(),
-                EntryAspect::LinkRemove((link_data, addresses), header),
-            )),
-            Entry::Deletion(_) => Some((
-                header.link_update_delete().expect(""),
-                EntryAspect::Deletion(header),
-            )),
-            _ => None,
-        };
+        let maybe_meta_aspect = entry_to_meta_aspect(entry, header);
 
         if let Some((base_address, meta_aspect)) = maybe_meta_aspect {
             address_map
@@ -125,6 +110,7 @@ fn create_authoring_map(context: Arc<Context>) -> AspectMap {
     address_map.into()
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn get_all_public_chain_entries(context: Arc<Context>) -> Vec<Address> {
     let chain = context.state().unwrap().agent().iter_chain();
     chain
@@ -133,6 +119,7 @@ fn get_all_public_chain_entries(context: Arc<Context>) -> Vec<Address> {
         .collect()
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn handle_get_gossip_list(get_list_data: GetListData, context: Arc<Context>) {
     let c = context.clone();
     let closure = async move || {

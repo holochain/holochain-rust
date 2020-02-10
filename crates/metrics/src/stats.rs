@@ -1,7 +1,7 @@
-use crate::metrics::Metric;
 /// Provides statistical features over metric data.
-use num_traits::float::Float;
 /// Extends the metric api with statistical aggregation functions
+use crate::{metrics::Metric, NEW_RELIC_LICENSE_KEY};
+use num_traits::float::Float;
 use stats::Commute;
 use std::{
     collections::HashMap,
@@ -12,6 +12,9 @@ use std::{
     iter::FromIterator,
 };
 
+use regex::Regex;
+
+/// Generic representation of descriptive statistics.
 pub trait DescriptiveStats {
     fn max(&self) -> f64;
     fn min(&self) -> f64;
@@ -20,6 +23,7 @@ pub trait DescriptiveStats {
     fn stddev(&self) -> f64;
     fn variance(&self) -> f64;
 
+    /// Computes percent change between two descriptive statistics
     fn percent_change(&self, other: &dyn DescriptiveStats) -> StatsRecord {
         StatsRecord {
             mean: percent_change(self.mean(), other.mean()),
@@ -44,6 +48,7 @@ pub struct OnlineStats {
     cnt: u64,
 }
 
+/// A statistical record, useful for serialization and display purposes.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StatsRecord {
     pub metric: Option<String>,
@@ -56,6 +61,7 @@ pub struct StatsRecord {
     pub stddev: f64,
 }
 
+/// A checked statistical record to indicate differences between two statistics.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CheckedStatsRecord {
     metric: String,
@@ -228,6 +234,7 @@ impl Display for DescriptiveStatType {
     }
 }
 
+/// Represents a checked statistic that deviated too far.
 #[derive(Clone, Debug, Serialize)]
 pub struct StatFailure {
     expected: f64,
@@ -349,6 +356,7 @@ impl Default for LessThanStatCheck {
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_METRICS)]
 impl StatCheck for LessThanStatCheck {
     fn check(
         &self,
@@ -471,6 +479,7 @@ impl GroupingKey {
 #[shrinkwrap(mutable)]
 pub struct StatsByMetric<D: DescriptiveStats>(pub HashMap<GroupingKey, D>);
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_METRICS)]
 impl<'a, D: DescriptiveStats + Clone + 'a> StatsByMetric<D> {
     pub fn to_records(&self) -> Box<dyn Iterator<Item = StatsRecord> + 'a> {
         let me = self.0.clone();
@@ -530,23 +539,44 @@ impl<D: DescriptiveStats> Default for StatsByMetric<D> {
     }
 }
 
-impl StatsByMetric<StatsRecord> {
-    pub fn from_iter_with_stream_id<I: IntoIterator<Item = Metric>, S: Into<String>>(
-        source: I,
-        stream_id: S,
-    ) -> StatsByMetric<OnlineStats> {
-        let stream_id = stream_id.into();
+impl std::iter::FromIterator<Metric> for StatsByMetric<OnlineStats> {
+    fn from_iter<I: IntoIterator<Item = Metric>>(source: I) -> StatsByMetric<OnlineStats> {
         StatsByMetric(source.into_iter().fold(
             HashMap::new(),
             |mut stats_by_metric_name, metric| {
-                let entry =
-                    stats_by_metric_name.entry(GroupingKey::new(stream_id.clone(), metric.name));
+                let entry = stats_by_metric_name.entry(GroupingKey::new(
+                    metric.stream_id.unwrap_or_else(String::new),
+                    metric.name,
+                ));
 
                 let online_stats = entry.or_insert_with(OnlineStats::empty);
                 online_stats.add(metric.value);
                 stats_by_metric_name
             },
         ))
+    }
+}
+
+impl StatsByMetric<OnlineStats> {
+    pub fn group_by_regex<I: IntoIterator<Item = Metric>>(
+        re: &Regex,
+        metrics: I,
+    ) -> StatsByMetric<OnlineStats> {
+        StatsByMetric(metrics.into_iter().fold(HashMap::new(), |mut map, metric| {
+            let metric_name = metric.name.clone();
+            let stream_id = metric.stream_id.clone();
+            stream_id
+                .and_then(|stream_id| {
+                    re.captures_iter(stream_id.as_str()).next().map(|captured| {
+                        let key = GroupingKey::new(captured[1].to_string(), metric_name);
+                        let entry = map.entry(key);
+                        let stats: &mut OnlineStats = entry.or_insert_with(OnlineStats::empty);
+                        stats.add(metric.value)
+                    })
+                })
+                .unwrap_or_else(|| {});
+            map
+        }))
     }
 }
 
@@ -580,12 +610,12 @@ mod tests {
     fn can_aggregate_stats_from_iterator() {
         let latency_data = vec![50.0, 100.0, 150.0]
             .into_iter()
-            .map(|x| Metric::new("latency", x));
+            .map(|x| Metric::new("latency", Some("test".into()), None, x));
         let size_data = vec![1.0, 10.0, 100.0]
             .into_iter()
-            .map(|x| Metric::new("size", x));
+            .map(|x| Metric::new("size", Some("test".into()), None, x));
         let all_data = latency_data.chain(size_data);
-        let stats = StatsByMetric::from_iter_with_stream_id(all_data, "test");
+        let stats = StatsByMetric::from_iter(all_data);
 
         let latency_stats = stats
             .get(&GroupingKey::new("test", "latency"))

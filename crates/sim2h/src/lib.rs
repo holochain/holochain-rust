@@ -1,4 +1,5 @@
 #![feature(vec_remove_item)]
+#![feature(proc_macro_hygiene)]
 
 extern crate backtrace;
 extern crate env_logger;
@@ -422,7 +423,7 @@ pub struct Sim2h {
 }
 
 #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+//#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl Sim2h {
     /// create a new Sim2h server instance
     pub fn new(
@@ -748,7 +749,7 @@ impl Sim2h {
             uri,
             message,
             signer,
-            self.tracing_on.map(|_| self.tracer.clone()),
+            self.tracing_on.map(|_| self.tracer.clone())
         ));
         Ok(())
     }
@@ -769,6 +770,7 @@ impl Sim2h {
                 _ => None,
             }
         });
+        autotrace_deep_block!({
         let _m = sim2h_handle.metric_timer("sim2h-handle_connection_msg");
         let state = sim2h_handle.clone();
         let mut state = state.lock_state().await;
@@ -819,6 +821,7 @@ impl Sim2h {
                 sim2h_handle.handle_joined(uri, space_address.clone(), agent_id.clone(), message);
             }
         }
+        })
     }
 
     fn handle_payload(sim2h_handle: Sim2hHandle, url: Lib3hUri, payload: Opaque, tracer: Option<ht::Tracer>) {

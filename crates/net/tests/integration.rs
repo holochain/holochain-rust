@@ -17,6 +17,59 @@ use lib3h_sodium::SodiumCryptoSystem;
 use sim2h::{run_sim2h, DhtAlgorithm};
 use std::sync::Arc;
 
+struct Server {
+    pub bound_uri: Lib3hUri,
+    pub thread: Option<std::thread::JoinHandle<()>>,
+    pub cont: Arc<Mutex<bool>>,
+}
+
+impl Drop for Server {
+    fn drop(&mut self) {
+        *self.cont.lock().unwrap() = false;
+        self.thread.take().unwrap().join().unwrap();
+    }
+}
+
+impl Server {
+    pub fn new(url: &str) -> Self {
+        let url = url2!("{}", url);
+
+        let (snd, rcv) = crossbeam_channel::unbounded();
+
+        let cont = Arc::new(Mutex::new(true));
+
+        let srv_cont = cont.clone();
+        let thread = Some(std::thread::spawn(move || {
+            let (mut rt, binding) = run_sim2h(
+                Box::new(SodiumCryptoSystem::new()),
+                Lib3hUri(url.into()),
+                DhtAlgorithm::FullSync,
+            );
+            rt.block_on(async move {
+                tokio::task::spawn(async move {
+                    snd.send(binding.await.unwrap()).unwrap();
+                });
+
+                while *srv_cont.lock().unwrap() {
+                    tokio::time::delay_for(std::time::Duration::from_millis(1)).await;
+                }
+            });
+        }));
+
+        let bound_uri = rcv.recv().unwrap();
+
+        Self {
+            bound_uri,
+            thread,
+            cont,
+        }
+    }
+
+    pub fn bound_uri(&self) -> &Lib3hUri {
+        &self.bound_uri
+    }
+}
+
 #[test]
 fn sim2h_worker_talks_to_sim2h() {
     let _ = env_logger::builder().is_test(true).try_init();
@@ -30,30 +83,8 @@ fn sim2h_worker_talks_to_sim2h() {
     let enc = hcid::HcidEncoding::with_kind("hcs0").unwrap();
     let agent_id = enc.encode(&*pub_key).unwrap();
 
-    let (snd, rcv) = crossbeam_channel::unbounded();
-    let cont = Arc::new(Mutex::new(true));
-
-    let srv_cont = cont.clone();
-    let sim2h_join = std::thread::spawn(move || {
-        let url = url2!("ws://127.0.0.1:0");
-
-        let (mut rt, binding) = run_sim2h(
-            Box::new(SodiumCryptoSystem::new()),
-            Lib3hUri(url.into()),
-            DhtAlgorithm::FullSync,
-        );
-        rt.block_on(async move {
-            tokio::task::spawn(async move {
-                snd.send(binding.await.unwrap()).unwrap();
-            });
-
-            while *srv_cont.lock().unwrap() {
-                tokio::time::delay_for(std::time::Duration::from_millis(1)).await;
-            }
-        });
-    });
-
-    let bound_uri = rcv.recv().unwrap();
+    let srv = Server::new("ws://127.0.0.1:0");
+    let bound_uri = srv.bound_uri().clone();
     println!("GOT BOUND: {:?}", bound_uri);
 
     // -- beg sim2h worker test -- //
@@ -144,7 +175,7 @@ fn sim2h_worker_talks_to_sim2h() {
             Ok(())
         })),
         Sim2hConfig {
-            sim2h_url: bound_uri.as_str().to_string(),
+            sim2h_url: srv.bound_uri().as_str().to_string(),
         },
         agent_id.clone().into(),
         ConductorApi::new(io.clone()),
@@ -159,6 +190,16 @@ fn sim2h_worker_talks_to_sim2h() {
             space_address: "BLA".to_string().into(),
         }))
         .unwrap();
+
+    for _ in 0..5 {
+        std::thread::sleep(std::time::Duration::from_millis(25));
+
+        println!("tick: {:?}", worker.tick());
+    }
+
+    // now close the client connection (and set timing for reconnect)
+    // to prove out join space is properly re-sent
+    worker.test_close_connection_cause_reconnect();
 
     worker
         .receive(Lib3hClientProtocol::PublishEntry(ProvidedEntryData {
@@ -197,9 +238,6 @@ fn sim2h_worker_talks_to_sim2h() {
     }
 
     // -- end sim2h worker test -- //
-
-    *cont.lock().unwrap() = false;
-    sim2h_join.join().unwrap();
 
     assert!(ResultData::is_ok(&result_data));
 }

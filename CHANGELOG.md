@@ -2,6 +2,24 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.43-alpha1] - 2020-02-09
+
+### Added
+- Added pagination option to get_links [#2092](https://github.com/holochain/holochain-rust/pull/2092)
+- Added sort order option to get_links [#2100](https://github.com/holochain/holochain-rust/pull/2100)
+- Removed networking support for sim1h [#2101](https://github.com/holochain/holochain-rust/pull/2101)
+- Removed networking support for n3h [#2101](https://github.com/holochain/holochain-rust/pull/2101)
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
 ## [0.0.42-alpha5] - 2020-01-07
 
 ### Added

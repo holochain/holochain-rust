@@ -3,7 +3,7 @@ import { Config } from '@holochain/tryorama'
 import { configBatchSimple } from '@holochain/tryorama-stress-utils'
 
 
-export const networkType = process.env.APP_SPEC_NETWORK_TYPE || 'sim1h'
+export const networkType = process.env.APP_SPEC_NETWORK_TYPE || 'sim2h'
 
 const logger = {
   type: 'debug',
@@ -43,13 +43,7 @@ const logger = {
 }
 
 const network =
-  ( networkType === 'sim1h'
-  ? {
-    type: 'sim1h',
-    dynamo_url: 'ws://localhost:8000'
-  }
-
-  : networkType === 'sim2h'
+  ( networkType === 'sim2h'
   ? {
     type: 'sim2h',
     sim2h_url: 'ws://localhost:9002'

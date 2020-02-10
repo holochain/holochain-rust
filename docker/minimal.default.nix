@@ -13,7 +13,7 @@ let
  hardeningDisable = [ "fortify" ];
   CARGO_HOME = "/holochain/.cargo";
   name = "dev-shell";
-  buildInputs = [ holonix.pkgs.pcre
+  buildInputs = [ holonix.pkgs.pcre holonix.pkgs.cmake holonix.pkgs.clang
   ]
   ++ holonix.rust.buildInputs
   ;

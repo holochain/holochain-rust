@@ -194,14 +194,14 @@ impl Sim2hState {
             top.event("Sending direct message response to connection manager");
             top.child_(format!("{}:{}", file!(), line!()), |options| {
                 options.tag(ht::debug_tag("message", msg.clone())).start()
-            }).into()
+            })
+            .into()
         });
         let wrap_send = match child.as_ref() {
             Some(child) => child.follower("outgoing"),
             None => ht::Span::noop().follower("outgoing"),
         };
         let _spanguard = child.map(|span| ht::push_span(span));
-
 
         let payload: Opaque = msg.clone().into();
         self.connection_mgr

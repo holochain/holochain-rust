@@ -60,26 +60,34 @@ fn get_module(data: WasmCallData) -> Result<ModuleArc, HolochainError> {
 #[autotrace]
 //#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult {
-    let mut child = ht::with_top(|top|{
-        top.child(format!("{}:{}", file!(), line!()))
-    });
-    child.as_mut().map(|c| c.event(format!("{}:{}", file!(), line!())));
+    let mut child = ht::with_top(|top| top.child(format!("{}:{}", file!(), line!())));
+    child
+        .as_mut()
+        .map(|c| c.event(format!("{}:{}", file!(), line!())));
     let wasm_module = get_module(data.clone())?;
-    child.as_mut().map(|c| c.event(format!("{}:{}", file!(), line!())));
+    child
+        .as_mut()
+        .map(|c| c.event(format!("{}:{}", file!(), line!())));
     let wasm_instance = wasm_instance_factory(&wasm_module)?;
-    child.as_mut().map(|c| c.event(format!("{}:{}", file!(), line!())));
+    child
+        .as_mut()
+        .map(|c| c.event(format!("{}:{}", file!(), line!())));
     // write input arguments for module call in memory Buffer
     let input_parameters: Vec<_> = parameters.unwrap_or_default();
 
     let fn_name = data.fn_name();
     // instantiate runtime struct for passing external state data over wasm but not to wasm
-    child.as_mut().map(|c| c.event(format!("{}:{}", file!(), line!())));
+    child
+        .as_mut()
+        .map(|c| c.event(format!("{}:{}", file!(), line!())));
     let mut runtime = Runtime {
         memory_manager: WasmPageManager::new(&wasm_instance),
         data,
     };
 
-    child.as_mut().map(|c| c.event(format!("{}:{}", file!(), line!())));
+    child
+        .as_mut()
+        .map(|c| c.event(format!("{}:{}", file!(), line!())));
     // Write input arguments in wasm memory
     // scope for mutable borrow of runtime
     let encoded_allocation_of_input: RibosomeEncodingBits = {
@@ -101,7 +109,9 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
         }
     };
 
-    child.as_mut().map(|c| c.event(format!("{}:{}", file!(), line!())));
+    child
+        .as_mut()
+        .map(|c| c.event(format!("{}:{}", file!(), line!())));
     // scope for mutable borrow of runtime
     let returned_encoding: RibosomeEncodingBits = {
         let mut_runtime = &mut runtime;
@@ -138,7 +148,9 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
             })?
     };
 
-    child.as_mut().map(|c| c.event(format!("{}:{}", file!(), line!())));
+    child
+        .as_mut()
+        .map(|c| c.event(format!("{}:{}", file!(), line!())));
     // Handle result returned by called zome function
     let return_code = RibosomeEncodedValue::from(returned_encoding);
 
@@ -200,7 +212,9 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
             }
         }
     };
-    child.as_mut().map(|c| c.event(format!("{}:{}", file!(), line!())));
+    child
+        .as_mut()
+        .map(|c| c.event(format!("{}:{}", file!(), line!())));
     let _spanguard = child.map(|child| ht::push_span(child));
 
     // Log & done

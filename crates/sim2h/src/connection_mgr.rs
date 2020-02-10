@@ -26,7 +26,13 @@ type CmdRecv = tokio::sync::mpsc::UnboundedReceiver<ConMgrCommand>;
 pub type ConnectionMgrEventRecv = EvtRecv;
 
 /// internal websocket polling loop
-async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_recv: CmdRecv, tracer: Option<ht::Tracer>) {
+async fn wss_task(
+    uri: Lib3hUri,
+    mut wss: TcpWss,
+    evt_send: EvtSend,
+    mut cmd_recv: CmdRecv,
+    tracer: Option<ht::Tracer>,
+) {
     let mut frame = None;
 
     // TODO - this should be done with tokio tcp streams && selecting
@@ -42,8 +48,9 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
                     did_work = true;
                     match cmd {
                         ConMgrCommand::SendData(_uri, frame) => {
-                            let _spanguard = tracer.as_ref().map(|t|{
-                                let root_span = frame.follower(&t, format!("{}:{}", file!(), line!()));
+                            let _spanguard = tracer.as_ref().map(|t| {
+                                let root_span =
+                                    frame.follower(&t, format!("{}:{}", file!(), line!()));
                                 root_span.map(|span| ht::push_span(span))
                             });
                             if let Err(e) = wss.write(frame.data) {
@@ -110,7 +117,12 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
 }
 
 /// internal actually spawn the above wss_task into the tokio runtime
-fn spawn_wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend, tracer: Option<ht::Tracer>) -> CmdSend {
+fn spawn_wss_task(
+    uri: Lib3hUri,
+    wss: TcpWss,
+    evt_send: EvtSend,
+    tracer: Option<ht::Tracer>,
+) -> CmdSend {
     let (cmd_send, cmd_recv) = tokio::sync::mpsc::unbounded_channel();
     tokio::task::spawn(wss_task(uri, wss, evt_send, cmd_recv, tracer));
     cmd_send
@@ -191,8 +203,9 @@ impl ConnectionMgr {
                     did_work = true;
                     match cmd {
                         ConMgrCommand::SendData(uri, frame) => {
-                            let _spanguard = self.tracer.as_ref().map(|t|{
-                                let root_span = frame.follower(&t, format!("{}:{}", file!(), line!()));
+                            let _spanguard = self.tracer.as_ref().map(|t| {
+                                let root_span =
+                                    frame.follower(&t, format!("{}:{}", file!(), line!()));
                                 root_span.map(|span| ht::push_span(span))
                             });
                             let mut remove = false;

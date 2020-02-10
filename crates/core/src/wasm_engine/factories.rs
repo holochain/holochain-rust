@@ -63,24 +63,30 @@ pub fn wasm_instance_factory(module: &Module) -> Result<ModuleRef, HolochainErro
             }
         }
     }
-    let mut child = ht::with_top(|top|{
-        top.child(format!("{}:{}", file!(), line!()))
-    });
-    child.as_mut().map(|c| c.event(format!("{}:{}", file!(), line!())));
+    let mut child = ht::with_top(|top| top.child(format!("{}:{}", file!(), line!())));
+    child
+        .as_mut()
+        .map(|c| c.event(format!("{}:{}", file!(), line!())));
 
     // Create Imports with previously described Resolver
     let mut imports = ImportsBuilder::new();
     imports.push_resolver("env", &RuntimeModuleImportResolver);
 
-    child.as_mut().map(|c| c.event(format!("{}:{}", file!(), line!())));
+    child
+        .as_mut()
+        .map(|c| c.event(format!("{}:{}", file!(), line!())));
 
     // Create module instance from wasm module, and start it if start is defined
-    let m = ModuleInstance::new(&module, &imports)
-        .expect("Failed to instantiate module");
-    child.as_mut().map(|c| c.event(format!("{}:{}", file!(), line!())));
-    let m = m.run_start(&mut NopExternals)
+    let m = ModuleInstance::new(&module, &imports).expect("Failed to instantiate module");
+    child
+        .as_mut()
+        .map(|c| c.event(format!("{}:{}", file!(), line!())));
+    let m = m
+        .run_start(&mut NopExternals)
         .map_err(|_| HolochainError::RibosomeFailed("Module failed to start".to_string()));
-    child.as_mut().map(|c| c.event(format!("{}:{}", file!(), line!())));
+    child
+        .as_mut()
+        .map(|c| c.event(format!("{}:{}", file!(), line!())));
     let _spanguard = child.map(|child| ht::push_span(child));
     m
 }

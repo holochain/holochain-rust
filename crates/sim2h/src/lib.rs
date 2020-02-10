@@ -749,7 +749,7 @@ impl Sim2h {
             uri,
             message,
             signer,
-            self.tracing_on.map(|_| self.tracer.clone())
+            self.tracing_on.map(|_| self.tracer.clone()),
         ));
         Ok(())
     }
@@ -761,70 +761,79 @@ impl Sim2h {
         signer: AgentId,
         tracer: Option<ht::Tracer>,
     ) {
-        let _spanguard = tracer.map(|t| {
-            match message.clone() { 
-                WireMessage::ClientToLib3h(span_wrap) => {
-                    let span = ht::SpanWrap::from(span_wrap).follower(&t, format!("{}:{}", file!(), line!()));
-                    span.map(|span| ht::push_span(span))
-                }
-                _ => None,
+        let _spanguard = tracer.map(|t| match message.clone() {
+            WireMessage::ClientToLib3h(span_wrap) => {
+                let span =
+                    ht::SpanWrap::from(span_wrap).follower(&t, format!("{}:{}", file!(), line!()));
+                span.map(|span| ht::push_span(span))
             }
+            _ => None,
         });
         autotrace_deep_block!({
-        let _m = sim2h_handle.metric_timer("sim2h-handle_connection_msg");
-        let state = sim2h_handle.clone();
-        let mut state = state.lock_state().await;
-        let (uuid, agent) = match state.connection_states.get_mut(&uri) {
-            Some((uuid, agent)) => (uuid, agent),
-            None => {
-                error!("handle message for disconnected agent: {}", uri);
-                return;
-            }
-        };
-        conn_lifecycle("handle_message", &uuid, &agent, &uri);
+            let _m = sim2h_handle.metric_timer("sim2h-handle_connection_msg");
+            let state = sim2h_handle.clone();
+            let mut state = state.lock_state().await;
+            let (uuid, agent) = match state.connection_states.get_mut(&uri) {
+                Some((uuid, agent)) => (uuid, agent),
+                None => {
+                    error!("handle message for disconnected agent: {}", uri);
+                    return;
+                }
+            };
+            conn_lifecycle("handle_message", &uuid, &agent, &uri);
 
-        match agent {
-            ConnectionState::Limbo(ref mut pending_messages) => {
-                if let WireMessage::ClientToLib3h(ht::EncodedSpanWrap {
-                    data: ClientToLib3h::JoinSpace(data),
-                    ..
-                }) = message
-                {
-                    if data.agent_id != signer {
+            match agent {
+                ConnectionState::Limbo(ref mut pending_messages) => {
+                    if let WireMessage::ClientToLib3h(ht::EncodedSpanWrap {
+                        data: ClientToLib3h::JoinSpace(data),
+                        ..
+                    }) = message
+                    {
+                        if data.agent_id != signer {
+                            error!("{}", SIGNER_MISMATCH_ERR_STR);
+                            return;
+                        }
+                        tokio::task::spawn(Sim2h::join(sim2h_handle, uri, data));
+                    } else {
+                        debug!("inserting into pending message while in limbo.");
+                        // TODO: maybe have some upper limit on the number of messages
+                        // we allow to queue before dropping the connections
+                        pending_messages.push(message);
+
+                        // commenting this out...
+                        // I don't think we want core to have to deal with this
+                        // we just haven't finished processing the join yet
+                        /*
+                        state.send(
+                            signer.clone(),
+                            uri.clone(),
+                            &WireMessage::Err(WireError::MessageWhileInLimbo),
+                        );
+                        */
+                    }
+                }
+                ConnectionState::Joined(space_address, agent_id) => {
+                    if *agent_id != signer {
                         error!("{}", SIGNER_MISMATCH_ERR_STR);
                         return;
                     }
-                    tokio::task::spawn(Sim2h::join(sim2h_handle, uri, data));
-                } else {
-                    debug!("inserting into pending message while in limbo.");
-                    // TODO: maybe have some upper limit on the number of messages
-                    // we allow to queue before dropping the connections
-                    pending_messages.push(message);
-
-                    // commenting this out...
-                    // I don't think we want core to have to deal with this
-                    // we just haven't finished processing the join yet
-                    /*
-                    state.send(
-                        signer.clone(),
-                        uri.clone(),
-                        &WireMessage::Err(WireError::MessageWhileInLimbo),
+                    sim2h_handle.handle_joined(
+                        uri,
+                        space_address.clone(),
+                        agent_id.clone(),
+                        message,
                     );
-                    */
                 }
             }
-            ConnectionState::Joined(space_address, agent_id) => {
-                if *agent_id != signer {
-                    error!("{}", SIGNER_MISMATCH_ERR_STR);
-                    return;
-                }
-                sim2h_handle.handle_joined(uri, space_address.clone(), agent_id.clone(), message);
-            }
-        }
         })
     }
 
-    fn handle_payload(sim2h_handle: Sim2hHandle, url: Lib3hUri, payload: Opaque, tracer: Option<ht::Tracer>) {
+    fn handle_payload(
+        sim2h_handle: Sim2hHandle,
+        url: Lib3hUri,
+        payload: Opaque,
+        tracer: Option<ht::Tracer>,
+    ) {
         tokio::task::spawn(async move {
             let _m = sim2h_handle.metric_timer("sim2h-handle_payload");
             match (|| -> Sim2hResult<(AgentId, WireMessage)> {
@@ -837,20 +846,28 @@ impl Sim2h {
                 Ok((signed_message.provenance.source().into(), wire_message))
             })() {
                 Ok((source, wire_message)) => {
-                    let _spanguard = tracer.map(|t| {
-                        match wire_message.clone() { 
-                            WireMessage::ClientToLib3h(span_wrap) => {
-                                if let ClientToLib3h::SendDirectMessage(_) = span_wrap.data {
-                                    let span = ht::SpanWrap::from(span_wrap.clone()).follower_(&t, format!("handle_payload-ClientToLib3h"),
-                                    |options| {options.tag(ht::debug_tag("ClientToLib3h", span_wrap.data.clone())).start().into()}
-                                    );
-                                    span.map(|span| ht::push_span(span))
-                                } else {
-                                    None
-                                }
+                    let _spanguard = tracer.map(|t| match wire_message.clone() {
+                        WireMessage::ClientToLib3h(span_wrap) => {
+                            if let ClientToLib3h::SendDirectMessage(_) = span_wrap.data {
+                                let span = ht::SpanWrap::from(span_wrap.clone()).follower_(
+                                    &t,
+                                    format!("handle_payload-ClientToLib3h"),
+                                    |options| {
+                                        options
+                                            .tag(ht::debug_tag(
+                                                "ClientToLib3h",
+                                                span_wrap.data.clone(),
+                                            ))
+                                            .start()
+                                            .into()
+                                    },
+                                );
+                                span.map(|span| ht::push_span(span))
+                            } else {
+                                None
                             }
-                            _ => None,
                         }
+                        _ => None,
                     });
                     sim2h_handle.handle_message(url, wire_message, source)
                 }
@@ -925,14 +942,13 @@ impl Sim2h {
                     self.handle_message(m.uri, m.message, m.signer)?;
                 }
                 Ok(Sim2hCom::HandleJoined(m)) => {
-                    let _spanguard = self.tracing_on.map(|_| {
-                        match m.message.clone() { 
-                            WireMessage::ClientToLib3h(span_wrap) => {
-                                let span = ht::SpanWrap::from(span_wrap).follower(&self.tracer, format!("HandleJoined ClientToLib3h"));
-                                span.map(|span| ht::push_span(span))
-                            }
-                            _ => None,
+                    let _spanguard = self.tracing_on.map(|_| match m.message.clone() {
+                        WireMessage::ClientToLib3h(span_wrap) => {
+                            let span = ht::SpanWrap::from(span_wrap)
+                                .follower(&self.tracer, format!("HandleJoined ClientToLib3h"));
+                            span.map(|span| ht::push_span(span))
                         }
+                        _ => None,
                     });
                     did_work = true;
                     self.handle_joined(m.uri, m.space_address, m.agent_id, m.message)?;

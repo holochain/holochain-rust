@@ -26,6 +26,7 @@ extern crate holochain_json_derive;
 extern crate holochain_json_api;
 extern crate holochain_locksmith;
 extern crate holochain_persistence_api;
+extern crate holochain_wasmer_common;
 extern crate lib3h_crypto_api;
 extern crate regex;
 #[cfg(test)]

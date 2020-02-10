@@ -2,14 +2,13 @@
 
 use holochain_core_types::{
     bits_n_pieces::{u64_merge_bits, u64_split_bits},
-    error::{HolochainError, RibosomeErrorCode, RibosomeReturnValue, WasmAllocationInt},
+    error::{HolochainError, RibosomeErrorCode, RibosomeReturnValue},
 };
 use memory::handler::WasmMemoryHandler;
 // use memory::handler::WasmMemoryHandler;
 
 use holochain_json_api::json::JsonString;
 
-use memory::allocation::{AllocationError, AllocationResult, WasmAllocation};
 use std::convert::TryFrom;
 
 impl TryFrom<WasmAllocationInt> for WasmAllocation {
@@ -30,12 +29,6 @@ impl From<WasmAllocation> for WasmAllocationInt {
     }
 }
 
-impl From<WasmAllocation> for RibosomeReturnValue {
-    fn from(wasm_allocation: WasmAllocation) -> Self {
-        RibosomeReturnValue::Allocation(WasmAllocationInt::from(wasm_allocation))
-    }
-}
-
 impl From<AllocationError> for RibosomeErrorCode {
     fn from(allocation_error: AllocationError) -> Self {
         match allocation_error {
@@ -44,33 +37,6 @@ impl From<AllocationError> for RibosomeErrorCode {
             AllocationError::BadStackAlignment => RibosomeErrorCode::NotAnAllocation,
             AllocationError::Serialization => RibosomeErrorCode::NotAnAllocation,
         }
-    }
-}
-
-impl From<AllocationError> for RibosomeReturnValue {
-    fn from(allocation_error: AllocationError) -> Self {
-        RibosomeReturnValue::Failure(RibosomeErrorCode::from(allocation_error))
-    }
-}
-
-impl AllocationError {
-    pub fn as_ribosome_encoding(&self) -> WasmAllocationInt {
-        RibosomeReturnValue::from(self.clone()).into()
-    }
-}
-
-impl WasmAllocation {
-    pub fn as_ribosome_return_value(self) -> RibosomeReturnValue {
-        RibosomeReturnValue::from(self).into()
-    }
-}
-
-/// Equivalent to From<AllocationResult> for RibosomeReturnValue
-/// not possible to implement the trait as Result and RibosomeReturnValue from different crates
-pub fn return_code_for_allocation_result(result: AllocationResult) -> RibosomeReturnValue {
-    match result {
-        Ok(allocation) => RibosomeReturnValue::from(allocation),
-        Err(allocation_error) => RibosomeReturnValue::from(allocation_error),
     }
 }
 
@@ -90,7 +56,7 @@ pub fn load_ribosome_encoded_string<W: WasmMemoryHandler>(
     }
 }
 
-pub fn load_ribosome_encoded_json<W: WasmMemoryHandler, J: TryFrom<JsonString>>(
+pub fn json_<W: WasmMemoryHandler, J: TryFrom<JsonString>>(
     wasm_memory_handler: &W,
     encoded_value: WasmAllocationInt,
 ) -> Result<J, HolochainError>

@@ -1,16 +1,10 @@
 use self::{RibosomeErrorCode::*, RibosomeReturnValue::*};
 use crate::error::HolochainError;
 use holochain_json_api::{error::JsonError, json::JsonString};
-
-use bits_n_pieces::u64_split_bits;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{convert::TryFrom, str::FromStr};
+use holochain_wasmer_common::AllocationPtr;
 
-/// size of the integer that encodes ribosome codes
-pub type WasmAllocationInt = u64;
-/// size of the integer that wasm sees
-pub type RibosomeRuntimeBits = u64;
-pub type RibosomeRuntimeArgBits = i64;
 /// size of the integer that represents a ribosome code
 pub type RibosomeCodeBits = u32;
 
@@ -28,35 +22,10 @@ pub enum RibosomeReturnValue {
     /// A value that can be safely converted to a wasm allocation
     /// High bits represent offset, low bits represent length
     /// @see WasmAllocation
-    Allocation(WasmAllocationInt),
+    Allocation(AllocationPtr),
     /// A value that should be interpreted as an error
     /// Low bits are zero, high bits map to an enum variant
     Failure(RibosomeErrorCode),
-}
-
-impl From<RibosomeReturnValue> for WasmAllocationInt {
-    fn from(ribosome_return_code: RibosomeReturnValue) -> WasmAllocationInt {
-        match ribosome_return_code {
-            RibosomeReturnValue::Success => 0,
-            RibosomeReturnValue::Allocation(allocation) => WasmAllocationInt::from(allocation),
-            RibosomeReturnValue::Failure(code) => code as RibosomeRuntimeBits as WasmAllocationInt,
-        }
-    }
-}
-
-impl From<WasmAllocationInt> for RibosomeReturnValue {
-    fn from(i: WasmAllocationInt) -> Self {
-        if i == 0 {
-            RibosomeReturnValue::Success
-        } else {
-            let (code_int, maybe_allocation_length) = u64_split_bits(i);
-            if maybe_allocation_length == 0 {
-                RibosomeReturnValue::Failure(RibosomeErrorCode::from_code_int(code_int))
-            } else {
-                RibosomeReturnValue::Allocation(i)
-            }
-        }
-    }
 }
 
 impl ToString for RibosomeReturnValue {

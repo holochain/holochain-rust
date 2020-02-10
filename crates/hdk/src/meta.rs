@@ -18,7 +18,6 @@ use serde_derive::{Deserialize, Serialize};
 
 use holochain_json_api::{error::JsonError, json::JsonString};
 
-use crate::memory::WasmMemory;
 use holochain_wasm_utils::{
     api_serialization::validation::{
         AgentIdValidationArgs, EntryValidationArgs, LinkValidationArgs, LinkValidationPackageArgs,
@@ -76,7 +75,6 @@ extern "C" {
 pub extern "C" fn __hdk_get_validation_package_for_entry_type(
     input_allocation_int: WasmAllocationInt,
 ) -> WasmAllocationInt {
-    let memory = WasmMemory::default();
     let name = memory.read_to_string(input_allocation_int.into());
 
     let mut zd = ZomeDefinition::new();

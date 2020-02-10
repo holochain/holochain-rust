@@ -38,6 +38,7 @@ lib3h_crypto_api = "=0.0.31"
 parking_lot ="=0.9.0"
 log = "=0.4.8"
 holochain_logging = "=0.0.4"
+holochain_wasmer_common = "=0.0.9"
 
 [dev-dependencies]
 test_utils = { version = "=0.0.42-alpha5", path = "../../test_utils"}

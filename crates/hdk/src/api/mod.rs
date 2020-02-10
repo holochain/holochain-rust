@@ -1,7 +1,6 @@
 //! developers! Detailed references and examples can be found here for how to use the
 //! HDK exposed functions to access powerful Holochain functions.
 use crate::error::{ZomeApiError, ZomeApiResult};
-use crate::memory::WasmMemory;
 use bitflags::bitflags;
 use holochain_json_api::json::{default_to_json, JsonString, RawString};
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
@@ -96,7 +95,6 @@ macro_rules! def_api_fns {
                 &self,
                 input: I,
             ) -> ZomeApiResult<O> {
-                let memory = WasmMemory::default();
                 let wasm_allocation = memory.write_json(input)?;
 
                 // Call Ribosome's function

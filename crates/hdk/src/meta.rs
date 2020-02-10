@@ -3,7 +3,6 @@
 //! __hdk_get_json_definition which allows Holochain to retrieve JSON defining the Zome.
 
 use crate::{
-    api::G_MEM_STACK,
     entry_definition::{AgentValidator, ValidatingEntryType},
 };
 use holochain_core_types::{
@@ -19,18 +18,17 @@ use serde_derive::{Deserialize, Serialize};
 
 use holochain_json_api::{error::JsonError, json::JsonString};
 
+use crate::memory::WasmMemory;
 use holochain_wasm_utils::{
     api_serialization::validation::{
         AgentIdValidationArgs, EntryValidationArgs, LinkValidationArgs, LinkValidationPackageArgs,
     },
     holochain_core_types::error::RibosomeErrorCode,
     memory::{
-        allocation::AllocationError,
         ribosome::{load_ribosome_encoded_json, return_code_for_allocation_result},
     },
 };
 use std::{collections::BTreeMap, convert::TryFrom};
-use crate::memory::WasmMemory;
 
 trait Ribosome {
     fn define_entry_type(&mut self, name: String, entry_type: ValidatingEntryType);
@@ -79,7 +77,7 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
     input_allocation_int: WasmAllocationInt,
 ) -> WasmAllocationInt {
     let memory = WasmMemory::default();
-    let name = memory.read_to_string(offset, length);
+    let name = memory.read_to_string(input_allocation_int.into());
 
     let mut zd = ZomeDefinition::new();
     unsafe { zome_setup(&mut zd) };
@@ -103,12 +101,6 @@ pub extern "C" fn __hdk_validate_app_entry(
     input_allocation_int: WasmAllocationInt,
 ) -> WasmAllocationInt {
     let memory = WasmMemory::default();
-    if let Err(allocation_error) =
-        WasmAllocation::try_from(input_allocation_int)
-    {
-        return allocation_error.as_ribosome_encoding();
-    }
-
     let mut zd = ZomeDefinition::new();
     unsafe { zome_setup(&mut zd) };
 
@@ -135,7 +127,7 @@ pub extern "C" fn __hdk_validate_app_entry(
             match validation_result {
                 Ok(()) => RibosomeReturnValue::Success.into(),
                 Err(fail_string) => return_code_for_allocation_result(
-                    crate::global_fns::write_json(JsonString::from_json(&fail_string)),
+                    memory.write_json(JsonString::from_json(&fail_string)),
                 )
                 .into(),
             }
@@ -147,11 +139,7 @@ pub extern "C" fn __hdk_validate_app_entry(
 pub extern "C" fn __hdk_validate_agent_entry(
     input_allocation_int: WasmAllocationInt,
 ) -> WasmAllocationInt {
-    if let Err(allocation_error) =
-        crate::global_fns::init_global_memory_from_ribosome_encoding(input_allocation_int)
-    {
-        return allocation_error.as_ribosome_encoding();
-    }
+    let memory = WasmMemory::default();
 
     let mut zd = ZomeDefinition::new();
     unsafe { zome_setup(&mut zd) };
@@ -159,7 +147,7 @@ pub extern "C" fn __hdk_validate_agent_entry(
     //get the validator code
     let mut validator = match zd.agent_entry_validator {
         None => {
-            return return_code_for_allocation_result(crate::global_fns::write_json(
+            return return_code_for_allocation_result(memory.write_json(
                 JsonString::from_json("No agent validation callback registered for zome."),
             ))
             .into();
@@ -168,8 +156,7 @@ pub extern "C" fn __hdk_validate_agent_entry(
     };
 
     // Deserialize input
-    let input: AgentIdValidationArgs = match load_ribosome_encoded_json(input_allocation_int)
-    {
+    let input: AgentIdValidationArgs = match load_ribosome_encoded_json(input_allocation_int) {
         Ok(v) => v,
         Err(e) => return RibosomeReturnValue::from(e).into(),
     };
@@ -178,7 +165,7 @@ pub extern "C" fn __hdk_validate_agent_entry(
 
     match validation_result {
         Ok(()) => RibosomeReturnValue::Success.into(),
-        Err(fail_string) => return_code_for_allocation_result(crate::global_fns::write_json(
+        Err(fail_string) => return_code_for_allocation_result(memory.write_json(
             JsonString::from_json(&fail_string),
         ))
         .into(),
@@ -189,20 +176,15 @@ pub extern "C" fn __hdk_validate_agent_entry(
 pub extern "C" fn __hdk_get_validation_package_for_link(
     input_allocation_int: WasmAllocationInt,
 ) -> WasmAllocationInt {
-    if let Err(allocation_error) =
-        crate::global_fns::init_global_memory_from_ribosome_encoding(input_allocation_int)
-    {
-        return allocation_error.as_ribosome_encoding();
-    };
+    let memory = WasmMemory::default();
 
     let mut zd = ZomeDefinition::new();
     unsafe { zome_setup(&mut zd) };
 
-    let input: LinkValidationPackageArgs =
-        match load_ribosome_encoded_json(input_allocation_int) {
-            Ok(v) => v,
-            Err(e) => return RibosomeReturnValue::from(e).into(),
-        };
+    let input: LinkValidationPackageArgs = match load_ribosome_encoded_json(input_allocation_int) {
+        Ok(v) => v,
+        Err(e) => return RibosomeReturnValue::from(e).into(),
+    };
 
     WasmAllocationInt::from(
         zd.entry_types
@@ -219,7 +201,7 @@ pub extern "C" fn __hdk_get_validation_package_for_link(
             .and_then(|mut link_definition| {
                 let package = (*link_definition.package_creator)();
                 Some(return_code_for_allocation_result(
-                    crate::global_fns::write_json(package),
+                    memory.write_json(package),
                 ))
             })
             .unwrap_or(RibosomeReturnValue::Failure(
@@ -232,11 +214,7 @@ pub extern "C" fn __hdk_get_validation_package_for_link(
 pub extern "C" fn __hdk_validate_link(
     input_allocation_int: WasmAllocationInt,
 ) -> WasmAllocationInt {
-    if let Err(allocation_error) =
-        crate::global_fns::init_global_memory_from_ribosome_encoding(input_allocation_int)
-    {
-        return allocation_error.as_ribosome_encoding();
-    };
+    let memory = WasmMemory::default();
 
     let mut zd = ZomeDefinition::new();
     unsafe { zome_setup(&mut zd) }
@@ -266,7 +244,7 @@ pub extern "C" fn __hdk_validate_link(
                 Some(match validation_result {
                     Ok(()) => RibosomeReturnValue::Success,
                     Err(fail_string) => return_code_for_allocation_result(
-                        crate::global_fns::write_json(JsonString::from_json(&fail_string)),
+                        memory.write_json(JsonString::from_json(&fail_string)),
                     ),
                 })
             })
@@ -277,30 +255,15 @@ pub extern "C" fn __hdk_validate_link(
 }
 
 #[no_mangle]
-pub extern "C" fn __hdk_hdk_version(
-    input_allocation_int: WasmAllocationInt,
-) -> WasmAllocationInt {
-    if let Err(allocation_error) =
-        crate::global_fns::init_global_memory_from_ribosome_encoding(input_allocation_int)
-    {
-        return allocation_error.as_ribosome_encoding();
-    }
-
-    let mut mem_stack = unsafe {
-        match G_MEM_STACK {
-            Some(mem_stack) => mem_stack,
-            None => {
-                return AllocationError::BadStackAlignment.as_ribosome_encoding();
-            }
-        }
-    };
+pub extern "C" fn __hdk_hdk_version(input_allocation_int: WasmAllocationInt) -> WasmAllocationInt {
+    let memory = WasmMemory::default();
 
     return_code_for_allocation_result(
-        mem_stack.write_string(
+        memory.write_string(
             holochain_core_types::hdk_version::HDK_VERSION
                 .to_string()
                 .as_ref(),
-        ),
+        )
     )
     .into()
 }
@@ -309,11 +272,7 @@ pub extern "C" fn __hdk_hdk_version(
 pub extern "C" fn __hdk_get_json_definition(
     input_allocation_int: WasmAllocationInt,
 ) -> WasmAllocationInt {
-    if let Err(allocation_error) =
-        crate::global_fns::init_global_memory_from_ribosome_encoding(input_allocation_int)
-    {
-        return allocation_error.as_ribosome_encoding();
-    }
+    let memory = WasmMemory::default();
 
     let mut zd = ZomeDefinition::new();
     unsafe { zome_setup(&mut zd) };
@@ -337,16 +296,7 @@ pub extern "C" fn __hdk_get_json_definition(
 
     let json_string = JsonString::from(partial_zome);
 
-    let mut mem_stack = unsafe {
-        match G_MEM_STACK {
-            Some(mem_stack) => mem_stack,
-            None => {
-                return AllocationError::BadStackAlignment.as_ribosome_encoding();
-            }
-        }
-    };
-
-    return_code_for_allocation_result(mem_stack.write_string(&String::from(json_string))).into()
+    return_code_for_allocation_result(memory.write_string(&String::from(json_string))).into()
 }
 
 #[cfg(test)]

@@ -4,7 +4,7 @@ use crate::{
     wasm_engine::{api::ZomeApiResult, memory::WasmPageManager},
 };
 use holochain_core_types::error::{
-    HolochainError, RibosomeReturnValue, WasmAllocationInt, RibosomeRuntimeBits,
+    HolochainError, RibosomeReturnValue, RibosomeRuntimeBits, WasmAllocationInt,
     ZomeApiInternalResult,
 };
 

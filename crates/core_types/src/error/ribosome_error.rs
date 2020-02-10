@@ -1,4 +1,4 @@
-use self::{RibosomeReturnValue::*, RibosomeErrorCode::*};
+use self::{RibosomeErrorCode::*, RibosomeReturnValue::*};
 use crate::error::HolochainError;
 use holochain_json_api::{error::JsonError, json::JsonString};
 
@@ -14,27 +14,6 @@ pub type RibosomeRuntimeArgBits = i64;
 /// size of the integer that represents a ribosome code
 pub type RibosomeCodeBits = u32;
 
-// #[derive(Clone, Debug, PartialEq)]
-// pub struct RibosomeEncodedAllocation(WasmAllocationInt);
-//
-// impl From<RibosomeEncodedAllocation> for WasmAllocationInt {
-//     fn from(ribosome_memory_allocation: RibosomeEncodedAllocation) -> WasmAllocationInt {
-//         ribosome_memory_allocation.0
-//     }
-// }
-//
-// impl From<WasmAllocationInt> for RibosomeEncodedAllocation {
-//     fn from(i: WasmAllocationInt) -> Self {
-//         Self(i)
-//     }
-// }
-//
-// impl ToString for RibosomeEncodedAllocation {
-//     fn to_string(&self) -> String {
-//         WasmAllocationInt::from(self.to_owned()).to_string()
-//     }
-// }
-
 /// Represents all possible values passed to/from wasm functions
 /// All wasm functions are I64 values
 #[repr(u64)]
@@ -49,7 +28,7 @@ pub enum RibosomeReturnValue {
     /// A value that can be safely converted to a wasm allocation
     /// High bits represent offset, low bits represent length
     /// @see WasmAllocation
-    Allocation(RibosomeEncodedAllocation),
+    Allocation(WasmAllocationInt),
     /// A value that should be interpreted as an error
     /// Low bits are zero, high bits map to an enum variant
     Failure(RibosomeErrorCode),
@@ -60,18 +39,10 @@ impl From<RibosomeReturnValue> for WasmAllocationInt {
         match ribosome_return_code {
             RibosomeReturnValue::Success => 0,
             RibosomeReturnValue::Allocation(allocation) => WasmAllocationInt::from(allocation),
-            RibosomeReturnValue::Failure(code) => {
-                code as RibosomeRuntimeBits as WasmAllocationInt
-            }
+            RibosomeReturnValue::Failure(code) => code as RibosomeRuntimeBits as WasmAllocationInt,
         }
     }
 }
-
-// impl From<RibosomeReturnValue> for RibosomeRuntimeBits {
-//     fn from(ribosome_return_code: RibosomeReturnValue) -> RibosomeRuntimeBits {
-//         WasmAllocationInt::from(ribosome_return_code) as RibosomeRuntimeBits
-//     }
-// }
 
 impl From<WasmAllocationInt> for RibosomeReturnValue {
     fn from(i: WasmAllocationInt) -> Self {
@@ -82,7 +53,7 @@ impl From<WasmAllocationInt> for RibosomeReturnValue {
             if maybe_allocation_length == 0 {
                 RibosomeReturnValue::Failure(RibosomeErrorCode::from_code_int(code_int))
             } else {
-                RibosomeReturnValue::Allocation(RibosomeEncodedAllocation(i))
+                RibosomeReturnValue::Allocation(i)
             }
         }
     }
@@ -248,10 +219,7 @@ impl RibosomeErrorCode {
     pub fn from_return_code(ret_code: RibosomeReturnValue) -> Self {
         match ret_code {
             Failure(rib_err) => rib_err,
-            _ => panic!(format!(
-                "RibosomeReturnValue == {:?} encountered",
-                ret_code
-            )),
+            _ => panic!(format!("RibosomeReturnValue == {:?} encountered", ret_code)),
         }
     }
 }

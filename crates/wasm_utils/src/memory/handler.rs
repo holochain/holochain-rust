@@ -1,11 +1,10 @@
-use crate::memory::allocation::AllocationResult;
+use crate::memory::{allocation::AllocationResult, Top};
 use holochain_json_api::json::JsonString;
 use memory::{
     allocation::{AllocationError, Length, WasmAllocation},
     MemoryBits, MemoryInt, MEMORY_INT_MAX, RESERVED,
 };
 use std::convert::TryInto;
-use crate::memory::Top;
 
 pub trait WasmMemoryHandler {
     // represent the max as MemoryBits type to allow gt comparisons
@@ -29,10 +28,12 @@ pub trait WasmMemoryHandler {
     }
 
     fn get_top(&self) -> Top {
-        let (top_bytes, _) = self.read_bytes(WasmAllocation::top()).split_at(RESERVED as usize);
+        let (top_bytes, _) = self
+            .read_bytes(WasmAllocation::top())
+            .split_at(RESERVED as usize);
         Top::from_le_bytes(top_bytes.try_into().unwrap())
     }
-    fn set_top(&self, Top) -> Top;
+    fn set_top(&self, top: Top) -> Top;
 
     // let length = max(bytes.len(), 1) as MemoryInt; // always allocate at least 1 byte
     // if MemoryBits::from(length) > WasmStack::max() {
@@ -91,9 +92,5 @@ pub trait WasmMemoryHandler {
         //     return Err(AllocationError::OutOfBounds);
         // }
         self.write_bytes(&json_bytes)
-    }
-
-    fn read_json<J: TryFrom<JsonString>>(&self, allocation: WasmAllocation) -> Result<J, AllocationError> {
-        let string = self.read_string(allocation);
     }
 }

@@ -8,9 +8,7 @@ use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
 
 #[allow(dead_code)]
 extern "C" {
-    pub fn hc_init_globals(
-        input_allocation_int: WasmAllocationInt,
-    ) -> WasmAllocationInt;
+    pub fn hc_init_globals(input_allocation_int: WasmAllocationInt) -> WasmAllocationInt;
 }
 
 // HC INIT GLOBALS - Secret Api Function

@@ -62,9 +62,7 @@ impl WasmAllocation {
         if offset < WasmAllocation::min() {
             Err(AllocationError::OutOfBounds)
         // the last byte of the allocation cannot be greater than the max memory size
-    } else if (offset + length) as MemoryBits
-            > WasmAllocation::max()
-        {
+        } else if (offset + length) as MemoryBits > WasmAllocation::max() {
             Err(AllocationError::OutOfBounds)
         // zero length allocations not supported
         } else if length == 0 {
@@ -76,7 +74,10 @@ impl WasmAllocation {
 
     /// the allocation for the top integer is the reserved bytes at the start of memory
     pub fn top() -> WasmAllocation {
-        WasmAllocation { offset: 0, length: RESERVED }
+        WasmAllocation {
+            offset: 0,
+            length: RESERVED,
+        }
     }
 
     ///

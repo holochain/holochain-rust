@@ -1,6 +1,7 @@
 //! developers! Detailed references and examples can be found here for how to use the
 //! HDK exposed functions to access powerful Holochain functions.
 use crate::error::{ZomeApiError, ZomeApiResult};
+use crate::memory::WasmMemory;
 use bitflags::bitflags;
 use holochain_json_api::json::{default_to_json, JsonString, RawString};
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
@@ -8,7 +9,7 @@ use lazy_static::lazy_static;
 
 use holochain_core_types::{
     dna::capabilities::CapabilityRequest,
-    error::{RibosomeEncodedAllocation, WasmAllocationInt, ZomeApiInternalResult},
+    error::{WasmAllocationInt, ZomeApiInternalResult},
 };
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
@@ -95,14 +96,11 @@ macro_rules! def_api_fns {
                 &self,
                 input: I,
             ) -> ZomeApiResult<O> {
-                let mut mem_stack = unsafe { G_MEM_STACK }
-                .ok_or_else(|| ZomeApiError::Internal("debug failed to load mem_stack".to_string()))?;
-
-                let wasm_allocation = mem_stack.write_json(input)?;
+                let memory = WasmMemory::default();
+                let wasm_allocation = memory.write_json(input)?;
 
                 // Call Ribosome's function
-                let encoded_input: WasmAllocationInt =
-                    RibosomeEncodedAllocation::from(wasm_allocation).into();
+                let encoded_input: WasmAllocationInt = wasm_allocation.into();
                 let encoded_output: WasmAllocationInt = unsafe {
                     (match self {
                         $(Dispatch::$enum_variant => $function_name),*
@@ -111,12 +109,12 @@ macro_rules! def_api_fns {
 
                 let result: ZomeApiInternalResult =
                     load_ribosome_encoded_json(encoded_output).or_else(|e| {
-                        mem_stack.deallocate(wasm_allocation)?;
+                        memory.deallocate(wasm_allocation)?;
                         Err(ZomeApiError::from(e))
                     })?;
 
                 // Free result & input allocations
-                mem_stack.deallocate(wasm_allocation)?;
+                memory.deallocate(wasm_allocation)?;
 
                 // Done
                 if result.ok {
@@ -200,9 +198,6 @@ def_api_fns! {
 //--------------------------------------------------------------------------------------------------
 // ZOME API GLOBAL VARIABLES
 //--------------------------------------------------------------------------------------------------
-
-/// Internal global for memory usage
-pub static mut G_MEM_STACK: Option<WasmStack> = None;
 
 lazy_static! {
     /// Internal global for retrieving all Zome API globals

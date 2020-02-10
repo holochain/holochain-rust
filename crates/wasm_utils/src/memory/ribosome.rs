@@ -2,33 +2,25 @@
 
 use holochain_core_types::{
     bits_n_pieces::{u64_merge_bits, u64_split_bits},
-    error::{
-        HolochainError, RibosomeEncodedAllocation, RibosomeReturnValue, WasmAllocationInt,
-        RibosomeErrorCode,
-    },
+    error::{HolochainError, RibosomeErrorCode, RibosomeReturnValue, WasmAllocationInt},
 };
 use memory::handler::WasmMemoryHandler;
 // use memory::handler::WasmMemoryHandler;
 
 use holochain_json_api::json::JsonString;
 
-use memory::{
-    allocation::{AllocationError, AllocationResult, WasmAllocation},
-    MemoryBits,
-};
+use memory::allocation::{AllocationError, AllocationResult, WasmAllocation};
 use std::convert::TryFrom;
 
-impl TryFrom<RibosomeEncodedAllocation> for WasmAllocation {
+impl TryFrom<WasmAllocationInt> for WasmAllocation {
     type Error = AllocationError;
-    fn try_from(
-        ribosome_memory_allocation: RibosomeEncodedAllocation,
-    ) -> Result<Self, Self::Error> {
-        let (offset, length) = u64_split_bits(MemoryBits::from(ribosome_memory_allocation));
+    fn try_from(allocation_int: WasmAllocationInt) -> Result<Self, Self::Error> {
+        let (offset, length) = u64_split_bits(allocation_int);
         WasmAllocation::new(offset.into(), length.into())
     }
 }
 
-impl From<WasmAllocation> for RibosomeEncodedAllocation {
+impl From<WasmAllocation> for WasmAllocationInt {
     fn from(wasm_allocation: WasmAllocation) -> Self {
         u64_merge_bits(
             wasm_allocation.offset().into(),
@@ -40,7 +32,7 @@ impl From<WasmAllocation> for RibosomeEncodedAllocation {
 
 impl From<WasmAllocation> for RibosomeReturnValue {
     fn from(wasm_allocation: WasmAllocation) -> Self {
-        RibosomeReturnValue::Allocation(RibosomeEncodedAllocation::from(wasm_allocation))
+        RibosomeReturnValue::Allocation(WasmAllocationInt::from(wasm_allocation))
     }
 }
 
@@ -67,48 +59,11 @@ impl AllocationError {
     }
 }
 
-impl TryFrom<WasmAllocationInt> for WasmAllocation {
-
-}
-
 impl WasmAllocation {
-    /// equivalent to TryFrom<WasmAllocationInt> for WasmAllocation
-    /// not implemented as a trait because WasmAllocationInt is a primitive and that would couple
-    /// allocations to ribosome encoding
-    pub fn try_from_ribosome_encoding(allocation_int: WasmAllocationInt) -> AllocationResult {
-        match RibosomeReturnValue::from(allocation_int) {
-            RibosomeReturnValue::Success => Err(AllocationError::ZeroLength),
-            RibosomeReturnValue::Failure(_) => Err(AllocationError::OutOfBounds),
-            RibosomeReturnValue::Allocation(ribosome_allocation) => {
-                WasmAllocation::try_from(ribosome_allocation)
-            }
-        }
-    }
-
-    pub fn as_ribosome_encoding(self) -> WasmAllocationInt {
+    pub fn as_ribosome_return_value(self) -> RibosomeReturnValue {
         RibosomeReturnValue::from(self).into()
     }
 }
-
-// impl WasmStack {
-//     /// equivalent to TryFrom<WasmAllocationInt> for WasmStack
-//     /// not implemented as a trait because WasmAllocationInt is a primitive and that would couple
-//     /// stacks to ribosome encoding
-//     /// wraps WasmAllocation::try_from_ribosome_encoding internally but has a "higher level"
-//     /// return signature intended for direct use/return in/from ribosome fns
-//     pub fn try_from_ribosome_encoding(
-//         maybe_encoded_allocation: WasmAllocationInt,
-//     ) -> Result<WasmStack, RibosomeReturnValue> {
-//         match WasmAllocation::try_from_ribosome_encoding(maybe_encoded_allocation) {
-//             Err(allocation_error) => Err(allocation_error),
-//             Ok(allocation) => match WasmStack::try_from(allocation) {
-//                 Err(allocation_error) => Err(allocation_error),
-//                 Ok(stack) => Ok(stack),
-//             },
-//         }
-//         .map_err(|e| e.as_ribosome_encoding().into())
-//     }
-// }
 
 /// Equivalent to From<AllocationResult> for RibosomeReturnValue
 /// not possible to implement the trait as Result and RibosomeReturnValue from different crates
@@ -154,8 +109,7 @@ pub mod tests {
     use holochain_core_types::{
         bits_n_pieces::u64_merge_bits,
         error::{
-            RibosomeEncodedAllocation, RibosomeReturnValue, WasmAllocationInt,
-            RibosomeErrorCode,
+            RibosomeEncodedAllocation, RibosomeErrorCode, RibosomeReturnValue, WasmAllocationInt,
         },
     };
     use memory::{
@@ -266,9 +220,7 @@ pub mod tests {
     #[test]
     fn ribosome_encoding_test() {
         assert_eq!(
-            WasmAllocationInt::from(RibosomeReturnValue::Failure(
-                RibosomeErrorCode::OutOfMemory
-            )),
+            WasmAllocationInt::from(RibosomeReturnValue::Failure(RibosomeErrorCode::OutOfMemory)),
             AllocationError::OutOfBounds.as_ribosome_encoding(),
         );
         assert_eq!(

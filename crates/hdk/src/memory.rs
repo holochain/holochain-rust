@@ -1,9 +1,12 @@
+use holochain_wasm_utils::memory::handler::WasmMemoryHandler;
+use holochain_wasm_utils::memory::Top;
+
 #[derive(Default)]
-struct WasmMemory {}
+pub struct WasmMemory {}
 
-impl WasmMemoryHandler for WasmMemory {}
+impl WasmMemoryHandler for WasmMemory {
 
-impl WasmMemory {
-
-    pub fn try_load_from_allocation
+    fn set_top(&self, top: Top) -> Top {
+       let bytes = Top::to_le_bytes(top);
+   }
 }

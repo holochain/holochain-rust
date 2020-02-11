@@ -30,8 +30,7 @@ jobs:
    - checkout
    - run:
      no_output_timeout: 20m
-     command: |
-       docker run --rm --security-opt seccomp=unconfined -v $(pwd):/project holochain/holochain-rust:circle.build.develop sh -c "cd project && nix-shell --run hc-rust-coverage"
+     command: docker run --rm --security-opt seccomp=unconfined -v $(pwd):/project holochain/holochain-rust:circle.build.develop sh -c "cd project && nix-shell --run hc-rust-coverage"
 
  fmt:
   docker:

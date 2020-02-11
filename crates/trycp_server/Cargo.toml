@@ -1,6 +1,6 @@
 [package]
 name = "trycp_server"
-version = "0.0.43-alpha2"
+version = "0.0.43-alpha3"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 description = "Conductor provisioner server for try-o-rama"
@@ -17,7 +17,7 @@ env_logger = "0.7.0"
 structopt = "0.2.15"
 jsonrpc-core = "14.0"
 jsonrpc-ws-server = "14.0"
-serde_json = { version = "=1.0.39", features = ["preserve_order"] }
+serde_json = { version = "=1.0.47", features = ["preserve_order"] }
 base64 = "=0.10.1"
 tempfile = "=3.0.7"
 lazy_static = "=1.4.0"

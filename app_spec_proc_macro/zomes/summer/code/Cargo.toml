@@ -1,15 +1,15 @@
 [package]
 name = "summer"
-version = "0.0.43-alpha2"
+version = "0.0.43-alpha3"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
-serde = "=1.0.89"
-serde_json = { version = "=1.0.39", features = ["preserve_order"] }
+serde = "=1.0.100"
+serde_json = { version = "=1.0.47", features = ["preserve_order"] }
 hdk = { path = "../../../../crates/hdk" }
 hdk-proc-macros = { path = "../../../../crates/hdk_v2" }
 
-serde_derive = "=1.0.89"
+serde_derive = "=1.0.100"
 boolinator = "=2.4.0"
 
 [lib]

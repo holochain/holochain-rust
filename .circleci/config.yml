@@ -27,7 +27,7 @@ jobs:
   steps:
    - checkout
    - run:
-      command: nix-shell --run hc-rust-test
+      command: nix-shell --run hc-rust-coverage
       no_output_timeout: 20m
 
  fmt:

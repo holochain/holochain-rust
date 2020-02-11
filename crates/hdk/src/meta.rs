@@ -11,7 +11,7 @@ use holochain_core_types::{
         zome::{ZomeEntryTypes, ZomeFnDeclarations, ZomeTraits},
     },
     entry::entry_type::{AppEntryType, EntryType},
-    error::{RibosomeReturnValue, WasmAllocationInt},
+    error::{RibosomeReturnValue},
 };
 use holochain_json_derive::DefaultJson;
 use serde_derive::{Deserialize, Serialize};
@@ -23,11 +23,10 @@ use holochain_wasm_utils::{
         AgentIdValidationArgs, EntryValidationArgs, LinkValidationArgs, LinkValidationPackageArgs,
     },
     holochain_core_types::error::RibosomeErrorCode,
-    memory::{
-        ribosome::{load_ribosome_encoded_json, return_code_for_allocation_result},
-    },
 };
 use std::{collections::BTreeMap, convert::TryFrom};
+use holochain_wasmer_guest::*;
+use holochain_wasmer_guest::string;
 
 trait Ribosome {
     fn define_entry_type(&mut self, name: String, entry_type: ValidatingEntryType);
@@ -69,18 +68,23 @@ extern "C" {
     fn zome_setup(zd: &mut ZomeDefinition);
     fn __list_traits() -> ZomeTraits;
     fn __list_functions() -> ZomeFnDeclarations;
+
+    // memory stuff
+    fn __import_allocation(guest_allocation_ptr: AllocationPtr, host_allocation_ptr: AllocationPtr);
+    fn __import_bytes(host_allocation_ptr: AllocationPtr, guest_bytes_ptr: Ptr);
 }
 
 #[no_mangle]
 pub extern "C" fn __hdk_get_validation_package_for_entry_type(
-    input_allocation_int: WasmAllocationInt,
-) -> WasmAllocationInt {
-    let name = memory.read_to_string(input_allocation_int.into());
+    host_allocation_ptr: AllocationPtr
+) -> AllocationPtr {
+
+    let name = string::from_allocation_ptr(holochain_wasmer_guest::map_bytes(host_allocation_ptr));
 
     let mut zd = ZomeDefinition::new();
     unsafe { zome_setup(&mut zd) };
 
-    match zd
+    json::to_allocation_ptr(match zd
         .entry_types
         .into_iter()
         .find(|ref validating_entry_type| {
@@ -91,19 +95,18 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
             let package = (*entry_type_definition.package_creator)();
             return_code_for_allocation_result(memory.write_json(package)).into()
         }
-    }
+    }.into())
 }
 
 #[no_mangle]
 pub extern "C" fn __hdk_validate_app_entry(
-    input_allocation_int: WasmAllocationInt,
-) -> WasmAllocationInt {
-    let memory = WasmMemory::default();
+    host_allocation_ptr: AllocationPtr,
+) -> AllocationPtr {
     let mut zd = ZomeDefinition::new();
     unsafe { zome_setup(&mut zd) };
 
     // Deserialize input
-    let input: EntryValidationArgs = match load_ribosome_encoded_json(input_allocation_int) {
+    let input: EntryValidationArgs = match json::from_allocation_ptr(holochain_wasmer_guest::map_bytes(host_allocation_ptr)) {
         Ok(v) => v,
         Err(e) => return RibosomeReturnValue::from(e).into(),
     };
@@ -113,7 +116,7 @@ pub extern "C" fn __hdk_validate_app_entry(
         Err(e) => return RibosomeReturnValue::from(e).into(),
     };
 
-    match zd
+    json::to_allocation_ptr(match zd
         .entry_types
         .into_iter()
         .find(|ref validating_entry_type| validating_entry_type.name == entry_type)
@@ -130,15 +133,13 @@ pub extern "C" fn __hdk_validate_app_entry(
                 .into(),
             }
         }
-    }
+    }.into())
 }
 
 #[no_mangle]
 pub extern "C" fn __hdk_validate_agent_entry(
-    input_allocation_int: WasmAllocationInt,
-) -> WasmAllocationInt {
-    let memory = WasmMemory::default();
-
+    host_allocation_ptr: AllocationPtr,
+) -> AllocationPtr {
     let mut zd = ZomeDefinition::new();
     unsafe { zome_setup(&mut zd) };
 
@@ -173,9 +174,7 @@ pub extern "C" fn __hdk_validate_agent_entry(
 #[no_mangle]
 pub extern "C" fn __hdk_get_validation_package_for_link(
     input_allocation_int: WasmAllocationInt,
-) -> WasmAllocationInt {
-    let memory = WasmMemory::default();
-
+) -> AllocationPtr {
     let mut zd = ZomeDefinition::new();
     unsafe { zome_setup(&mut zd) };
 
@@ -184,7 +183,7 @@ pub extern "C" fn __hdk_get_validation_package_for_link(
         Err(e) => return RibosomeReturnValue::from(e).into(),
     };
 
-    WasmAllocationInt::from(
+    AllocationPtr::from(
         zd.entry_types
             .into_iter()
             .find(|ref validation_entry_type| {
@@ -202,18 +201,13 @@ pub extern "C" fn __hdk_get_validation_package_for_link(
                     memory.write_json(package),
                 ))
             })
-            .unwrap_or(RibosomeReturnValue::Failure(
-                RibosomeErrorCode::CallbackFailed,
-            )),
     )
 }
 
 #[no_mangle]
 pub extern "C" fn __hdk_validate_link(
-    input_allocation_int: WasmAllocationInt,
-) -> WasmAllocationInt {
-    let memory = WasmMemory::default();
-
+    host_allocation_ptr: AllocationPtr,
+) -> AllocationPtr {
     let mut zd = ZomeDefinition::new();
     unsafe { zome_setup(&mut zd) }
 
@@ -222,39 +216,34 @@ pub extern "C" fn __hdk_validate_link(
         Err(e) => return RibosomeReturnValue::from(e).into(),
     };
 
-    WasmAllocationInt::from(
-        zd.entry_types
-            .into_iter()
-            .find(|ref validation_entry_type| {
-                validation_entry_type.name == EntryType::from(input.entry_type.clone())
-            })
-            .and_then(|entry_type_definition| {
-                entry_type_definition
-                    .links
-                    .into_iter()
-                    .find(|link_definition| {
-                        link_definition.link_type == *input.link.link_type()
-                            && link_definition.direction == input.direction
-                    })
-            })
-            .and_then(|mut link_definition| {
-                let validation_result = (*link_definition.validator)(input.validation_data);
-                Some(match validation_result {
-                    Ok(()) => RibosomeReturnValue::Success,
-                    Err(fail_string) => return_code_for_allocation_result(
-                        memory.write_json(JsonString::from_json(&fail_string)),
-                    ),
+    json::to_allocation_pointer(
+    zd.entry_types
+        .into_iter()
+        .find(|ref validation_entry_type| {
+            validation_entry_type.name == EntryType::from(input.entry_type.clone())
+        })
+        .and_then(|entry_type_definition| {
+            entry_type_definition
+                .links
+                .into_iter()
+                .find(|link_definition| {
+                    link_definition.link_type == *input.link.link_type()
+                        && link_definition.direction == input.direction
                 })
+        })
+        .and_then(|mut link_definition| {
+            let validation_result = (*link_definition.validator)(input.validation_data);
+            Some(match validation_result {
+                Ok(()) => RibosomeReturnValue::Success,
+                Err(fail_string) => return_code_for_allocation_result(
+                    memory.write_json(JsonString::from_json(&fail_string)),
+                ),
             })
-            .unwrap_or(RibosomeReturnValue::Failure(
-                RibosomeErrorCode::CallbackFailed,
-            )),
-    )
+        }).into())
 }
 
 #[no_mangle]
 pub extern "C" fn __hdk_hdk_version(input_allocation_int: WasmAllocationInt) -> WasmAllocationInt {
-    let memory = WasmMemory::default();
 
     return_code_for_allocation_result(
         memory.write_string(

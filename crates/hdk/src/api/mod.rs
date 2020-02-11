@@ -8,11 +8,11 @@ use lazy_static::lazy_static;
 
 use holochain_core_types::{
     dna::capabilities::CapabilityRequest,
-    error::{WasmAllocationInt, ZomeApiInternalResult},
+    error::{ZomeApiInternalResult},
 };
 pub use holochain_wasm_utils::api_serialization::validation::*;
 use holochain_wasm_utils::{
-    api_serialization::ZomeApiGlobals, memory::ribosome::load_ribosome_encoded_json,
+    api_serialization::ZomeApiGlobals,
 };
 
 use crate::init_globals::init_globals;

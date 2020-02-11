@@ -8,7 +8,7 @@ let
   hc-rust-coverage = pkgs.writeShellScriptBin "hc-rust-coverage"
   ''
   mkdir -p /holochain-rust/build/target
-  nix-env -f https://github.com/NixOS/nixpkgs-channels/archive/nixos-19.09.tar.gz -iA kcov && \
+  nix-env -f https://github.com/NixOS/nixpkgs-channels/archive/nixos-19.09.tar.gz -iA kcov curl && \
     cargo install cargo-make || true && \
     hc-rust-wasm-compile && \
     cargo test --no-run && \

@@ -58,6 +58,8 @@ pub fn reduce_init(state: &mut NetworkState, root_state: &State, action_wrapper:
         p2p_config,
         Some(Address::from(network_settings.agent_id.clone())),
         Some(root_state.conductor_api.clone()),
+        // TODO: This probably shouldn't be none but I can't figure out how to get the tracer
+        None,
     )
     .unwrap();
 

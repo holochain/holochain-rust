@@ -9,6 +9,7 @@ use crate::{
         NetResult,
     },
     in_memory::memory_worker::InMemoryWorker,
+    log_d, log_e,
     p2p_config::*,
     tweetlog::*,
     NEW_RELIC_LICENSE_KEY,
@@ -46,6 +47,7 @@ impl P2pNetwork {
         p2p_config: P2pConfig,
         agent_id: Option<Address>,
         conductor_api: Option<ConductorApi>,
+        tracer: Option<ht::Tracer>,
     ) -> NetResult<Self> {
         // Create Config struct
         let backend_config_str = match &p2p_config.backend_config {
@@ -58,22 +60,6 @@ impl P2pNetwork {
 
         // Provide worker factory depending on backend kind
         let worker_factory: NetWorkerFactory = match &p2p_config.clone().backend_kind {
-            // Create an IpcNetWorker with the passed backend config
-            P2pBackendKind::N3H => {
-                unimplemented!()
-                // let enduser_config = p2p_config
-                //     .maybe_end_user_config
-                //     .clone()
-                //     .expect("P2pConfig for N3H networking is missing an end-user config")
-                //     .to_string();
-                // Box::new(move |h| {
-                //     Ok(Box::new(IpcNetWorker::new(
-                //         h,
-                //         &backend_config_str,
-                //         enduser_config.clone(),
-                //     )?) as Box<dyn NetWorker>)
-                // })
-            }
             // Create a Lib3hWorker
             P2pBackendKind::LIB3H => {
                 unimplemented!()
@@ -106,15 +92,6 @@ impl P2pNetwork {
             P2pBackendKind::LegacyInMemory => Box::new(move |h| {
                 Ok(Box::new(InMemoryWorker::new(h, &backend_config_str)?) as Box<dyn NetWorker>)
             }),
-            // Create an Sim1hWorker
-            P2pBackendKind::SIM1H => Box::new(move |_h| {
-                unimplemented!()
-                // let backend_config = match &p2p_config.clone().backend_config {
-                //     BackendConfig::Sim1h(config) => config.clone(),
-                //     _ => return Err(format_err!("mismatch backend type, expecting sim1h")),
-                // };
-                // Ok(Box::new(Sim1hWorker::new(h, backend_config)?) as Box<dyn NetWorker>)
-            }),
             // Create an Sim2hWorker
             P2pBackendKind::SIM2H => Box::new(move |h| {
                 let backend_config = match &p2p_config.clone().backend_config {
@@ -130,6 +107,7 @@ impl P2pNetwork {
                     conductor_api
                         .clone()
                         .expect("Can't construct Sim2hWorker without conductor API"),
+                    tracer.clone(),
                 )?) as Box<dyn NetWorker>)
             }),
         };
@@ -179,10 +157,8 @@ impl P2pNetwork {
         match p2p_config.backend_kind {
             P2pBackendKind::LIB3H
             | P2pBackendKind::GhostEngineMemory
-            | P2pBackendKind::SIM1H
             | P2pBackendKind::SIM2H
             | P2pBackendKind::LegacyInMemory => false,
-            P2pBackendKind::N3H => true,
         }
     }
 
@@ -241,7 +217,7 @@ mod tests {
     fn it_should_create_memory_network() {
         let p2p = P2pConfig::new_with_unique_memory_backend();
         let handler = NetHandler::new(Box::new(|_r| Ok(())));
-        let mut res = P2pNetwork::new(handler.clone(), p2p, None, None).unwrap();
+        let mut res = P2pNetwork::new(handler.clone(), p2p, None, None, None).unwrap();
         let connect_data = ConnectData {
             request_id: "memory_network_req_id".into(),
             peer_location: Lib3hUri::with_undefined(),

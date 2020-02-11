@@ -12,7 +12,10 @@ use holochain_core_types::{
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
     entry::Entry,
     error::{HcResult, HolochainError},
-    network::entry_aspect::EntryAspect,
+    network::{
+        entry_aspect::EntryAspect,
+        query::{GetLinksQueryConfiguration, SortOrder},
+    },
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_locksmith::RwLock;
@@ -114,7 +117,14 @@ pub fn create_get_links_eavi_query<'a>(
         }),
         None.into(),
         IndexFilter::LatestByAttribute,
-        Some(EavFilter::single(Attribute::RemovedLink(link_type, tag))),
+        Some(EavFilter::predicate(move |attr: Attribute| match attr {
+            //the problem with this is the tombstone match will be matching against regex
+            //at this stage of the eavi_query all three vectors (e,a,v) have already been matched
+            //it would be safe to assume at this point that any value that we match using this method
+            //will be a tombstone
+            Attribute::RemovedLink(_, _) => true,
+            _ => false,
+        })),
     ))
 }
 
@@ -149,17 +159,35 @@ impl DhtStore {
     ///this means no matter how many links are added after one is removed, we will always say that the link has been removed.
     ///One thing to remember is that LinkAdd entries occupy the "Value" aspect of our EAVI link stores.
     ///When that set is obtained, we filter based on the LinkTag and RemovedLink attributes to evaluate if they are "live" or "deleted". A reminder that links cannot be modified
+    //returns a vector so that the view is maintained and not sorted by a btreeset
     pub fn get_links(
         &self,
         address: Address,
         link_type: String,
         tag: String,
         crud_filter: Option<CrudStatus>,
-    ) -> Result<BTreeSet<(EntityAttributeValueIndex, CrudStatus)>, HolochainError> {
+        configuration: GetLinksQueryConfiguration,
+    ) -> Result<Vec<(EntityAttributeValueIndex, CrudStatus)>, HolochainError> {
         let get_links_query = create_get_links_eavi_query(address, link_type, tag)?;
         let filtered = self.meta_storage.read()?.fetch_eavi(&get_links_query)?;
-        Ok(filtered
-            .into_iter()
+        let pagination = configuration.pagination;
+        let filter_with_sort_order: Box<dyn Iterator<Item = EntityAttributeValueIndex>> =
+            match configuration.sort_order.unwrap_or_default() {
+                SortOrder::Ascending => Box::new(filtered.into_iter()),
+                SortOrder::Descending => Box::new(filtered.into_iter().rev()),
+            };
+        Ok(filter_with_sort_order
+            .skip(
+                pagination
+                    .clone()
+                    .map(|page| page.page_size * page.page_number)
+                    .unwrap_or(0),
+            )
+            .take(
+                pagination
+                    .map(|page| page.page_size)
+                    .unwrap_or(std::usize::MAX),
+            )
             .map(|s| match s.attribute() {
                 Attribute::LinkTag(_, _) => (s, CrudStatus::Live),
                 _ => (s, CrudStatus::Deleted),

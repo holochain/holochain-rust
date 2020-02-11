@@ -71,6 +71,7 @@ pub struct Sim2hWorker {
     initial_gossiping_list: Option<EntryListData>,
     has_self_stored_authored_aspects: bool,
     is_full_sync_DHT: bool,
+    tracer: Option<ht::Tracer>,
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
@@ -85,6 +86,7 @@ impl Sim2hWorker {
         config: Sim2hConfig,
         agent_id: Address,
         conductor_api: ConductorApi,
+        tracer: Option<ht::Tracer>,
     ) -> NetResult<Self> {
         let reconnect_interval = Duration::from_millis(INITIAL_CONNECTION_TIMEOUT_MS);
         let mut instance = Self {
@@ -110,6 +112,7 @@ impl Sim2hWorker {
             initial_gossiping_list: None,
             has_self_stored_authored_aspects: false,
             is_full_sync_DHT: false,
+            tracer,
         };
 
         instance.send_wire_message(WireMessage::Hello(WIRE_VERSION))?;
@@ -166,7 +169,27 @@ impl Sim2hWorker {
         self.time_of_last_connection_attempt = Instant::now();
         self.connection = None;
         if let Ok(connection) = connect(self.server_url.clone(), self.connection_timeout_backoff) {
+            let mut span: ht::Span = self
+                .tracer
+                .clone()
+                .unwrap_or_else(|| ht::null_tracer())
+                .span(format!("Sending Join {}:{}", file!(), line!()))
+                .start()
+                .into();
             self.connection = Some(connection);
+            let msg = match &self.space_data {
+                None => return,
+                Some(space_data) => {
+                    span.event(format!("Space Data {:?}", &space_data));
+                    WireMessage::ClientToLib3h(
+                        span.wrap(ClientToLib3h::JoinSpace(space_data.clone()))
+                            .into(),
+                    )
+                }
+            };
+            debug!("SENDING JOIN {:#?}", msg);
+            self.send_wire_message(msg)
+                .expect("can send JoinSpace on reconnect");
         }
     }
 
@@ -404,7 +427,7 @@ impl Sim2hWorker {
                 )))
             }
 
-            // -- N3h specific functinonality -- //
+            // -- deprecated unctinonality -- //
             Lib3hClientProtocol::Shutdown => {
                 debug!("Got Lib3hClientProtocol::Shutdown from core in sim2h worker");
                 Ok(())
@@ -507,6 +530,16 @@ impl Sim2hWorker {
         if let Err(e) = self.send_wire_message(WireMessage::Ping) {
             debug!("Ping failed with: {:?}", e);
         }
+    }
+
+    /// test function for proving out reconnects
+    /// note this cannot be cfg(test) because we want to invoke it
+    /// from integration testing
+    pub fn test_close_connection_cause_reconnect(&mut self) {
+        self.connection = None;
+        self.time_of_last_connection_attempt = std::time::Instant::now()
+            .checked_sub(self.reconnect_interval * 2)
+            .unwrap();
     }
 }
 

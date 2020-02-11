@@ -14,12 +14,6 @@ const network =
   : networkType === 'memory'
   ? Config.network('memory')
 
-  : networkType === 'sim1h'
-  ? {
-    type: 'sim1h',
-    dynamo_url: 'http://localhost:8000'
-  }
-
   : networkType === 'sim2h'
   ? {
     type: 'sim2h',

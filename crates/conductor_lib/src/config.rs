@@ -11,7 +11,6 @@ use crate::{conductor::base::DnaLoader, logger::LogRules, NEW_RELIC_LICENSE_KEY}
 ///   the conductor
 /// * bridges, which are
 use boolinator::*;
-use holochain_common::FakeSim1hConfig;
 use holochain_core_types::{
     agent::{AgentId, Base32},
     dna::{
@@ -25,12 +24,12 @@ use holochain_metrics::MetricPublisherConfig;
 use holochain_net::sim2h_worker::Sim2hConfig;
 use holochain_persistence_api::cas::content::AddressableContent;
 use lib3h::engine::EngineConfig;
+
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
 use std::{
     collections::{HashMap, HashSet},
     convert::TryFrom,
-    env,
     fs::File,
     io::prelude::*,
     net::Ipv4Addr,
@@ -872,59 +871,9 @@ fn default_address() -> String {
 #[serde(tag = "type")]
 #[allow(clippy::large_enum_variant)]
 pub enum NetworkConfig {
-    N3h(N3hConfig),
     Lib3h(EngineConfig),
     Memory(EngineConfig),
-    Sim1h(FakeSim1hConfig),
     Sim2h(Sim2hConfig),
-}
-
-#[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
-pub struct N3hConfig {
-    /// List of URIs that point to other nodes to bootstrap p2p connections.
-    #[serde(default)]
-    pub bootstrap_nodes: Vec<String>,
-    /// Global logging level output by N3H
-    #[serde(default = "default_n3h_log_level")]
-    pub n3h_log_level: String,
-    /// Overall mode n3h operates in.
-    /// Should be 'REAL'
-    /// REAL is the only one and what should be used in all production cases.
-    #[serde(default = "default_n3h_mode")]
-    pub n3h_mode: String,
-    /// Absolute path to the directory that n3h uses to store persisted data.
-    #[serde(default)]
-    pub n3h_persistence_path: String,
-    /// URI pointing to an n3h process that is already running and not managed by this
-    /// conductor.
-    /// If this is set the conductor does not spawn n3h itself and ignores the path
-    /// configs above. Default is None.
-    #[serde(default)]
-    pub n3h_ipc_uri: Option<String>,
-    /// filepath to the json file holding the network settings for n3h
-    #[serde(default)]
-    pub networking_config_file: Option<String>,
-}
-
-// note that this behaviour is documented within
-// holochain_common::env_vars module and should be updated
-// if this logic changes
-pub fn default_n3h_mode() -> String {
-    String::from("REAL")
-}
-
-// note that this behaviour is documented within
-// holochain_common::env_vars module and should be updated
-// if this logic changes
-pub fn default_n3h_log_level() -> String {
-    String::from("i")
-}
-
-// note that this behaviour is documented within
-// holochain_common::env_vars module and should be updated
-// if this logic changes
-pub fn default_n3h_persistence_path() -> String {
-    env::temp_dir().to_string_lossy().to_string()
 }
 
 /// Use this function to load a `Configuration` from a string.
@@ -1085,11 +1034,8 @@ pub mod tests {
         id = "app spec instance"
 
     [network]
-    type = "n3h"
-    bootstrap_nodes = ["wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM"]
-    n3h_persistence_path = "/Users/cnorris/.holochain/n3h_persistence"
-    networking_config_file = "/Users/cnorris/.holochain/network_config.json"
-    n3h_log_level = "d"
+    type = "sim2h"
+    sim2h_url = "test_sim2h_url"
 
     [metric_publisher]
     type = "cloudwatchlogs"
@@ -1116,17 +1062,8 @@ pub mod tests {
         assert_eq!(format!("{:?}", config.metric_publisher), "Some(CloudWatchLogs(CloudWatchLogsConfig { region: None, log_group_name: Some(\"holochain\"), log_stream_name: Some(\"2019-11-22_20-53-31.sim2h_public\"), assume_role_arn: None }))");
         assert_eq!(
             config.network.unwrap(),
-            NetworkConfig::N3h(N3hConfig {
-                bootstrap_nodes: vec![String::from(
-                    "wss://192.168.0.11:64519/?a=hkYW7TrZUS1hy-i374iRu5VbZP1sSw2mLxP4TSe_YI1H2BJM3v_LgAQnpmWA_iR1W5k-8_UoA1BNjzBSUTVNDSIcz9UG0uaM"
-                )],
-                n3h_log_level: String::from("d"),
-                n3h_mode: String::from("REAL"),
-                n3h_persistence_path: String::from("/Users/cnorris/.holochain/n3h_persistence"),
-                n3h_ipc_uri: None,
-                networking_config_file: Some(String::from(
-                    "/Users/cnorris/.holochain/network_config.json"
-                )),
+            NetworkConfig::Sim2h(Sim2hConfig {
+                sim2h_url: "test_sim2h_url".to_string(),
             })
         );
     }

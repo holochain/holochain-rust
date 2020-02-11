@@ -1,6 +1,6 @@
 [package]
 name = "holochain_net"
-version = "0.0.42-alpha5"
+version = "0.0.43-alpha3"
 description = "holochain net"
 license = "GPL-3.0-only"
 homepage = "https://github.com/holochain/holochain-rust"
@@ -9,7 +9,7 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
 [dev-dependencies]
-lib3h_crypto_api = "=0.0.32"
+lib3h_crypto_api = "=0.0.36"
 base64 = "=0.10.1"
 hcid = "=0.0.6"
 jsonrpc-core = "=14.0.1"
@@ -17,49 +17,37 @@ tempfile = "=3.0.7"
 
 [dependencies]
 failure = "=0.1.5"
-sim1h = { version = "=0.0.42-alpha5", path = "../sim1h" }
-sim2h = { version = "=0.0.42-alpha5", path = "../sim2h" }
-lib3h_sodium = "=0.0.32"
-lib3h_protocol = "=0.0.32"
-lib3h = "=0.0.32"
-lib3h_zombie_actor = "=0.0.32"
+sim2h = { version = "=0.0.43-alpha3", path = "../sim2h" }
+lib3h_sodium = "=0.0.36"
+lib3h_protocol = "=0.0.36"
+lib3h = "=0.0.36"
+lib3h_zombie_actor = "=0.0.36"
 detach = "=0.0.19"
-holochain_metrics = { version = "=0.0.42-alpha5", path = "../metrics" }
-holochain_conductor_lib_api = { version = "=0.0.42-alpha5", path = "../conductor_api" }
-holochain_core_types = { version = "=0.0.42-alpha5", path = "../core_types" }
-holochain_locksmith = { version = "=0.0.42-alpha5", path = "../locksmith" }
-holochain_json_derive = "=0.0.17"
-holochain_json_api = "=0.0.17"
-holochain_tracing = "=0.0.16"
-holochain_tracing_macros = "=0.0.16"
-holochain_persistence_api = "=0.0.13"
-holochain_common = { version = "=0.0.42-alpha5", path = "../common" }
-in_stream = { version = "=0.0.42-alpha5", path = "../in_stream" }
+holochain_tracing = "=0.0.17"
+holochain_metrics = { version = "=0.0.43-alpha3", path = "../metrics" }
+holochain_conductor_lib_api = { version = "=0.0.43-alpha3", path = "../conductor_api" }
+holochain_core_types = { version = "=0.0.43-alpha3", path = "../core_types" }
+holochain_locksmith = { version = "=0.0.43-alpha3", path = "../locksmith" }
+holochain_json_derive = "=0.0.20"
+holochain_json_api = "=0.0.20"
+holochain_tracing_macros = "=0.0.17"
+holochain_persistence_api = "=0.0.15"
+holochain_common = { version = "=0.0.43-alpha3", path = "../common" }
+in_stream = { version = "=0.0.43-alpha3", path = "../in_stream" }
 lazy_static = "=1.4.0"
-libc = "=0.2.66"
 reqwest = "=0.9.11"
-sha2 = "=0.8.0"
-serde = "=1.0.89"
-serde_derive = "=1.0.89"
-serde_json = { version = "=1.0.39", features = ["preserve_order"] }
-rmp-serde = "=0.13.7"
+serde = "=1.0.100"
+serde_derive = "=1.0.100"
+serde_json = { version = "=1.0.47", features = ["preserve_order"] }
 serde_bytes = "=0.10.5"
 regex = "=1.1.2"
 snowflake = "=1.3.0"
 tokio = { version = "=0.2.11", features = ["full"] }
-tungstenite = "=0.9.2"
 url = { version = "=2.1.0", features = ["serde"] }
 url2 = "=0.0.4"
-native-tls = "=0.2.3"
 crossbeam-channel = "=0.3.8"
 parking_lot = "=0.8.0"
 env_logger = "=0.6.1"
-holochain_logging = "=0.0.4"
+holochain_logging = "=0.0.6"
 log = "0.4.8"
 newrelic="0.2"
-
-[features]
-
-vendored = ["native-tls/vendored"]
-
-default = [ "vendored" ]

@@ -330,7 +330,7 @@ pub mod tests {
             options: Default::default(),
         };
 
-        let config = GetLinksQueryConfiguration { headers: false };
+        let config = GetLinksQueryConfiguration::default();
         let method = QueryMethod::Link(get_links_args.clone(), GetLinksNetworkQuery::Links(config));
         let maybe_links = context2.block_on(query(context2.clone(), method, Default::default()));
 
@@ -344,6 +344,7 @@ pub mod tests {
         assert_eq!(links.len(), 2, "links = {:?}", links);
         // can be in any order
         assert!(
+            // cant check this right now because of the logic being moved
             ((links[0].address.clone(), links[0].crud_status.clone())
                 == (entry_addresses[1].clone(), CrudStatus::Live)
                 || (links[0].address.clone(), links[0].crud_status.clone())

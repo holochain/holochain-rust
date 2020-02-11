@@ -22,12 +22,12 @@ lib3h_crypto_api = "=0.0.36"
 lib3h_sodium = "=0.0.36"
 lib3h_protocol = "=0.0.36"
 lib3h_zombie_actor = "=0.0.36"
-holochain_tracing = "=0.0.17"
+holochain_tracing = "=0.0.18"
 holochain_core_types = { version = "=0.0.43-alpha3", path = "../core_types" }
 holochain_locksmith = { version = "=0.0.43-alpha3", path = "../locksmith" }
 holochain_metrics = { version = "=0.0.43-alpha3", path = "../metrics" }
 holochain_common = { version = "=0.0.43-alpha3", path = "../common" }
-holochain_tracing_macros = "=0.0.17"
+holochain_tracing_macros = "=0.0.18"
 im = { version = "=14.0.0", features = ["serde"] }
 in_stream = { version = "=0.0.43-alpha3", path = "../in_stream" }
 uuid = { version = "0.4", features = ["v4"] }

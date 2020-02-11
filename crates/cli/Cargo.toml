@@ -4,33 +4,33 @@ description = "holochain app scaffolding tools"
 license = "GPL-3.0-only"
 homepage = "https://github.com/holochain/holochain-rust"
 documentation = "https://github.com/holochain/holochain-rust"
-version = "0.0.42-alpha5"
+version = "0.0.43-alpha3"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
-holochain_core_types = { version = "=0.0.42-alpha5", path = "../core_types" }
-holochain_core = { version = "=0.0.42-alpha5", path = "../core" }
-holochain_common = { version = "=0.0.42-alpha5", path = "../common" }
-holochain_conductor_lib = { version = "=0.0.42-alpha5", path = "../conductor_lib" }
-holochain_net = { version = "=0.0.42-alpha5", path = "../net" }
-holochain_dpki = { version = "=0.0.42-alpha5", path = "../dpki" }
-holochain_locksmith = { version = "=0.0.42-alpha5", path = "../locksmith" }
-holochain_tracing_macros = "0.0.16"
+holochain_core_types = { version = "=0.0.43-alpha3", path = "../core_types" }
+holochain_core = { version = "=0.0.43-alpha3", path = "../core" }
+holochain_common = { version = "=0.0.43-alpha3", path = "../common" }
+holochain_conductor_lib = { version = "=0.0.43-alpha3", path = "../conductor_lib" }
+holochain_net = { version = "=0.0.43-alpha3", path = "../net" }
+holochain_dpki = { version = "=0.0.43-alpha3", path = "../dpki" }
+holochain_locksmith = { version = "=0.0.43-alpha3", path = "../locksmith" }
+holochain_tracing_macros = "=0.0.17"
 newrelic="0.2"
-sim2h = { version = "=0.0.42-alpha5", path = "../sim2h" }
-lib3h_crypto_api = "=0.0.35"
-in_stream = { version = "=0.0.42-alpha5", path = "../in_stream" }
+sim2h = { version = "=0.0.43-alpha3", path = "../sim2h" }
+lib3h_crypto_api = "=0.0.36"
+in_stream = { version = "=0.0.43-alpha3", path = "../in_stream" }
 url2 = "=0.0.4"
-lib3h_sodium = "=0.0.35"
-holochain_json_api = "=0.0.17"
-holochain_persistence_api = "=0.0.14"
-holochain_persistence_file = "=0.0.14"
+lib3h_sodium = "=0.0.36"
+holochain_json_api = "=0.0.20"
+holochain_persistence_api = "=0.0.15"
+holochain_persistence_file = "=0.0.15"
 holochain_wasm_utils = { path = "../wasm_utils" }
 structopt = "=0.3.3"
 failure = "=0.1.5"
-serde = "=1.0.89"
-serde_derive = "=1.0.89"
-serde_json = { version = "=1.0.39", features = ["preserve_order"] }
+serde = "=1.0.100"
+serde_derive = "=1.0.100"
+serde_json = { version = "=1.0.47", features = ["preserve_order"] }
 toml = "=0.5.0"
 semver = { version = "0.9.0", features = ["serde"] }
 base64 = "=0.10.1"
@@ -43,7 +43,7 @@ rustyline = "=5.0.0"
 json-patch = "=0.2.2"
 reqwest = "=0.9.11"
 tempfile = "=3.0.7"
-lib3h_protocol = "=0.0.35"
+lib3h_protocol = "=0.0.36"
 tar = "=0.4.26"
 flate2 = "=1.0.12"
 dns-lookup = "=1.0.1"

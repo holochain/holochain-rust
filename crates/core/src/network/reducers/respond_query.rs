@@ -7,6 +7,7 @@ use crate::{
         state::NetworkState,
     },
     state::State,
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
@@ -15,6 +16,7 @@ use lib3h_protocol::{
     protocol_client::Lib3hClientProtocol,
 };
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn reduce_respond_query_inner(
     network_state: &mut NetworkState,
     network_query_result: &NetworkQueryResult,

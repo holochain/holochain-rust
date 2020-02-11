@@ -1,6 +1,7 @@
 use crate::{
     signal::{Signal, UserSignal},
     wasm_engine::{api::ZomeApiResult, Runtime},
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
 
@@ -9,6 +10,8 @@ use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
 /// Expecting a string as complex input argument
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_emit_signal(runtime: &Runtime, emit_signal_args: EmitSignalArgs) -> ZomeApiResult {
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+pub fn invoke_emit_signal(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
     if let Some(sender) = context.signal_tx() {
         let signal = Signal::User(UserSignal::from(emit_signal_args));

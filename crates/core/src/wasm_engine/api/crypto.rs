@@ -1,4 +1,7 @@
-use crate::wasm_engine::{api::ZomeApiResult, Runtime};
+use crate::{
+    wasm_engine::{api::ZomeApiResult, Runtime},
+    NEW_RELIC_LICENSE_KEY,
+};
 use holochain_json_api::json::*;
 use holochain_wasm_utils::api_serialization::crypto::CryptoArgs;
 
@@ -9,6 +12,27 @@ use holochain_wasm_utils::api_serialization::crypto::CryptoArgs;
 pub fn invoke_crypto(runtime: &mut Runtime, crypto_args: CryptoArgs) -> ZomeApiResult {
     let message = runtime
         .context()?
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+pub fn invoke_crypto(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let context = runtime.context()?;
+
+    // deserialize args
+    let args_str = runtime.load_json_string_from_args(&args);
+
+    let crypto_args = match CryptoArgs::try_from(args_str.clone()) {
+        Ok(entry_input) => entry_input,
+        // Exit on error
+        Err(_) => {
+            log_error!(
+                context,
+                "zome: invoke_crypto failed to deserialize SignArgs: {:?}",
+                args_str
+            );
+            return ribosome_error_code!(ArgumentDeserializationFailed);
+        }
+    };
+
+    let message = context
         .conductor_api
         .execute(crypto_args.payload.clone(), crypto_args.method.clone())
         .map(|sig| JsonString::from_json(&sig));

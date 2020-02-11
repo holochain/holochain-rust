@@ -1,8 +1,11 @@
 //! provides worker that makes use of lib3h
 
-use crate::connection::{
-    net_connection::{NetHandler, NetWorker},
-    NetResult,
+use crate::{
+    connection::{
+        net_connection::{NetHandler, NetWorker},
+        NetResult,
+    },
+    NEW_RELIC_LICENSE_KEY,
 };
 use lib3h::{
     dht::mirror_dht::MirrorDht,
@@ -33,6 +36,7 @@ impl Lib3hWorker {
 }
 
 /// Constructors
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl Lib3hWorker {
     /// Create a new websocket worker connected to the lib3h NetworkEngine
     pub fn with_wss_transport(handler: NetHandler, real_config: EngineConfig) -> NetResult<Self> {

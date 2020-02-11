@@ -9,6 +9,7 @@ use crate::{
     dht::dht_store::DhtStore,
     network::state::NetworkState,
     nucleus::state::{NucleusState, NucleusStateSnapshot},
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_conductor_lib_api::ConductorApi;
 use holochain_core_types::{
@@ -63,6 +64,7 @@ pub struct State {
     pub conductor_api: ConductorApi,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl State {
     pub fn new(context: Arc<Context>) -> Self {
         // @TODO file table

@@ -4,7 +4,6 @@ pub const QUALIFIER: &str = "org";
 pub const ORGANIZATION: &str = "holochain";
 pub const APPLICATION: &str = "holochain";
 pub const KEYS_DIRECTORY: &str = "keys";
-pub const N3H_BINARIES_DIRECTORY: &str = "n3h-binaries";
 pub const DNA_EXTENSION: &str = "dna.json";
 
 /// Returns the project root builder for holochain directories.
@@ -36,10 +35,4 @@ pub fn data_root() -> PathBuf {
 /// Something like "~/.config/holochain/keys".
 pub fn keys_directory() -> PathBuf {
     config_root().join(KEYS_DIRECTORY)
-}
-
-/// Returns the path to where n3h binaries will be downloaded / run
-/// Something like "~/.local/share/holochain/n3h-binaries"
-pub fn n3h_binaries_directory() -> PathBuf {
-    data_root().join(N3H_BINARIES_DIRECTORY)
 }

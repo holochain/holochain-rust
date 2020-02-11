@@ -1,6 +1,7 @@
 use crate::{
     wasm_engine::{api::ZomeApiResult, Runtime},
     workflows::get_entry_result::get_entry_result_workflow,
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_wasm_utils::api_serialization::get_entry::GetEntryArgs;
 
@@ -9,6 +10,23 @@ use holochain_wasm_utils::api_serialization::get_entry::GetEntryArgs;
 /// Expected complex argument: GetEntryArgs
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_get_entry(runtime: &mut Runtime, input: GetEntryArgs) -> ZomeApiResult {
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let context = runtime.context()?;
+    // deserialize args
+    let args_str = runtime.load_json_string_from_args(&args);
+    let input = match GetEntryArgs::try_from(args_str.clone()) {
+        Ok(input) => input,
+        // Exit on error
+        Err(_) => {
+            log_error!(
+                context,
+                "zome: invoke_get_entry() failed to deserialize: {:?}",
+                args_str
+            );
+            return ribosome_error_code!(ArgumentDeserializationFailed);
+        }
+    };
     // Create workflow future and block on it
     let result = runtime
         .context()?

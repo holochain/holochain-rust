@@ -2,10 +2,12 @@ use crate::{
     action::{Action, ActionWrapper},
     nucleus::state::NucleusState,
     state::State,
+    NEW_RELIC_LICENSE_KEY,
 };
 
 /// Reduce ReturnZomeFunctionResult Action.
 /// Simply drops function call into zome_calls state.
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_return_zome_function_result(
     state: &mut NucleusState,
     _root_state: &State,

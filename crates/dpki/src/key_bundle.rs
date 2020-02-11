@@ -5,7 +5,7 @@ use crate::{
     keypair::*,
     password_encryption::{self, EncryptedData, PwHashConfig},
     seed::{Seed, SeedType},
-    utils, SEED_SIZE,
+    utils, NEW_RELIC_LICENSE_KEY, SEED_SIZE,
 };
 use holochain_core_types::{agent::Base32, error::HcResult};
 use serde_json::json;
@@ -19,6 +19,7 @@ pub struct KeyBundle {
     pub enc_keys: EncryptingKeyPair,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl KeyBundle {
     /// create a new KeyBundle
     pub fn new(sign_keys: SigningKeyPair, enc_keys: EncryptingKeyPair) -> HcResult<Self> {

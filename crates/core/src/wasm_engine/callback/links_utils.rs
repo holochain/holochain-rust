@@ -1,4 +1,6 @@
-use crate::{context::Context, workflows::get_entry_result::get_entry_result_workflow};
+use crate::{
+    context::Context, workflows::get_entry_result::get_entry_result_workflow, NEW_RELIC_LICENSE_KEY,
+};
 use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
@@ -8,6 +10,7 @@ use holochain_wasm_utils::api_serialization::{get_entry::*, validation::LinkDire
 use std::sync::Arc;
 
 /// Retrieves the base and target entries of the link and returns both.
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn get_link_entries(
     link: &Link,
     context: &Arc<Context>,
@@ -62,6 +65,7 @@ pub struct LinkDefinitionPath {
 /// zomes, entry types and their links and returns the first match.
 ///
 /// Returns a LinkDefinitionPath to uniquely reference the link definition in the DNA.
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn find_link_definition_by_type(
     link_type: &String,
     context: &Arc<Context>,

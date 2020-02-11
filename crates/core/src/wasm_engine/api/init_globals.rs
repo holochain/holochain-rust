@@ -1,4 +1,7 @@
-use crate::wasm_engine::{api::ZomeApiResult, Runtime};
+use crate::{
+    wasm_engine::{api::ZomeApiResult, Runtime},
+    NEW_RELIC_LICENSE_KEY,
+};
 use holochain_core_types::entry::entry_type::EntryType;
 use holochain_wasm_utils::api_serialization::wasm_string::WasmString;
 
@@ -16,6 +19,8 @@ use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
 /// Not expecting any complex input
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_init_globals(runtime: &mut Runtime, _: WasmString) -> ZomeApiResult {
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeApiResult {
     let call_data = runtime.call_data()?;
     let dna = runtime
         .context()?

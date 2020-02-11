@@ -1,4 +1,7 @@
-use crate::wasm_engine::{api::ZomeApiResult, Runtime};
+use crate::{
+    wasm_engine::{api::ZomeApiResult, Runtime},
+    NEW_RELIC_LICENSE_KEY,
+};
 use holochain_dpki::utils::Verify;
 use holochain_wasm_utils::api_serialization::verify_signature::VerifySignatureArgs;
 
@@ -10,6 +13,26 @@ pub fn invoke_verify_signature(
     runtime: &mut Runtime,
     verification_args: VerifySignatureArgs,
 ) -> ZomeApiResult {
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+pub fn invoke_verify_signature(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let context = runtime.context()?;
+
+    // deserialize args
+    let args_str = runtime.load_json_string_from_args(&args);
+
+    let verification_args = match VerifySignatureArgs::try_from(args_str.clone()) {
+        Ok(verify_signature_input) => verify_signature_input,
+        // Exit on error
+        Err(_) => {
+            log_error!(
+                context,
+                "zome: invoke_verify_signature failed to deserialize SerializedEntry: {:?}",
+                args_str
+            );
+            return ribosome_error_code!(ArgumentDeserializationFailed);
+        }
+    };
+
     log_debug!(
         runtime.context()?,
         "zome: using provenance:{:?} to verify data:{:?}",

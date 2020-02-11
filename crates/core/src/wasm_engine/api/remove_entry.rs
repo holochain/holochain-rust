@@ -1,6 +1,7 @@
 use crate::{
     wasm_engine::{api::ZomeApiResult, Runtime},
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     entry::{deletion_entry::DeletionEntry, Entry},
@@ -16,6 +17,26 @@ use holochain_wasm_utils::api_serialization::get_entry::*;
 /// Expected Address argument
 /// Stores/returns a RibosomeReturnValue
 pub fn invoke_remove_entry(runtime: &mut Runtime, deleted_entry_address: Address) -> ZomeApiResult {
+/// Stores/returns a RibosomeEncodedValue
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let context = runtime.context()?;
+
+    // deserialize args
+    let args_str = runtime.load_json_string_from_args(&args);
+    let try_address = Address::try_from(args_str.clone());
+
+    // Exit on error
+    if try_address.is_err() {
+        log_error!(
+            context,
+            "zome: invoke_remove_entry failed to deserialize Address: {:?}",
+            args_str
+        );
+        return ribosome_error_code!(ArgumentDeserializationFailed);
+    }
+    let deleted_entry_address = try_address.unwrap();
+
     // Get Current entry's latest version
     let get_args = GetEntryArgs {
         address: deleted_entry_address,

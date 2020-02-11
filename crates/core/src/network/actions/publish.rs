@@ -3,6 +3,7 @@ use crate::{
     context::Context,
     instance::dispatch_action,
     network::actions::NetworkActionResponse,
+    NEW_RELIC_LICENSE_KEY,
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::error::HcResult;
@@ -14,6 +15,7 @@ use std::{pin::Pin, sync::Arc};
 /// be called from zome api functions and other contexts that don't care about implementation details.
 ///
 /// Returns a future that resolves to an ActionResponse.
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn publish(address: Address, context: &Arc<Context>) -> HcResult<Address> {
     let action_wrapper = ActionWrapper::new(Action::Publish(address));
     dispatch_action(context.action_channel(), action_wrapper.clone());
@@ -31,6 +33,7 @@ pub struct PublishFuture {
     action: ActionWrapper,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Future for PublishFuture {
     type Output = HcResult<Address>;
 

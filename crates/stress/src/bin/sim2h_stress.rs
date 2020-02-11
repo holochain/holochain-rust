@@ -14,7 +14,7 @@ use lib3h_protocol::{data_types::*, protocol::*, uri::Lib3hUri};
 use lib3h_sodium::SodiumCryptoSystem;
 use sim2h::{
     crypto::{Provenance, SignedWireMessage},
-    Sim2h, WireMessage,
+    run_sim2h, DhtAlgorithm, WireMessage,
 };
 use std::{
     collections::{HashMap, VecDeque},
@@ -51,11 +51,11 @@ struct OptStressRunConfig {
     /// how often to output in-progress statistics
     progress_interval_ms: u64,
 
-    #[structopt(long, env = "STRESS_PING_FREQ_MS", default_value = "1000")]
+    #[structopt(long, env = "STRESS_PING_FREQ_MS", default_value = "250")]
     /// how often each job should send a ping to sim2h
     ping_freq_ms: u64,
 
-    #[structopt(long, env = "STRESS_PUBLISH_FREQ_MS", default_value = "1000")]
+    #[structopt(long, env = "STRESS_PUBLISH_FREQ_MS", default_value = "250")]
     /// how often each job should publish a new entry
     publish_freq_ms: u64,
 
@@ -63,7 +63,7 @@ struct OptStressRunConfig {
     /// how many bytes should be published each time
     publish_byte_count: usize,
 
-    #[structopt(long, env = "STRESS_DM_FREQ_MS", default_value = "1000")]
+    #[structopt(long, env = "STRESS_DM_FREQ_MS", default_value = "250")]
     /// how often each job should send a direct message to another agent
     dm_freq_ms: u64,
 
@@ -468,9 +468,22 @@ impl Job {
                 let res = res.unwrap();
                 logger.log("ping_recv_pong_in_ms", res.elapsed().as_millis() as f64);
             }
-            WireMessage::Lib3hToClient(Lib3hToClient::HandleGetAuthoringEntryList(_))
-            | WireMessage::Lib3hToClient(Lib3hToClient::HandleGetGossipingEntryList(_)) => {}
-            WireMessage::Lib3hToClient(Lib3hToClient::HandleStoreEntryAspect(aspect)) => {
+            WireMessage::Lib3hToClient(msg) => self.priv_handle_msg_inner(logger, msg),
+            WireMessage::MultiSend(msg_list) => {
+                for msg in msg_list {
+                    self.priv_handle_msg_inner(logger, msg)
+                }
+            }
+            e @ _ => panic!("unexpected: {:?}", e),
+        }
+    }
+
+    fn priv_handle_msg_inner(&mut self, logger: &mut StressJobMetricLogger, msg: Lib3hToClient) {
+        match msg {
+            Lib3hToClient::HandleGetAuthoringEntryList(_)
+            | Lib3hToClient::HandleGetGossipingEntryList(_)
+            | Lib3hToClient::HandleFetchEntry(_) => {}
+            Lib3hToClient::HandleStoreEntryAspect(aspect) => {
                 let epoch_millis = std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap()
@@ -479,7 +492,7 @@ impl Job {
                 let elapsed = epoch_millis - published;
                 logger.log("publish_received_aspect_in_ms", elapsed as f64);
             }
-            WireMessage::Lib3hToClient(Lib3hToClient::HandleSendDirectMessage(dm_data)) => {
+            Lib3hToClient::HandleSendDirectMessage(dm_data) => {
                 let to_agent_id: String = dm_data.to_agent_id.clone().into();
                 assert_eq!(self.agent_id, to_agent_id);
                 let mut out_dm = dm_data.clone();
@@ -489,7 +502,7 @@ impl Job {
                     Lib3hToClientResponse::HandleSendDirectMessageResult(out_dm),
                 ));
             }
-            WireMessage::Lib3hToClient(Lib3hToClient::SendDirectMessageResult(dm_data)) => {
+            Lib3hToClient::SendDirectMessageResult(dm_data) => {
                 let res = self.pending_dms.remove(&dm_data.request_id);
                 if res.is_none() {
                     panic!("invalid dm.request_id")
@@ -576,30 +589,31 @@ impl Suite {
             // changed to ws until we reactive TLS
             let url = Url2::parse(&format!("ws://127.0.0.1:{}", port));
 
-            let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), Lib3hUri(url.into()));
-
-            snd1.send(sim2h.bound_uri.clone().unwrap()).unwrap();
-            drop(snd1);
-
             let mut logger = None;
 
-            while *sim2h_cont_clone.lock().unwrap() {
-                std::thread::sleep(std::time::Duration::from_millis(1));
+            let (mut rt, binding) = run_sim2h(
+                Box::new(SodiumCryptoSystem::new()),
+                Lib3hUri(url.into()),
+                DhtAlgorithm::FullSync,
+            );
+            rt.block_on(async move {
+                tokio::task::spawn(async move {
+                    snd1.send(binding.await.unwrap()).unwrap();
+                });
+                while *sim2h_cont_clone.lock().unwrap() {
+                    tokio::time::delay_for(std::time::Duration::from_millis(1)).await;
 
-                if let Ok(l) = rcv2.try_recv() {
-                    logger.replace(l);
+                    if let Ok(l) = rcv2.try_recv() {
+                        logger.replace(l);
+                    }
+
+                    let start = std::time::Instant::now();
+
+                    if let Some(logger) = &mut logger {
+                        logger.log("tick_sim2h_elapsed_ms", start.elapsed().as_millis() as f64);
+                    }
                 }
-
-                let start = std::time::Instant::now();
-
-                if let Err(e) = sim2h.process() {
-                    panic!("{:?}", e);
-                }
-
-                if let Some(logger) = &mut logger {
-                    logger.log("tick_sim2h_elapsed_ms", start.elapsed().as_millis() as f64);
-                }
-            }
+            });
         }));
 
         let bound_uri = rcv1.recv().unwrap();
@@ -641,7 +655,7 @@ fn print_stats(stats: StressStats) {
             l -> v.count,
             l -> v.min,
             l -> v.max,
-            l -> v.avg,
+            l -> format!("{:.2}", v.avg),
         ]);
     }
     table.printstd();

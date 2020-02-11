@@ -1,6 +1,11 @@
 use crate::{
     nucleus::ZomeFnResult,
-    wasm_engine::{factories::wasm_instance_factory, runtime::WasmCallData},
+    wasm_engine::{
+        factories::{wasm_instance_factory, wasm_module_factory},
+        memory::WasmPageManager,
+        runtime::{Runtime, WasmCallData},
+    },
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::error::{
     HcResult, HolochainError, RibosomeReturnValue, WasmAllocationInt,
@@ -19,7 +24,8 @@ use wasmer_runtime::{Module, Value};
 /// inside the DirectCall specialisation for WasmCallData.
 ///
 /// For ZomeCalls and CallbackCalls it gets the according module from the DNA.
-fn get_module(data: WasmCallData) -> Result<Module, HolochainError> {
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+fn get_module(data: WasmCallData) -> Result<ModuleArc, HolochainError> {
     let (context, zome_name) = if let WasmCallData::DirectCall(_, wasm) = data {
         return Ok(wasm_module_factory(wasm)?);
     } else {
@@ -49,6 +55,7 @@ fn get_module(data: WasmCallData) -> Result<Module, HolochainError> {
 /// Executes an exposed zome function in a wasm binary.
 /// Multithreaded function
 /// panics if wasm binary isn't valid.
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult {
     let wasm_module = get_module(data.clone())?;
 

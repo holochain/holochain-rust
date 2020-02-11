@@ -1,6 +1,7 @@
 use crate::{
     agent::actions::commit::commit_entry,
     wasm_engine::{api::ZomeApiResult, Runtime},
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     entry::{
@@ -14,6 +15,18 @@ use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_utils::api_serialization::capabilities::{
     CommitCapabilityClaimArgs, CommitCapabilityGrantArgs,
 };
+use std::convert::TryFrom;
+use wasmi::{RuntimeArgs, RuntimeValue};
+
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+pub fn invoke_commit_capability_grant(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let context = runtime.context()?;
+    // deserialize args
+    let args_str = runtime.load_json_string_from_args(&args);
+    let args = match CommitCapabilityGrantArgs::try_from(args_str) {
+        Ok(input) => input,
+        Err(..) => return ribosome_error_code!(ArgumentDeserializationFailed),
+    };
 
 pub fn invoke_commit_capability_grant(
     runtime: &mut Runtime,
@@ -39,6 +52,16 @@ pub fn invoke_commit_capability_claim(
     runtime: &mut Runtime,
     args: CommitCapabilityClaimArgs,
 ) -> ZomeApiResult {
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+pub fn invoke_commit_capability_claim(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let context = runtime.context()?;
+    // deserialize args
+    let args_str = runtime.load_json_string_from_args(&args);
+    let args = match CommitCapabilityClaimArgs::try_from(args_str) {
+        Ok(input) => input,
+        Err(..) => return ribosome_error_code!(ArgumentDeserializationFailed),
+    };
+
     let claim = CapTokenClaim::new(args.id, args.grantor, args.token);
     let task_result: Result<Address, HolochainError> = runtime.context()?.block_on(commit_entry(
         Entry::CapTokenClaim(claim),

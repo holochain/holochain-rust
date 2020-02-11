@@ -1,6 +1,8 @@
-use crate::{context::Context, wasm_engine::api::ZomeApiResult};
-use holochain_wasm_utils::api_serialization::wasm_string::WasmString;
-use std::sync::Arc;
+use crate::{
+    wasm_engine::{api::ZomeApiResult, Runtime},
+    NEW_RELIC_LICENSE_KEY,
+};
+use wasmi::{RuntimeArgs, RuntimeValue};
 
 /// ZomeApiFunction::Debug function code
 /// args: [0] encoded MemoryAllocation as u64
@@ -8,6 +10,11 @@ use std::sync::Arc;
 /// Returns an HcApiReturnCode as I64
 pub fn invoke_debug(context: Arc<Context>, payload: WasmString) -> ZomeApiResult {
     log_debug!(context, "dna: '{}'", payload.to_string());
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+pub fn invoke_debug(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let context = runtime.context()?;
+    let payload = runtime.load_json_string_from_args(args);
+    log_debug!(context, "dna: '{}'", payload);
 
     ribosome_success!()
 }

@@ -3,6 +3,7 @@ use crate::{
     context::{get_dna_and_agent, Context},
     instance::dispatch_action,
     network::handler::create_handler,
+    NEW_RELIC_LICENSE_KEY,
 };
 use futures::{task::Poll, Future};
 use holochain_core_types::error::HcResult;
@@ -11,6 +12,7 @@ use holochain_persistence_api::cas::content::Address;
 use std::{pin::Pin, sync::Arc};
 
 /// Creates a network proxy object and stores DNA and agent hash in the network state.
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn initialize_network(context: &Arc<Context>) -> HcResult<()> {
     let (dna_address, agent_id) = get_dna_and_agent(context).await?;
     let handler = create_handler(&context, dna_address.to_string());

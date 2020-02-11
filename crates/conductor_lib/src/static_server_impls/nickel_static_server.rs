@@ -3,6 +3,7 @@ use crate::{
     config::{InterfaceConfiguration, UiBundleConfiguration, UiInterfaceConfiguration},
     error::HolochainResult,
     static_file_server::{dna_connections_response, ConductorStaticFileServer, DNA_CONFIG_ROUTE},
+    NEW_RELIC_LICENSE_KEY,
 };
 use crossbeam_channel::{self, Sender};
 use holochain_core_types::error::HolochainError;
@@ -21,6 +22,7 @@ pub struct NickelStaticServer {
     running: bool,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl ConductorStaticFileServer for NickelStaticServer {
     fn from_configs(
         config: UiInterfaceConfiguration,

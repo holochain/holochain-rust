@@ -1,6 +1,6 @@
 /// Provides statistical features over metric data.
 /// Extends the metric api with statistical aggregation functions
-use crate::metrics::Metric;
+use crate::{metrics::Metric, NEW_RELIC_LICENSE_KEY};
 use num_traits::float::Float;
 use stats::Commute;
 use std::{
@@ -356,6 +356,7 @@ impl Default for LessThanStatCheck {
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_METRICS)]
 impl StatCheck for LessThanStatCheck {
     fn check(
         &self,
@@ -478,6 +479,7 @@ impl GroupingKey {
 #[shrinkwrap(mutable)]
 pub struct StatsByMetric<D: DescriptiveStats>(pub HashMap<GroupingKey, D>);
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_METRICS)]
 impl<'a, D: DescriptiveStats + Clone + 'a> StatsByMetric<D> {
     pub fn to_records(&self) -> Box<dyn Iterator<Item = StatsRecord> + 'a> {
         let me = self.0.clone();

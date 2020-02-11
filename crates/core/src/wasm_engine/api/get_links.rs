@@ -1,6 +1,7 @@
 use crate::{
     wasm_engine::{api::ZomeApiResult, Runtime},
     workflows::get_link_result::get_link_result_workflow,
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
 
@@ -14,6 +15,33 @@ pub fn invoke_get_links(runtime: &mut Runtime, input: GetLinksArgs) -> ZomeApiRe
             .context()?
             .block_on(get_link_result_workflow(&runtime.context()?, &input)),
     )
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
+    let context = runtime.context()?;
+    // deserialize args
+    let args_str = runtime.load_json_string_from_args(&args);
+    let input = match GetLinksArgs::try_from(args_str.clone()) {
+        Ok(input) => {
+            log_debug!(
+                context,
+                "zome/get_links: invoke_get_links called with {:?}",
+                input,
+            );
+            input
+        }
+        Err(_) => {
+            log_error!(
+                context,
+                "zome/get_links: invoke_get_links failed to deserialize GetLinksArgs: {:?}",
+                args_str
+            );
+            return ribosome_error_code!(ArgumentDeserializationFailed);
+        }
+    };
+
+    let result = context.block_on(get_link_result_workflow(&context, &input));
+
+    runtime.store_result(result)
 }
 
 #[cfg(test)]
@@ -413,7 +441,7 @@ pub mod tests {
         let expected = JsonString::from_json(
             &(format!(
                 r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}}]}}","error":"null"}}"#,
-                entry_addresses[1], "test-tag1", entry_addresses[1], "test-tag2",
+                entry_addresses[1], "test-tag2", entry_addresses[1], "test-tag1",
             ) + "\u{0}"),
         );
         assert_eq!(call_result, expected,);

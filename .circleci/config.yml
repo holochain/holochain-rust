@@ -23,6 +23,7 @@ jobs:
  build:
   docker:
    - image: holochain/holochain-rust:circle.build.develop
+   - command: docker run -it --rm --security-opt seccomp=unconfined -v $(pwd):/project
   resource_class: xlarge
   steps:
    - checkout

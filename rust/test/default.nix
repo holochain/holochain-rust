@@ -7,9 +7,10 @@ let
 
   hc-rust-coverage = pkgs.writeShellScriptBin "hc-rust-coverage"
   ''
-  nix-env -f https://github.com/NixOS/nixpkgs-channels/archive/nixos-19.09.tar.gz -iA kcov
-  cargo install cargo-make
-  CARGO_MAKE_WORKSPACE_TARGET_DIRECTORY=$(readlink -f ./target) cargo make codecov-flow
+  nix-env -f https://github.com/NixOS/nixpkgs-channels/archive/nixos-19.09.tar.gz -iA kcov && \
+    cargo install cargo-make || true && \
+    cargo test --no-run && \
+    CARGO_MAKE_WORKSPACE_TARGET_DIRECTORY=$(readlink -f ./target) cargo make codecov-flow
   '';
 in
 {

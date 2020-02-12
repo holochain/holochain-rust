@@ -1,7 +1,9 @@
 pub mod actions;
 pub mod direct_message;
 pub mod entry_with_header;
+#[autotrace]
 pub mod handler;
+#[autotrace]
 pub mod reducers;
 pub mod state;
 #[cfg(test)]

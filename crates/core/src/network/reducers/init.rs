@@ -11,6 +11,7 @@ use holochain_persistence_api::cas::content::AddressableContent;
 use lib3h_protocol::{data_types::SpaceData, protocol_client::Lib3hClientProtocol, Address};
 use log::{debug, error, info};
 
+#[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_init(state: &mut NetworkState, root_state: &State, action_wrapper: &ActionWrapper) {
     let action = action_wrapper.action();
@@ -57,6 +58,8 @@ pub fn reduce_init(state: &mut NetworkState, root_state: &State, action_wrapper:
         p2p_config,
         Some(Address::from(network_settings.agent_id.clone())),
         Some(root_state.conductor_api.clone()),
+        // TODO: This probably shouldn't be none but I can't figure out how to get the tracer
+        None,
     )
     .unwrap();
 
@@ -81,7 +84,7 @@ pub fn reduce_init(state: &mut NetworkState, root_state: &State, action_wrapper:
     state.dna_address = Some(network_settings.dna_address.clone());
     state.agent_id = Some(network_settings.agent_id.clone());
 
-    if let Err(err) = network.send(json) {
+    if let Err(err) = network.send(ht::top_follower("reduce_init").wrap(json).into()) {
         error!("Could not send JsonProtocol::TrackDna. Error: {:?}", err);
         error!("Failed to initialize network!");
         network.stop();
@@ -105,6 +108,7 @@ pub mod test {
     use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+    use holochain_tracing as ht;
     use serde_json::json;
     use std::sync::Arc;
     use tempfile;
@@ -130,6 +134,7 @@ pub mod test {
             Arc::new(RwLock::new(
                 holochain_metrics::DefaultMetricPublisher::default(),
             )),
+            Arc::new(ht::null_tracer()),
         );
 
         let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));

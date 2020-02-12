@@ -60,7 +60,12 @@ const logger = {
   state_dump: true
 }
 
-const commonConfig = { logger, network }
+const tracing = ({playerName}) => ({
+  type: 'jaeger',
+  service_name: `holochain-${playerName}`
+})
+
+const commonConfig = { logger, network, tracing }
 
 module.exports = {
   one: Config.gen({

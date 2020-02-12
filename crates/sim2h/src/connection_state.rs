@@ -5,7 +5,7 @@ pub type AgentId = AgentPubKey;
 
 use crate::error::*;
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ConnectionState {
     #[allow(clippy::all)]
     Limbo(Box<Vec<WireMessage>>),

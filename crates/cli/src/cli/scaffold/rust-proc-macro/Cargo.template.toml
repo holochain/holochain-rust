@@ -5,9 +5,9 @@ authors = <<AUTHORS>>
 edition = <<EDITION>>
 
 [dependencies]
-serde = "=1.0.100"
+serde = "=1.0.104"
 serde_json = { version = "=1.0.47", features = ["preserve_order"] }
-serde_derive = "=1.0.100"
+serde_derive = "=1.0.104"
 hdk = <<VERSION>>
 hdk_proc_macros = <<VERSION>>
 holochain_wasm_utils = <<VERSION>>

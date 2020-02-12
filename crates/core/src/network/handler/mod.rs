@@ -3,10 +3,15 @@ use crate::{
     NEW_RELIC_LICENSE_KEY,
 };
 use holochain_logging::prelude::*;
+#[autotrace]
 pub mod fetch;
+#[autotrace]
 pub mod lists;
+#[autotrace]
 pub mod query;
+#[autotrace]
 pub mod send;
+#[autotrace]
 pub mod store;
 
 use crate::{
@@ -110,6 +115,7 @@ MessageData {{
 }
 
 // TODO Implement a failure workflow?
+#[autotrace]
 fn handle_failure_result(
     context: &Arc<Context>,
     failure_data: GenericResultData,
@@ -137,7 +143,20 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
             );
             return Ok(());
         }
-        match message.unwrap() {
+        let message = message.unwrap();
+        let mut span = ht::SpanWrap::from(message.clone())
+            .follower(&context.tracer, "received message from handler")
+            .unwrap_or_else(|| {
+                context
+                    .tracer
+                    .span("create_handler (missing history)")
+                    .start()
+                    .into()
+            });
+        span.event(format!("message.data: {:?}", message.data));
+        // Set this as the root span for autotrace
+        let _guard = ht::push_span(span);
+        match message.data {
             Lib3hServerProtocol::FailureResult(failure_data) => {
                 if !is_my_dna(&my_dna_address, &failure_data.space_address.to_string()) {
                     return Ok(());
@@ -216,10 +235,12 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
             }
             Lib3hServerProtocol::HandleSendDirectMessage(message_data) => {
                 if !is_my_dna(&my_dna_address, &message_data.space_address.to_string()) {
+                    ht::with_top(|span| span.event("not my dna"));
                     return Ok(());
                 }
                 // ignore if it's not addressed to me
                 if !is_my_id(&context, &message_data.to_agent_id.to_string()) {
+                    ht::with_top(|span| span.event("not my id"));
                     return Ok(());
                 }
                 log_debug!(

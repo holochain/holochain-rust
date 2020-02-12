@@ -5,6 +5,7 @@ use crate::{
         net_connection::{NetHandler, NetWorker},
         NetResult,
     },
+    p2p_network::Lib3hClientProtocolWrapped,
     NEW_RELIC_LICENSE_KEY,
 };
 use failure::_core::time::Duration;
@@ -54,8 +55,8 @@ pub struct Sim2hConfig {
 pub struct Sim2hWorker {
     handler: NetHandler,
     connection: Option<TcpWss>,
-    inbox: Vec<Lib3hClientProtocol>,
-    to_core: Vec<Lib3hServerProtocol>,
+    inbox: Vec<ht::EncodedSpanWrap<Lib3hClientProtocol>>,
+    to_core: Vec<ht::EncodedSpanWrap<Lib3hServerProtocol>>,
     server_url: Lib3hUri,
     space_data: Option<SpaceData>,
     agent_id: Address,
@@ -70,6 +71,7 @@ pub struct Sim2hWorker {
     initial_gossiping_list: Option<EntryListData>,
     has_self_stored_authored_aspects: bool,
     is_full_sync_DHT: bool,
+    tracer: Option<ht::Tracer>,
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
@@ -84,6 +86,7 @@ impl Sim2hWorker {
         config: Sim2hConfig,
         agent_id: Address,
         conductor_api: ConductorApi,
+        tracer: Option<ht::Tracer>,
     ) -> NetResult<Self> {
         let reconnect_interval = Duration::from_millis(INITIAL_CONNECTION_TIMEOUT_MS);
         let mut instance = Self {
@@ -109,6 +112,7 @@ impl Sim2hWorker {
             initial_gossiping_list: None,
             has_self_stored_authored_aspects: false,
             is_full_sync_DHT: false,
+            tracer,
         };
 
         instance.send_wire_message(WireMessage::Hello(WIRE_VERSION))?;
@@ -165,11 +169,22 @@ impl Sim2hWorker {
         self.time_of_last_connection_attempt = Instant::now();
         self.connection = None;
         if let Ok(connection) = connect(self.server_url.clone(), self.connection_timeout_backoff) {
+            let mut span: ht::Span = self
+                .tracer
+                .clone()
+                .unwrap_or_else(|| ht::null_tracer())
+                .span(format!("Sending Join {}:{}", file!(), line!()))
+                .start()
+                .into();
             self.connection = Some(connection);
             let msg = match &self.space_data {
                 None => return,
                 Some(space_data) => {
-                    WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(space_data.clone()))
+                    span.event(format!("Space Data {:?}", &space_data));
+                    WireMessage::ClientToLib3h(
+                        span.wrap(ClientToLib3h::JoinSpace(space_data.clone()))
+                            .into(),
+                    )
                 }
             };
             debug!("SENDING JOIN {:#?}", msg);
@@ -251,23 +266,24 @@ impl Sim2hWorker {
     }
 
     #[allow(dead_code)]
-    fn handle_client_message(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
-        match data {
+    fn handle_client_message(&mut self, span_wrap: Lib3hClientProtocolWrapped) -> NetResult<()> {
+        match span_wrap.data.clone() {
             // Success response to a request (any Command with an `request_id` field.)
             Lib3hClientProtocol::SuccessResult(generic_result_data) => {
-                self.to_core
-                    .push(Lib3hServerProtocol::FailureResult(generic_result_data));
+                self.to_core.push(
+                    span_wrap.swapped(Lib3hServerProtocol::FailureResult(generic_result_data)),
+                );
                 Ok(())
             }
             // Connect to the specified multiaddr
             Lib3hClientProtocol::Connect(connect_data) => {
-                self.to_core
-                    .push(Lib3hServerProtocol::FailureResult(GenericResultData {
-                        request_id: connect_data.request_id,
-                        space_address: SpaceHash::default().into(),
-                        to_agent_id: AgentPubKey::default(),
-                        result_info: Opaque::new(),
-                    }));
+                let msg = Lib3hServerProtocol::FailureResult(GenericResultData {
+                    request_id: connect_data.request_id,
+                    space_address: SpaceHash::default().into(),
+                    to_agent_id: AgentPubKey::default(),
+                    result_info: Opaque::new(),
+                });
+                self.to_core.push(span_wrap.swapped(msg));
                 Ok(())
             }
 
@@ -276,16 +292,16 @@ impl Sim2hWorker {
             Lib3hClientProtocol::JoinSpace(space_data) => {
                 //let log_context = "ClientToLib3h::JoinSpace";
                 self.space_data = Some(space_data.clone());
-                self.send_wire_message(WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(
-                    space_data,
-                )))
+                self.send_wire_message(WireMessage::ClientToLib3h(
+                    span_wrap.swapped(ClientToLib3h::JoinSpace(space_data)),
+                ))
             }
             // Order the p2p module to leave the network of the specified space.
             Lib3hClientProtocol::LeaveSpace(space_data) => {
                 //error!("Leave space not implemented for sim2h yet");
-                self.send_wire_message(WireMessage::ClientToLib3h(ClientToLib3h::LeaveSpace(
-                    space_data,
-                )))
+                self.send_wire_message(WireMessage::ClientToLib3h(
+                    span_wrap.swapped(ClientToLib3h::LeaveSpace(space_data)),
+                ))
             }
 
             // -- Direct Messaging -- //
@@ -293,15 +309,15 @@ impl Sim2hWorker {
             Lib3hClientProtocol::SendDirectMessage(dm_data) => {
                 //let log_context = "ClientToLib3h::SendDirectMessage";
                 self.send_wire_message(WireMessage::ClientToLib3h(
-                    ClientToLib3h::SendDirectMessage(dm_data),
+                    span_wrap.swapped(ClientToLib3h::SendDirectMessage(dm_data)),
                 ))
             }
             // Our response to a direct message from another agent.
             Lib3hClientProtocol::HandleSendDirectMessageResult(dm_data) => {
                 //let log_context = "ClientToLib3h::HandleSendDirectMessageResult";
-                self.send_wire_message(WireMessage::Lib3hToClientResponse(
+                self.send_wire_message(WireMessage::Lib3hToClientResponse(span_wrap.swapped(
                     Lib3hToClientResponse::HandleSendDirectMessageResult(dm_data),
-                ))
+                )))
             }
             // -- Entry -- //
             // Request an Entry from the dht network
@@ -313,27 +329,23 @@ impl Sim2hWorker {
                 //let log_context = "ClientToLib3h::HandleFetchEntryResult";
                 if fetch_entry_result_data.request_id == SIM2H_WORKER_INTERNAL_REQUEST_ID {
                     for aspect in fetch_entry_result_data.entry.aspect_list {
-                        self.to_core
-                            .push(Lib3hServerProtocol::HandleStoreEntryAspect(
-                                StoreEntryAspectData {
-                                    request_id: "".into(),
-                                    space_address: fetch_entry_result_data.space_address.clone(),
-                                    provider_agent_id: fetch_entry_result_data
-                                        .provider_agent_id
-                                        .clone(),
-                                    entry_address: fetch_entry_result_data
-                                        .entry
-                                        .entry_address
-                                        .clone(),
-                                    entry_aspect: aspect,
-                                },
-                            ));
+                        let msg =
+                            Lib3hServerProtocol::HandleStoreEntryAspect(StoreEntryAspectData {
+                                request_id: "".into(),
+                                space_address: fetch_entry_result_data.space_address.clone(),
+                                provider_agent_id: fetch_entry_result_data
+                                    .provider_agent_id
+                                    .clone(),
+                                entry_address: fetch_entry_result_data.entry.entry_address.clone(),
+                                entry_aspect: aspect,
+                            });
+                        self.to_core.push(span_wrap.swapped(msg));
                     }
                     Ok(())
                 } else {
-                    self.send_wire_message(WireMessage::Lib3hToClientResponse(
+                    self.send_wire_message(WireMessage::Lib3hToClientResponse(span_wrap.swapped(
                         Lib3hToClientResponse::HandleFetchEntryResult(fetch_entry_result_data),
-                    ))
+                    )))
                 }
             }
             // Publish data to the dht.
@@ -347,24 +359,21 @@ impl Sim2hWorker {
                     // This makes instances with Sim2hWorker work even if offline,
                     // i.e. not connected to the sim2h node.
                     for aspect in &provided_entry_data.entry.aspect_list {
-                        self.to_core
-                            .push(Lib3hServerProtocol::HandleStoreEntryAspect(
-                                StoreEntryAspectData {
-                                    request_id: "".into(),
-                                    space_address: provided_entry_data.space_address.clone(),
-                                    provider_agent_id: provided_entry_data
-                                        .provider_agent_id
-                                        .clone(),
-                                    entry_address: provided_entry_data.entry.entry_address.clone(),
-                                    entry_aspect: aspect.clone(),
-                                },
-                            ));
+                        let msg =
+                            Lib3hServerProtocol::HandleStoreEntryAspect(StoreEntryAspectData {
+                                request_id: "".into(),
+                                space_address: provided_entry_data.space_address.clone(),
+                                provider_agent_id: provided_entry_data.provider_agent_id.clone(),
+                                entry_address: provided_entry_data.entry.entry_address.clone(),
+                                entry_aspect: aspect.clone(),
+                            });
+                        self.to_core.push(span_wrap.swapped(msg));
                     }
                 }
 
-                self.send_wire_message(WireMessage::ClientToLib3h(ClientToLib3h::PublishEntry(
-                    provided_entry_data,
-                )))
+                self.send_wire_message(WireMessage::ClientToLib3h(
+                    span_wrap.swapped(ClientToLib3h::PublishEntry(provided_entry_data)),
+                ))
             }
             // Request some info / data from a Entry
             Lib3hClientProtocol::QueryEntry(query_entry_data) => {
@@ -372,13 +381,13 @@ impl Sim2hWorker {
                     // In a full-sync DHT queries should always be handled locally.
                     // Thus, we don't even need to ask the central sim2h instance
                     // to handle a query - we just send it back to core directly.
-                    self.to_core
-                        .push(Lib3hServerProtocol::HandleQueryEntry(query_entry_data));
+                    let msg = Lib3hServerProtocol::HandleQueryEntry(query_entry_data);
+                    self.to_core.push(span_wrap.swapped(msg));
                     Ok(())
                 } else {
-                    self.send_wire_message(WireMessage::ClientToLib3h(ClientToLib3h::QueryEntry(
-                        query_entry_data,
-                    )))
+                    self.send_wire_message(WireMessage::ClientToLib3h(
+                        span_wrap.swapped(ClientToLib3h::QueryEntry(query_entry_data)),
+                    ))
                 }
             }
             // Response to a `HandleQueryEntry` request
@@ -386,14 +395,13 @@ impl Sim2hWorker {
                 if self.is_full_sync_DHT {
                     // See above QueryEntry implementation.
                     // All queries are handled locally - we just reflect them back to core:
-                    self.to_core.push(Lib3hServerProtocol::QueryEntryResult(
-                        query_entry_result_data,
-                    ));
+                    let msg = Lib3hServerProtocol::QueryEntryResult(query_entry_result_data);
+                    self.to_core.push(span_wrap.swapped(msg));
                     Ok(())
                 } else {
-                    self.send_wire_message(WireMessage::Lib3hToClientResponse(
+                    self.send_wire_message(WireMessage::Lib3hToClientResponse(span_wrap.swapped(
                         Lib3hToClientResponse::HandleQueryEntryResult(query_entry_result_data),
-                    ))
+                    )))
                 }
             }
 
@@ -404,9 +412,9 @@ impl Sim2hWorker {
                 if self.is_full_sync_DHT {
                     self.self_store_authored_aspects();
                 }
-                self.send_wire_message(WireMessage::Lib3hToClientResponse(
+                self.send_wire_message(WireMessage::Lib3hToClientResponse(span_wrap.swapped(
                     Lib3hToClientResponse::HandleGetAuthoringEntryListResult(entry_list_data),
-                ))
+                )))
             }
             Lib3hClientProtocol::HandleGetGossipingEntryListResult(entry_list_data) => {
                 //let log_context = "ClientToLib3h::HandleGetGossipingEntryListResult";
@@ -414,9 +422,9 @@ impl Sim2hWorker {
                 if self.is_full_sync_DHT {
                     self.self_store_authored_aspects();
                 }
-                self.send_wire_message(WireMessage::Lib3hToClientResponse(
+                self.send_wire_message(WireMessage::Lib3hToClientResponse(span_wrap.swapped(
                     Lib3hToClientResponse::HandleGetGossipingEntryListResult(entry_list_data),
-                ))
+                )))
             }
 
             // -- deprecated unctinonality -- //
@@ -427,6 +435,7 @@ impl Sim2hWorker {
         }
     }
 
+    #[autotrace]
     fn self_store_authored_aspects(&mut self) {
         if !self.has_self_stored_authored_aspects
             && self.initial_gossiping_list.is_some()
@@ -449,32 +458,33 @@ impl Sim2hWorker {
                         continue;
                     }
                 }
-
-                self.to_core
-                    .push(Lib3hServerProtocol::HandleFetchEntry(FetchEntryData {
-                        space_address: authoring_list.space_address.clone(),
-                        entry_address: entry_hash.clone(),
-                        request_id: SIM2H_WORKER_INTERNAL_REQUEST_ID.to_string(),
-                        provider_agent_id: authoring_list.provider_agent_id.clone(),
-                        aspect_address_list: Some(aspect_hashes.clone()),
-                    }))
+                let msg = Lib3hServerProtocol::HandleFetchEntry(FetchEntryData {
+                    space_address: authoring_list.space_address.clone(),
+                    entry_address: entry_hash.clone(),
+                    request_id: SIM2H_WORKER_INTERNAL_REQUEST_ID.to_string(),
+                    provider_agent_id: authoring_list.provider_agent_id.clone(),
+                    aspect_address_list: Some(aspect_hashes.clone()),
+                });
+                let span = ht::top_follower("pre-send");
+                self.to_core.push(span.wrap(msg).into())
             }
             self.has_self_stored_authored_aspects = true;
         }
     }
 
     fn handle_server_message(&mut self, message: WireMessage) -> NetResult<()> {
+        let span = ht::with_top_or_null(|s| s.child("handle_server_message"));
         match message {
             WireMessage::Ping => self.send_wire_message(WireMessage::Pong)?,
             WireMessage::Pong => {}
-            WireMessage::Lib3hToClient(m) => self.to_core.push(Lib3hServerProtocol::from(m)),
+            WireMessage::Lib3hToClient(span_wrap) => self.to_core.push(span_wrap.map(|m| Lib3hServerProtocol::from(m))),
             WireMessage::MultiSend(messages) => {
-                for m in messages.into_iter() {
-                    self.to_core.push(Lib3hServerProtocol::from(m));
+                for span_wrap in messages.into_iter() {
+                    self.to_core.push(span_wrap.map(Lib3hServerProtocol::from));
                 }
             }
-            WireMessage::ClientToLib3hResponse(m) => {
-                self.to_core.push(Lib3hServerProtocol::from(m))
+            WireMessage::ClientToLib3hResponse(span_wrap) => {
+                self.to_core.push(span_wrap.map(Lib3hServerProtocol::from))
             }
             WireMessage::Lib3hToClientResponse(m) => error!(
                 "Got a Lib3hToClientResponse from the Sim2h server, weird! Ignoring: {:?}",
@@ -488,7 +498,7 @@ impl Sim2hWorker {
                 WireError::MessageWhileInLimbo => {
                     if let Some(space_data) = self.space_data.clone() {
                         self.send_wire_message(WireMessage::ClientToLib3h(
-                            ClientToLib3h::JoinSpace(space_data),
+                            span.wrap(ClientToLib3h::JoinSpace(space_data)).into(),
                         ))?;
                     } else {
                         error!("Uh oh, we got a MessageWhileInLimbo errro and we don't have space data. Did core send a message before sending a join? This should not happen.");
@@ -537,7 +547,7 @@ impl Sim2hWorker {
 impl NetWorker for Sim2hWorker {
     /// We got a message from core
     /// -> forward it to the NetworkEngine
-    fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
+    fn receive(&mut self, data: Lib3hClientProtocolWrapped) -> NetResult<()> {
         self.inbox.push(data);
         Ok(())
     }

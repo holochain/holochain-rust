@@ -6,6 +6,7 @@ extern crate log;
 extern crate prettytable;
 #[macro_use]
 extern crate serde_derive;
+extern crate holochain_tracing as ht;
 
 use holochain_stress::*;
 use in_stream::*;
@@ -361,13 +362,15 @@ impl Job {
 
     /// join the space "abcd" : )
     pub fn join_space(&mut self) {
-        self.send_wire(WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(
-            SpaceData {
-                agent_id: self.agent_id.clone().into(),
-                request_id: "".to_string(),
-                space_address: "abcd".to_string().into(),
-            },
-        )));
+        self.send_wire(WireMessage::ClientToLib3h(
+            ht::top_follower("join_space")
+                .wrap(ClientToLib3h::JoinSpace(SpaceData {
+                    agent_id: self.agent_id.clone().into(),
+                    request_id: "".to_string(),
+                    space_address: "abcd".to_string().into(),
+                }))
+                .into(),
+        ));
     }
 
     /// send a ping message to sim2h
@@ -391,13 +394,15 @@ impl Job {
                 .insert(rid.clone(), std::time::Instant::now());
 
             self.send_wire(WireMessage::ClientToLib3h(
-                ClientToLib3h::SendDirectMessage(DirectMessageData {
-                    space_address: "abcd".to_string().into(),
-                    request_id: rid,
-                    to_agent_id: to_agent_id.into(),
-                    from_agent_id: self.agent_id.clone().into(),
-                    content,
-                }),
+                ht::top_follower("dm")
+                    .wrap(ClientToLib3h::SendDirectMessage(DirectMessageData {
+                        space_address: "abcd".to_string().into(),
+                        request_id: rid,
+                        to_agent_id: to_agent_id.into(),
+                        from_agent_id: self.agent_id.clone().into(),
+                        content,
+                    }))
+                    .into(),
             ));
 
             logger.log("dm_send_count", 1.0);
@@ -440,16 +445,17 @@ impl Job {
             (addr, aspect)
         });
 
-        self.send_wire(WireMessage::ClientToLib3h(ClientToLib3h::PublishEntry(
-            ProvidedEntryData {
-                space_address: "abcd".to_string().into(),
-                provider_agent_id: self.agent_id.clone().into(),
-                entry: EntryData {
-                    entry_address: addr.into(),
-                    aspect_list: vec![aspect],
-                },
+        let msg = ClientToLib3h::PublishEntry(ProvidedEntryData {
+            space_address: "abcd".to_string().into(),
+            provider_agent_id: self.agent_id.clone().into(),
+            entry: EntryData {
+                entry_address: addr.into(),
+                aspect_list: vec![aspect],
             },
-        )));
+        });
+        self.send_wire(WireMessage::ClientToLib3h(
+            ht::top_follower("publish").wrap(msg).into(),
+        ));
 
         logger.log("publish_send_count", 1.0);
     }
@@ -468,18 +474,22 @@ impl Job {
                 let res = res.unwrap();
                 logger.log("ping_recv_pong_in_ms", res.elapsed().as_millis() as f64);
             }
-            WireMessage::Lib3hToClient(msg) => self.priv_handle_msg_inner(logger, msg),
+            WireMessage::Lib3hToClient(span_wrap) => self.priv_handle_msg_inner(logger, span_wrap),
             WireMessage::MultiSend(msg_list) => {
-                for msg in msg_list {
-                    self.priv_handle_msg_inner(logger, msg)
+                for span_wrap in msg_list {
+                    self.priv_handle_msg_inner(logger, span_wrap)
                 }
             }
             e @ _ => panic!("unexpected: {:?}", e),
         }
     }
 
-    fn priv_handle_msg_inner(&mut self, logger: &mut StressJobMetricLogger, msg: Lib3hToClient) {
-        match msg {
+    fn priv_handle_msg_inner(
+        &mut self,
+        logger: &mut StressJobMetricLogger,
+        span_wrap: ht::EncodedSpanWrap<Lib3hToClient>,
+    ) {
+        match &span_wrap.data {
             Lib3hToClient::HandleGetAuthoringEntryList(_)
             | Lib3hToClient::HandleGetGossipingEntryList(_)
             | Lib3hToClient::HandleFetchEntry(_) => {}
@@ -496,10 +506,10 @@ impl Job {
                 let to_agent_id: String = dm_data.to_agent_id.clone().into();
                 assert_eq!(self.agent_id, to_agent_id);
                 let mut out_dm = dm_data.clone();
-                out_dm.to_agent_id = dm_data.from_agent_id;
-                out_dm.from_agent_id = dm_data.to_agent_id;
+                out_dm.to_agent_id = dm_data.from_agent_id.clone();
+                out_dm.from_agent_id = dm_data.to_agent_id.clone();
                 self.send_wire(WireMessage::Lib3hToClientResponse(
-                    Lib3hToClientResponse::HandleSendDirectMessageResult(out_dm),
+                    span_wrap.swapped(Lib3hToClientResponse::HandleSendDirectMessageResult(out_dm)),
                 ));
             }
             Lib3hToClient::SendDirectMessageResult(dm_data) => {
@@ -595,6 +605,7 @@ impl Suite {
                 Box::new(SodiumCryptoSystem::new()),
                 Lib3hUri(url.into()),
                 DhtAlgorithm::FullSync,
+                None,
             );
             rt.block_on(async move {
                 tokio::task::spawn(async move {

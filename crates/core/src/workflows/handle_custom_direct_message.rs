@@ -21,7 +21,9 @@ pub async fn handle_custom_direct_message(
     msg_id: String,
     custom_direct_message: CustomDirectMessage,
     context: Arc<Context>,
+    span: ht::Span,
 ) -> Result<(), HolochainError> {
+    let _spanguard = ht::push_span(span);
     let zome = custom_direct_message.zome.clone();
     let payload = custom_direct_message
         .payload

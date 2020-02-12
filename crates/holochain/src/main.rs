@@ -70,6 +70,8 @@ const MAGIC_STRING: &str = "*** Done. All interfaces started.";
 #[cfg_attr(tarpaulin, skip)]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR)]
 fn main() {
+    let _ = spawn_locksmith_guard_watcher();
+
     lib3h_sodium::check_init();
     let opt = Opt::from_args();
 
@@ -95,8 +97,6 @@ fn main() {
         .config
         .unwrap_or_else(|| config::default_persistence_dir().join("conductor-config.toml"));
     let config_path_str = config_path.to_str().unwrap();
-
-    let _ = spawn_locksmith_guard_watcher();
 
     println!("Using config path: {}", config_path_str);
     match bootstrap_from_config(config_path_str) {

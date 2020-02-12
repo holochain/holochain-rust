@@ -255,6 +255,7 @@ workflows:
         only:
          - develop
          - final-exam
+         - async-respond-validation-package
    - docker-build-trycp-server:
       requires:
        - docker-build-minimal
@@ -268,6 +269,7 @@ workflows:
         only:
          - develop
          - final-exam
+         - async-respond-validation-package
    - docker-build-circle-build:
       requires:
        - docker-build-latest

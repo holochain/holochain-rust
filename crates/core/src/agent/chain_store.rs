@@ -1,7 +1,4 @@
-use crate::content_store::GetContent;
-use crate::{
-    NEW_RELIC_LICENSE_KEY,
-};
+use crate::{content_store::GetContent, NEW_RELIC_LICENSE_KEY};
 use globset::{GlobBuilder, GlobSetBuilder};
 use holochain_core_types::{
     chain_header::ChainHeader,

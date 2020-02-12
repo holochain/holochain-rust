@@ -9,11 +9,9 @@ pub struct Simple {
     content: String,
 }
 
-impl Simple
-{
-    pub fn new(content:String) -> Simple
-    {
-        Simple{content}
+impl Simple {
+    pub fn new(content: String) -> Simple {
+        Simple { content }
     }
 }
 
@@ -26,93 +24,164 @@ pub fn handle_create_anchor() -> ZomeApiResult<Address> {
     Ok(address)
 }
 
-pub fn handle_create_my_link(base: Address,target : String) -> ZomeApiResult<()> {
+pub fn handle_create_my_link(base: Address, target: String) -> ZomeApiResult<()> {
     let address = hdk::commit_entry(&simple_entry(target))?;
-    hdk::link_entries(&base, &Address::from(address), "authored_simple_posts", "tag")?;
+    hdk::link_entries(
+        &base,
+        &Address::from(address),
+        "authored_simple_posts",
+        "tag",
+    )?;
     Ok(())
 }
 
-pub fn handle_create_my_link_with_tag(base: Address,target : String, tag : String) -> ZomeApiResult<()> {
+pub fn handle_create_my_link_with_tag(
+    base: Address,
+    target: String,
+    tag: String,
+) -> ZomeApiResult<()> {
     let address = hdk::commit_entry(&simple_entry(target))?;
-    hdk::link_entries(&base, &Address::from(address), "authored_simple_posts", &tag)?;
+    hdk::link_entries(
+        &base,
+        &Address::from(address),
+        "authored_simple_posts",
+        &tag,
+    )?;
     Ok(())
 }
 
-pub fn handle_delete_my_link(base: Address,target : String) -> ZomeApiResult<()> {
+pub fn handle_delete_my_link(base: Address, target: String) -> ZomeApiResult<()> {
     let address = hdk::entry_address(&simple_entry(target))?;
-    hdk::remove_link(&base, &Address::from(address), "authored_simple_posts","tag")?;
+    hdk::remove_link(
+        &base,
+        &Address::from(address),
+        "authored_simple_posts",
+        "tag",
+    )?;
     Ok(())
 }
 
-pub fn handle_delete_my_link_with_tag(base: Address,target : String,tag:String) -> ZomeApiResult<()> {
+pub fn handle_delete_my_link_with_tag(
+    base: Address,
+    target: String,
+    tag: String,
+) -> ZomeApiResult<()> {
     let address = hdk::entry_address(&simple_entry(target))?;
-    hdk::remove_link(&base, &Address::from(address), "authored_simple_posts",&tag)?;
+    hdk::remove_link(
+        &base,
+        &Address::from(address),
+        "authored_simple_posts",
+        &tag,
+    )?;
     Ok(())
 }
 
-
-pub fn handle_get_my_links(agent : Address,status_request:Option<LinksStatusRequestKind>,sort_order:Option<SortOrder>) ->ZomeApiResult<GetLinksResult>
-{
-    let options = GetLinksOptions{
-        status_request : status_request.unwrap_or(LinksStatusRequestKind::All),
+pub fn handle_get_my_links(
+    agent: Address,
+    status_request: Option<LinksStatusRequestKind>,
+    sort_order: Option<SortOrder>,
+) -> ZomeApiResult<GetLinksResult> {
+    let options = GetLinksOptions {
+        status_request: status_request.unwrap_or(LinksStatusRequestKind::All),
         sort_order,
         ..GetLinksOptions::default()
     };
-    hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_simple_posts"), LinkMatch::Any,options)
+    hdk::get_links_with_options(
+        &agent,
+        LinkMatch::Exactly("authored_simple_posts"),
+        LinkMatch::Any,
+        options,
+    )
 }
 
-pub fn handle_get_my_links_with_tag(agent : Address,status_request:LinksStatusRequestKind,tag:String) ->ZomeApiResult<GetLinksResult>
-{
-    let options = GetLinksOptions{
+pub fn handle_get_my_links_with_tag(
+    agent: Address,
+    status_request: LinksStatusRequestKind,
+    tag: String,
+) -> ZomeApiResult<GetLinksResult> {
+    let options = GetLinksOptions {
         status_request,
         ..GetLinksOptions::default()
     };
-    hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_simple_posts"), LinkMatch::Exactly(&*tag),options)
+    hdk::get_links_with_options(
+        &agent,
+        LinkMatch::Exactly("authored_simple_posts"),
+        LinkMatch::Exactly(&*tag),
+        options,
+    )
 }
 
-pub fn handle_get_my_links_with_pagination(agent : Address,pagesize:usize,pagenumber:usize) ->ZomeApiResult<GetLinksResult>
-{
-    let options = GetLinksOptions{
-        pagination : Some(Pagination::Size(SizePagination{page_size : pagesize,page_number : pagenumber})),
+pub fn handle_get_my_links_with_pagination(
+    agent: Address,
+    pagesize: usize,
+    pagenumber: usize,
+) -> ZomeApiResult<GetLinksResult> {
+    let options = GetLinksOptions {
+        pagination: Some(Pagination::Size(SizePagination {
+            page_size: pagesize,
+            page_number: pagenumber,
+        })),
         ..GetLinksOptions::default()
     };
-    hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_simple_posts"), LinkMatch::Any,options)
+    hdk::get_links_with_options(
+        &agent,
+        LinkMatch::Exactly("authored_simple_posts"),
+        LinkMatch::Any,
+        options,
+    )
 }
 
-pub fn handle_get_my_links_with_time_pagination(agent : Address, from_seconds: i64, limit: usize) -> ZomeApiResult<GetLinksResult>
-{
-    let options = GetLinksOptions{
-        pagination : Some(Pagination::Time(TimePagination{from_time : Iso8601::new(from_seconds,0),limit})),
+pub fn handle_get_my_links_with_time_pagination(
+    agent: Address,
+    from_seconds: i64,
+    limit: usize,
+) -> ZomeApiResult<GetLinksResult> {
+    let options = GetLinksOptions {
+        pagination: Some(Pagination::Time(TimePagination {
+            from_time: Iso8601::new(from_seconds, 0),
+            limit,
+        })),
         ..GetLinksOptions::default()
     };
-    hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_simple_posts"), LinkMatch::Any,options)
+    hdk::get_links_with_options(
+        &agent,
+        LinkMatch::Exactly("authored_simple_posts"),
+        LinkMatch::Any,
+        options,
+    )
 }
 
-pub fn handle_get_my_links_count(agent : Address,status_request : LinksStatusRequestKind,tag:String) ->ZomeApiResult<GetLinksResultCount>
-{
-    let options = GetLinksOptions{
+pub fn handle_get_my_links_count(
+    agent: Address,
+    status_request: LinksStatusRequestKind,
+    tag: String,
+) -> ZomeApiResult<GetLinksResultCount> {
+    let options = GetLinksOptions {
         status_request,
         ..GetLinksOptions::default()
     };
-    hdk::get_links_count_with_options(&agent, LinkMatch::Exactly("authored_simple_posts"),LinkMatch::Exactly(&*tag),options)
+    hdk::get_links_count_with_options(
+        &agent,
+        LinkMatch::Exactly("authored_simple_posts"),
+        LinkMatch::Exactly(&*tag),
+        options,
+    )
 }
 
 pub fn handle_test_emit_signal(message: String) -> ZomeApiResult<()> {
     #[derive(Debug, Serialize, Deserialize, DefaultJson)]
     struct SignalPayload {
-        message: String
+        message: String,
     }
 
-    hdk::emit_signal("test-signal", SignalPayload{message})
+    hdk::emit_signal("test-signal", SignalPayload { message })
 }
 
-pub fn handle_encrypt(payload : String) ->ZomeApiResult<String>
-{
+pub fn handle_encrypt(payload: String) -> ZomeApiResult<String> {
     hdk::encrypt(payload)
 }
 
-pub fn handle_decrypt(payload : String) ->ZomeApiResult<String>
-{
+pub fn handle_decrypt(payload: String) -> ZomeApiResult<String> {
     hdk::decrypt(payload)
 }
 

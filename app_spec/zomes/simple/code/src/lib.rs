@@ -79,7 +79,7 @@ pub fn handle_get_my_links_with_pagination(agent : Address,pagesize:usize,pagenu
     hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_simple_posts"), LinkMatch::Any,options)
 }
 
-pub fn handle_get_my_links_with_time_pagination(agent : Address,from_seconds:i64,limit:usize) ->ZomeApiResult<GetLinksResult>
+pub fn handle_get_my_links_with_time_pagination(agent : Address, from_seconds: i64, limit: usize) -> ZomeApiResult<GetLinksResult>
 {
     let options = GetLinksOptions{
         pagination : Some(Pagination::Time(TimePagination{from_time : Iso8601::new(from_seconds,0),limit})),

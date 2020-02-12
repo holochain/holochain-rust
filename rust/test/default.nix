@@ -18,7 +18,8 @@ let
   hc-rust-coverage-tarpaulin = pkgs.writeShellScriptBin "hc-rust-coverage-tarpaulin"
   ''
   mkdir -p /holochain-rust/build/target
-  cargo install cargo-make || true && \
+  nix-env -f https://github.com/NixOS/nixpkgs-channels/archive/nixos-19.09.tar.gz -iA curl && \
+    cargo install cargo-make || true && \
     cargo install cargo-tarpaulin || true && \
     hc-rust-wasm-compile && \
     CARGO_MAKE_WORKSPACE_TARGET_DIRECTORY="''${CARGO_TARGET_DIR:-''$(readlink -f ./target)}" CARGO_MAKE_COVERAGE_PROVIDER="tarpaulin" cargo make codecov-flow

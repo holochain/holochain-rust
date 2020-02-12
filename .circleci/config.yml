@@ -35,7 +35,7 @@ jobs:
   resource_class: xlarge
   steps:
    - checkout
-   - run: docker run --rm --security-opt seccomp=unconfined -v $(pwd):/project holochain/holochain-rust:circle.build.develop sh -c "cd /project && nix-shell --run hc-rust-coverage"
+   - run: docker run --rm --security-opt seccomp=unconfined -v $(pwd):/project holochain/holochain-rust:circle.build.develop sh -c "cd /project && nix-shell --run hc-rust-coverage-kcov"
 
  cov-tarpaulin:
   machine: true

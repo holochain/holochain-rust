@@ -5,19 +5,23 @@ let
   hc-rust-wasm-compile && HC_SIMPLE_LOGGER_MUTE=1 RUST_BACKTRACE=1 cargo test --all "$1" -- --test-threads=${holonix.rust.test.threads};
   '';
 
-  hc-rust-coverage = pkgs.writeShellScriptBin "hc-rust-coverage"
+  hc-rust-coverage-kcov = pkgs.writeShellScriptBin "hc-rust-coverage-kcov"
   ''
-  mkdir -p /holochain-rust/build/target
-  nix-env -f https://github.com/NixOS/nixpkgs-channels/archive/nixos-19.09.tar.gz -iA kcov curl && \
-    cargo install cargo-make || true && \
-    hc-rust-wasm-compile && \
-    cargo test --no-run && \
-    CARGO_MAKE_WORKSPACE_TARGET_DIRECTORY="''${CARGO_TARGET_DIR:-''$(readlink -f ./target)}" cargo make codecov-flow
+  nix-env -f https://github.com/NixOS/nixpkgs-channels/archive/nixos-19.09.tar.gz -iA kcov curl
+  hc-rust-wasm-compile
+  for i in crates/*; do
+    ( \
+      cd $i && \
+      export CARGO_TARGET_DIR=$(readlink -f ./target) && \
+      cargo test --no-run && \
+      cargo make codecov-flow \
+    )
+  done
   '';
 
   hc-rust-coverage-tarpaulin = pkgs.writeShellScriptBin "hc-rust-coverage-tarpaulin"
   ''
-  mkdir -p /holochain-rust/build/target
+  unset CARGO_TARGET_DIR
   nix-env -f https://github.com/NixOS/nixpkgs-channels/archive/nixos-19.09.tar.gz -iA curl && \
     cargo install cargo-make || true && \
     cargo install cargo-tarpaulin || true && \
@@ -26,5 +30,5 @@ let
   '';
 in
 {
- buildInputs = [ hc-rust-test hc-rust-coverage hc-rust-coverage-tarpaulin ];
+ buildInputs = [ hc-rust-test hc-rust-coverage-kcov hc-rust-coverage-tarpaulin ];
 }

@@ -257,7 +257,7 @@ workflows:
   jobs:
    - build
    - cov-kcov
-   - cov-tarpaulin
+   # - cov-tarpaulin
    - fmt
    # @todo flakey websocket connections
    - app-spec-tests-sim2h

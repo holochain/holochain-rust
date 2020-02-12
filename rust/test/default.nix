@@ -18,20 +18,21 @@ let
       cd $i && \
       export CARGO_TARGET_DIR=$(readlink -f ./target) && \
       cargo test --no-run && \
-      cargo make coverage-kcov && \
-      bash <(curl -s https://codecov.io/bash) -f $(find target -iname cobertura.xml) \
+      cargo make coverage-kcov \
     )
   done
+  bash <(curl -s https://codecov.io/bash)
   '';
 
   hc-rust-coverage-tarpaulin = pkgs.writeShellScriptBin "hc-rust-coverage-tarpaulin"
   ''
   unset CARGO_TARGET_DIR
-  nix-env -f https://github.com/NixOS/nixpkgs-channels/archive/nixos-19.09.tar.gz -iA curl && \
-    cargo install cargo-make || true && \
-    cargo install cargo-tarpaulin || true && \
-    hc-rust-wasm-compile && \
-    cargo tarpaulin -o Xml
+  nix-env -f https://github.com/NixOS/nixpkgs-channels/archive/nixos-19.09.tar.gz -iA curl
+  cargo install cargo-tarpaulin
+  hc-rust-wasm-compile
+  export CARGO_TARGET_DIR=$(readlink -f ./target)
+  cargo tarpaulin -v -o Xml --exclude-files "*/.cargo/*"
+  bash <(curl -s https://codecov.io/bash)
   '';
 in
 {

@@ -2,6 +2,7 @@ use crate::{
     action::ActionWrapper,
     network::{reducers::send, state::NetworkState},
     state::State,
+    NEW_RELIC_LICENSE_KEY,
 };
 use lib3h_protocol::protocol_client::Lib3hClientProtocol;
 

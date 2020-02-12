@@ -1,6 +1,6 @@
 [package]
 name = "holochain_stress"
-version = "0.0.42-alpha5"
+version = "0.0.43-alpha3"
 description = "holochain stress tests"
 license = "GPL-3.0-only"
 homepage = "https://github.com/holochain/holochain-rust"
@@ -22,13 +22,13 @@ nanoid = "=0.2.0"
 native-tls = "=0.2.3"
 num_cpus = "=1.11.1"
 prettytable-rs = "=0.8.0"
-serde = "=1.0.89"
-serde_derive = "=1.0.89"
-serde_json = { version = "=1.0.39", features = ["preserve_order"] }
-sim2h = { version = "=0.0.42-alpha5", path = "../sim2h" }
-in_stream = { version = "=0.0.42-alpha5", path = "../in_stream" }
+serde = "=1.0.104"
+serde_derive = "=1.0.104"
+serde_json = { version = "=1.0.47", features = ["preserve_order"] }
+sim2h = { version = "=0.0.43-alpha3", path = "../sim2h" }
+in_stream = { version = "=0.0.43-alpha3", path = "../in_stream" }
 structopt = "=0.3.3"
-tokio = { version = "=0.2.9", features = ["full"] }
+tokio = { version = "=0.2.11", features = ["full"] }
 toml = "=0.5.0"
 url2 = "=0.0.4"
 

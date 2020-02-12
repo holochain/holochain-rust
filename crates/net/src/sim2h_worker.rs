@@ -1,8 +1,11 @@
 //! provides worker that makes use of sim2h
 
-use crate::connection::{
-    net_connection::{NetHandler, NetWorker},
-    NetResult,
+use crate::{
+    connection::{
+        net_connection::{NetHandler, NetWorker},
+        NetResult,
+    },
+    NEW_RELIC_LICENSE_KEY,
 };
 use failure::_core::time::Duration;
 use holochain_conductor_lib_api::{ConductorApi, CryptoMethod};
@@ -163,6 +166,15 @@ impl Sim2hWorker {
         self.connection = None;
         if let Ok(connection) = connect(self.server_url.clone(), self.connection_timeout_backoff) {
             self.connection = Some(connection);
+            let msg = match &self.space_data {
+                None => return,
+                Some(space_data) => {
+                    WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(space_data.clone()))
+                }
+            };
+            debug!("SENDING JOIN {:#?}", msg);
+            self.send_wire_message(msg)
+                .expect("can send JoinSpace on reconnect");
         }
     }
 
@@ -407,7 +419,7 @@ impl Sim2hWorker {
                 ))
             }
 
-            // -- N3h specific functinonality -- //
+            // -- deprecated unctinonality -- //
             Lib3hClientProtocol::Shutdown => {
                 debug!("Got Lib3hClientProtocol::Shutdown from core in sim2h worker");
                 Ok(())
@@ -487,6 +499,9 @@ impl Sim2hWorker {
             WireMessage::Status => error!("Got a Status from the Sim2h server, weird! Ignoring"),
             WireMessage::Hello(_) => error!("Got a Hello from the Sim2h server, weird! Ignoring"),
             WireMessage::HelloResponse(response) => {
+                if WIRE_VERSION != response.version {
+                    panic!("holochain SIM2H WIRE_VERSION ({}) does not match SIM2H server WIRE_VERSION ({}) - cannot continue", WIRE_VERSION, response.version);
+                }
                 debug!("HelloResponse {:?}", response);
                 self.set_full_sync(response.redundant_count == 0);
             }
@@ -505,6 +520,16 @@ impl Sim2hWorker {
         if let Err(e) = self.send_wire_message(WireMessage::Ping) {
             debug!("Ping failed with: {:?}", e);
         }
+    }
+
+    /// test function for proving out reconnects
+    /// note this cannot be cfg(test) because we want to invoke it
+    /// from integration testing
+    pub fn test_close_connection_cause_reconnect(&mut self) {
+        self.connection = None;
+        self.time_of_last_connection_attempt = std::time::Instant::now()
+            .checked_sub(self.reconnect_interval * 2)
+            .unwrap();
     }
 }
 

@@ -7,20 +7,12 @@
 
 #[macro_use]
 extern crate failure;
+#[macro_use]
 extern crate holochain_common;
 #[macro_use]
 pub extern crate holochain_json_derive;
-
-extern crate holochain_json_api;
-extern crate holochain_metrics;
-extern crate holochain_persistence_api;
-
 #[macro_use]
 extern crate lazy_static;
-extern crate lib3h_sodium;
-extern crate libc;
-extern crate reqwest;
-extern crate sha2;
 // macros used in tests
 #[allow(unused_imports)]
 #[macro_use]
@@ -30,24 +22,13 @@ extern crate serde_json;
 extern crate serde_derive;
 
 #[macro_use]
-extern crate holochain_logging;
-
-extern crate env_logger;
-
-// wss
-extern crate native_tls;
-extern crate tungstenite;
-extern crate url;
-
-#[macro_use]
 pub mod tweetlog;
 pub mod connection;
 pub mod error;
 pub mod in_memory;
-pub mod ipc;
-pub mod ipc_net_worker;
 pub mod lib3h_worker;
 pub mod p2p_config;
 pub mod p2p_network;
-pub mod sim1h_worker;
 pub mod sim2h_worker;
+
+new_relic_setup!("NEW_RELIC_LICENSE_KEY");

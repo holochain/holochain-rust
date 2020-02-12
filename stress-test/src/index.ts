@@ -6,10 +6,7 @@ process.on('unhandledRejection', error => {
 });
 
 const middleware =
-  ( networkType === 'sim1h'
-  ? combine(tapeExecutor(require('tape')), localOnly)
-
-  : networkType === 'sim2h'
+  ( networkType === 'sim2h'
   ? combine(tapeExecutor(require('tape')), localOnly)
 
   : networkType === 'memory'

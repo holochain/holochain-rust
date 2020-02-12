@@ -1,3 +1,4 @@
+use crate::NEW_RELIC_LICENSE_KEY;
 use lib3h::rrdht_util::*;
 use lib3h_crypto_api::CryptoSystem;
 use lib3h_protocol::types::EntryHash;

@@ -1,4 +1,7 @@
-use crate::wasm_engine::{api::ZomeApiResult, Runtime};
+use crate::{
+    wasm_engine::{api::ZomeApiResult, Runtime},
+    NEW_RELIC_LICENSE_KEY,
+};
 use std::{convert::TryFrom, thread, time::Duration};
 use wasmi::{RuntimeArgs, RuntimeValue};
 

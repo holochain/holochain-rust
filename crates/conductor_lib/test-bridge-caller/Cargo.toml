@@ -1,6 +1,6 @@
 [package]
 name = "test-bridge-caller"
-version = "0.0.42-alpha5"
+version = "0.0.43-alpha3"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [lib]
@@ -13,10 +13,9 @@ panic = "abort"
 members = []
 
 [dependencies]
-serde = "=1.0.89"
-serde_json = { version = "=1.0.39", features = ["preserve_order"] }
+serde = "=1.0.104"
+serde_json = { version = "=1.0.47", features = ["preserve_order"] }
 hdk = { path = "../../hdk" }
-serde_derive = "=1.0.89"
-holochain_json_derive = "=0.0.17"
+serde_derive = "=1.0.104"
+holochain_json_derive = "=0.0.22"
 holochain_persistence_api = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
-

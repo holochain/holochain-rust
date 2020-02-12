@@ -1,6 +1,7 @@
 use crate::{
     wasm_engine::{api::ZomeApiResult, Runtime},
     workflows::get_link_result::get_link_result_workflow,
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
 use std::convert::TryFrom;
@@ -436,7 +437,7 @@ pub mod tests {
         let expected = JsonString::from_json(
             &(format!(
                 r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}}]}}","error":"null"}}"#,
-                entry_addresses[1], "test-tag1", entry_addresses[1], "test-tag2",
+                entry_addresses[1], "test-tag2", entry_addresses[1], "test-tag1",
             ) + "\u{0}"),
         );
         assert_eq!(call_result, expected,);

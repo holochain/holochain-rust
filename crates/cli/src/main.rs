@@ -1,4 +1,5 @@
 #![warn(unused_extern_crates)]
+#[macro_use]
 extern crate holochain_common;
 extern crate holochain_conductor_lib;
 extern crate holochain_core;
@@ -41,6 +42,7 @@ use crate::error::{HolochainError, HolochainResult};
 use holochain_conductor_lib::happ_bundle::HappBundle;
 use std::{fs::File, io::Read, path::PathBuf, str::FromStr};
 use structopt::{clap::arg_enum, StructOpt};
+new_relic_setup!("NEW_RELIC_LICENSE_KEY");
 
 #[derive(StructOpt)]
 /// A command line for Holochain
@@ -88,7 +90,7 @@ enum Cli {
         /// Save generated data to file system
         persist: bool,
         #[structopt(long, possible_values = &NetworkingType::variants(), case_insensitive = true)]
-        /// Use real networking use: n3h/sim2h
+        /// Use real networking use: sim2h
         networked: Option<NetworkingType>,
         #[structopt(long, default_value = "ws://localhost:9000")]
         /// Set the sim2h server url if you are using real networking.
@@ -164,7 +166,6 @@ enum Cli {
 arg_enum! {
     #[derive(Debug)]
     pub enum NetworkingType {
-        N3h,
         Sim2h,
     }
 }

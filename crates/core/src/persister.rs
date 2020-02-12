@@ -3,6 +3,7 @@ use crate::{
     context::Context,
     nucleus::state::{NucleusStateSnapshot, NUCLEUS_SNAPSHOT_ADDRESS},
     state::State,
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{eav::Attribute, error::HolochainError};
 

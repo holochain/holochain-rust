@@ -1,8 +1,11 @@
-use crate::websocket::{
-    tls::TlsConfig, wss_info::WssInfo, BaseStream, SocketMap, TlsConnectResult, TlsMidHandshake,
-    TlsSrvMidHandshake, TlsStream, WsConnectResult, WsMidHandshake, WsSrvAcceptResult,
-    WsSrvMidHandshake, WsStream, WssConnectResult, WssMidHandshake, WssSrvAcceptResult,
-    WssSrvMidHandshake, WssStream,
+use crate::{
+    websocket::{
+        tls::TlsConfig, wss_info::WssInfo, BaseStream, SocketMap, TlsConnectResult,
+        TlsMidHandshake, TlsSrvMidHandshake, TlsStream, WsConnectResult, WsMidHandshake,
+        WsSrvAcceptResult, WsSrvMidHandshake, WsStream, WssConnectResult, WssMidHandshake,
+        WssSrvAcceptResult, WssSrvMidHandshake, WssStream,
+    },
+    NEW_RELIC_LICENSE_KEY,
 };
 use log::*;
 

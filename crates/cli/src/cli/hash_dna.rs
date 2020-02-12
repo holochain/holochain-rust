@@ -1,3 +1,4 @@
+use crate::NEW_RELIC_LICENSE_KEY;
 use error::DefaultResult;
 use failure::err_msg;
 use holochain_conductor_lib::conductor::Conductor;

@@ -1,12 +1,14 @@
 extern crate lib3h_sodium;
 extern crate newrelic;
 extern crate structopt;
+#[macro_use(new_relic_setup)]
+extern crate holochain_common;
 
 use lib3h_protocol::uri::Builder;
 use lib3h_sodium::SodiumCryptoSystem;
 use log::*;
 use newrelic::{LogLevel, LogOutput, NewRelicConfig};
-use sim2h::{run_sim2h, DhtAlgorithm, Sim2h, MESSAGE_LOGGER};
+use sim2h::{run_sim2h, DhtAlgorithm, MESSAGE_LOGGER};
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -34,8 +36,10 @@ struct Cli {
     message_log_file: Option<PathBuf>,
 }
 
+new_relic_setup!("NEW_RELIC_LICENSE_KEY");
 #[holochain_tracing_macros::newrelic_autotrace(SIM2H_SERVER)]
 fn main() {
+    //this set up new relic needs
     NewRelicConfig::default()
         .logging(LogLevel::Error, LogOutput::StdErr)
         .init()
@@ -52,7 +56,7 @@ fn main() {
         MESSAGE_LOGGER.lock().start();
     }
 
-    let sim2h = Sim2h::new(
+    let (mut rt, _) = run_sim2h(
         Box::new(SodiumCryptoSystem::new()),
         uri,
         DhtAlgorithm::NaiveSharding {
@@ -60,7 +64,6 @@ fn main() {
         },
     );
 
-    run_sim2h(sim2h)
-        // just park the main thread indefinitely...
-        .block_on(futures::future::pending::<()>());
+    // just park the main thread indefinitely...
+    rt.block_on(futures::future::pending::<()>());
 }

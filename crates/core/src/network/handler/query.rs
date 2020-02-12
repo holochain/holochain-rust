@@ -4,16 +4,18 @@ use crate::{
     entry::CanPublish,
     instance::dispatch_action,
     network::query::{
-        GetLinkData, GetLinksNetworkQuery, GetLinksNetworkResult, NetworkQuery, NetworkQueryResult,
+        GetLinksNetworkQuery, GetLinksNetworkResult, NetworkQuery, NetworkQueryResult,
     },
     nucleus,
     workflows::get_entry_result::get_entry_result_workflow,
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     crud_status::CrudStatus,
     eav::Attribute,
     entry::{Entry, EntryWithMetaAndHeader},
     error::HolochainError,
+    network::query::{GetLinkData, GetLinksQueryConfiguration},
 };
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::Address;
@@ -23,6 +25,8 @@ use holochain_wasm_utils::api_serialization::get_entry::{
 use lib3h_protocol::data_types::{QueryEntryData, QueryEntryResultData};
 use std::{convert::TryInto, sync::Arc};
 
+pub type LinkTag = String;
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn get_links(
     context: &Arc<Context>,
@@ -30,13 +34,19 @@ fn get_links(
     link_type: String,
     tag: String,
     crud_status: Option<CrudStatus>,
-    headers: bool,
+    query_configuration: GetLinksQueryConfiguration,
 ) -> Result<Vec<GetLinkData>, HolochainError> {
     //get links
     let dht_store = context.state().unwrap().dht();
 
     let (get_link, error): (Vec<_>, Vec<_>) = dht_store
-        .get_links(base, link_type, tag, crud_status)
+        .get_links(
+            base,
+            link_type,
+            tag,
+            crud_status,
+            query_configuration.clone(),
+        )
         .unwrap_or_default()
         .into_iter()
         //get tag
@@ -61,7 +71,7 @@ fn get_links(
             let link_add_entry_args = GetEntryArgs {
                 address: link_add_address.clone(),
                 options: GetEntryOptions {
-                    headers,
+                    headers: query_configuration.headers,
                     ..Default::default()
                 },
             };
@@ -73,7 +83,7 @@ fn get_links(
                 ))
                 .map(|get_entry_result| match get_entry_result.result {
                     GetEntryResultType::Single(entry_with_meta_and_headers) => {
-                        let maybe_entry_headers = if headers {
+                        let maybe_entry_headers = if query_configuration.headers {
                             Some(entry_with_meta_and_headers.headers)
                         } else {
                             None
@@ -181,8 +191,8 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
                 tag.clone(),
                 options,
                 match query.clone() {
-                    GetLinksNetworkQuery::Links(get_headers) => get_headers.headers,
-                    _ => false,
+                    GetLinksNetworkQuery::Links(configuration) => configuration,
+                    _ => GetLinksQueryConfiguration::default(),
                 },
             ) {
                 Ok(links) => {

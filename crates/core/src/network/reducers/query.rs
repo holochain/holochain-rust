@@ -2,6 +2,7 @@ use crate::{
     action::{ActionWrapper, QueryKey},
     network::{query::NetworkQuery, reducers::send, state::NetworkState},
     state::State,
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
@@ -291,7 +292,7 @@ mod tests {
             tag: "link-tag".to_string(),
             id: snowflake::ProcessUniqueId::new().to_string(),
         };
-        let config = GetLinksQueryConfiguration { headers: false };
+        let config = GetLinksQueryConfiguration::default();
         let get_links_network_query = GetLinksNetworkQuery::Links(config);
         let payload = QueryPayload::Links((None, get_links_network_query));
         let action = Action::Query((QueryKey::Links(key.clone()), payload, None));

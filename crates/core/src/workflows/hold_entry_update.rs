@@ -4,6 +4,7 @@ use crate::{
     network::entry_with_header::EntryWithHeader,
     nucleus::validation::{validate_entry, ValidationError},
     workflows::validation_package,
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     error::HolochainError,

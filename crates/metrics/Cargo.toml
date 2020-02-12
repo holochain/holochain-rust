@@ -1,23 +1,25 @@
 [package]
 name = "holochain_metrics"
-version = "0.0.42-alpha5"
+version = "0.0.43-alpha3"
 description = "Holochain analytics from logs and other metrics"
 license = "GPL-3.0-only"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
 [dependencies]
+serde_json = "=1.0.47"
 shrinkwraprs = "=0.2.1"
-serde = { version = "=1.0.89", features = ["rc"] }
-serde_derive = "=1.0.89"
-holochain_locksmith = { version = "=0.0.42-alpha5", path = "../locksmith" }
-holochain_tracing_macros = "0.0.13"
+serde = { version = "=1.0.104", features = ["rc"] }
+serde_derive = "=1.0.104"
+holochain_locksmith = { version = "=0.0.43-alpha3", path = "../locksmith" }
+holochain_tracing_macros = "=0.0.19"
+holochain_common = { version = "=0.0.43-alpha3", path = "../common" }
 lazy_static = "=1.4.0"
 num-traits = "=0.2.6"
 num-derive = "=0.2.4"
 toml = "=0.5.0"
 log = "=0.4.8"
-holochain_logging = "=0.0.4"
+holochain_logging = "=0.0.7"
 regex = "=1.1.2"
 env_logger = "=0.6.1"
 rand = "0.7.2"

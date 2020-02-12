@@ -15,9 +15,6 @@ const middleware =
   ( networkType === 'websocket'
   ? combine(tapeExecutor(require('tape')), localOnly, callSync)
 
-  : networkType === 'sim1h'
-  ? combine(tapeExecutor(require('tape')), localOnly, callSync)
-
   : networkType === 'sim2h'
   ? combine(tapeExecutor(require('tape')), localOnly, callSync)
 

@@ -4,7 +4,10 @@ use crate::{
     content_store::GetContent,
     network::entry_with_header::EntryWithHeader,
     state::{ActionResponse, State, StateWrapper, ACTION_PRUNE_MS},
+    state::State,
+    NEW_RELIC_LICENSE_KEY,
 };
+use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
 use bitflags::_core::time::Duration;
 use holochain_core_types::{
     agent::AgentId,
@@ -218,7 +221,10 @@ pub fn create_new_chain_header(
             .nth(0)
             .map(|chain_header| chain_header.address()),
         crud_link,
-        &Iso8601::from(duration_since_epoch.as_secs()),
+        &Iso8601::new(
+            duration_since_epoch.as_secs() as i64,
+            duration_since_epoch.subsec_nanos(),
+        ),
     ))
 }
 

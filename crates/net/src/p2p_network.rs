@@ -9,16 +9,16 @@ use crate::{
         NetResult,
     },
     in_memory::memory_worker::InMemoryWorker,
-    ipc_net_worker::IpcNetWorker,
     lib3h_worker::Lib3hWorker,
     p2p_config::*,
     tweetlog::*,
+    NEW_RELIC_LICENSE_KEY,
 };
 use lib3h_protocol::{
     protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol, Address,
 };
 
-use crate::{sim1h_worker::Sim1hWorker, sim2h_worker::Sim2hWorker};
+use crate::sim2h_worker::Sim2hWorker;
 use crossbeam_channel;
 use holochain_conductor_lib_api::conductor_api::ConductorApi;
 use holochain_json_api::json::JsonString;
@@ -56,21 +56,6 @@ impl P2pNetwork {
 
         // Provide worker factory depending on backend kind
         let worker_factory: NetWorkerFactory = match &p2p_config.clone().backend_kind {
-            // Create an IpcNetWorker with the passed backend config
-            P2pBackendKind::N3H => {
-                let enduser_config = p2p_config
-                    .maybe_end_user_config
-                    .clone()
-                    .expect("P2pConfig for N3H networking is missing an end-user config")
-                    .to_string();
-                Box::new(move |h| {
-                    Ok(Box::new(IpcNetWorker::new(
-                        h,
-                        &backend_config_str,
-                        enduser_config.clone(),
-                    )?) as Box<dyn NetWorker>)
-                })
-            }
             // Create a Lib3hWorker
             P2pBackendKind::LIB3H => {
                 let backend_config = match &p2p_config.clone().backend_config {
@@ -100,14 +85,6 @@ impl P2pNetwork {
             // Create an InMemoryWorker
             P2pBackendKind::LegacyInMemory => Box::new(move |h| {
                 Ok(Box::new(InMemoryWorker::new(h, &backend_config_str)?) as Box<dyn NetWorker>)
-            }),
-            // Create an Sim1hWorker
-            P2pBackendKind::SIM1H => Box::new(move |h| {
-                let backend_config = match &p2p_config.clone().backend_config {
-                    BackendConfig::Sim1h(config) => config.clone(),
-                    _ => return Err(format_err!("mismatch backend type, expecting sim1h")),
-                };
-                Ok(Box::new(Sim1hWorker::new(h, backend_config)?) as Box<dyn NetWorker>)
             }),
             // Create an Sim2hWorker
             P2pBackendKind::SIM2H => Box::new(move |h| {
@@ -173,10 +150,8 @@ impl P2pNetwork {
         match p2p_config.backend_kind {
             P2pBackendKind::LIB3H
             | P2pBackendKind::GhostEngineMemory
-            | P2pBackendKind::SIM1H
             | P2pBackendKind::SIM2H
             | P2pBackendKind::LegacyInMemory => false,
-            P2pBackendKind::N3H => true,
         }
     }
 

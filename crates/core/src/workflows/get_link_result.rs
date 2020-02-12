@@ -7,6 +7,7 @@ use crate::{
             NetworkQueryResult,
         },
     },
+    NEW_RELIC_LICENSE_KEY,
 };
 
 use holochain_core_types::error::HolochainError;
@@ -22,6 +23,8 @@ pub async fn get_link_result_workflow<'a>(
 ) -> Result<GetLinksResult, HolochainError> {
     let config = GetLinksQueryConfiguration {
         headers: link_args.options.headers,
+        pagination: link_args.options.pagination.clone(),
+        sort_order: link_args.options.sort_order.clone(),
     };
     let method = QueryMethod::Link(link_args.clone(), GetLinksNetworkQuery::Links(config));
     let response = query(context.clone(), method, link_args.options.timeout.clone()).await?;

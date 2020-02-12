@@ -30,9 +30,9 @@ exclude = [
 ]
 
 [patch.crates-io]
-#lib3h = "=0.0.36"
-#lib3h_protocol = "=0.0.36"
-#lib3h_crypto_api = "=0.0.36"
-#lib3h_sodium = "=0.0.36"
-#lib3h_zombie_actor = "=0.0.36"
+#lib3h = "=0.0.37"
+#lib3h_protocol = "=0.0.37"
+#lib3h_crypto_api = "=0.0.37"
+#lib3h_sodium = "=0.0.37"
+#lib3h_zombie_actor = "=0.0.37"
 holochain_json_api = { git = "https://github.com/holochain/holochain-serialization", branch = "2020-01-22-wasmer" }

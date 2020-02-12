@@ -10,6 +10,7 @@ use holochain_wasm_utils::api_serialization::{get_entry::*, validation::LinkDire
 use std::sync::Arc;
 
 /// Retrieves the base and target entries of the link and returns both.
+#[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn get_link_entries(
     link: &Link,

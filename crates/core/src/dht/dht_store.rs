@@ -70,7 +70,7 @@ impl PartialEq for DhtStore {
 #[derive(Clone, Debug, Deserialize, Serialize, DefaultJson)]
 pub struct DhtStoreSnapshot {
     pub holding_map: AspectMapBare,
-    pub queued_holding_workflows: VecDeque<PendingValidationWithTimeout>,
+    queued_holding_workflows: VecDeque<PendingValidationWithTimeout>,
 }
 
 impl From<&StateWrapper> for DhtStoreSnapshot {
@@ -359,6 +359,16 @@ impl DhtStore {
 
     pub(crate) fn queued_holding_workflows(&self) -> &VecDeque<PendingValidationWithTimeout> {
         &self.queued_holding_workflows
+    }
+
+    pub(crate) fn remove_holding_workflow(
+        &mut self,
+        item: &PendingValidation,
+    ) -> Option<PendingValidationWithTimeout> {
+        self.queued_holding_workflows()
+            .iter()
+            .position(|PendingValidationWithTimeout { pending, .. }| pending == item)
+            .and_then(|index| self.queued_holding_workflows.remove(index))
     }
 }
 

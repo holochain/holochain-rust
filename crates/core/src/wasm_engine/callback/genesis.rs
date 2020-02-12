@@ -4,6 +4,8 @@ use crate::{
     nucleus::ribosome::callback::{Callback, CallbackParams, CallbackResult},NEW_RELIC_LICENSE_KEY
 };
 use std::sync::Arc;
+
+#[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn init(
     context: Arc<Context>,

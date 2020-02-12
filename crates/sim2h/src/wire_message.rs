@@ -107,6 +107,16 @@ impl WireMessage {
             WireMessage::Err(_) => "[Error] {:?}",
         })
     }
+
+    pub fn try_get_span(&self) -> Option<&ht::EncodedSpanContext> {
+        match self {
+            WireMessage::ClientToLib3h(s) => s.span_context.as_ref(),
+            WireMessage::ClientToLib3hResponse(s) => s.span_context.as_ref(),
+            WireMessage::Lib3hToClient(s) => s.span_context.as_ref(),
+            WireMessage::Lib3hToClientResponse(s) => s.span_context.as_ref(),
+            _ => None,
+        }
+    }
 }
 
 fn get_multi_type(list: Vec<&Lib3hToClient>) -> &str {

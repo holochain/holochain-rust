@@ -1,4 +1,5 @@
 #![feature(vec_remove_item)]
+#![feature(proc_macro_hygiene)]
 #![allow(clippy::redundant_clone)]
 
 extern crate backtrace;
@@ -243,6 +244,7 @@ impl Sim2hHandle {
         &self.connection_mgr
     }
 
+    #[autotrace]
     /// send a message to another connected agent
     pub fn send(&self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) {
         debug!(">>OUT>> {} to {}", msg.message_type(), uri);
@@ -250,8 +252,12 @@ impl Sim2hHandle {
             .lock()
             .log_out(agent, uri.clone(), msg.clone());
         let payload: Opaque = msg.clone().into();
-        self.connection_mgr
-            .send_data(uri, payload.as_bytes().into());
+        let payload: ht::SpanWrap<WsFrame> = ht::wrap_with_tag(
+            payload.as_bytes().into(),
+            here!(()),
+            ht::debug_tag("Message", msg),
+        );
+        self.connection_mgr.send_data(uri, payload);
     }
 
     /// get access to our im_state object
@@ -1021,7 +1027,7 @@ pub struct Sim2h {
 }
 
 #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+//#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl Sim2h {
     /// create a new Sim2h server instance
     pub fn new(
@@ -1032,7 +1038,8 @@ impl Sim2h {
     ) -> Self {
         let (metric_gen, metric_task) = MetricsTimerGenerator::new();
 
-        let (connection_mgr, connection_mgr_evt_recv, connection_count) = ConnectionMgr::new();
+        let (connection_mgr, connection_mgr_evt_recv, connection_count) =
+            ConnectionMgr::new(tracer.clone());
 
         let (wss_send, wss_recv) = crossbeam_channel::unbounded();
         let sim2h_handle = Sim2hHandle::new(
@@ -1202,6 +1209,14 @@ impl Sim2h {
                 Ok((signed_message.provenance.source().into(), wire_message))
             })() {
                 Ok((source, wire_message)) => {
+                    let _spanguard = wire_message.try_get_span().and_then(|msg| {
+                        ht::follow_encoded_tag(
+                            &sim2h_handle.tracer,
+                            msg,
+                            here!(()),
+                            ht::debug_tag("HandlePayload", wire_message.clone()),
+                        )
+                    });
                     sim2h_handle.handle_message(url, wire_message, source)
                 }
                 Err(error) => {

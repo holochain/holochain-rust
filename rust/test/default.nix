@@ -10,18 +10,10 @@ let
   nix-env -f https://github.com/NixOS/nixpkgs-channels/archive/nixos-19.09.tar.gz -iA kcov curl
   cargo install cargo-make
   hc-rust-wasm-compile
-  for i in ''$(find crates -maxdepth 1 -mindepth 1 -type d | sort); do
-    echo "-------"
-    echo "coverage for '$i'"
-    echo "-------"
-    ( \
-      cd $i && \
-      export CARGO_TARGET_DIR=$(readlink -f ./target) && \
-      cargo test --no-run && \
-      cargo make coverage-kcov \
-    )
-  done
-  bash <(curl -s https://codecov.io/bash)
+  export CARGO_TARGET_DIR=$(readlink -f ./target)
+  cargo test --no-run && \
+    cargo make coverage-kcov && \
+    bash <(curl -s https://codecov.io/bash)
   '';
 
   hc-rust-coverage-tarpaulin = pkgs.writeShellScriptBin "hc-rust-coverage-tarpaulin"
@@ -31,8 +23,8 @@ let
   cargo install cargo-tarpaulin
   hc-rust-wasm-compile
   export CARGO_TARGET_DIR=$(readlink -f ./target)
-  cargo tarpaulin -v -o Xml --exclude-files "*/.cargo/*"
-  bash <(curl -s https://codecov.io/bash)
+  cargo tarpaulin -v -o Xml --exclude-files "*/.cargo/*" && \
+    bash <(curl -s https://codecov.io/bash)
   '';
 in
 {

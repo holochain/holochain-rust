@@ -14,7 +14,16 @@ let
     cargo test --no-run && \
     CARGO_MAKE_WORKSPACE_TARGET_DIRECTORY="''${CARGO_TARGET_DIR:-''$(readlink -f ./target)}" cargo make codecov-flow
   '';
+
+  hc-rust-coverage-tarpaulin = pkgs.writeShellScriptBin "hc-rust-coverage-tarpaulin"
+  ''
+  mkdir -p /holochain-rust/build/target
+  cargo install cargo-make || true && \
+    cargo install cargo-tarpaulin || true && \
+    hc-rust-wasm-compile && \
+    CARGO_MAKE_WORKSPACE_TARGET_DIRECTORY="''${CARGO_TARGET_DIR:-''$(readlink -f ./target)}" CARGO_MAKE_COVERAGE_PROVIDER="tarpaulin" cargo make codecov-flow
+  '';
 in
 {
- buildInputs = [ hc-rust-test hc-rust-coverage ];
+ buildInputs = [ hc-rust-test hc-rust-coverage hc-rust-coverage-tarpaulin ];
 }

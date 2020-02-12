@@ -1,4 +1,5 @@
 extern crate crossbeam_channel;
+extern crate holochain_tracing as ht;
 extern crate num_cpus;
 
 use std::{

@@ -10,6 +10,7 @@ use lib3h_protocol::{
     data_types::DirectMessageData as Lib3hDirectMessageData, protocol_client::Lib3hClientProtocol,
 };
 
+#[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn inner(
     network_state: &mut NetworkState,
@@ -39,6 +40,7 @@ fn inner(
     send(network_state, protocol_object)
 }
 
+#[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_send_direct_message(
     network_state: &mut NetworkState,

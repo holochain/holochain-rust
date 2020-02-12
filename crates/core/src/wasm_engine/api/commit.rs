@@ -17,6 +17,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
+
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let commit_entry_arg = match CommitEntryArgs::try_from(args_str.clone()) {
@@ -33,6 +34,17 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
+    let span = context
+        .tracer
+        .span("hdk invoke_commit_app_entry")
+        .tag(ht::Tag::new(
+            "CommitEntryArgs",
+            format!("{:?}", commit_entry_arg),
+        ))
+        .start()
+        .into();
+    let _spanguard = ht::push_span(span);
+
     // Wait for future to be resolved
     let task_result: Result<CommitEntryResult, HolochainError> = context.block_on(author_entry(
         &commit_entry_arg.entry(),

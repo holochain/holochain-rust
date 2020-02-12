@@ -14,5 +14,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
+- `.bashrc` files that echo to STDOUT should no longer cause `hc package` to fail. [PR#2108](https://github.com/holochain/holochain-rust/pull/2108)
+
 ### Security
 

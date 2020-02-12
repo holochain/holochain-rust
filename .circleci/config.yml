@@ -28,7 +28,7 @@ jobs:
    - checkout
    - run:
       command: nix-shell --run hc-rust-test
-      no_output_timeout: 20
+      no_output_timeout: 20m
 
  cov-kcov:
   machine: true

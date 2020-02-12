@@ -394,7 +394,7 @@ impl From<&Duration> for Period {
 ///    Debug:   Iso8601(2018-10-11T03:23:38+00:00)
 ///
 /// More info on the relevant [wikipedia article](https://en.wikipedia.org/wiki/ISO_8601).
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, DefaultJson)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, DefaultJson, Copy)]
 pub struct Iso8601(DateTime<FixedOffset>);
 
 /// Infallible conversions into and from an Iso8601.  The only infallible ways to create an Iso8601

@@ -10,12 +10,16 @@ let
   nix-env -f https://github.com/NixOS/nixpkgs-channels/archive/nixos-19.09.tar.gz -iA kcov curl
   cargo install cargo-make
   hc-rust-wasm-compile
-  for i in crates/*; do
+  for i in ''$(find crates -maxdepth 1 -mindepth 1 -type d | sort); do
+    echo "-------"
+    echo "coverage for '$i'"
+    echo "-------"
     ( \
       cd $i && \
       export CARGO_TARGET_DIR=$(readlink -f ./target) && \
       cargo test --no-run && \
-      cargo make codecov-flow \
+      cargo make coverage-kcov && \
+      bash <(curl -s https://codecov.io/bash) -f $(find target -iname cobertura.xml) \
     )
   done
   '';

@@ -73,7 +73,7 @@ pub fn handle_get_my_links_with_tag(agent : Address,status_request:LinksStatusRe
 pub fn handle_get_my_links_with_pagination(agent : Address,pagesize:usize,pagenumber:usize) ->ZomeApiResult<GetLinksResult>
 {
     let options = GetLinksOptions{
-        pagination : Some(Pagination{page_size : pagesize,page_number : pagenumber}),
+        pagination : Some(Pagination::Size(SizePagination{page_size : pagesize,page_number : pagenumber})),
         ..GetLinksOptions::default()
     };
     hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_simple_posts"), LinkMatch::Any,options)

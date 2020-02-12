@@ -8,6 +8,7 @@ let
   hc-rust-coverage-kcov = pkgs.writeShellScriptBin "hc-rust-coverage-kcov"
   ''
   nix-env -f https://github.com/NixOS/nixpkgs-channels/archive/nixos-19.09.tar.gz -iA kcov curl
+  cargo install cargo-make
   hc-rust-wasm-compile
   for i in crates/*; do
     ( \

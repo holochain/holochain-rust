@@ -79,6 +79,15 @@ pub fn handle_get_my_links_with_pagination(agent : Address,pagesize:usize,pagenu
     hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_simple_posts"), LinkMatch::Any,options)
 }
 
+pub fn handle_get_my_links_with_time_pagination(agent : Address,from_seconds:i64,limit:usize) ->ZomeApiResult<GetLinksResult>
+{
+    let options = GetLinksOptions{
+        pagination : Some(Pagination::Time(TimePagination{from_time : Iso8601::new(from_seconds,0),limit})),
+        ..GetLinksOptions::default()
+    };
+    hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_simple_posts"), LinkMatch::Any,options)
+}
+
 pub fn handle_get_my_links_count(agent : Address,status_request : LinksStatusRequestKind,tag:String) ->ZomeApiResult<GetLinksResultCount>
 {
     let options = GetLinksOptions{
@@ -208,6 +217,11 @@ define_zome! {
             outputs: |result: ZomeApiResult<GetLinksResult>|,
             handler: handle_get_my_links_with_pagination
         }
+        get_my_links_with_time_pagination: {
+            inputs: |base: Address,from_seconds:i64,limit:usize|,
+            outputs: |result: ZomeApiResult<GetLinksResult>|,
+            handler: handle_get_my_links_with_time_pagination
+        }
         get_my_links_count: {
             inputs: |base: Address,status_request:LinksStatusRequestKind,tag:String|,
             outputs: |result: ZomeApiResult<GetLinksResultCount>|,
@@ -231,6 +245,6 @@ define_zome! {
     ]
 
     traits: {
-        hc_public [create_anchor, get_entry, create_link, delete_link, get_my_links, test_emit_signal,get_my_links_count,create_link_with_tag,get_my_links_count_by_tag,delete_link_with_tag,get_my_links_with_tag,encrypt,decrypt,get_my_links_with_pagination]
+        hc_public [create_anchor, get_entry, create_link, delete_link, get_my_links, test_emit_signal,get_my_links_count,create_link_with_tag,get_my_links_count_by_tag,delete_link_with_tag,get_my_links_with_tag,encrypt,decrypt,get_my_links_with_pagination,get_my_links_with_time_pagination]
     }
 }

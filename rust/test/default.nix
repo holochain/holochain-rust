@@ -22,7 +22,7 @@ let
     cargo install cargo-make || true && \
     cargo install cargo-tarpaulin || true && \
     hc-rust-wasm-compile && \
-    CARGO_MAKE_WORKSPACE_TARGET_DIRECTORY="''${CARGO_TARGET_DIR:-''$(readlink -f ./target)}" CARGO_MAKE_COVERAGE_PROVIDER="tarpaulin" cargo make codecov-flow
+    cargo tarpaulin -o Xml
   '';
 in
 {

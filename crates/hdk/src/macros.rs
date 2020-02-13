@@ -1,42 +1,85 @@
 //! This file contains the define_zome! macro, and smaller helper macros.
 
-#[doc(hidden)]
 #[macro_export]
-macro_rules! load_json {
-    ($input_allocation_int:ident) => {{
-
-        let maybe_input = $crate::holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_json(
-            $input_allocation_int,
-        );
-
-        match maybe_input {
-            Ok(input) => input,
-            Err(hc_err) => return $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
-                $crate::global_fns::write_json(hc_err)
-            ).into(),
+macro_rules! args {
+    ( $ptr:ident, $type:ty ) => {
+        {
+            let val: $type = match holochain_wasmer_guest::json::from_allocation_ptr(holochain_wasmer_guest::map_bytes($ptr)).try_into() {
+                Ok(v) => v,
+                Err(e) => {
+                    holochain_wasmer_guest::allocation::deallocate_from_allocation_ptr($ptr);
+                    return json::to_allocation_ptr(Err(e).into());
+                },
+            };
+            val
         }
-
-    }};
+    };
 }
 
-#[doc(hidden)]
 #[macro_export]
-macro_rules! load_string {
-    ($input_allocation_int:ident) => {{
-
-        let maybe_input = $crate::holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_string(
-            $input_allocation_int,
-        );
-
-        match maybe_input {
-            Ok(input) => input,
-            Err(hc_err) => return $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
-                $crate::global_fns::write_json(hc_err)
-            ).into(),
-        }
-
-    }};
+macro_rules! ret {
+    ( $e: expr) => {
+        return json::to_allocation_ptr(($e).into());
+    };
 }
+
+#[macro_export]
+macro_rules! try_result {
+    ( $e:expr ) => {
+        match $e {
+            Ok(v) => v,
+            Err(e) => ret!(Err(e)),
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! try_option {
+    ( $e:expr, $fail:literal ) => {
+        match $e {
+            Some(v) => v,
+            None => ret!(JsonString::from(String::from($fail))),
+        }
+    };
+}
+
+// #[doc(hidden)]
+// #[macro_export]
+// macro_rules! load_json {
+//     ($input_allocation_int:ident) => {{
+//
+//         let maybe_input = $crate::holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_json(
+//             $input_allocation_int,
+//         );
+//
+//         match maybe_input {
+//             Ok(input) => input,
+//             Err(hc_err) => return $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
+//                 $crate::global_fns::write_json(hc_err)
+//             ).into(),
+//         }
+//
+//     }};
+// }
+//
+// #[doc(hidden)]
+// #[macro_export]
+// macro_rules! load_string {
+//     ($input_allocation_int:ident) => {{
+//
+//         let maybe_input = $crate::holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_string(
+//             $input_allocation_int,
+//         );
+//
+//         match maybe_input {
+//             Ok(input) => input,
+//             Err(hc_err) => return $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
+//                 $crate::global_fns::write_json(hc_err)
+//             ).into(),
+//         }
+//
+//     }};
+// }
 
 /// Every Zome must utilize the `define_zome`
 /// macro in the main library file in their Zome.
@@ -187,7 +230,7 @@ macro_rules! load_string {
 ///     init: || {
 ///         Ok(())
 ///     }
-///     
+///
 ///     validate_agent: |validation_data : EntryValidationData::<AgentId>| {
 ///         Ok(())
 ///     }

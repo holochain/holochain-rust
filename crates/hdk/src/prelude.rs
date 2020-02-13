@@ -3,7 +3,7 @@
 //! by simply adding use hdk::prelude::*;
 
 // macros
-pub use crate::{define_zome, entry, from, link, load_json, to};
+pub use crate::{define_zome, entry, from, link, args, try_result, try_option, ret, to};
 
 // derive macros
 pub use holochain_json_derive::DefaultJson;

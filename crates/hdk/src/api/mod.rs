@@ -71,6 +71,10 @@ pub use self::{
     update_remove::{remove_entry, update_agent, update_entry},
     version::{version, version_hash},
 };
+use holochain_wasmer_guest::json;
+use holochain_wasmer_guest::allocation;
+use holochain_wasmer_guest::*;
+use crate::args;
 
 macro_rules! def_api_fns {
     (
@@ -95,24 +99,18 @@ macro_rules! def_api_fns {
                 &self,
                 input: I,
             ) -> ZomeApiResult<O> {
-                let wasm_allocation = memory.write_json(input)?;
+                let json: JsonString = input.try_into()?;
+                let guest_allocation_ptr: AllocationPtr = json::to_allocation_ptr(json);
 
                 // Call Ribosome's function
-                let encoded_input: WasmAllocationInt = wasm_allocation.into();
-                let encoded_output: WasmAllocationInt = unsafe {
+                let host_allocation_ptr: AllocationPtr = unsafe {
                     (match self {
                         $(Dispatch::$enum_variant => $function_name),*
-                    })(encoded_input)
+                    })(guest_allocation_ptr)
                 };
 
-                let result: ZomeApiInternalResult =
-                    load_ribosome_encoded_json(encoded_output).or_else(|e| {
-                        memory.deallocate(wasm_allocation)?;
-                        Err(ZomeApiError::from(e))
-                    })?;
-
-                // Free result & input allocations
-                memory.deallocate(wasm_allocation)?;
+                allocation::deallocate_from_allocation_ptr(guest_allocation_ptr);
+                let result = args!(host_allocation_ptr, ZomeApiInternalResult);
 
                 // Done
                 if result.ok {
@@ -130,10 +128,10 @@ macro_rules! def_api_fns {
         // WARNING All these fns need to be defined in wasms too @see the hdk integration_test.rs
         #[allow(dead_code)]
         extern "C" {
-            pub(crate) fn hc_property(_: WasmAllocationInt) -> WasmAllocationInt;
-            pub(crate) fn hc_start_bundle(_: WasmAllocationInt) -> WasmAllocationInt;
-            pub(crate) fn hc_close_bundle(_: WasmAllocationInt) -> WasmAllocationInt;
-            $( pub(crate) fn $function_name (_: WasmAllocationInt) -> WasmAllocationInt;) *
+            pub(crate) fn hc_property(_: AllocationPtr) -> AllocationPtr;
+            pub(crate) fn hc_start_bundle(_: AllocationPtr) -> AllocationPtr;
+            pub(crate) fn hc_close_bundle(_: AllocationPtr) -> AllocationPtr;
+            $( pub(crate) fn $function_name (_: AllocationPtr) -> AllocationPtr; ) *
         }
 
         /// Add stubs for all core API functions when compiled in test mode.
@@ -150,10 +148,10 @@ macro_rules! def_api_fns {
         /// Hence the `#[cfg(test)]` which is really important!
         #[cfg(test)]
         mod tests {
-            use crate::holochain_core_types::error::{RibosomeReturnValue, WasmAllocationInt};
+            use crate::holochain_core_types::error::{RibosomeReturnValue, AllocationPtr};
 
             $( #[no_mangle]
-                 pub fn $function_name(_: WasmAllocationInt) -> WasmAllocationInt {
+                 pub fn $function_name(_: AllocationPtr) -> AllocationPtr {
                      RibosomeReturnValue::Success.into()
                  }) *
         }

@@ -15,6 +15,7 @@ holochain_conductor_lib = { version = "=0.0.43-alpha3", path = "../conductor_lib
 holochain_net = { version = "=0.0.43-alpha3", path = "../net" }
 holochain_dpki = { version = "=0.0.43-alpha3", path = "../dpki" }
 holochain_locksmith = { version = "=0.0.43-alpha3", path = "../locksmith" }
+holochain_tracing = "=0.0.19"
 holochain_tracing_macros = "=0.0.19"
 newrelic="0.2"
 sim2h = { version = "=0.0.43-alpha3", path = "../sim2h" }
@@ -26,6 +27,7 @@ holochain_json_api = "=0.0.22"
 holochain_persistence_api = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
 holochain_persistence_file = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
 holochain_wasm_utils = { path = "../wasm_utils" }
+crossbeam-channel = "=0.3.8"
 structopt = "=0.3.3"
 failure = "=0.1.5"
 serde = "=1.0.104"
@@ -46,6 +48,7 @@ tempfile = "=3.0.7"
 lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 tar = "=0.4.26"
 flate2 = "=1.0.12"
+log = "=0.4.8"
 dns-lookup = "=1.0.1"
 hcid = "=0.0.6"
 lazy_static = "=1.4.0"

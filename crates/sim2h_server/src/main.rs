@@ -1,4 +1,6 @@
+extern crate holochain_tracing as ht;
 extern crate lib3h_sodium;
+extern crate log;
 extern crate newrelic;
 extern crate structopt;
 #[macro_use(new_relic_setup)]
@@ -13,6 +15,7 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
+#[structopt(rename_all = "kebab-case")]
 struct Cli {
     #[structopt(
         long,
@@ -21,6 +24,7 @@ struct Cli {
         default_value = "9000"
     )]
     port: u16,
+
     #[structopt(
         long,
         short,
@@ -28,12 +32,20 @@ struct Cli {
         default_value = "50"
     )]
     sharding: u64,
+
     #[structopt(
         long,
         short,
         help = "CSV file to log all incoming and outgoing messages to"
     )]
     message_log_file: Option<PathBuf>,
+
+    #[structopt(
+        long,
+        short,
+        help = "The service name to use for Jaeger tracing spans. No tracing is done if not specified."
+    )]
+    tracing_name: Option<String>,
 }
 
 new_relic_setup!("NEW_RELIC_LICENSE_KEY");
@@ -46,6 +58,24 @@ fn main() {
         .unwrap_or_else(|_| warn!("Could not configure new relic daemon"));
     env_logger::init();
     let args = Cli::from_args();
+
+    let tracer = if let Some(service_name) = args.tracing_name {
+        let (span_tx, span_rx) = crossbeam_channel::unbounded();
+        let _ = std::thread::Builder::new()
+            .name("tracer_loop".to_string())
+            .spawn(move || {
+                info!("Tracer loop started.");
+                // TODO: killswitch
+                let reporter = ht::reporter::JaegerBinaryReporter::new(&service_name).unwrap();
+                for span in span_rx {
+                    reporter.report(&[span]).expect("could not report span");
+                }
+            });
+        Some(ht::Tracer::with_sender(ht::AllSampler, span_tx))
+    } else {
+        None
+    };
+
     let host = "ws://0.0.0.0/";
     let uri = Builder::with_raw_url(host)
         .unwrap_or_else(|e| panic!("with_raw_url: {:?}", e))
@@ -62,6 +92,7 @@ fn main() {
         DhtAlgorithm::NaiveSharding {
             redundant_count: args.sharding,
         },
+        tracer,
     );
 
     // just park the main thread indefinitely...

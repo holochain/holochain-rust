@@ -11,6 +11,7 @@ extern crate failure;
 extern crate holochain_common;
 #[macro_use]
 pub extern crate holochain_json_derive;
+extern crate holochain_tracing as ht;
 #[macro_use]
 extern crate lazy_static;
 // macros used in tests
@@ -22,7 +23,7 @@ extern crate serde_json;
 extern crate serde_derive;
 
 #[macro_use]
-pub mod tweetlog;
+extern crate holochain_tracing_macros;
 pub mod connection;
 pub mod error;
 pub mod in_memory;
@@ -30,5 +31,6 @@ pub mod lib3h_worker;
 pub mod p2p_config;
 pub mod p2p_network;
 pub mod sim2h_worker;
+pub mod tweetlog;
 
 new_relic_setup!("NEW_RELIC_LICENSE_KEY");

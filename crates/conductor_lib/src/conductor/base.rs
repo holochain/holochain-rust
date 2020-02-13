@@ -20,13 +20,12 @@ use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},
 };
-use holochain_locksmith::{Mutex, RwLock};
-
-use holochain_json_api::json::JsonString;
-use holochain_persistence_api::{cas::content::AddressableContent, hash::HashString};
-
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
+use holochain_json_api::json::JsonString;
+use holochain_locksmith::{Mutex, RwLock};
 use holochain_logging::{rule::RuleFilter, FastLogger, FastLoggerBuilder};
+use holochain_persistence_api::{cas::content::AddressableContent, hash::HashString};
+use holochain_tracing as ht;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
 use std::{
     clone::Clone,
@@ -36,6 +35,7 @@ use std::{
     io::prelude::*,
     option::NoneError,
     path::PathBuf,
+    str::FromStr,
     sync::Arc,
     thread,
     time::Duration,
@@ -47,7 +47,7 @@ use crate::{
     conductor::passphrase_manager::{
         PassphraseManager, PassphraseService, PassphraseServiceCmd, PassphraseServiceMock,
     },
-    config::{AgentConfiguration, PassphraseServiceConfig},
+    config::{AgentConfiguration, PassphraseServiceConfig, TracingConfiguration},
     interface::{ConductorApiBuilder, InstanceMap, Interface},
     port_utils::get_free_port,
     signal_wrapper::SignalWrapper,
@@ -95,6 +95,14 @@ pub fn mount_conductor_from_config(config: Configuration) {
     CONDUCTOR.lock().unwrap().replace(conductor);
 }
 
+type TraceReporterMap = HashMap<
+    String,
+    (
+        Receiver<ht::FinishedSpan>,
+        ht::reporter::JaegerCompactReporter,
+    ),
+>;
+
 /// Main representation of the conductor.
 /// Holds a `HashMap` of Holochain instances referenced by ID.
 /// A primary point in this struct is
@@ -107,6 +115,7 @@ pub fn mount_conductor_from_config(config: Configuration) {
 pub struct Conductor {
     pub(in crate::conductor) instances: InstanceMap,
     instance_signal_receivers: Arc<RwLock<HashMap<String, Receiver<Signal>>>>,
+    trace_reporters: Arc<RwLock<TraceReporterMap>>,
     agent_keys: HashMap<String, Arc<Mutex<Keystore>>>,
     pub(in crate::conductor) config: Configuration,
     pub(in crate::conductor) static_servers: HashMap<String, StaticServer>,
@@ -159,6 +168,7 @@ pub fn notify(msg: String) {
     println!("{}", msg);
 }
 
+#[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl Conductor {
     pub fn from_config(config: Configuration) -> Self {
@@ -210,6 +220,7 @@ impl Conductor {
         Conductor {
             instances: HashMap::new(),
             instance_signal_receivers: Arc::new(RwLock::new(HashMap::new())),
+            trace_reporters: Arc::new(RwLock::new(HashMap::new())),
             agent_keys: HashMap::new(),
             interface_threads: HashMap::new(),
             static_servers: HashMap::new(),
@@ -411,6 +422,24 @@ impl Conductor {
             .expect("Must be able to spawn thread")
     }
 
+    pub fn spawn_trace_reporter_thread(&mut self) -> thread::JoinHandle<()> {
+        let reporters = self.trace_reporters.clone();
+        thread::Builder::new()
+            .name("trace_reporter_thread".to_string())
+            .spawn(move || loop {
+                // TODO: try using crossbeam Select?
+                for (rx, reporter) in reporters.read().unwrap().values() {
+                    if let Ok(span) = rx.try_recv() {
+                        if let Err(e) = reporter.report(&[span]) {
+                            warn!("Could not report span: {:?}", e);
+                        }
+                    }
+                }
+                thread::sleep(Duration::from_millis(1));
+            })
+            .expect("Must be able to spawn thread")
+    }
+
     pub fn stop_stats_thread(&self) {
         self.stats_thread_kill_switch
             .as_ref()
@@ -531,6 +560,8 @@ impl Conductor {
     /// Starts all instances
     pub fn start_all_instances(&mut self) -> Result<(), HolochainInstanceError> {
         notify("Start all instances".to_string());
+        // TODO: how to stop?
+        self.spawn_trace_reporter_thread();
         self.config
             .instances
             .iter()
@@ -743,17 +774,47 @@ impl Conductor {
         Ok(())
     }
 
+    fn build_tracer_and_reporter_for_instance(
+        &self,
+        id: &str,
+    ) -> Option<(
+        ht::Tracer,
+        Receiver<ht::FinishedSpan>,
+        ht::reporter::JaegerCompactReporter,
+    )> {
+        match self.config.tracing.clone().unwrap_or_default() {
+            TracingConfiguration::Jaeger(jaeger_config) => {
+                let (span_tx, span_rx) = crossbeam_channel::unbounded();
+                let service_name = format!("{}-{}", jaeger_config.service_name, id);
+                let mut reporter = ht::reporter::JaegerCompactReporter::new(&service_name).unwrap();
+                if let Some(s) = jaeger_config.socket_address {
+                    let addr =
+                        std::net::SocketAddr::from_str(&s).expect("Could not parse socket address");
+                    reporter
+                        .set_agent_addr(addr)
+                        .expect("Could not set Jaeger socket address");
+                }
+                Some((
+                    ht::Tracer::with_sender(ht::AllSampler, span_tx),
+                    span_rx,
+                    reporter,
+                ))
+            }
+            TracingConfiguration::None => None,
+        }
+    }
+
     /// Creates one specific Holochain instance from a given Configuration,
     /// id string and DnaLoader.
     pub fn instantiate_from_config(&mut self, id: &String) -> Result<Holochain, String> {
         self.config.check_consistency(&mut self.dna_loader)?;
-
         self.config
             .instance_by_id(&id)
             .ok_or_else(|| String::from("Instance not found in config"))
             .and_then(|instance_config| {
                 // Build context:
                 let mut context_builder = ContextBuilder::new();
+                let instance_name = instance_config.id.clone();
 
                 // Agent:
                 let agent_id = &instance_config.agent;
@@ -775,10 +836,16 @@ impl Conductor {
                 // Signal config:
                 let (sender, receiver) = unbounded();
                 self.instance_signal_receivers
-                    .write()
-                    .unwrap()
-                    .insert(instance_config.id.clone(), receiver);
+                .write()
+                .unwrap()
+                .insert(instance_name.clone(), receiver);
+
                 context_builder = context_builder.with_signals(sender);
+
+                if let Some((tracer, span_rx, reporter)) = self.build_tracer_and_reporter_for_instance(&instance_name) {
+                    context_builder = context_builder.with_tracer(tracer);
+                    self.trace_reporters.write().unwrap().insert(instance_name.clone(), (span_rx, reporter));
+                }
 
                 // Storage:
                 match instance_config.storage {
@@ -809,7 +876,6 @@ impl Conductor {
                     }
                 }
 
-                let instance_name = instance_config.id.clone();
                 // Conductor API
                 let api = self.build_conductor_api(instance_config.id)?;
                 context_builder = context_builder.with_conductor_api(api);
@@ -898,7 +964,7 @@ impl Conductor {
 
                 let mut context_clone = context.clone();
                 let context = Arc::new(context);
-                               Holochain::load(context)
+                Holochain::load(context)
                     .and_then(|hc| {
                        notify(format!(
                             "Successfully loaded instance {} from storage",

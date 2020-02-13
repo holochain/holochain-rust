@@ -95,6 +95,8 @@ fn context_log_macro_test() {
     use holochain_core_types::agent::AgentId;
     use holochain_locksmith::RwLock;
     use holochain_net::p2p_config::P2pConfig;
+    use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+    use holochain_tracing as ht;
     use std::sync::Arc;
     let persistence_manager = Arc::new(holochain_persistence_file::txn::default_manager());
 
@@ -112,6 +114,7 @@ fn context_log_macro_test() {
         Arc::new(RwLock::new(
             holochain_metrics::DefaultMetricPublisher::default(),
         )),
+        Arc::new(ht::null_tracer()),
     );
 
     // Somehow we need to build our own logging instance for this test to show logs

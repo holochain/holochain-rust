@@ -38,6 +38,7 @@ use holochain_persistence_api::{
     eav::EntityAttributeValueStorage,
     txn::PersistenceManagerDyn,
 };
+use holochain_tracing as ht;
 use jsonrpc_core::{self, IoHandler};
 use std::{
     sync::{
@@ -50,6 +51,9 @@ use std::{
 
 #[cfg(test)]
 use test_utils::mock_signing::mock_conductor_api;
+
+pub type ActionSender = ht::channel::SpanSender<ActionWrapper>;
+pub type ActionReceiver = ht::channel::SpanReceiver<ActionWrapper>;
 
 pub struct P2pNetworkWrapper(Arc<Mutex<Option<P2pNetwork>>>);
 
@@ -90,7 +94,7 @@ pub struct Context {
     pub agent_id: AgentId,
     pub persister: Arc<RwLock<dyn Persister>>,
     state: Option<Arc<RwLock<StateWrapper>>>,
-    pub action_channel: Option<Sender<ActionWrapper>>,
+    pub action_channel: Option<ActionSender>,
     pub observer_channel: Option<Sender<Observer>>,
     pub persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>>,
     pub p2p_config: P2pConfig,
@@ -101,6 +105,7 @@ pub struct Context {
     thread_pool: ThreadPool,
     pub redux_wants_write: Arc<AtomicBool>,
     pub metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
+    pub tracer: Arc<ht::Tracer>,
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
@@ -142,6 +147,7 @@ impl Context {
         signal_tx: Option<SignalSender>,
         state_dump_logging: bool,
         metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
+        tracer: Arc<ht::Tracer>,
     ) -> Self {
         Context {
             instance_name: instance_name.to_owned(),
@@ -162,6 +168,7 @@ impl Context {
             thread_pool: ThreadPool::new().expect("Could not create thread pool for futures"),
             redux_wants_write: Arc::new(AtomicBool::new(false)),
             metric_publisher,
+            tracer,
         }
     }
 
@@ -177,6 +184,7 @@ impl Context {
         p2p_config: P2pConfig,
         state_dump_logging: bool,
         metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
+        tracer: Arc<ht::Tracer>,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
             instance_name: instance_name.to_owned(),
@@ -194,6 +202,7 @@ impl Context {
             thread_pool: ThreadPool::new().expect("Could not create thread pool for futures"),
             redux_wants_write: Arc::new(AtomicBool::new(false)),
             metric_publisher,
+            tracer,
         })
     }
 
@@ -206,6 +215,7 @@ impl Context {
         self.state = Some(state);
     }
 
+    #[autotrace]
     pub fn state(&self) -> Option<StateWrapper> {
         self.state.as_ref().map(|s| {
             while self.redux_wants_write.load(Relaxed) {
@@ -219,6 +229,7 @@ impl Context {
     /// Returns immediately either with the lock or with None if the lock
     /// is occupied already.
     /// Also returns None if the context was not initialized with a state.
+    #[no_autotrace]
     pub fn try_state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
         if self.redux_wants_write.load(Relaxed) {
             None
@@ -234,6 +245,7 @@ impl Context {
         self.state().map(move |state| state.network())
     }
 
+    #[autotrace]
     pub fn get_dna(&self) -> Option<Dna> {
         // In the case of init we encounter race conditions with regards to setting the DNA.
         // Init gets called asynchronously right after dispatching an action that sets the DNA in
@@ -265,6 +277,7 @@ impl Context {
         dna
     }
 
+    #[autotrace]
     pub fn get_wasm(&self, zome: &str) -> Option<DnaWasm> {
         let dna = self.get_dna().expect("Callback called without DNA set!");
         dna.get_wasm_from_zome_name(zome)
@@ -277,7 +290,7 @@ impl Context {
     // which would panic if `send` was called upon them. These `expect`s just bring more visibility to
     // that potential failure mode.
     // @see https://github.com/holochain/holochain-rust/issues/739
-    pub fn action_channel(&self) -> &Sender<ActionWrapper> {
+    pub fn action_channel(&self) -> &ActionSender {
         self.action_channel
             .as_ref()
             .expect("Action channel not initialized")
@@ -286,13 +299,13 @@ impl Context {
     pub fn is_action_channel_open(&self) -> bool {
         self.action_channel
             .clone()
-            .map(|tx| tx.send(ActionWrapper::new(Action::Ping)).is_ok())
+            .map(|tx| tx.send_wrapped(ActionWrapper::new(Action::Ping)).is_ok())
             .unwrap_or(false)
     }
 
     pub fn action_channel_error(&self, msg: &str) -> Option<HolochainError> {
         match &self.action_channel {
-            Some(tx) => match tx.send(ActionWrapper::new(Action::Ping)) {
+            Some(tx) => match tx.send_wrapped(ActionWrapper::new(Action::Ping)) {
                 Ok(()) => None,
                 Err(_) => Some(HolochainError::LifecycleError(msg.into())),
             },
@@ -333,6 +346,7 @@ impl Context {
     /// Custom future executor that enables nested futures and nested calls of `block_on`.
     /// This makes use of the redux action loop and the observers.
     /// The given future gets polled everytime the instance's state got changed.
+    #[autotrace]
     pub fn block_on<F: Future>(&self, future: F) -> <F as Future>::Output {
         let tick_rx = self.create_observer();
         pin_utils::pin_mut!(future);
@@ -361,6 +375,7 @@ impl Context {
     }
 
     /// returns the public capability token (if any)
+    #[autotrace]
     pub fn get_public_token(&self) -> Result<Address, HolochainError> {
         let state = self.state().ok_or("State uninitialized!")?;
         let top = state
@@ -430,6 +445,7 @@ impl Context {
     }
 }
 
+#[autotrace]
 pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, String)> {
     let state = context
         .state()
@@ -486,6 +502,7 @@ pub mod tests {
             Arc::new(RwLock::new(
                 holochain_metrics::DefaultMetricPublisher::default(),
             )),
+            Arc::new(ht::null_tracer()),
         );
 
         // Somehow we need to build our own logging instance for this test to show logs

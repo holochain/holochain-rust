@@ -169,6 +169,11 @@ pub fn reduce_queue_holding_workflow(
 ) -> Option<DhtStore> {
     let action = action_wrapper.action();
     let (pending, maybe_delay) = unwrap_to!(action => Action::QueueHoldingWorkflow);
+
+    // TODO: TRACING: this is where we would include a Span, so that we can resume
+    // the trace when the workflow gets popped (see instance.rs), but we can't do that
+    // until we stop cloning the State, because Spans are not Cloneable.
+
     let entry_aspect = EntryAspect::from((**pending).clone());
     if old_store.get_holding_map().contains(&entry_aspect) {
         error!("Tried to add pending validation to queue which is already held!");
@@ -223,21 +228,7 @@ pub fn reduce_remove_queued_holding_workflow(
     let action = action_wrapper.action();
     let pending = unwrap_to!(action => Action::RemoveQueuedHoldingWorkflow);
     let mut new_store = (*old_store).clone();
-    if let Some(PendingValidationWithTimeout { pending: front, .. }) =
-        new_store.queued_holding_workflows.front()
-    {
-        if front == pending {
-            let _ = new_store.queued_holding_workflows.pop_front();
-        } else {
-            // The first item in the queue could be a delayed one which will result
-            // in the holding thread seeing another item as the next one.
-            // The holding thread will still try to pop that next item, so we need
-            // this else case where we just remove an item from some position inside the queue:
-            new_store
-                .queued_holding_workflows
-                .retain(|PendingValidationWithTimeout { pending: item, .. }| item != pending);
-        }
-    } else {
+    if let None = new_store.remove_holding_workflow(pending) {
         error!("Got Action::PopNextHoldingWorkflow on an empty holding queue!");
     }
 

@@ -7,8 +7,9 @@ let
 
   hc-rust-coverage-kcov = pkgs.writeShellScriptBin "hc-rust-coverage-kcov"
   ''
-  # we need the kcov tool and curl for fetching the codecov.io uploader
-  nix-env -f https://github.com/NixOS/nixpkgs-channels/archive/nixos-19.09.tar.gz -iA kcov curl
+  # this script is a little messy - mainly only designed to be run on CI
+  # cargo-make coverage only really works for individual crates so we futz
+  # with the CARGO_TARGET_DIR - also we just blanket install cargo-make
 
   # using cargo-make for executing kcov
   cargo install cargo-make
@@ -53,18 +54,7 @@ let
   # upload to codecove.io
   bash <(curl -s https://codecov.io/bash)
   '';
-
-  hc-rust-coverage-tarpaulin = pkgs.writeShellScriptBin "hc-rust-coverage-tarpaulin"
-  ''
-  unset CARGO_TARGET_DIR
-  nix-env -f https://github.com/NixOS/nixpkgs-channels/archive/nixos-19.09.tar.gz -iA curl
-  cargo install cargo-tarpaulin
-  hc-rust-wasm-compile
-  export CARGO_TARGET_DIR=$(readlink -f ./target)
-  cargo tarpaulin -v -o Xml --exclude-files "*/.cargo/*"
-  bash <(curl -s https://codecov.io/bash)
-  '';
 in
 {
- buildInputs = [ hc-rust-test hc-rust-coverage-kcov hc-rust-coverage-tarpaulin ];
+ buildInputs = [ pkgs.kcov pkgs.curl hc-rust-test hc-rust-coverage-kcov ];
 }

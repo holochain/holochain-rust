@@ -37,13 +37,6 @@ jobs:
    - checkout
    - run: docker run --rm --security-opt seccomp=unconfined -v $(pwd):/project holochain/holochain-rust:circle.build.develop sh -c "cd /project && nix-shell --run hc-rust-coverage-kcov"
 
- cov-tarpaulin:
-  machine: true
-  resource_class: xlarge
-  steps:
-   - checkout
-   - run: docker run --rm --security-opt seccomp=unconfined -v $(pwd):/project holochain/holochain-rust:circle.build.develop sh -c "cd /project && nix-shell --run hc-rust-coverage-tarpaulin"
-
  fmt:
   docker:
    - image: holochain/holochain-rust:circle.fmt.develop
@@ -256,14 +249,19 @@ workflows:
  tests:
   jobs:
    - build
-   - cov-kcov
-   # - cov-tarpaulin
    - fmt
    # @todo flakey websocket connections
    - app-spec-tests-sim2h
    - stress-tests-sim2h
    - cli-tests
    - wasm-conductor-tests
+
+   - cov-kcov:
+      filters:
+       branches:
+        only:
+         - develop
+         # NOTE - add your branche here if working on coverage
 
    - docker-build-minimal:
       filters:

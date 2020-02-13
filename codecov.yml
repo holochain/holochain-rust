@@ -1,6 +1,4 @@
 # Repository Yaml
-codecov:
-  token: 684bc22e-c6ca-4ac5-b5be-d1dd250a4567
 coverage:
   round: up
   range: 70..100

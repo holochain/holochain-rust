@@ -30,7 +30,7 @@ jobs:
       command: nix-shell --run hc-rust-test
       no_output_timeout: 20m
 
- cov-kcov:
+ code-coverage:
   machine: true
   resource_class: xlarge
   steps:
@@ -256,11 +256,12 @@ workflows:
    - cli-tests
    - wasm-conductor-tests
 
-   - cov-kcov:
+   - code-coverage:
       filters:
        branches:
         only:
          - develop
+         - test-kcov
          # NOTE - add your branche here if working on coverage
 
    - docker-build-minimal:

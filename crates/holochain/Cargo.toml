@@ -14,8 +14,8 @@ holochain_conductor_lib = { version = "=0.0.43-alpha3", path = "../conductor_lib
 lib3h_sodium = "=0.0.37"
 holochain_common = { version = "=0.0.43-alpha3", path = "../common" }
 holochain_locksmith = { version = "=0.0.43-alpha3", path = "../locksmith" }
-holochain_tracing = "=0.0.19"
-holochain_tracing_macros = "=0.0.19"
+holochain_tracing = "=0.0.20"
+holochain_tracing_macros = "=0.0.20"
 structopt = "=0.2.15"
 tiny_http = "=0.6.2"
 lazy_static = "=1.4.0"

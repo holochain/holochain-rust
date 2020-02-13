@@ -23,14 +23,14 @@ lib3h_protocol = "=0.0.37"
 lib3h = "=0.0.37"
 lib3h_zombie_actor = "=0.0.37"
 detach = "=0.0.19"
-holochain_tracing = "=0.0.19"
+holochain_tracing = "=0.0.20"
 holochain_metrics = { version = "=0.0.43-alpha3", path = "../metrics" }
 holochain_conductor_lib_api = { version = "=0.0.43-alpha3", path = "../conductor_api" }
 holochain_core_types = { version = "=0.0.43-alpha3", path = "../core_types" }
 holochain_locksmith = { version = "=0.0.43-alpha3", path = "../locksmith" }
 holochain_json_derive = "=0.0.22"
 holochain_json_api = "=0.0.22"
-holochain_tracing_macros = "=0.0.19"
+holochain_tracing_macros = "=0.0.20"
 holochain_persistence_api = "=0.0.16"
 holochain_common = { version = "=0.0.43-alpha3", path = "../common" }
 in_stream = { version = "=0.0.43-alpha3", path = "../in_stream" }

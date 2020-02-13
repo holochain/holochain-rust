@@ -1,175 +1,81 @@
-use self::{RibosomeErrorCode::*, RibosomeReturnValue::*};
+use self::{RibosomeError::*};
 use crate::error::HolochainError;
 use holochain_json_api::{error::JsonError, json::JsonString};
-use holochain_wasmer_common::AllocationPtr;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::{convert::TryFrom, str::FromStr};
+use std::{str::FromStr};
 
 /// size of the integer that represents a ribosome code
 pub type RibosomeCodeBits = u32;
 
-/// Represents all possible values passed to/from wasm functions
-/// All wasm functions are I64 values
-#[repr(u64)]
-#[derive(Clone, Debug, PartialEq)]
-pub enum RibosomeReturnValue {
-    /// @TODO make this unambiguous or remove
-    /// Contextually represents:
-    /// - Function succeeded without any allocation
-    /// - Empty/nil argument to a function
-    /// - Zero length allocation (error)
-    Success,
-    /// A value that can be safely converted to a wasm allocation
-    /// High bits represent offset, low bits represent length
-    /// @see WasmAllocation
-    Allocation(AllocationPtr),
-    /// A value that should be interpreted as an error
-    /// Low bits are zero, high bits map to an enum variant
-    Failure(RibosomeErrorCode),
-}
-
-impl ToString for RibosomeReturnValue {
-    fn to_string(&self) -> String {
-        match self {
-            Success => "Success".to_string(),
-            Allocation(allocation) => allocation.to_string(),
-            Failure(code) => code.to_string(),
-        }
-    }
-}
-
-impl From<RibosomeReturnValue> for String {
-    fn from(return_code: RibosomeReturnValue) -> String {
-        return_code.to_string()
-    }
-}
-
-impl FromStr for RibosomeReturnValue {
-    type Err = HolochainError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s {
-            "Success" => RibosomeReturnValue::Success,
-            _ => RibosomeReturnValue::Failure(s.parse()?),
-        })
-    }
-}
-
-impl From<RibosomeReturnValue> for JsonString {
-    fn from(ribosome_return_code: RibosomeReturnValue) -> JsonString {
-        JsonString::from_json(&ribosome_return_code.to_string())
-    }
-}
-
-impl From<HolochainError> for RibosomeReturnValue {
-    fn from(error: HolochainError) -> Self {
-        RibosomeReturnValue::Failure(RibosomeErrorCode::from(error))
-    }
-}
-
-impl TryFrom<JsonString> for RibosomeReturnValue {
-    type Error = HolochainError;
-
-    fn try_from(json_string: JsonString) -> Result<Self, Self::Error> {
-        String::from(json_string).parse()
-    }
-}
-
-impl RibosomeReturnValue {
-    pub fn from_error(err_code: RibosomeErrorCode) -> Self {
-        Failure(err_code)
-    }
-}
-
 /// Enum of all possible ERROR codes that a Zome API Function could return.
-#[repr(u64)]
 #[derive(Clone, Debug, PartialEq, Eq, Hash, DefaultJson, PartialOrd, Ord)]
 #[rustfmt::skip]
-pub enum RibosomeErrorCode {
-    Unspecified                     = 1 << 32,
-    ArgumentDeserializationFailed   = 2 << 32,
-    OutOfMemory                     = 3 << 32,
-    ReceivedWrongActionResult       = 4 << 32,
-    CallbackFailed                  = 5 << 32,
-    RecursiveCallForbidden          = 6 << 32,
-    ResponseSerializationFailed     = 7 << 32,
-    NotAnAllocation                 = 8 << 32,
-    ZeroSizedAllocation             = 9 << 32,
-    UnknownEntryType                = 10 << 32,
-    MismatchWasmCallDataType        = 11 << 32,
-    EntryNotFound                   = 12 << 32,
-    WorkflowFailed                  = 13 << 32,
+pub enum RibosomeError {
+    Unspecified,
+    ArgumentDeserializationFailed,
+    OutOfMemory,
+    ReceivedWrongActionResult,
+    CallbackFailed,
+    RecursiveCallForbidden,
+    ResponseSerializationFailed,
+    NotAnAllocation,
+    ZeroSizedAllocation,
+    UnknownEntryType,
+    MismatchWasmCallDataType,
+    EntryNotFound,
+    WorkflowFailed,
+    // something to do with zome logic
+    Zome(String),
 }
 
-#[rustfmt::skip]
-impl RibosomeErrorCode {
-    pub fn as_str(&self) -> &str {
-        match self {
-            Unspecified                     => "Unspecified",
-            ArgumentDeserializationFailed   => "Argument deserialization failed",
-            OutOfMemory                     => "Out of memory",
-            ReceivedWrongActionResult       => "Received wrong action result",
-            CallbackFailed                  => "Callback failed",
-            RecursiveCallForbidden          => "Recursive call forbidden",
-            ResponseSerializationFailed     => "Response serialization failed",
-            NotAnAllocation                 => "Not an allocation",
-            ZeroSizedAllocation             => "Zero-sized allocation",
-            UnknownEntryType                => "Unknown entry type",
-            MismatchWasmCallDataType        => "Mismatched WasmCallData type",
-            EntryNotFound                   => "Entry Could Not Be Found",
-            WorkflowFailed                  => "Workflow failed",
-        }
-    }
+#[derive(Debug)]
+pub enum RibosomeResult {
+    Value(JsonString),
+    Error(RibosomeError),
 }
 
-impl From<HolochainError> for RibosomeErrorCode {
-    fn from(error: HolochainError) -> RibosomeErrorCode {
-        // the mapping between HolochainError and RibosomeErrorCode is pretty poor overall
+impl From<HolochainError> for RibosomeError {
+    fn from(error: HolochainError) -> RibosomeError {
+        // the mapping between HolochainError and RibosomeError is pretty poor overall
         match error {
-            HolochainError::ErrorGeneric(_) => RibosomeErrorCode::Unspecified,
-            HolochainError::CryptoError(_) => RibosomeErrorCode::Unspecified,
-            HolochainError::NotImplemented(_) => RibosomeErrorCode::CallbackFailed,
-            HolochainError::LoggingError => RibosomeErrorCode::Unspecified,
-            HolochainError::DnaMissing => RibosomeErrorCode::Unspecified,
-            HolochainError::Dna(_) => RibosomeErrorCode::Unspecified,
-            HolochainError::IoError(_) => RibosomeErrorCode::Unspecified,
+            HolochainError::ErrorGeneric(_) => RibosomeError::Unspecified,
+            HolochainError::CryptoError(_) => RibosomeError::Unspecified,
+            HolochainError::NotImplemented(_) => RibosomeError::CallbackFailed,
+            HolochainError::LoggingError => RibosomeError::Unspecified,
+            HolochainError::DnaMissing => RibosomeError::Unspecified,
+            HolochainError::Dna(_) => RibosomeError::Unspecified,
+            HolochainError::IoError(_) => RibosomeError::Unspecified,
             HolochainError::SerializationError(_) => {
-                RibosomeErrorCode::ArgumentDeserializationFailed
+                RibosomeError::ArgumentDeserializationFailed
             }
-            HolochainError::InvalidOperationOnSysEntry => RibosomeErrorCode::UnknownEntryType,
-            HolochainError::CapabilityCheckFailed => RibosomeErrorCode::Unspecified,
-            HolochainError::ValidationFailed(_) => RibosomeErrorCode::CallbackFailed,
-            HolochainError::ValidationPending => RibosomeErrorCode::Unspecified,
+            HolochainError::InvalidOperationOnSysEntry => RibosomeError::UnknownEntryType,
+            HolochainError::CapabilityCheckFailed => RibosomeError::Unspecified,
+            HolochainError::ValidationFailed(_) => RibosomeError::CallbackFailed,
+            HolochainError::ValidationPending => RibosomeError::Unspecified,
             HolochainError::Ribosome(e) => e,
-            HolochainError::RibosomeFailed(_) => RibosomeErrorCode::CallbackFailed,
-            HolochainError::ConfigError(_) => RibosomeErrorCode::Unspecified,
-            HolochainError::Timeout => RibosomeErrorCode::Unspecified,
-            HolochainError::InitializationFailed(_) => RibosomeErrorCode::Unspecified,
-            HolochainError::LifecycleError(_) => RibosomeErrorCode::Unspecified,
-            HolochainError::DnaHashMismatch(_, _) => RibosomeErrorCode::Unspecified,
-            HolochainError::EntryNotFoundLocally => RibosomeErrorCode::Unspecified,
-            HolochainError::EntryIsPrivate => RibosomeErrorCode::Unspecified,
-            HolochainError::List(_) => RibosomeErrorCode::Unspecified,
+            HolochainError::RibosomeFailed(_) => RibosomeError::CallbackFailed,
+            HolochainError::ConfigError(_) => RibosomeError::Unspecified,
+            HolochainError::Timeout => RibosomeError::Unspecified,
+            HolochainError::InitializationFailed(_) => RibosomeError::Unspecified,
+            HolochainError::LifecycleError(_) => RibosomeError::Unspecified,
+            HolochainError::DnaHashMismatch(_, _) => RibosomeError::Unspecified,
+            HolochainError::EntryNotFoundLocally => RibosomeError::Unspecified,
+            HolochainError::EntryIsPrivate => RibosomeError::Unspecified,
+            HolochainError::List(_) => RibosomeError::Unspecified,
         }
     }
 }
 
-impl ToString for RibosomeErrorCode {
-    fn to_string(&self) -> String {
-        self.as_str().to_string()
-    }
-}
-
-impl From<RibosomeErrorCode> for String {
-    fn from(ribosome_error_code: RibosomeErrorCode) -> Self {
+impl From<RibosomeError> for String {
+    fn from(ribosome_error_code: RibosomeError) -> Self {
         ribosome_error_code.to_string()
     }
 }
 
-impl RibosomeErrorCode {
+impl RibosomeError {
     pub fn from_code_int(code: RibosomeCodeBits) -> Self {
         match code {
-            0 => panic!(format!("RibosomeErrorCode == {:?} encountered", code)),
+            0 => panic!(format!("RibosomeError == {:?} encountered", code)),
             2 => ArgumentDeserializationFailed,
             3 => OutOfMemory,
             4 => ReceivedWrongActionResult,
@@ -184,18 +90,11 @@ impl RibosomeErrorCode {
             1 | _ => Unspecified,
         }
     }
-
-    pub fn from_return_code(ret_code: RibosomeReturnValue) -> Self {
-        match ret_code {
-            Failure(rib_err) => rib_err,
-            _ => panic!(format!("RibosomeReturnValue == {:?} encountered", ret_code)),
-        }
-    }
 }
 
 // @TODO review this serialization, can it be an i32 instead of a full string?
 // @see https://github.com/holochain/holochain-rust/issues/591
-impl Serialize for RibosomeErrorCode {
+impl Serialize for RibosomeError {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -204,37 +103,37 @@ impl Serialize for RibosomeErrorCode {
     }
 }
 
-impl<'de> Deserialize<'de> for RibosomeErrorCode {
+impl<'de> Deserialize<'de> for RibosomeError {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
-        Ok(RibosomeErrorCode::from_str(&s).expect("could not deserialize RibosomeErrorCode"))
+        Ok(RibosomeError::from_str(&s).expect("could not deserialize RibosomeError"))
     }
 }
 
-impl FromStr for RibosomeErrorCode {
+impl FromStr for RibosomeError {
     type Err = HolochainError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "Unspecified" => Ok(RibosomeErrorCode::Unspecified),
+            "Unspecified" => Ok(RibosomeError::Unspecified),
             "Argument deserialization failed" => {
-                Ok(RibosomeErrorCode::ArgumentDeserializationFailed)
+                Ok(RibosomeError::ArgumentDeserializationFailed)
             }
-            "Out of memory" => Ok(RibosomeErrorCode::OutOfMemory),
-            "Received wrong action result" => Ok(RibosomeErrorCode::ReceivedWrongActionResult),
-            "Callback failed" => Ok(RibosomeErrorCode::CallbackFailed),
-            "Recursive call forbidden" => Ok(RibosomeErrorCode::RecursiveCallForbidden),
-            "Response serialization failed" => Ok(RibosomeErrorCode::ResponseSerializationFailed),
-            "Not an allocation" => Ok(RibosomeErrorCode::NotAnAllocation),
-            "Zero-sized allocation" => Ok(RibosomeErrorCode::ZeroSizedAllocation),
-            "Unknown entry type" => Ok(RibosomeErrorCode::UnknownEntryType),
+            "Out of memory" => Ok(RibosomeError::OutOfMemory),
+            "Received wrong action result" => Ok(RibosomeError::ReceivedWrongActionResult),
+            "Callback failed" => Ok(RibosomeError::CallbackFailed),
+            "Recursive call forbidden" => Ok(RibosomeError::RecursiveCallForbidden),
+            "Response serialization failed" => Ok(RibosomeError::ResponseSerializationFailed),
+            "Not an allocation" => Ok(RibosomeError::NotAnAllocation),
+            "Zero-sized allocation" => Ok(RibosomeError::ZeroSizedAllocation),
+            "Unknown entry type" => Ok(RibosomeError::UnknownEntryType),
             "Entry Could Not Be Found" => Ok(EntryNotFound),
             "Workflow failed" => Ok(WorkflowFailed),
             _ => Err(HolochainError::ErrorGeneric(String::from(
-                "Unknown RibosomeErrorCode",
+                "Unknown RibosomeError",
             ))),
         }
     }
@@ -246,11 +145,11 @@ pub mod tests {
 
     #[test]
     fn ribosome_error_code_round_trip() {
-        let oom = RibosomeErrorCode::from_code_int(
-            ((RibosomeErrorCode::OutOfMemory as u64) >> 32) as RibosomeCodeBits,
+        let oom = RibosomeError::from_code_int(
+            ((RibosomeError::OutOfMemory as u64) >> 32) as RibosomeCodeBits,
         );
-        assert_eq!(RibosomeErrorCode::OutOfMemory, oom);
-        assert_eq!(RibosomeErrorCode::OutOfMemory.to_string(), oom.to_string());
+        assert_eq!(RibosomeError::OutOfMemory, oom);
+        assert_eq!(RibosomeError::OutOfMemory.to_string(), oom.to_string());
     }
 
     #[test]
@@ -258,7 +157,7 @@ pub mod tests {
         // TODO could use strum crate to iteratively
         // gather all known codes.
         for code in 1..=13 {
-            let mut err = RibosomeErrorCode::from_code_int(code);
+            let mut err = RibosomeError::from_code_int(code);
 
             let err_str = err.as_str().to_owned();
 
@@ -274,6 +173,6 @@ pub mod tests {
     #[test]
     #[should_panic]
     fn code_zero() {
-        RibosomeErrorCode::from_code_int(0);
+        RibosomeError::from_code_int(0);
     }
 }

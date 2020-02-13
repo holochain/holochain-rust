@@ -16,7 +16,7 @@ pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Rib
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Option<RuntimeValue>> {
     let entry_type = EntryType::from_str(&entry_type_name).map_err(|_| {
-        holochain_core_types::error::RibosomeErrorCode::UnknownEntryType as RibosomeRuntimeBits
+        holochain_core_types::error::RibosomeError::UnknownEntryType as RibosomeRuntimeBits
     })?;
 
     // Check if AppEntry is a valid AppEntryType
@@ -24,7 +24,7 @@ pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Opt
         let result = dna.get_entry_type_def(entry_type_name);
         if result.is_none() {
             return Err(
-                holochain_core_types::error::RibosomeErrorCode::UnknownEntryType
+                holochain_core_types::error::RibosomeError::UnknownEntryType
                     as RibosomeRuntimeBits,
             );
         }

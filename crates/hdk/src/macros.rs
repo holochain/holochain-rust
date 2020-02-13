@@ -11,7 +11,9 @@ macro_rules! args {
             Ok(v) => v,
             Err(_) => {
                 holochain_wasmer_guest::allocation::deallocate_from_allocation_ptr($ptr);
-                return json::to_allocation_ptr(ZomeApiError::Internal("failed to parse function args".into()).into());
+                return json::to_allocation_ptr(
+                    ZomeApiError::Internal("failed to parse function args".into()).into(),
+                );
             }
         };
         val
@@ -21,16 +23,18 @@ macro_rules! args {
 #[macro_export]
 macro_rules! ret {
     ( $e: expr) => {
-        return json::to_allocation_ptr(($e).into());
+        // enforce that everything be a ribosome result
+        let ret: RibosomeResult = $e;
+        return json::to_allocation_ptr(ret.into());
     };
 }
 
 #[macro_export]
 macro_rules! try_result {
-    ( $e:expr ) => {
+    ( $e:expr, $fail:literal ) => {
         match $e {
-            Ok(v) => v,
-            Err(e) => ret!(Err(e)),
+            Ok(v) => RibosomeResult::Value(v.into()),
+            Err(e) => RibosomeResult::Error(RibosomeError::Zome($fail))),
         }
     };
 }
@@ -40,7 +44,9 @@ macro_rules! try_option {
     ( $e:expr, $fail:literal ) => {
         match $e {
             Some(v) => v,
-            None => ret!(JsonString::from(holochain_json_api::json::RawString::from($fail))),
+            None => ret!(RibosomeError::Zome(
+                $fail
+            )),
         }
     };
 }

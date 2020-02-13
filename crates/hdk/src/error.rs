@@ -1,6 +1,6 @@
 //! This file contains defitions for Zome errors and also Zome Results.
 
-use crate::holochain_core_types::error::{HolochainError, RibosomeErrorCode};
+use crate::holochain_core_types::error::{HolochainError, RibosomeError};
 
 use crate::holochain_persistence_api::error::PersistenceError;
 use holochain_json_api::{error::JsonError, json::JsonString};
@@ -73,8 +73,8 @@ impl From<String> for ZomeApiError {
     }
 }
 
-impl From<RibosomeErrorCode> for ZomeApiError {
-    fn from(ribosome_error_code: RibosomeErrorCode) -> ZomeApiError {
+impl From<RibosomeError> for ZomeApiError {
+    fn from(ribosome_error_code: RibosomeError) -> ZomeApiError {
         ZomeApiError::from(ribosome_error_code.to_string())
     }
 }

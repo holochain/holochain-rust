@@ -9,19 +9,21 @@ use holochain_core_types::{
         zome::{ZomeEntryTypes, ZomeFnDeclarations, ZomeTraits},
     },
     entry::entry_type::{AppEntryType, EntryType},
-    error::RibosomeReturnValue,
 };
 use holochain_json_derive::DefaultJson;
 use serde_derive::{Deserialize, Serialize};
 
-use holochain_json_api::{error::JsonError, json::{JsonString, RawString}};
+use holochain_json_api::{
+    error::JsonError,
+    json::{JsonString, RawString},
+};
 
 use crate::prelude::*;
 use holochain_wasm_utils::{
     api_serialization::validation::{
         AgentIdValidationArgs, EntryValidationArgs, LinkValidationArgs, LinkValidationPackageArgs,
     },
-    holochain_core_types::error::RibosomeErrorCode,
+    holochain_core_types::error::RibosomeError,
 };
 use holochain_wasmer_guest::*;
 use std::{collections::BTreeMap, convert::TryFrom};
@@ -84,17 +86,17 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
 ) -> AllocationPtr {
     let name = args!(host_allocation_ptr, String);
 
-    ret!(match zome_definition()
+    match zome_definition()
         .entry_types
         .into_iter()
         .find(|ref validating_entry_type| {
             validating_entry_type.name == EntryType::App(AppEntryType::from(name.clone()))
         }) {
-        None => RibosomeReturnValue::Failure(RibosomeErrorCode::CallbackFailed),
         Some(mut entry_type_definition) => {
-            (*entry_type_definition.package_creator)()
+            ret!((*entry_type_definition.package_creator)())
         }
-    });
+        None => ret!(RibosomeError::CallbackFailed),
+    };
 }
 
 #[no_mangle]
@@ -104,16 +106,19 @@ pub extern "C" fn __hdk_validate_app_entry(host_allocation_ptr: AllocationPtr) -
 
     let entry_type = try_result!(EntryType::try_from(input.validation_data.clone()));
 
-    ret!(match zome_definition()
+    match zome_definition()
         .entry_types
         .into_iter()
         .find(|ref validating_entry_type| validating_entry_type.name == entry_type)
     {
-        None => RibosomeErrorCode::CallbackFailed,
+        None => ret!(RibosomeError::CallbackFailed),
         Some(mut entry_type_definition) => {
-            try_result!((*entry_type_definition.validator)(input.validation_data));
+            match (*entry_type_definition.validator)(input.validation_data) {
+                Ok(()) => ret!(Ok(())),
+                Err(fail_string) => ret!(Err(RawString::from(fail_string))),
+            }
         }
-    })
+    }
 }
 
 #[no_mangle]
@@ -177,7 +182,9 @@ pub extern "C" fn __hdk_validate_link(host_allocation_ptr: AllocationPtr) -> All
 
 #[no_mangle]
 pub extern "C" fn __hdk_hdk_version(_: AllocationPtr) -> AllocationPtr {
-    ret!(RawString::from(holochain_core_types::hdk_version::HDK_VERSION.to_string()))
+    ret!(RawString::from(
+        holochain_core_types::hdk_version::HDK_VERSION.to_string()
+    ))
 }
 
 #[no_mangle]

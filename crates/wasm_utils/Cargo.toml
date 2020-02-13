@@ -12,9 +12,9 @@ serde = "=1.0.104"
 serde_derive = "=1.0.104"
 serde_json = { version = "=1.0.47", features = ["preserve_order"] }
 holochain_core_types = { version = "=0.0.43-alpha3", path = "../core_types" }
-holochain_json_derive = "=0.0.22"
-holochain_persistence_api = "=0.0.16"
-holochain_json_api = "=0.0.22"
+holochain_json_derive = "=0.0.23"
+holochain_persistence_api = "=0.0.17"
+holochain_json_api = "=0.0.23"
 
 [dev-dependencies]
 test_utils = { version = "=0.0.43-alpha3", path = "../../test_utils" }

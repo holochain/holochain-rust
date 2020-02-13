@@ -1,9 +1,16 @@
+#[autotrace]
 pub mod custom_send;
+#[autotrace]
 pub mod get_validation_package;
+#[autotrace]
 pub mod initialize_network;
+#[autotrace]
 pub mod publish;
+#[autotrace]
 pub mod publish_header_entry;
+#[autotrace]
 pub mod query;
+#[autotrace]
 pub mod shutdown;
 
 use crate::state::ActionResponse;

@@ -18,8 +18,8 @@ holochain_dpki = { version = "=0.0.43-alpha3", path = "../crates/dpki" }
 holochain_wasm_utils = { version = "=0.0.43-alpha3", path = "../crates/wasm_utils" }
 holochain_locksmith = { version = "=0.0.43-alpha3", path = "../crates/locksmith" }
 holochain_persistence_api = "=0.0.16"
-holochain_json_api = "=0.0.22"
-holochain_json_derive = "=0.0.22"
+holochain_json_api = "=0.0.23"
+holochain_json_derive = "=0.0.23"
 lib3h_sodium = "=0.0.37"
 wabt = "=0.7.4"
 tempfile = "=3.0.7"

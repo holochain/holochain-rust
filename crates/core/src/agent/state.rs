@@ -40,6 +40,7 @@ pub struct AgentState {
     initial_agent_address: Address,
 }
 
+#[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl AgentState {
     /// builds a new, empty AgentState
@@ -235,7 +236,7 @@ pub fn create_entry_with_header_for_header(
     root_state: &StateWrapper,
     chain_header: ChainHeader,
 ) -> Result<EntryWithHeader, HolochainError> {
-    let timestamp = chain_header.timestamp().clone();
+    let timestamp = *chain_header.timestamp();
     let entry = Entry::ChainHeader(chain_header);
     // This header entry needs its own header so we can publish it.
     // This is a bit delicate:

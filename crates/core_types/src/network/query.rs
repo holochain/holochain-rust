@@ -1,4 +1,7 @@
-use crate::{chain_header::ChainHeader, crud_status::CrudStatus, entry::EntryWithMetaAndHeader};
+use crate::{
+    chain_header::ChainHeader, crud_status::CrudStatus, entry::EntryWithMetaAndHeader,
+    time::Iso8601,
+};
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::{cas::content::Address, eav::Value};
 
@@ -16,10 +19,20 @@ impl Default for SortOrder {
     }
 }
 
+#[derive(Deserialize, Debug, Serialize, Clone, PartialEq, Eq, Hash, DefaultJson)]
+pub struct TimePagination {
+    pub from_time: Iso8601,
+    pub limit: usize,
+}
 #[derive(Deserialize, Default, Debug, Serialize, Clone, PartialEq, Eq, Hash, DefaultJson)]
-pub struct Pagination {
+pub struct SizePagination {
     pub page_number: usize,
     pub page_size: usize,
+}
+#[derive(Deserialize, Debug, Serialize, Clone, PartialEq, Eq, Hash, DefaultJson)]
+pub enum Pagination {
+    Size(SizePagination),
+    Time(TimePagination),
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone, Default)]

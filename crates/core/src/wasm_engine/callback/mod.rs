@@ -188,6 +188,7 @@ pub(crate) fn run_callback(context: Arc<Context>, call: CallbackFnCall) -> Callb
     }
 }
 
+#[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn call(
     context: Arc<Context>,

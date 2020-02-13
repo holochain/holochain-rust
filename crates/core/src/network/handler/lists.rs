@@ -19,6 +19,7 @@ use lib3h_protocol::{
 };
 use std::sync::Arc;
 
+#[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Context>) {
     let c = context.clone();

@@ -48,6 +48,30 @@ pub fn invoke_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> ZomeApiResul
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
+    // deserialize args
+    let args_str = runtime.load_json_string_from_args(&args);
+
+    let input = match ZomeFnCallArgs::try_from(args_str.clone()) {
+        Ok(input) => input,
+        // Exit on error
+        Err(_) => {
+            log_error!(
+                context,
+                "zome: invoke_call failed to deserialize: {:?}",
+                args_str
+            );
+            return ribosome_error_code!(ArgumentDeserializationFailed);
+        }
+    };
+
+    let span = context
+        .tracer
+        .span("hdk invoke_call")
+        .tag(ht::Tag::new("ZomeFnCallArgs", format!("{:?}", input)))
+        .start()
+        .into();
+    let _spanguard = ht::push_span(span);
+
     let result = if input.instance_handle == THIS_INSTANCE {
         // ZomeFnCallArgs to ZomeFnCall
         let zome_call = ZomeFnCall::from_args(context.clone(), input.clone());
@@ -72,6 +96,7 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     runtime.store_result(result)
 }
 
+#[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
     let context = runtime.context().map_err(|_| {
@@ -92,6 +117,7 @@ fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString
     result
 }
 
+#[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
     let context = runtime.context().map_err(|_| {

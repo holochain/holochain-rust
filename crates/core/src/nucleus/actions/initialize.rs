@@ -51,6 +51,7 @@ const INITIALIZATION_TIMEOUT: u64 = 60;
 /// the Dna error or errors from the init callback.
 ///
 /// Use futures::executor::block_on to wait for an initialized instance.
+#[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn initialize_chain(
     dna: Dna,
@@ -75,7 +76,7 @@ pub async fn initialize_chain(
     fn dispatch_error_result(context: &Arc<Context>, err: HolochainError) {
         context
             .action_channel()
-            .send(ActionWrapper::new(Action::ReturnInitializationResult(Err(
+            .send_wrapped(ActionWrapper::new(Action::ReturnInitializationResult(Err(
                 err.to_string(),
             ))))
             .expect("Action channel not usable in initialize_chain()");
@@ -174,7 +175,7 @@ pub async fn initialize_chain(
 
     context_clone
         .action_channel()
-        .send(ActionWrapper::new(Action::ReturnInitializationResult(
+        .send_wrapped(ActionWrapper::new(Action::ReturnInitializationResult(
             initialization_result,
         )))
         .expect("Action channel not usable in initialize_chain()");

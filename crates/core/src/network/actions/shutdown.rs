@@ -1,9 +1,9 @@
 use crate::{
     action::{Action, ActionWrapper},
+    context::ActionSender,
     instance::dispatch_action,
     NEW_RELIC_LICENSE_KEY,
 };
-use crossbeam_channel::Sender;
 use futures::{future::Future, task::Poll};
 use holochain_core_types::error::{HcResult, HolochainError};
 use holochain_locksmith::RwLock;
@@ -17,11 +17,11 @@ use std::{pin::Pin, sync::Arc};
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn shutdown(
     state: Arc<RwLock<StateWrapper>>,
-    action_channel: Sender<ActionWrapper>,
+    action_channel: &ActionSender,
 ) -> HcResult<()> {
     if state.read().unwrap().network().initialized().is_ok() {
         let action_wrapper = ActionWrapper::new(Action::ShutdownNetwork);
-        dispatch_action(&action_channel, action_wrapper.clone());
+        dispatch_action(action_channel, action_wrapper.clone());
         ShutdownFuture { state }.await
     } else {
         Err(HolochainError::ErrorGeneric(

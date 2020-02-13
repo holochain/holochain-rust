@@ -341,29 +341,35 @@ pub mod tests {
     }
 
     /// dummy action wrapper with test_action()
-    pub fn test_action_wrapper() -> ActionWrapper {
-        ActionWrapper::new(test_action())
+    pub fn test_action_wrapper() -> ht::SpanWrap<ActionWrapper> {
+        ht::noop("test-noop".into()).wrap(ActionWrapper::new(test_action()))
     }
 
     /// dummy action wrapper with commit of test_entry()
-    pub fn test_action_wrapper_commit() -> ActionWrapper {
-        ActionWrapper::new(Action::Commit((test_entry(), None, vec![])))
+    pub fn test_action_wrapper_commit() -> ht::SpanWrap<ActionWrapper> {
+        ht::noop("test-noop".into()).wrap(ActionWrapper::new(Action::Commit((
+            test_entry(),
+            None,
+            vec![],
+        ))))
     }
 
     /// dummy action for a get of test_hash()
-    pub fn test_action_wrapper_get() -> ActionWrapper {
-        ActionWrapper::new(Action::Query((
+    pub fn test_action_wrapper_get() -> ht::SpanWrap<ActionWrapper> {
+        ht::noop("test-noop".into()).wrap(ActionWrapper::new(Action::Query((
             QueryKey::Entry(GetEntryKey {
                 address: expected_entry_address(),
                 id: snowflake::ProcessUniqueId::new().to_string(),
             }),
             QueryPayload::Entry,
             None,
-        )))
+        ))))
     }
 
-    pub fn test_action_wrapper_rzfr() -> ActionWrapper {
-        ActionWrapper::new(Action::ReturnZomeFunctionResult(test_call_response()))
+    pub fn test_action_wrapper_rzfr() -> ht::SpanWrap<ActionWrapper> {
+        ht::noop("test-noop".into()).wrap(ActionWrapper::new(Action::ReturnZomeFunctionResult(
+            test_call_response(),
+        )))
     }
 
     #[test]
@@ -383,8 +389,8 @@ pub mod tests {
         let aw2 = test_action_wrapper();
 
         // snowflake enforces uniqueness
-        assert_eq!(aw1, aw1);
-        assert_ne!(aw1, aw2);
+        assert_eq!(aw1.data, aw1.data);
+        assert_ne!(aw1.data, aw2.data);
     }
 
     #[test]
@@ -414,6 +420,6 @@ pub mod tests {
         let aw1 = test_action_wrapper();
         let aw2 = test_action_wrapper();
 
-        assert_ne!(calculate_hash(&aw1), calculate_hash(&aw2));
+        assert_ne!(calculate_hash(&aw1.data), calculate_hash(&aw2.data));
     }
 }

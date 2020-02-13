@@ -106,7 +106,6 @@ pub mod test {
     use holochain_locksmith::RwLock;
     use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
-    use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_tracing as ht;
     use serde_json::json;
     use std::sync::Arc;

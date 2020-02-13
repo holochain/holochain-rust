@@ -178,7 +178,7 @@ impl Context {
         agent_id: AgentId,
         persister: Arc<RwLock<dyn Persister>>,
         persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>>,
-        action_channel: Option<Sender<ActionWrapper>>,
+        action_channel: Option<ActionSender>,
         signal_tx: Option<Sender<Signal>>,
         observer_channel: Option<Sender<Observer>>,
         p2p_config: P2pConfig,

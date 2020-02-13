@@ -14,7 +14,7 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
     network::{
         entry_aspect::EntryAspect,
-        query::{GetLinksQueryConfiguration, SortOrder},
+        query::{GetLinksQueryConfiguration, Pagination, SortOrder},
     },
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
@@ -29,6 +29,7 @@ use holochain_persistence_api::{
 use regex::Regex;
 
 use crate::{dht::pending_validations::PendingValidation, state::StateWrapper};
+use chrono::{offset::FixedOffset, DateTime};
 use holochain_json_api::error::JsonResult;
 use holochain_persistence_api::error::PersistenceResult;
 use std::{
@@ -176,18 +177,31 @@ impl DhtStore {
                 SortOrder::Ascending => Box::new(filtered.into_iter()),
                 SortOrder::Descending => Box::new(filtered.into_iter().rev()),
             };
-        Ok(filter_with_sort_order
-            .skip(
-                pagination
-                    .clone()
-                    .map(|page| page.page_size * page.page_number)
-                    .unwrap_or(0),
-            )
-            .take(
-                pagination
-                    .map(|page| page.page_size)
-                    .unwrap_or(std::usize::MAX),
-            )
+        let filter_with_pagination: Box<dyn Iterator<Item = EntityAttributeValueIndex>> =
+            match pagination {
+                Some(paginate) => match paginate {
+                    Pagination::Time(time_pagination) => {
+                        let paginated_time = time_pagination.clone();
+                        Box::new(
+                            filter_with_sort_order
+                                .skip_while(move |eavi| {
+                                    let from_time: DateTime<FixedOffset> =
+                                        paginated_time.from_time.into();
+                                    from_time.timestamp_nanos() >= eavi.index()
+                                })
+                                .take(time_pagination.limit),
+                        )
+                    }
+                    Pagination::Size(size_pagination) => Box::new(
+                        filter_with_sort_order
+                            .skip(size_pagination.page_size * size_pagination.page_number)
+                            .take(size_pagination.page_size),
+                    ),
+                },
+                None => filter_with_sort_order,
+            };
+
+        Ok(filter_with_pagination
             .map(|s| match s.attribute() {
                 Attribute::LinkTag(_, _) => (s, CrudStatus::Live),
                 _ => (s, CrudStatus::Deleted),

@@ -18,7 +18,7 @@ holochain_wasm_utils = { version = "=0.0.43-alpha3", path = "../wasm_utils" }
 holochain_core_types = { version = "=0.0.43-alpha3", path = "../core_types" }
 holochain_json_api = "=0.0.23"
 holochain_json_derive = "=0.0.23"
-holochain_persistence_api = "=0.0.16"
+holochain_persistence_api = "=0.0.17"
 pretty_assertions = "=0.6.1"
 env_logger = "=0.6.1"
 url = "=2.1.0"

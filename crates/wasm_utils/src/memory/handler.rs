@@ -1,4 +1,4 @@
-use crate::memory::{allocation::AllocationResult};
+use crate::memory::allocation::AllocationResult;
 use holochain_json_api::json::JsonString;
 use memory::{
     allocation::{AllocationError, WasmAllocation},

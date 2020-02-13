@@ -2,18 +2,20 @@
 
 #[macro_export]
 macro_rules! args {
-    ( $ptr:ident, $type:ty ) => {
+    ( $ptr:ident, $type:ty ) => {{
+        let val: $type = match holochain_wasmer_guest::json::from_allocation_ptr(
+            holochain_wasmer_guest::map_bytes($ptr),
+        )
+        .try_into()
         {
-            let val: $type = match holochain_wasmer_guest::json::from_allocation_ptr(holochain_wasmer_guest::map_bytes($ptr)).try_into() {
-                Ok(v) => v,
-                Err(e) => {
-                    holochain_wasmer_guest::allocation::deallocate_from_allocation_ptr($ptr);
-                    return json::to_allocation_ptr(Err(e).into());
-                },
-            };
-            val
-        }
-    };
+            Ok(v) => v,
+            Err(_) => {
+                holochain_wasmer_guest::allocation::deallocate_from_allocation_ptr($ptr);
+                return json::to_allocation_ptr(ZomeApiError::Internal("failed to parse function args".into()).into());
+            }
+        };
+        val
+    }};
 }
 
 #[macro_export]
@@ -38,7 +40,7 @@ macro_rules! try_option {
     ( $e:expr, $fail:literal ) => {
         match $e {
             Some(v) => v,
-            None => ret!(JsonString::from(String::from($fail))),
+            None => ret!(JsonString::from(holochain_json_api::json::RawString::from($fail))),
         }
     };
 }

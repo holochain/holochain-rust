@@ -2,31 +2,29 @@
 //! but not every developer should have to write them. A notable function defined here is
 //! __hdk_get_json_definition which allows Holochain to retrieve JSON defining the Zome.
 
-use crate::{
-    entry_definition::{AgentValidator, ValidatingEntryType},
-};
+use crate::entry_definition::{AgentValidator, ValidatingEntryType};
 use holochain_core_types::{
     dna::{
         entry_types::{deserialize_entry_types, serialize_entry_types},
         zome::{ZomeEntryTypes, ZomeFnDeclarations, ZomeTraits},
     },
     entry::entry_type::{AppEntryType, EntryType},
-    error::{RibosomeReturnValue},
+    error::RibosomeReturnValue,
 };
 use holochain_json_derive::DefaultJson;
 use serde_derive::{Deserialize, Serialize};
 
-use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_json_api::{error::JsonError, json::{JsonString, RawString}};
 
+use crate::prelude::*;
 use holochain_wasm_utils::{
     api_serialization::validation::{
         AgentIdValidationArgs, EntryValidationArgs, LinkValidationArgs, LinkValidationPackageArgs,
     },
     holochain_core_types::error::RibosomeErrorCode,
 };
-use std::{collections::BTreeMap, convert::TryFrom};
 use holochain_wasmer_guest::*;
-use crate::prelude::*;
+use std::{collections::BTreeMap, convert::TryFrom};
 
 trait Ribosome {
     fn define_entry_type(&mut self, name: String, entry_type: ValidatingEntryType);
@@ -82,7 +80,7 @@ fn zome_definition() -> ZomeDefinition {
 
 #[no_mangle]
 pub extern "C" fn __hdk_get_validation_package_for_entry_type(
-    host_allocation_ptr: AllocationPtr
+    host_allocation_ptr: AllocationPtr,
 ) -> AllocationPtr {
     let name = args!(host_allocation_ptr, String);
 
@@ -92,7 +90,7 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
         .find(|ref validating_entry_type| {
             validating_entry_type.name == EntryType::App(AppEntryType::from(name.clone()))
         }) {
-        None => RibosomeReturnValue::Failure(RibosomeErrorCode::CallbackFailed).into(),
+        None => RibosomeReturnValue::Failure(RibosomeErrorCode::CallbackFailed),
         Some(mut entry_type_definition) => {
             (*entry_type_definition.package_creator)()
         }
@@ -100,9 +98,7 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
 }
 
 #[no_mangle]
-pub extern "C" fn __hdk_validate_app_entry(
-    host_allocation_ptr: AllocationPtr,
-) -> AllocationPtr {
+pub extern "C" fn __hdk_validate_app_entry(host_allocation_ptr: AllocationPtr) -> AllocationPtr {
     // Deserialize input
     let input = args!(host_allocation_ptr, EntryValidationArgs);
 
@@ -121,13 +117,14 @@ pub extern "C" fn __hdk_validate_app_entry(
 }
 
 #[no_mangle]
-pub extern "C" fn __hdk_validate_agent_entry(
-    host_allocation_ptr: AllocationPtr,
-) -> AllocationPtr {
+pub extern "C" fn __hdk_validate_agent_entry(host_allocation_ptr: AllocationPtr) -> AllocationPtr {
     let input = args!(host_allocation_ptr, AgentIdValidationArgs);
 
     //get the validator code
-    let mut validator = try_option!(zome_definition().agent_entry_validator, "No agent validation callback registered for zome.");
+    let mut validator = try_option!(
+        zome_definition().agent_entry_validator,
+        "No agent validation callback registered for zome."
+    );
 
     ret!((*validator)(input.validation_data));
 }
@@ -136,35 +133,29 @@ pub extern "C" fn __hdk_validate_agent_entry(
 pub extern "C" fn __hdk_get_validation_package_for_link(
     host_allocation_ptr: AllocationPtr,
 ) -> AllocationPtr {
-
     let input = args!(host_allocation_ptr, LinkValidationPackageArgs);
 
-    ret!(
-        zome_definition().entry_types
-            .into_iter()
-            .find(|ref validation_entry_type| {
-                validation_entry_type.name == EntryType::from(input.entry_type.clone())
+    ret!(zome_definition()
+        .entry_types
+        .into_iter()
+        .find(|ref validation_entry_type| {
+            validation_entry_type.name == EntryType::from(input.entry_type.clone())
+        })
+        .and_then(|entry_type| {
+            entry_type.links.into_iter().find(|ref link_definition| {
+                link_definition.link_type == input.link_type
+                    && link_definition.direction == input.direction
             })
-            .and_then(|entry_type| {
-                entry_type.links.into_iter().find(|ref link_definition| {
-                    link_definition.link_type == input.link_type
-                        && link_definition.direction == input.direction
-                })
-            })
-            .and_then(|mut link_definition| {
-                Some((*link_definition.package_creator)())
-            })
-    );
+        })
+        .and_then(|mut link_definition| { Some((*link_definition.package_creator)()) }));
 }
 
 #[no_mangle]
-pub extern "C" fn __hdk_validate_link(
-    host_allocation_ptr: AllocationPtr,
-) -> AllocationPtr {
+pub extern "C" fn __hdk_validate_link(host_allocation_ptr: AllocationPtr) -> AllocationPtr {
     let input = args!(host_allocation_ptr, LinkValidationArgs);
 
-    ret!(
-    zome_definition().entry_types
+    ret!(zome_definition()
+        .entry_types
         .into_iter()
         .find(|ref validation_entry_type| {
             validation_entry_type.name == EntryType::from(input.entry_type.clone())
@@ -186,16 +177,11 @@ pub extern "C" fn __hdk_validate_link(
 
 #[no_mangle]
 pub extern "C" fn __hdk_hdk_version(_: AllocationPtr) -> AllocationPtr {
-    ret!(
-            holochain_core_types::hdk_version::HDK_VERSION
-                .to_string()
-    )
+    ret!(RawString::from(holochain_core_types::hdk_version::HDK_VERSION.to_string()))
 }
 
 #[no_mangle]
-pub extern "C" fn __hdk_get_json_definition(
-    host_allocation_ptr: AllocationPtr,
-) -> AllocationPtr {
+pub extern "C" fn __hdk_get_json_definition(host_allocation_ptr: AllocationPtr) -> AllocationPtr {
     let mut entry_types = BTreeMap::new();
     for validating_entry_type in zome_definition().entry_types {
         entry_types.insert(

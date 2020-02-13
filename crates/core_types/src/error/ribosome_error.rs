@@ -1,9 +1,9 @@
 use self::{RibosomeErrorCode::*, RibosomeReturnValue::*};
 use crate::error::HolochainError;
 use holochain_json_api::{error::JsonError, json::JsonString};
+use holochain_wasmer_common::AllocationPtr;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{convert::TryFrom, str::FromStr};
-use holochain_wasmer_common::AllocationPtr;
 
 /// size of the integer that represents a ribosome code
 pub type RibosomeCodeBits = u32;

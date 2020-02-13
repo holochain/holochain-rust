@@ -6,14 +6,9 @@ use holochain_json_api::json::{default_to_json, JsonString, RawString};
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use lazy_static::lazy_static;
 
-use holochain_core_types::{
-    dna::capabilities::CapabilityRequest,
-    error::{ZomeApiInternalResult},
-};
+use holochain_core_types::{dna::capabilities::CapabilityRequest, error::ZomeApiInternalResult};
 pub use holochain_wasm_utils::api_serialization::validation::*;
-use holochain_wasm_utils::{
-    api_serialization::ZomeApiGlobals,
-};
+use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
 
 use crate::init_globals::init_globals;
 use std::convert::{TryFrom, TryInto};
@@ -71,10 +66,7 @@ pub use self::{
     update_remove::{remove_entry, update_agent, update_entry},
     version::{version, version_hash},
 };
-use holochain_wasmer_guest::json;
-use holochain_wasmer_guest::allocation;
-use holochain_wasmer_guest::*;
-use crate::args;
+use holochain_wasmer_guest::{allocation, json, *};
 
 macro_rules! def_api_fns {
     (
@@ -99,7 +91,7 @@ macro_rules! def_api_fns {
                 &self,
                 input: I,
             ) -> ZomeApiResult<O> {
-                let json: JsonString = input.try_into()?;
+                let json: JsonString = input.try_into().map_err(|e| ZomeApiError::Internal("failed to create JSON".into()))?;
                 let guest_allocation_ptr: AllocationPtr = json::to_allocation_ptr(json);
 
                 // Call Ribosome's function
@@ -109,8 +101,24 @@ macro_rules! def_api_fns {
                     })(guest_allocation_ptr)
                 };
 
+                // deallocate the input to the already-dispatched call
                 allocation::deallocate_from_allocation_ptr(guest_allocation_ptr);
-                let result = args!(host_allocation_ptr, ZomeApiInternalResult);
+
+                // this is very similar to args! but produces a result rather than returning
+                // immediately with a pointer
+                let result: ZomeApiInternalResult = match json::from_allocation_ptr(
+                            map_bytes(host_allocation_ptr),
+                        )
+                        .try_into()
+                        {
+                            Ok(v) => v,
+                            Err(e) => {
+                                ZomeApiInternalResult::failure(e)
+                            }
+                        };
+
+                // deallocate the host allocation for the json we (hopefully) just parsed
+                allocation::deallocate_from_allocation_ptr(host_allocation_ptr);
 
                 // Done
                 if result.ok {

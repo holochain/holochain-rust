@@ -3,11 +3,12 @@
 //! by simply adding use hdk::prelude::*;
 
 // macros
-pub use crate::{define_zome, entry, from, link, args, try_result, try_option, ret, to};
+pub use crate::{args, define_zome, entry, from, link, ret, to, try_option, try_result};
 
 // derive macros
 pub use holochain_json_derive::DefaultJson;
 pub use serde_derive::{Deserialize, Serialize};
+pub use std::convert::TryInto;
 
 // types
 pub use crate::{

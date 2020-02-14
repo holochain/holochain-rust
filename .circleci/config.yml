@@ -30,6 +30,13 @@ jobs:
       command: nix-shell --run hc-rust-test
       no_output_timeout: 20m
 
+ code-coverage:
+  machine: true
+  resource_class: xlarge
+  steps:
+   - checkout
+   - run: docker run --env CODECOV_TOKEN --rm --security-opt seccomp=unconfined -v $(pwd):/project holochain/holochain-rust:circle.build.develop sh -c "cd /project && nix-shell --run hc-rust-coverage-kcov"
+
  fmt:
   docker:
    - image: holochain/holochain-rust:circle.fmt.develop
@@ -248,6 +255,14 @@ workflows:
    - stress-tests-sim2h
    - cli-tests
    - wasm-conductor-tests
+
+   - code-coverage:
+      filters:
+       branches:
+        only:
+         - develop
+         - test-kcov
+         # NOTE - add your branche here if working on coverage
 
    - docker-build-minimal:
       filters:

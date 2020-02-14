@@ -1292,12 +1292,18 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
     let agents_needing_gossip = sim2h_handle.state().check_gossip().await.spaces();
 
     if agents_needing_gossip.is_empty() {
-        debug!("sim2h gossip space {:?} no agents needing gossip", space_hash);
+        debug!(
+            "sim2h gossip space {:?} no agents needing gossip",
+            space_hash
+        );
     }
 
     for (space_hash, agents) in agents_needing_gossip.iter() {
-        trace!("sim2h gossip agent count: {} in space {:?}", agents.len(), space_hash);
-
+        trace!(
+            "sim2h gossip agent count: {} in space {:?}",
+            agents.len(),
+            space_hash
+        );
 
         for agent_id in agents {
             // explicitly yield here as we don't want to hog the scheduler

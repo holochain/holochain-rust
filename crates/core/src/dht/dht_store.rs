@@ -171,6 +171,7 @@ impl DhtStore {
     ) -> Result<Vec<(EntityAttributeValueIndex, CrudStatus)>, HolochainError> {
         let get_links_query = create_get_links_eavi_query(address, link_type, tag)?;
         let filtered = self.meta_storage.read()?.fetch_eavi(&get_links_query)?;
+        println!("filtered eavi_query {:?}",filtered.clone());
         let pagination = configuration.pagination;
         let filter_with_sort_order: Box<dyn Iterator<Item = EntityAttributeValueIndex>> =
             match configuration.sort_order.unwrap_or_default() {

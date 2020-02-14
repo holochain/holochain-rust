@@ -169,7 +169,7 @@ module.exports = scenario => {
       t.equal(3, alice_posts_time_2.Ok.links.length)
   })
 
-  scenario.only('get_links_crud', async (s, t) => {
+  scenario('get_links_crud', async (s, t) => {
     const { alice, bob } = await s.players({ alice: one, bob: one }, true)
 
     // commits an entry and creates two links for alice

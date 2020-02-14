@@ -71,7 +71,19 @@ pub(crate) fn reduce_add_remove_link_inner(
             address,
             link_created_time.timestamp_nanos(),
         )?;
+        println!("before add {:?}",store.fetch_eavi(&EaviQuery::new(
+            Some(address.clone()).into(),
+            None.into(),
+            None.into(),
+            IndexFilter::LatestByAttribute,
+            None.into())));
         store.add_eavi(&eav)?;
+        println!("after add {:?}",store.fetch_eavi(&EaviQuery::new(
+            Some(address.clone()).into(),
+            None.into(),
+            None.into(),
+            IndexFilter::LatestByAttribute,
+            None.into())));
         Ok(link.link().base().clone())
     } else {
         Err(HolochainError::ErrorGeneric(String::from(

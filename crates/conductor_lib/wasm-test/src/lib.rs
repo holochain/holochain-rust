@@ -9,7 +9,7 @@ extern crate serde_json;
 use holochain_core_types::{
     entry::Entry,
     error::{
-        RibosomeReturnValue, WasmAllocationInt, RibosomeRuntimeBits,
+        RibosomeReturnValue, AllocationPtr, RibosomeRuntimeBits,
         ZomeApiInternalResult,
     },
     signature::Provenance
@@ -31,7 +31,7 @@ use std::convert::TryInto;
 //-------------------------------------------------------------------------------------------------
 
 extern "C" {
-    fn hc_debug(input_allocation_int: WasmAllocationInt) -> WasmAllocationInt;
+    fn hc_debug(host_allocation_ptr: AllocationPtr) -> AllocationPtr;
 }
 
 /// Call HC API DEBUG function with proper input struct: a string
@@ -55,13 +55,13 @@ fn hdk_debug(mem_stack: &mut WasmStack, json_string: &JsonString) {
 //-------------------------------------------------------------------------------------------------
 
 /// Function called by Holochain Instance
-/// input_allocation_int : encoded memory offset and length of the memory allocation
+/// host_allocation_ptr : encoded memory offset and length of the memory allocation
 /// holding input arguments
 #[no_mangle]
 pub extern "C" fn debug_hello(
-    input_allocation_int: WasmAllocationInt,
-) -> WasmAllocationInt {
-    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(input_allocation_int) {
+    host_allocation_ptr: AllocationPtr,
+) -> AllocationPtr {
+    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(host_allocation_ptr) {
         Ok(mem_stack) => mem_stack,
         Err(code) => return code.into(),
     };
@@ -74,13 +74,13 @@ pub extern "C" fn debug_hello(
 }
 
 /// Function called by Holochain Instance
-/// input_allocation_int : encoded memory offset and length of the memory allocation
+/// host_allocation_ptr : encoded memory offset and length of the memory allocation
 /// holding input arguments
 #[no_mangle]
 pub extern "C" fn debug_multiple(
-    input_allocation_int: WasmAllocationInt,
-) -> WasmAllocationInt {
-    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(input_allocation_int) {
+    host_allocation_ptr: AllocationPtr,
+) -> AllocationPtr {
+    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(host_allocation_ptr) {
         Ok(mem_stack) => mem_stack,
         Err(code) => return code.into(),
     };
@@ -98,14 +98,14 @@ pub extern "C" fn debug_multiple(
 
 #[no_mangle]
 pub extern "C" fn debug_stacked_hello(
-    input_allocation_int: WasmAllocationInt,
-) -> WasmAllocationInt {
+    host_allocation_ptr: AllocationPtr,
+) -> AllocationPtr {
     #[derive(Serialize, Default, Clone, PartialEq, Deserialize, Debug, DefaultJson)]
     struct TestStruct {
         value: String,
     }
 
-    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(input_allocation_int) {
+    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(host_allocation_ptr) {
         Ok(mem_stack) => mem_stack,
         Err(code) => return code.into(),
     };
@@ -122,7 +122,7 @@ pub extern "C" fn debug_stacked_hello(
 //-------------------------------------------------------------------------------------------------
 
 extern "C" {
-    fn hc_commit_entry(input_allocation_int: WasmAllocationInt) -> WasmAllocationInt;
+    fn hc_commit_entry(host_allocation_ptr: AllocationPtr) -> AllocationPtr;
 }
 
 /// Call HC API COMMIT function with proper input struct
@@ -218,14 +218,14 @@ fn test_inner(input: InputStruct) -> OutputStruct {
 //-------------------------------------------------------------------------------------------------
 
 /// Function called by Holochain Instance
-/// input_allocation_int : encoded memory offset and length of the memory allocation
+/// host_allocation_ptr : encoded memory offset and length of the memory allocation
 /// holding input arguments
 /// returns encoded allocation used to store output
 #[no_mangle]
 pub extern "C" fn commit_test(
-    input_allocation_int: WasmAllocationInt,
-) -> WasmAllocationInt {
-    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(input_allocation_int) {
+    host_allocation_ptr: AllocationPtr,
+) -> AllocationPtr {
+    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(host_allocation_ptr) {
         Ok(mem_stack) => mem_stack,
         Err(code) => return code.into(),
     };
@@ -236,14 +236,14 @@ pub extern "C" fn commit_test(
 }
 
 /// Function called by Holochain Instance
-/// input_allocation_int : encoded memory offset and length of the memory allocation
+/// host_allocation_ptr : encoded memory offset and length of the memory allocation
 /// holding input arguments
 /// returns encoded allocation used to store output
 #[no_mangle]
 pub extern "C" fn commit_fail_test(
-    input_allocation_int: WasmAllocationInt,
-) -> WasmAllocationInt {
-    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(input_allocation_int) {
+    host_allocation_ptr: AllocationPtr,
+) -> AllocationPtr {
+    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(host_allocation_ptr) {
         Ok(mem_stack) => mem_stack,
         Err(code) => return code.into(),
     };
@@ -255,16 +255,16 @@ pub extern "C" fn commit_fail_test(
 
 #[no_mangle]
 pub extern "C" fn __hdk_validate_app_entry(
-    _input_allocation_int: WasmAllocationInt,
-) -> WasmAllocationInt {
+    _host_allocation_ptr: AllocationPtr,
+) -> AllocationPtr {
     RibosomeReturnValue::Success.into()
 }
 
 #[no_mangle]
 pub extern "C" fn __hdk_get_validation_package_for_entry_type(
-    input_allocation_int: WasmAllocationInt,
+    host_allocation_ptr: AllocationPtr,
 ) -> RibosomeRuntimeBits {
-    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(input_allocation_int) {
+    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(host_allocation_ptr) {
         Ok(mem_stack) => mem_stack,
         Err(code) => return code.into(),
     };
@@ -273,19 +273,19 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
 }
 
 /// Function called by Holochain Instance
-/// input_allocation_int : encoded memory offset and length of the memory allocation
+/// host_allocation_ptr : encoded memory offset and length of the memory allocation
 /// holding input arguments
 /// returns encoded allocation used to store output
 #[no_mangle]
 pub extern "C" fn round_trip_test(
-    input_allocation_int: WasmAllocationInt,
-) -> WasmAllocationInt {
-    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(input_allocation_int) {
+    host_allocation_ptr: AllocationPtr,
+) -> AllocationPtr {
+    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(host_allocation_ptr) {
         Ok(mem_stack) => mem_stack,
         Err(code) => return code.into(),
     };
 
-    let input = match load_ribosome_encoded_json(input_allocation_int) {
+    let input = match load_ribosome_encoded_json(host_allocation_ptr) {
         Ok(input) => input,
         Err(e) => return RibosomeReturnValue::from(e).into(),
     };

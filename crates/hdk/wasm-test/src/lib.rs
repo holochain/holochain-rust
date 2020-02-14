@@ -32,16 +32,16 @@ use holochain_wasm_utils::{
             entry_type::{AppEntryType, EntryType},
             AppEntryValue, Entry,
         },
-        error::{WasmError},
         validation::{EntryValidationData, LinkValidationData},
         link::LinkMatch,
-        wasm::result::WasmResult,
+        wasm::result::{WasmResult, WasmError},
     },
     holochain_persistence_api::{
         cas::content::{Address, AddressableContent},
     },
     holochain_json_api::{error::JsonError, json::{JsonString, RawString}},
 };
+use holochain_wasmer_guest::AllocationPtr;
 use std::{convert::TryFrom, time::Duration};
 
 #[derive(Deserialize, Serialize, Default,Clone, Debug, DefaultJson)]
@@ -112,7 +112,7 @@ pub extern "C" fn check_commit_entry(
     ret!(WasmResult::Ok(match res {
         Ok(hash) => hash.into(),
         Err(e) => e.into(),
-    }.into()))
+    }))
 }
 
 fn handle_check_commit_entry_macro(entry: Entry) -> ZomeApiResult<Address> {

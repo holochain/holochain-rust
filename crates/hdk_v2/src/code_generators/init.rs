@@ -8,8 +8,8 @@ impl ZomeCodeDef {
 
         quote! {
             #[no_mangle]
-            pub extern "C" fn init(input_allocation_int: hdk::holochain_core_types::error::WasmAllocationInt) -> hdk::holochain_core_types::error::WasmAllocationInt {
-                let maybe_allocation = hdk::holochain_wasm_utils::memory::allocation::WasmAllocation::try_from_ribosome_encoding(input_allocation_int);
+            pub extern "C" fn init(host_allocation_ptr: hdk::holochain_core_types::error::AllocationPtr) -> hdk::holochain_core_types::error::AllocationPtr {
+                let maybe_allocation = hdk::holochain_wasm_utils::memory::allocation::WasmAllocation::try_from_ribosome_encoding(host_allocation_ptr);
                 let allocation = match maybe_allocation {
                     Ok(allocation) => allocation,
                     Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeReturnValue::from(allocation_error).into(),

@@ -29,10 +29,10 @@ use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
 /// # use hdk::error::ZomeApiResult;
 /// # use std::time::Duration;
 /// # use hdk::holochain_json_api::json::JsonString;
-/// # use hdk::holochain_core_types::error::WasmAllocationInt;
+/// # use hdk::holochain_core_types::error::AllocationPtr;
 /// # use hdk::holochain_core_types::error::RibosomeReturnValue;
 /// # #[no_mangle]
-/// # pub fn hc_emit_signal(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_emit_signal(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 ///
 /// # fn main() {
 /// pub fn handle_receive_chat_message(message: String) -> ZomeApiResult<()> {

@@ -14,7 +14,7 @@ macro_rules! link_zome_api {
         use std::convert::TryInto;
         use crate::wasm_engine::runtime::WasmCallData;
         use holochain_json_api::json::JsonString;
-        use holochain_core_types::error::WasmAllocationInt;
+        use holochain_core_types::error::AllocationPtr;
 
         /// Enumeration of all the Zome Functions known and usable in Zomes.
         /// Enumeration can convert to str.
@@ -70,7 +70,7 @@ macro_rules! link_zome_api {
         impl ZomeApiFunction {
             // cannot test this because PartialEq is not implemented for fns
             #[cfg_attr(tarpaulin, skip)]
-            pub fn apply(&self, runtime: &mut Runtime, encoded_args: WasmAllocationInt) -> ZomeApiResult {
+            pub fn apply(&self, runtime: &mut Runtime, encoded_args: AllocationPtr) -> ZomeApiResult {
                 // TODO Implement a proper "abort" function for handling assemblyscript aborts
                 // @see: https://github.com/holochain/holochain-rust/issues/324
 

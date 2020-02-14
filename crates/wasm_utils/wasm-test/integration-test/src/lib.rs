@@ -16,7 +16,7 @@ use holochain_wasm_utils::memory::stack::WasmStack;
 use holochain_wasm_utils::{
     holochain_core_types::error::HolochainError,
 };
-use holochain_wasm_utils::holochain_core_types::error::WasmAllocationInt;
+use holochain_wasm_utils::holochain_core_types::error::AllocationPtr;
 use holochain_wasm_utils::holochain_core_types::error::RibosomeReturnValue;
 use std::convert::TryFrom;
 use holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result;
@@ -47,7 +47,7 @@ struct OtherTestStruct {
 /// TODO #486
 //// Can't do zome_assert!() while testing write_json() since it internally uses write_json() !
 //// so using normal assert! even if we get unhelpful Trap::Unreachable error message.
-pub extern "C" fn store_string(_ptr: *const u8, _len: usize) -> WasmAllocationInt {
+pub extern "C" fn store_string(_ptr: *const u8, _len: usize) -> AllocationPtr {
 
     // start with an empty stack
     // let mut stack = WasmStack::default();
@@ -76,7 +76,7 @@ pub extern "C" fn store_string(_ptr: *const u8, _len: usize) -> WasmAllocationIn
 }
 
 #[no_mangle]
-pub extern "C" fn store_string_err(_: WasmAllocationInt) -> WasmAllocationInt {
+pub extern "C" fn store_string_err(_: AllocationPtr) -> AllocationPtr {
     let allmost_full_alloc = 0b11111111111111111111111111111101_00000000000000000000000000000010;
 
     let allocation = match WasmAllocation::try_from_ribosome_encoding(allmost_full_alloc) {
@@ -96,7 +96,7 @@ pub extern "C" fn store_string_err(_: WasmAllocationInt) -> WasmAllocationInt {
 
 #[no_mangle]
 // load the string from a previously stored string
-// pub extern "C" fn load_string(_: WasmAllocationInt) -> WasmAllocationInt {
+// pub extern "C" fn load_string(_: AllocationPtr) -> AllocationPtr {
 //     let encoded = store_string(0);
 //
 //     let allocation = match WasmAllocation::try_from_ribosome_encoding(encoded) {
@@ -119,7 +119,7 @@ pub extern "C" fn store_string_err(_: WasmAllocationInt) -> WasmAllocationInt {
 // }
 
 #[no_mangle]
-pub extern "C" fn stacked_strings(_: WasmAllocationInt) -> WasmAllocationInt {
+pub extern "C" fn stacked_strings(_: AllocationPtr) -> AllocationPtr {
 
     let mut stack = WasmStack::default();
 
@@ -136,7 +136,7 @@ pub extern "C" fn stacked_strings(_: WasmAllocationInt) -> WasmAllocationInt {
 
 #[no_mangle]
 // returns the length of the input string so we can verify externally how much data was sent in
-pub extern "C" fn big_string_input(big_string: WasmAllocationInt) -> WasmAllocationInt {
+pub extern "C" fn big_string_input(big_string: AllocationPtr) -> AllocationPtr {
     let input_allocation = match WasmAllocation::try_from(RibosomeEncodedAllocation::from(big_string)) {
         Ok(allocation) => allocation,
         Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
@@ -153,7 +153,7 @@ pub extern "C" fn big_string_input(big_string: WasmAllocationInt) -> WasmAllocat
 }
 
 #[no_mangle]
-pub extern "C" fn big_string_process_static(_: WasmAllocationInt) -> WasmAllocationInt {
+pub extern "C" fn big_string_process_static(_: AllocationPtr) -> AllocationPtr {
 
     // let mut stack = WasmStack::default();
     //
@@ -186,7 +186,7 @@ pub extern "C" fn big_string_process_static(_: WasmAllocationInt) -> WasmAllocat
 }
 
 // #[no_mangle]
-// pub extern "C" fn big_string_output_static(_: WasmAllocationInt) -> WasmAllocationInt {
+// pub extern "C" fn big_string_output_static(_: AllocationPtr) -> AllocationPtr {
 //
 //     let mut stack = WasmStack::default();
 //
@@ -209,7 +209,7 @@ pub extern "C" fn big_string_process_static(_: WasmAllocationInt) -> WasmAllocat
 
 #[no_mangle]
 /// thrash the allocation/deallocation logic a bit
-pub extern "C" fn round_trip_foo(_: WasmAllocationInt) -> WasmAllocationInt {
+pub extern "C" fn round_trip_foo(_: AllocationPtr) -> AllocationPtr {
     let mut stack = WasmStack::default();
 
     // stack should start at zero top
@@ -303,14 +303,14 @@ pub extern "C" fn round_trip_foo(_: WasmAllocationInt) -> WasmAllocationInt {
 }
 
 #[no_mangle]
-pub extern "C" fn error_report(_: WasmAllocationInt) -> WasmAllocationInt {
+pub extern "C" fn error_report(_: AllocationPtr) -> AllocationPtr {
     let mut stack = WasmStack::default();
     zome_assert!(stack, false);
     RibosomeReturnValue::Success.into()
 }
 
 #[no_mangle]
-pub extern "C" fn store_as_json(_: WasmAllocationInt) -> WasmAllocationInt {
+pub extern "C" fn store_as_json(_: AllocationPtr) -> AllocationPtr {
     let mut stack = WasmStack::default();
     assert_eq!(0, MemoryInt::from(stack.top()));
 
@@ -329,7 +329,7 @@ pub extern "C" fn store_as_json(_: WasmAllocationInt) -> WasmAllocationInt {
 }
 
 #[no_mangle]
-pub extern "C" fn store_struct_as_json(_: WasmAllocationInt) -> WasmAllocationInt {
+pub extern "C" fn store_struct_as_json(_: AllocationPtr) -> AllocationPtr {
     let mut stack = WasmStack::default();
     assert_eq!(0, MemoryInt::from(stack.top()));
 
@@ -350,7 +350,7 @@ pub extern "C" fn store_struct_as_json(_: WasmAllocationInt) -> WasmAllocationIn
 }
 
 #[no_mangle]
-pub extern "C" fn load_json_struct(_: WasmAllocationInt) -> WasmAllocationInt {
+pub extern "C" fn load_json_struct(_: AllocationPtr) -> AllocationPtr {
     let encoded = store_struct_as_json(0);
 
     let allocation = match WasmAllocation::try_from_ribosome_encoding(encoded) {
@@ -376,7 +376,7 @@ pub extern "C" fn load_json_struct(_: WasmAllocationInt) -> WasmAllocationInt {
 }
 
 #[no_mangle]
-pub extern "C" fn stacked_json(_: WasmAllocationInt) -> WasmAllocationInt {
+pub extern "C" fn stacked_json(_: AllocationPtr) -> AllocationPtr {
     let mut stack = WasmStack::default();
 
     let first = match stack.write_json(RawString::from("first")) {
@@ -391,7 +391,7 @@ pub extern "C" fn stacked_json(_: WasmAllocationInt) -> WasmAllocationInt {
 }
 
 #[no_mangle]
-pub extern "C" fn stacked_json_struct(_: WasmAllocationInt) -> WasmAllocationInt {
+pub extern "C" fn stacked_json_struct(_: AllocationPtr) -> AllocationPtr {
     let mut stack = WasmStack::default();
 
     let first = match stack.write_json(TestStruct {
@@ -413,7 +413,7 @@ pub extern "C" fn stacked_json_struct(_: WasmAllocationInt) -> WasmAllocationInt
 }
 
 #[no_mangle]
-pub extern "C" fn store_json_err(_: WasmAllocationInt) -> WasmAllocationInt {
+pub extern "C" fn store_json_err(_: AllocationPtr) -> AllocationPtr {
     let allmost_full_alloc = 0b11111111111111111111111111111101_00000000000000000000000000000010;
 
     let allocation = match WasmAllocation::try_from_ribosome_encoding(allmost_full_alloc) {
@@ -438,7 +438,7 @@ pub extern "C" fn store_json_err(_: WasmAllocationInt) -> WasmAllocationInt {
 }
 
 #[no_mangle]
-pub extern "C" fn load_json_err(_: WasmAllocationInt) -> WasmAllocationInt {
+pub extern "C" fn load_json_err(_: AllocationPtr) -> AllocationPtr {
     let mut stack = WasmStack::default();
 
     let encoded = 1 << 32;
@@ -455,7 +455,7 @@ pub extern "C" fn load_json_err(_: WasmAllocationInt) -> WasmAllocationInt {
 }
 
 #[no_mangle]
-pub extern "C" fn stacked_mix(_: WasmAllocationInt) -> WasmAllocationInt {
+pub extern "C" fn stacked_mix(_: AllocationPtr) -> AllocationPtr {
     let mut stack = WasmStack::default();
 
     if let Err(first_error) = stack.write_json(TestStruct {

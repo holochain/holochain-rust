@@ -3,6 +3,8 @@
 #[macro_export]
 macro_rules! args {
     ( $ptr:ident, $type:ty ) => {{
+        use std::convert::TryInto;
+
         let val: $type = match holochain_wasmer_guest::json::from_allocation_ptr(
             holochain_wasmer_guest::map_bytes($ptr),
         )
@@ -56,10 +58,10 @@ macro_rules! try_option {
 // #[doc(hidden)]
 // #[macro_export]
 // macro_rules! load_json {
-//     ($input_allocation_int:ident) => {{
+//     ($host_allocation_ptr:ident) => {{
 //
 //         let maybe_input = $crate::holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_json(
-//             $input_allocation_int,
+//             $host_allocation_ptr,
 //         );
 //
 //         match maybe_input {
@@ -75,10 +77,10 @@ macro_rules! try_option {
 // #[doc(hidden)]
 // #[macro_export]
 // macro_rules! load_string {
-//     ($input_allocation_int:ident) => {{
+//     ($host_allocation_ptr:ident) => {{
 //
 //         let maybe_input = $crate::holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_string(
-//             $input_allocation_int,
+//             $host_allocation_ptr,
 //         );
 //
 //         match maybe_input {
@@ -123,7 +125,6 @@ macro_rules! try_option {
 /// # use holochain_core_types::entry::entry_type::AppEntryType;
 /// # use holochain_json_api::{error::JsonError, json::JsonString};
 /// # use holochain_core_types::error::HolochainError;
-/// # use holochain_core_types::error::RibosomeReturnValue;
 /// # use boolinator::Boolinator;
 /// use hdk::error::ZomeApiResult;
 /// use holochain_core_types::{
@@ -131,64 +132,64 @@ macro_rules! try_option {
 ///     validation::EntryValidationData
 /// };
 /// # use holochain_persistence_api::cas::content::Address;
-/// # use holochain_core_types::error::WasmAllocationInt;
+/// # use holochain_core_types::error::AllocationPtr;
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]
-/// # pub fn hc_init_globals(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_init_globals(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 /// # #[no_mangle]
-/// # pub fn hc_commit_entry(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_commit_entry(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 /// # #[no_mangle]
-/// # pub fn hc_get_entry(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_get_entry(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 /// # #[no_mangle]
-/// # pub fn hc_entry_address(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_entry_address(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 /// # #[no_mangle]
-/// # pub fn hc_query(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_query(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 /// # #[no_mangle]
-/// # pub fn hc_update_entry(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_update_entry(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 /// # #[no_mangle]
-/// # pub fn hc_remove_entry(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_remove_entry(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 /// # #[no_mangle]
-/// # pub fn hc_send(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_send(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 /// # #[no_mangle]
-/// # pub fn hc_sleep(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_sleep(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 /// # #[no_mangle]
-/// # pub fn hc_debug(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_debug(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 /// # #[no_mangle]
-/// # pub fn hc_call(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_call(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 /// #[no_mangle]
-/// # pub fn hc_crypto(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_crypto(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 /// #[no_mangle]
-/// # pub fn hc_meta(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_meta(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 /// # #[no_mangle]
-/// # pub fn hc_sign_one_time(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_sign_one_time(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 /// # #[no_mangle]
-/// # pub fn hc_verify_signature(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_verify_signature(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 /// # #[no_mangle]
-/// # pub fn hc_get_links(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_get_links(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 /// # #[no_mangle]
-/// # pub fn hc_get_links_count(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_get_links_count(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 /// # #[no_mangle]
-/// # pub fn hc_link_entries(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_link_entries(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 /// # #[no_mangle]
-/// # pub fn hc_remove_link(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_remove_link(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 /// # #[no_mangle]
-/// # pub fn hc_keystore_list(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_keystore_list(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 /// # #[no_mangle]
-/// # pub fn hc_keystore_new_random(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_keystore_new_random(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 /// # #[no_mangle]
-/// # pub fn hc_keystore_derive_seed(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_keystore_derive_seed(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 /// # #[no_mangle]
-/// # pub fn hc_keystore_derive_key(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_keystore_derive_key(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 /// # #[no_mangle]
-/// # pub fn hc_keystore_sign(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_keystore_sign(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 /// # #[no_mangle]
-/// # pub fn hc_keystore_get_public_key(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_keystore_get_public_key(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 /// # #[no_mangle]
-/// # pub fn hc_commit_capability_grant(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_commit_capability_grant(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 /// # #[no_mangle]
-/// # pub fn hc_commit_capability_claim(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_commit_capability_claim(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 /// # #[no_mangle]
-/// # pub fn hc_emit_signal(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_emit_signal(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
 ///
 /// # fn main() {
 ///
@@ -328,31 +329,16 @@ macro_rules! define_zome {
         }
 
         #[no_mangle]
-        pub extern "C" fn init(input_allocation_int: hdk::holochain_core_types::error::WasmAllocationInt) -> hdk::holochain_core_types::error::WasmAllocationInt {
-            let maybe_allocation = $crate::holochain_wasm_utils::memory::allocation::WasmAllocation::try_from_ribosome_encoding(input_allocation_int);
-            let allocation = match maybe_allocation {
-                Ok(allocation) => allocation,
-                Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeReturnValue::from(allocation_error).into(),
-            };
-            let init = $crate::global_fns::init_global_memory(allocation);
-            if init.is_err() {
-                return $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
-                    init
-                ).into();
-            }
+        pub extern "C" fn init(host_allocation_ptr: holochain_wasmer_guest::AllocationPtr) -> holochain_wasmer_guest::AllocationPtr {
 
             fn execute() -> Result<(), String> {
                 $init_expr
             }
 
-            match execute() {
-                Ok(_) => hdk::holochain_core_types::error::RibosomeReturnValue::Success.into(),
-                Err(e) => $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
-                    $crate::global_fns::write_json(
-                        $crate::holochain_wasm_utils::holochain_json_api::json::RawString::from(e)
-                    )
-                ).into(),
-            }
+            ret!(match execute() {
+                Ok(_) => WasmResult::Ok(().into()),
+                Err(e) => WasmResult::Err(WasmError::Zome(e)),
+            });
         }
 
         $(
@@ -470,7 +456,7 @@ macro_rules! define_zome {
                     }
 
                     // Deserialize input
-                    let input = hdk::args!(input_allocation_int, InputStruct);
+                    let input = hdk::args!(host_allocation_ptr, InputStruct);
 
                     // Macro'd function body
                     fn execute (params: InputStruct) -> $( $output_param_type )* {
@@ -479,7 +465,7 @@ macro_rules! define_zome {
                         $handler_path($($input_param_name),*)
                     }
 
-                    ret!(WasmResult::Ok(execute(input)));
+                    ret!(WasmResult::Ok(execute(input).into()));
                 }
         )*
     };

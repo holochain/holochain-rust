@@ -63,7 +63,7 @@ use std::str::FromStr;
 use wasmer_runtime::error::RuntimeError;
 // use holochain_core_types::error::HolochainError;
 
-pub type ZomeApiResult = Result<WasmAllocationInt, RuntimeError>;
+pub type ZomeApiResult = Result<AllocationPtr, RuntimeError>;
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API FUNCTION DEFINITIONS

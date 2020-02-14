@@ -28,7 +28,7 @@ impl ToTokens for ZomeFunction {
 
         tokens.extend(quote!{
             #[no_mangle]
-            pub extern "C" fn #zome_function_name(input_allocation_int: hdk::holochain_core_types::error::WasmAllocationInt) -> hdk::holochain_core_types::error::WasmAllocationInt {
+            pub extern "C" fn #zome_function_name(host_allocation_ptr: hdk::holochain_core_types::error::AllocationPtr) -> hdk::holochain_core_types::error::AllocationPtr {
                 use hdk::{
                     holochain_json_api::{
                         json::JsonString,
@@ -51,7 +51,7 @@ impl ToTokens for ZomeFunction {
                     #function_body
                 }
 
-                ret!(WasmResult::Ok(execute(input)));
+                ret!(WasmResult::Ok(execute(input).into()));
             }
         })
     }

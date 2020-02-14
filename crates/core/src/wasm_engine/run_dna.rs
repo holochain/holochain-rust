@@ -8,7 +8,7 @@ use crate::{
     NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::error::{
-    HcResult, HolochainError, RibosomeReturnValue, WasmAllocationInt,
+    HcResult, HolochainError, RibosomeReturnValue, AllocationPtr,
 };
 use holochain_json_api::json::JsonString;
 
@@ -73,7 +73,7 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
     let fn_name = data.fn_name();
 
     // scope for mutable borrow of runtime
-    let input_allocation_int: WasmAllocationInt = {
+    let host_allocation_ptr: AllocationPtr = {
         let maybe_allocation = runtime
             .memory_manager
             .write(&mut runtime.wasm_instance?, &input_parameters);
@@ -141,7 +141,7 @@ pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult 
                 "WASM return value not I64".to_string(),
             ))
         }
-    } as WasmAllocationInt;
+    } as AllocationPtr;
 
     // Handle result returned by called zome function
     let return_code = RibosomeReturnValue::from(returned_encoding);

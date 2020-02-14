@@ -27,68 +27,68 @@ use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 /// # use holochain_json_api::error::JsonError;
 /// # use holochain_json_api::json::JsonString;
 /// # use holochain_core_types::error::HolochainError;
-/// # use holochain_core_types::error::WasmAllocationInt;
+/// # use holochain_core_types::error::AllocationPtr;
 /// # use holochain_core_types::error::RibosomeReturnValue;
 ///
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]
-/// # pub fn hc_init_globals(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_init_globals(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_commit_entry(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_commit_entry(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_get_entry(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_get_entry(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_entry_address(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_entry_address(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_query(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_query(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_call(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_call(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_crypto(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_crypto(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_meta(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_meta(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_sign_one_time(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_sign_one_time(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_verify_signature(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_verify_signature(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_update_entry(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_update_entry(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_remove_entry(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_remove_entry(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_send(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_send(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// /// # #[no_mangle]
-/// # pub fn hc_encrypt(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_encrypt(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_sleep(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_sleep(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_debug(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_debug(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_get_links(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_get_links(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_get_links_count(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_get_links_count(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_link_entries(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_link_entries(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_remove_link(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_remove_link(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_keystore_list(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_keystore_list(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_keystore_new_random(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_keystore_new_random(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_keystore_derive_seed(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_keystore_derive_seed(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_keystore_derive_key(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_keystore_derive_key(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_keystore_sign(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_keystore_sign(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_keystore_get_public_key(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_keystore_get_public_key(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_commit_capability_grant(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_commit_capability_grant(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_commit_capability_claim(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_commit_capability_claim(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 /// # #[no_mangle]
-/// # pub fn hc_emit_signal(_: WasmAllocationInt) -> WasmAllocationInt { RibosomeReturnValue::Success.into() }
+/// # pub fn hc_emit_signal(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 ///
 /// # fn main() {
 /// fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String> {

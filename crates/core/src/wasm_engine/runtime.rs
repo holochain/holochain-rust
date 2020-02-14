@@ -9,7 +9,7 @@ use crate::{
     NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::error::{
-    HolochainError, RibosomeReturnValue, RibosomeRuntimeBits, WasmAllocationInt,
+    HolochainError, RibosomeReturnValue, RibosomeRuntimeBits, AllocationPtr,
     ZomeApiInternalResult,
 };
 
@@ -166,7 +166,7 @@ impl Runtime {
     /// Input RuntimeArgs should only have one input which is the encoded allocation holding
     /// the complex data as an utf8 string.
     /// Returns the utf8 string.
-    pub fn load_json_string_from_args(&self, encoded: WasmAllocationInt) -> JsonString {
+    pub fn load_json_string_from_args(&self, encoded: AllocationPtr) -> JsonString {
         // Read complex argument serialized in memory
         let return_code = RibosomeReturnValue::from(encoded);
         let allocation = match return_code {
@@ -202,7 +202,7 @@ impl Runtime {
 
         match self.memory_manager.write(&mut self.wasm_instance, &s_bytes) {
             Err(_) => ribosome_error_code!(Unspecified),
-            Ok(allocation) => Ok(WasmAllocationInt::from(RibosomeReturnValue::Allocation(
+            Ok(allocation) => Ok(AllocationPtr::from(RibosomeReturnValue::Allocation(
                 allocation.into(),
             )) as RibosomeRuntimeBits),
         }

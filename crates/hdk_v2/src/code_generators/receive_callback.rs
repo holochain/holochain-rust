@@ -16,21 +16,8 @@ impl ZomeCodeDef {
         quote! {
             #(
                 #[no_mangle]
-                pub extern "C" fn receive(input_allocation_int: hdk::holochain_core_types::error::WasmAllocationInt) -> hdk::holochain_core_types::error::WasmAllocationInt {
-                    let maybe_allocation = hdk::holochain_wasm_utils::memory::allocation::WasmAllocation::try_from_ribosome_encoding(input_allocation_int);
-                    let allocation = match maybe_allocation {
-                        Ok(allocation) => allocation,
-                        Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeReturnValue::from(allocation_error).into(),
-                    };
-                    let init = hdk::global_fns::init_global_memory(allocation);
-                    if init.is_err() {
-                        return hdk::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
-                            init
-                        ).into();
-                    }
-
-                    // Deserialize input
-                    let input = load_json!(input_allocation_int);
+                pub extern "C" fn receive(host_allocation_ptr: holochain_wasmer_guest::AllocationPtr) -> holochain_wasmer_guest::AllocationPtr {
+                    let input = args!(host_allocation_ptr, hdk::holochain_wasm_utils::api_serialization::receive::ReceiveParams);
 
                     fn execute(input: hdk::holochain_wasm_utils::api_serialization::receive::ReceiveParams) -> String {
                         let #receive_from = input.from;
@@ -38,11 +25,7 @@ impl ZomeCodeDef {
                         #receive_blocks
                     }
 
-                    hdk::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
-                        hdk::global_fns::write_json(
-                            JsonString::from_json(&execute(input))
-                        )
-                    ).into()
+                    ret!(WasmResult::Ok(JsonString::from_json(&execute(input)));
                 }
             )*
         }

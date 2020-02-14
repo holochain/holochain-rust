@@ -11,7 +11,7 @@ macro_rules! args {
             Ok(v) => v,
             Err(_) => {
                 holochain_wasmer_guest::allocation::deallocate_from_allocation_ptr($ptr);
-                return json::to_allocation_ptr(
+                return holochain_wasmer_guest::json::to_allocation_ptr(
                     ZomeApiError::Internal("failed to parse function args".into()).into(),
                 );
             }
@@ -24,8 +24,8 @@ macro_rules! args {
 macro_rules! ret {
     ( $e: expr) => {{
         // enforce that everything be a ribosome result
-        let r: holochain_core_types::wasm::result::WasmResult = $e;
-        return json::to_allocation_ptr(r.into());
+        let r: hdk::holochain_core_types::wasm::result::WasmResult = $e;
+        return holochain_wasmer_guest::json::to_allocation_ptr(r.into());
     }};
 }
 
@@ -34,7 +34,7 @@ macro_rules! try_result {
     ( $e:expr, $fail:literal ) => {{
         match $e {
             Ok(v) => v,
-            Err(e) => ret!(holochain_core_types::wasm::result::WasmResult::Err(
+            Err(_) => ret!(hdk::holochain_core_types::wasm::result::WasmResult::Err(
                 WasmError::Zome($fail.to_string())
             )),
         }
@@ -46,8 +46,8 @@ macro_rules! try_option {
     ( $e:expr, $fail:literal ) => {
         match $e {
             Some(v) => v,
-            None => ret!(holochain_core_types::wasm::result::WasmResult::Err(
-                holochain_core_types::wasm::result::WasmError::Zome($fail.to_string())
+            None => ret!(hdk::holochain_core_types::wasm::result::WasmResult::Err(
+                hdk::holochain_core_types::wasm::result::WasmError::Zome($fail.to_string())
             )),
         }
     };
@@ -357,21 +357,8 @@ macro_rules! define_zome {
 
         $(
             #[no_mangle]
-            pub extern "C" fn receive(input_allocation_int: hdk::holochain_core_types::error::WasmAllocationInt) -> hdk::holochain_core_types::error::WasmAllocationInt {
-                let maybe_allocation = $crate::holochain_wasm_utils::memory::allocation::WasmAllocation::try_from_ribosome_encoding(input_allocation_int);
-                let allocation = match maybe_allocation {
-                    Ok(allocation) => allocation,
-                    Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeReturnValue::from(allocation_error).into(),
-                };
-                let init = $crate::global_fns::init_global_memory(allocation);
-                if init.is_err() {
-                    return $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
-                        init
-                    ).into();
-                }
-
-                // Deserialize input
-                let input = load_json!(input_allocation_int);
+            pub extern "C" fn receive(host_allocation_ptr: holochain_wasmer_guest::AllocationPtr) -> holochain_wasmer_guest::AllocationPtr {
+                let input = args!(host_allocation_ptr, $crate::holochain_wasm_utils::api_serialization::receive::ReceiveParams);
 
                 fn execute(input: $crate::holochain_wasm_utils::api_serialization::receive::ReceiveParams ) -> String {
                     let $receive_param = input.payload;
@@ -379,11 +366,7 @@ macro_rules! define_zome {
                     $receive_expr
                 }
 
-                $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
-                    $crate::global_fns::write_json(
-                        JsonString::from_json(&execute(input))
-                    )
-                ).into()
+                ret!(WasmResult::Ok(JsonString::from_json(&execute(input))));
             }
         )*
 
@@ -479,19 +462,7 @@ macro_rules! define_zome {
 
         $(
                 #[no_mangle]
-                pub extern "C" fn $zome_function_name(input_allocation_int: hdk::holochain_core_types::error::WasmAllocationInt) -> hdk::holochain_core_types::error::WasmAllocationInt {
-                    let maybe_allocation = $crate::holochain_wasm_utils::memory::allocation::WasmAllocation::try_from_ribosome_encoding(input_allocation_int);
-                    let allocation = match maybe_allocation {
-                        Ok(allocation) => allocation,
-                        Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeReturnValue::from(allocation_error).into(),
-                    };
-                    let init = $crate::global_fns::init_global_memory(allocation);
-                    if init.is_err() {
-                        return $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
-                            init
-                        ).into();
-                    }
-
+                pub extern "C" fn $zome_function_name(host_allocation_ptr: holochain_wasmer_guest::AllocationPtr) -> holochain_wasmer_guest::AllocationPtr {
                     // Macro'd InputStruct
                     #[derive(Deserialize, Serialize, Debug, $crate::holochain_json_derive::DefaultJson)]
                     struct InputStruct {
@@ -499,7 +470,7 @@ macro_rules! define_zome {
                     }
 
                     // Deserialize input
-                    let input: InputStruct = load_json!(input_allocation_int);
+                    let input = hdk::args!(input_allocation_int, InputStruct);
 
                     // Macro'd function body
                     fn execute (params: InputStruct) -> $( $output_param_type )* {
@@ -508,9 +479,7 @@ macro_rules! define_zome {
                         $handler_path($($input_param_name),*)
                     }
 
-                    $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
-                        $crate::global_fns::write_json(execute(input))
-                    ).into()
+                    ret!(WasmResult::Ok(execute(input)));
                 }
         )*
     };

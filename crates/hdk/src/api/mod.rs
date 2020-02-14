@@ -91,7 +91,7 @@ macro_rules! def_api_fns {
                 &self,
                 input: I,
             ) -> ZomeApiResult<O> {
-                let json: JsonString = input.try_into().map_err(|e| ZomeApiError::Internal("failed to create JSON".into()))?;
+                let json: JsonString = input.try_into().map_err(|_| ZomeApiError::Internal("failed to create JSON".into()))?;
                 let guest_allocation_ptr: AllocationPtr = json::to_allocation_ptr(json);
 
                 // Call Ribosome's function

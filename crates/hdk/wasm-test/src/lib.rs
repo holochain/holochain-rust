@@ -8,7 +8,7 @@ extern crate serde_derive;
 extern crate boolinator;
 #[macro_use]
 extern crate holochain_json_derive;
-
+extern crate holochain_wasmer_guest;
 
 use boolinator::Boolinator;
 use hdk::{
@@ -18,9 +18,7 @@ use hdk::{
     AGENT_ID_STR,
     PROPERTIES,
     CAPABILITY_REQ,
-    api::G_MEM_STACK,
     error::{ZomeApiError, ZomeApiResult},
-    global_fns::init_global_memory,
 };
 use holochain_wasm_utils::{
     api_serialization::{
@@ -34,18 +32,15 @@ use holochain_wasm_utils::{
             entry_type::{AppEntryType, EntryType},
             AppEntryValue, Entry,
         },
-        error::{RibosomeReturnValue, WasmAllocationInt, WasmError},
+        error::{WasmError},
         validation::{EntryValidationData, LinkValidationData},
         link::LinkMatch,
+        wasm::result::WasmResult,
     },
     holochain_persistence_api::{
         cas::content::{Address, AddressableContent},
     },
     holochain_json_api::{error::JsonError, json::{JsonString, RawString}},
-    memory::{
-        allocation::WasmAllocation,
-        ribosome::{load_ribosome_encoded_json, return_code_for_allocation_result},
-    },
 };
 use std::{convert::TryFrom, time::Duration};
 
@@ -106,43 +101,18 @@ pub fn handle_test_emit_signal(message: String) -> ZomeApiResult<()> {
 
 #[no_mangle]
 pub extern "C" fn check_commit_entry(
-    input_allocation_int: WasmAllocationInt,
-) -> WasmAllocationInt {
-    let allocation = match WasmAllocation::try_from_ribosome_encoding(input_allocation_int) {
-        Ok(allocation) => allocation,
-        Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
-    };
-
-    let memory_init_result = init_global_memory(allocation);
-    if memory_init_result.is_err() {
-        return return_code_for_allocation_result(memory_init_result).into();
-    }
-
-    // Deserialize and check for an encoded error
-    let entry: Entry = match load_ribosome_encoded_json(input_allocation_int) {
-        Ok(entry) => entry,
-        Err(hc_err) => {
-            hdk::debug(format!("ERROR: {:?}", hc_err.to_string())).ok();
-            return RibosomeReturnValue::Failure(WasmError::ArgumentDeserializationFailed)
-                .into();
-        }
-    };
+    host_allocation_ptr: AllocationPtr,
+) -> AllocationPtr {
+    let entry = args!(host_allocation_ptr, Entry);
 
     hdk::debug(format!("Entry: {:?}", entry)).ok();
 
     let res = hdk::commit_entry(&entry.into());
 
-    let res_obj: JsonString = match res {
+    ret!(WasmResult::Ok(match res {
         Ok(hash) => hash.into(),
         Err(e) => e.into(),
-    };
-
-    let mut wasm_stack = match unsafe { G_MEM_STACK } {
-        Some(wasm_stack) => wasm_stack,
-        None => return RibosomeReturnValue::Failure(WasmError::OutOfMemory).into(),
-    };
-
-    return_code_for_allocation_result(wasm_stack.write_json(res_obj)).into()
+    }.into()))
 }
 
 fn handle_check_commit_entry_macro(entry: Entry) -> ZomeApiResult<Address> {
@@ -250,7 +220,7 @@ fn handle_links_roundtrip_create() -> ZomeApiResult<Address> {
 
 pub fn handle_create_tagged_entry(content: String, tag: String) -> Address {
 
-    
+
     let test_entry_to_create_1 = Entry::App(
         "testEntryType".into(),
         TestEntryType {
@@ -274,7 +244,7 @@ pub fn handle_create_tagged_entry(content: String, tag: String) -> Address {
 
 pub fn handle_create_tagged_entry_bad_link(content: String, tag: String) -> ZomeApiResult<()> {
 
-    
+
     let test_entry_to_create_1 = Entry::App(
         "testEntryType".into(),
         TestEntryType {
@@ -310,7 +280,7 @@ pub fn handle_create_priv_entry(content: String) -> ZomeApiResult<Address> {
 
 pub fn handle_delete_tagged_entry(content: String, tag: String) -> ZomeApiResult<()> {
 
-    
+
     let test_entry_to_create_1 = Entry::App(
         "testEntryType".into(),
         TestEntryType {
@@ -325,7 +295,7 @@ pub fn handle_delete_tagged_entry(content: String, tag: String) -> ZomeApiResult
         }
         .into(),
     );
- 
+
     hdk::remove_link(&test_entry_to_create_1.address(), &test_entry_to_create_2.address(), "intergration test", tag.as_ref())?;
     Ok(())
 }
@@ -625,7 +595,7 @@ fn handle_sleep() -> ZomeApiResult<()> {
 
 pub fn handle_my_entries_by_tag(tag:Option<String>,maybe_status : Option<LinksStatusRequestKind>) -> ZomeApiResult<GetLinksResult> {
 
-   
+
 
     let test_entry_to_create = Entry::App(
         "testEntryType".into(),
@@ -643,9 +613,9 @@ pub fn handle_my_entries_by_tag(tag:Option<String>,maybe_status : Option<LinksSt
 
     if let Some(tag_matched) = tag
     {
-        
+
         hdk::get_links_with_options(&address, LinkMatch::Any, LinkMatch::Regex(&tag_matched),link_query_options)
-    } 
+    }
     else
     {
         hdk::get_links_with_options(&address, LinkMatch::Any, LinkMatch::Any,link_query_options)
@@ -661,7 +631,7 @@ pub fn handle_my_entries_immediate_timeout() -> ZomeApiResult<GetLinksResult> {
         }
         .into(),
     );
-    
+
     hdk::get_links_with_options(
         &test_entry_to_create.address(),
         LinkMatch::Exactly("intergration test"),
@@ -866,7 +836,7 @@ define_zome! {
                             (target.stuff.len() > base.stuff.len())
                                 .ok_or("Target stuff is not longer".to_string())
                         }
-                        
+
                     }
 
                 )
@@ -1140,7 +1110,7 @@ define_zome! {
             outputs: |version: ZomeApiResult<String>|,
             handler: handle_sign_payload
         }
-    
+
     ]
 
     traits: {}

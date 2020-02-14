@@ -12,6 +12,7 @@ use holochain_core_types::{
 };
 use holochain_json_derive::DefaultJson;
 use serde_derive::{Deserialize, Serialize};
+use crate as hdk;
 
 use holochain_json_api::{
     error::JsonError,
@@ -182,19 +183,24 @@ pub extern "C" fn __hdk_validate_link(host_allocation_ptr: AllocationPtr) -> All
         })
         .and_then(|mut link_definition| {
             let validation_result = (*link_definition.validator)(input.validation_data);
-            Some(try_result!(validation_result, "Validation failed"))
-        }));
+            Some(match validation_result {
+                Ok(()) => WasmResult::Ok(().into()),
+                Err(fail_string) => WasmResult::Err(WasmError::Zome(fail_string)),
+            })
+        })
+        .unwrap_or(WasmResult::Err(WasmError::CallbackFailed))
+    );
 }
 
 #[no_mangle]
 pub extern "C" fn __hdk_hdk_version(_: AllocationPtr) -> AllocationPtr {
-    ret!(RawString::from(
+    ret!(WasmResult::Ok(RawString::from(
         holochain_core_types::hdk_version::HDK_VERSION.to_string()
-    ))
+    ).into()))
 }
 
 #[no_mangle]
-pub extern "C" fn __hdk_get_json_definition(host_allocation_ptr: AllocationPtr) -> AllocationPtr {
+pub extern "C" fn __hdk_get_json_definition(_: AllocationPtr) -> AllocationPtr {
     let mut entry_types = BTreeMap::new();
     for validating_entry_type in zome_definition().entry_types {
         entry_types.insert(
@@ -206,11 +212,11 @@ pub extern "C" fn __hdk_get_json_definition(host_allocation_ptr: AllocationPtr) 
     let traits = unsafe { __list_traits() };
     let fn_declarations = unsafe { __list_functions() };
 
-    ret!(PartialZome {
+    ret!(WasmResult::Ok(PartialZome {
         entry_types,
         traits,
         fn_declarations,
-    });
+    }.into()));
 }
 
 #[cfg(test)]

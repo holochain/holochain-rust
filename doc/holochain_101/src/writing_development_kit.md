@@ -19,7 +19,7 @@ Holochain sends and receives allocated bytes of memory to zomes by treating the 
 If no bytes of memory are allocated (i.e. the 32 bit length is 0) the high bits map to an internal enum. This enum is contextual to the zome but typically represents errors:
 
 ```rust
-pub enum RibosomeErrorCode {
+pub enum WasmErrorCode {
     Unspecified                     = 1 << 32,
     ArgumentDeserializationFailed   = 2 << 32,
     OutOfMemory                     = 3 << 32,

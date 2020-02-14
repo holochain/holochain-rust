@@ -8,7 +8,7 @@ use holochain_core_types::{
     entry::entry_type::EntryType,
     error::{
         HcResult,
-        RibosomeError::{self, *},
+        WasmError::{self, *},
     },
 };
 use holochain_locksmith::RwLock;
@@ -78,7 +78,7 @@ impl ChainStore {
         start_chain_header: &Option<ChainHeader>,
         entry_type_names: &[&str],
         options: ChainStoreQueryOptions,
-    ) -> Result<ChainStoreQueryResult, RibosomeError> {
+    ) -> Result<ChainStoreQueryResult, WasmError> {
         // Get entry_type name(s), if any.  If empty/blank, returns the complete source chain.  A
         // single matching entry type name with no glob pattern matching will use the single
         // entry_type optimization.  Otherwise, we'll construct a GlobSet match and scan the list to

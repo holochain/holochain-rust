@@ -2,10 +2,9 @@
 //! which is responsible for mounting and running instances of DNA, and executing WASM code.
 
 mod dna_error;
-mod ribosome_error;
 
+pub use self::dna_error::*;
 use self::HolochainError::*;
-pub use self::{dna_error::*, ribosome_error::*};
 use futures::channel::oneshot::Canceled as FutureCanceled;
 use holochain_json_api::{
     error::{JsonError, JsonResult},
@@ -22,6 +21,7 @@ use std::{
     io::{self, Error as IoError},
     option::NoneError,
 };
+use wasm::result::WasmError;
 
 //--------------------------------------------------------------------------------------------------
 // CoreError
@@ -108,8 +108,7 @@ pub enum HolochainError {
     CapabilityCheckFailed,
     ValidationFailed(String),
     ValidationPending,
-    Ribosome(RibosomeError),
-    RibosomeFailed(String),
+    Wasm(WasmError),
     ConfigError(String),
     Timeout,
     InitializationFailed(String),
@@ -151,8 +150,7 @@ impl fmt::Display for HolochainError {
             CapabilityCheckFailed => write!(f, "Caller does not have Capability to make that call"),
             ValidationFailed(fail_msg) => write!(f, "{}", fail_msg),
             ValidationPending => write!(f, "Entry validation could not be completed"),
-            Ribosome(err_code) => write!(f, "{}", err_code.to_string()),
-            RibosomeFailed(fail_msg) => write!(f, "{}", fail_msg),
+            Wasm(err) => write!(f, "{}", err.to_string()),
             ConfigError(err_msg) => write!(f, "{}", err_msg),
             Timeout => write!(f, "timeout"),
             InitializationFailed(err_msg) => write!(f, "{}", err_msg),

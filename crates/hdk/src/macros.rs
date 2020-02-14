@@ -22,21 +22,23 @@ macro_rules! args {
 
 #[macro_export]
 macro_rules! ret {
-    ( $e: expr) => {
+    ( $e: expr) => {{
         // enforce that everything be a ribosome result
-        let ret: RibosomeResult = $e;
-        return json::to_allocation_ptr(ret.into());
-    };
+        let r: holochain_core_types::wasm::result::WasmResult = $e;
+        return json::to_allocation_ptr(r.into());
+    }};
 }
 
 #[macro_export]
 macro_rules! try_result {
-    ( $e:expr, $fail:literal ) => {
+    ( $e:expr, $fail:literal ) => {{
         match $e {
-            Ok(v) => RibosomeResult::Value(v.into()),
-            Err(e) => RibosomeResult::Error(RibosomeError::Zome($fail))),
+            Ok(v) => v,
+            Err(e) => ret!(holochain_core_types::wasm::result::WasmResult::Err(
+                WasmError::Zome($fail.to_string())
+            )),
         }
-    };
+    }};
 }
 
 #[macro_export]
@@ -44,8 +46,8 @@ macro_rules! try_option {
     ( $e:expr, $fail:literal ) => {
         match $e {
             Some(v) => v,
-            None => ret!(RibosomeError::Zome(
-                $fail
+            None => ret!(holochain_core_types::wasm::result::WasmResult::Err(
+                holochain_core_types::wasm::result::WasmError::Zome($fail.to_string())
             )),
         }
     };

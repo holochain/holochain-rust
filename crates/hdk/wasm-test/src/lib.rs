@@ -34,7 +34,7 @@ use holochain_wasm_utils::{
             entry_type::{AppEntryType, EntryType},
             AppEntryValue, Entry,
         },
-        error::{RibosomeReturnValue, WasmAllocationInt, RibosomeError},
+        error::{RibosomeReturnValue, WasmAllocationInt, WasmError},
         validation::{EntryValidationData, LinkValidationData},
         link::LinkMatch,
     },
@@ -123,7 +123,7 @@ pub extern "C" fn check_commit_entry(
         Ok(entry) => entry,
         Err(hc_err) => {
             hdk::debug(format!("ERROR: {:?}", hc_err.to_string())).ok();
-            return RibosomeReturnValue::Failure(RibosomeError::ArgumentDeserializationFailed)
+            return RibosomeReturnValue::Failure(WasmError::ArgumentDeserializationFailed)
                 .into();
         }
     };
@@ -139,7 +139,7 @@ pub extern "C" fn check_commit_entry(
 
     let mut wasm_stack = match unsafe { G_MEM_STACK } {
         Some(wasm_stack) => wasm_stack,
-        None => return RibosomeReturnValue::Failure(RibosomeError::OutOfMemory).into(),
+        None => return RibosomeReturnValue::Failure(WasmError::OutOfMemory).into(),
     };
 
     return_code_for_allocation_result(wasm_stack.write_json(res_obj)).into()

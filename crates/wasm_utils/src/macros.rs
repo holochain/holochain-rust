@@ -1,4 +1,4 @@
-/// Macro for creating a RibosomeError as a RuntimeValue Result-Option on the spot
+/// Macro for creating a WasmError as a RuntimeValue Result-Option on the spot
 /// Will panic! if out or memory or other serialization error occured.
 #[macro_export]
 macro_rules! zome_assert {
@@ -22,11 +22,11 @@ macro_rules! ribosome_success {
     };
 }
 
-/// Macro for creating a RibosomeError as a RuntimeValue Result-Option on the spot
+/// Macro for creating a WasmError as a RuntimeValue Result-Option on the spot
 #[macro_export]
 macro_rules! ribosome_error_code {
     ($s:ident) => {
-        Ok($crate::holochain_core_types::error::RibosomeError::$s
+        Ok($crate::holochain_core_types::error::WasmError::$s
             as $crate::holochain_core_types::error::RibosomeRuntimeBits)
     };
 }

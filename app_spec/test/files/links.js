@@ -173,7 +173,7 @@ module.exports = scenario => {
     const { alice, bob } = await s.players({ alice: one, bob: one }, true)
 
     // commits an entry and creates two links for alice
-    await alice.callSync('app', 'simple', 'create_link',
+    await alice.callSync('app' , 'simple', 'create_link',
       { base: alice.info('app').agentAddress, target: 'Holo world' }
     )
     const alice_result = await alice.callSync('app', 'simple', 'create_link',

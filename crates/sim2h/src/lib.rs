@@ -443,12 +443,17 @@ fn spawn_handle_message_status(sim2h_handle: Sim2hHandle, uri: Lib3hUri, signer:
     tokio::task::spawn(async move {
         debug!("Sending StatusResponse in response to Status");
         let state = sim2h_handle.state().get_clone().await;
+        let mut joined_connections = 0_usize;
+        for (_, space) in state.spaces.iter() {
+            joined_connections += space.connections.len();
+        }
         sim2h_handle.send(
             signer.clone(),
             uri.clone(),
             &WireMessage::StatusResponse(StatusData {
                 spaces: state.spaces_count(),
                 connections: sim2h_handle.connection_count.get().await,
+                joined_connections,
                 redundant_count: match sim2h_handle.dht_algorithm() {
                     DhtAlgorithm::FullSync => 0,
                     DhtAlgorithm::NaiveSharding { redundant_count } => *redundant_count,
@@ -1289,6 +1294,10 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
     for (space_hash, agents) in agents_needing_gossip.iter() {
         trace!("sim2h gossip agent count: {}", agents.len());
 
+        if agents.is_empty() {
+            debug!("sim2h gossip space {:?} no agents needing gossip", space_hash);
+        }
+
         for agent_id in agents {
             // explicitly yield here as we don't want to hog the scheduler
             tokio::task::yield_now().await;
@@ -1301,7 +1310,7 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
                 Some(r) => r,
             };
 
-            trace!("sim2h gossip entry count: {}", r.len());
+            debug!("sim2h gossip agent {:?} looking for aspects in {} entries", agent_id, r.len());
 
             for (entry_hash, aspects) in r.iter() {
                 if aspects.is_empty() {

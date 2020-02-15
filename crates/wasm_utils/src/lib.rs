@@ -15,7 +15,6 @@ pub extern crate holochain_persistence_api;
 pub mod api_serialization;
 
 pub mod macros;
-pub mod memory;
 
 use std::path::PathBuf;
 

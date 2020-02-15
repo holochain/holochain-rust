@@ -4,7 +4,6 @@ let
 
  paths = [
   "crates/hdk/wasm-test"
-  "crates/wasm_utils/wasm-test/integration-test"
   "crates/conductor_lib/wasm-test"
   "crates/conductor_lib/test-bridge-caller"
   "crates/core/src/nucleus/actions/wasm-test"

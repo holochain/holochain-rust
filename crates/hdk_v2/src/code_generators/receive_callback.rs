@@ -17,7 +17,7 @@ impl ZomeCodeDef {
             #(
                 #[no_mangle]
                 pub extern "C" fn receive(host_allocation_ptr: holochain_wasmer_guest::AllocationPtr) -> holochain_wasmer_guest::AllocationPtr {
-                    let input = args!(host_allocation_ptr, hdk::holochain_wasm_utils::api_serialization::receive::ReceiveParams);
+                    let input = holochain_wasmer_guest::host_args!(host_allocation_ptr, hdk::holochain_wasm_utils::api_serialization::receive::ReceiveParams);
 
                     fn execute(input: hdk::holochain_wasm_utils::api_serialization::receive::ReceiveParams) -> String {
                         let #receive_from = input.from;

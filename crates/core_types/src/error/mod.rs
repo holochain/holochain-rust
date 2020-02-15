@@ -21,7 +21,7 @@ use std::{
     io::{self, Error as IoError},
     option::NoneError,
 };
-use wasm::result::WasmError;
+use holochain_wasmer_common::WasmError;
 
 //--------------------------------------------------------------------------------------------------
 // CoreError
@@ -150,7 +150,7 @@ impl fmt::Display for HolochainError {
             CapabilityCheckFailed => write!(f, "Caller does not have Capability to make that call"),
             ValidationFailed(fail_msg) => write!(f, "{}", fail_msg),
             ValidationPending => write!(f, "Entry validation could not be completed"),
-            Wasm(err) => write!(f, "{}", err.to_string()),
+            Wasm(err) => write!(f, "{:?}", err),
             ConfigError(err_msg) => write!(f, "{}", err_msg),
             Timeout => write!(f, "timeout"),
             InitializationFailed(err_msg) => write!(f, "{}", err_msg),

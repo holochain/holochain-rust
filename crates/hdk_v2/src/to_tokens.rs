@@ -43,7 +43,7 @@ impl ToTokens for ZomeFunction {
                 }
 
                 // Deserialize input
-                let input = hdk::args!(host_allocation_ptr, InputStruct);
+                let input = holochain_wasmer_guest::host_args!(host_allocation_ptr, InputStruct);
 
                 // Macro'd function body
                 fn execute (params: InputStruct) #output_param_type {

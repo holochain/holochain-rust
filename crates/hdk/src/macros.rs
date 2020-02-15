@@ -1,98 +1,5 @@
 //! This file contains the define_zome! macro, and smaller helper macros.
 
-#[macro_export]
-macro_rules! args {
-    ( $ptr:ident, $type:ty ) => {{
-        use std::convert::TryInto;
-
-        let val: $type = match holochain_wasmer_guest::json::from_allocation_ptr(
-            holochain_wasmer_guest::map_bytes($ptr),
-        )
-        .try_into()
-        {
-            Ok(v) => v,
-            Err(_) => {
-                holochain_wasmer_guest::allocation::deallocate_from_allocation_ptr($ptr);
-                return holochain_wasmer_guest::json::to_allocation_ptr(
-                    ZomeApiError::Internal("failed to parse function args".into()).into(),
-                );
-            }
-        };
-        val
-    }};
-}
-
-#[macro_export]
-macro_rules! ret {
-    ( $e: expr) => {{
-        // enforce that everything be a ribosome result
-        let r: hdk::holochain_core_types::wasm::result::WasmResult = $e;
-        return holochain_wasmer_guest::json::to_allocation_ptr(r.into());
-    }};
-}
-
-#[macro_export]
-macro_rules! try_result {
-    ( $e:expr, $fail:literal ) => {{
-        match $e {
-            Ok(v) => v,
-            Err(_) => ret!(hdk::holochain_core_types::wasm::result::WasmResult::Err(
-                WasmError::Zome($fail.to_string())
-            )),
-        }
-    }};
-}
-
-#[macro_export]
-macro_rules! try_option {
-    ( $e:expr, $fail:literal ) => {
-        match $e {
-            Some(v) => v,
-            None => ret!(hdk::holochain_core_types::wasm::result::WasmResult::Err(
-                hdk::holochain_core_types::wasm::result::WasmError::Zome($fail.to_string())
-            )),
-        }
-    };
-}
-
-// #[doc(hidden)]
-// #[macro_export]
-// macro_rules! load_json {
-//     ($host_allocation_ptr:ident) => {{
-//
-//         let maybe_input = $crate::holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_json(
-//             $host_allocation_ptr,
-//         );
-//
-//         match maybe_input {
-//             Ok(input) => input,
-//             Err(hc_err) => return $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
-//                 $crate::global_fns::write_json(hc_err)
-//             ).into(),
-//         }
-//
-//     }};
-// }
-//
-// #[doc(hidden)]
-// #[macro_export]
-// macro_rules! load_string {
-//     ($host_allocation_ptr:ident) => {{
-//
-//         let maybe_input = $crate::holochain_wasm_utils::memory::ribosome::load_ribosome_encoded_string(
-//             $host_allocation_ptr,
-//         );
-//
-//         match maybe_input {
-//             Ok(input) => input,
-//             Err(hc_err) => return $crate::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
-//                 $crate::global_fns::write_json(hc_err)
-//             ).into(),
-//         }
-//
-//     }};
-// }
-
 /// Every Zome must utilize the `define_zome`
 /// macro in the main library file in their Zome.
 /// The `define_zome` macro has 4 component parts:
@@ -344,7 +251,7 @@ macro_rules! define_zome {
         $(
             #[no_mangle]
             pub extern "C" fn receive(host_allocation_ptr: holochain_wasmer_guest::AllocationPtr) -> holochain_wasmer_guest::AllocationPtr {
-                let input = args!(host_allocation_ptr, $crate::holochain_wasm_utils::api_serialization::receive::ReceiveParams);
+                let input = holochain_wasmer_guest::host_args!(host_allocation_ptr, $crate::holochain_wasm_utils::api_serialization::receive::ReceiveParams);
 
                 fn execute(input: $crate::holochain_wasm_utils::api_serialization::receive::ReceiveParams ) -> String {
                     let $receive_param = input.payload;
@@ -456,7 +363,7 @@ macro_rules! define_zome {
                     }
 
                     // Deserialize input
-                    let input = hdk::args!(host_allocation_ptr, InputStruct);
+                    let input = holochain_wasmer_guest::host_args!(host_allocation_ptr, InputStruct);
 
                     // Macro'd function body
                     fn execute (params: InputStruct) -> $( $output_param_type )* {

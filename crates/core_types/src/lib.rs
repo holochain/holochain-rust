@@ -36,6 +36,7 @@ extern crate maplit;
 extern crate hcid;
 #[macro_use]
 extern crate log;
+extern crate holochain_wasmer_common;
 
 pub mod chain_header;
 pub mod crud_status;
@@ -45,7 +46,6 @@ pub mod error;
 #[macro_use]
 extern crate objekt;
 pub mod agent;
-pub mod bits_n_pieces;
 pub mod chain_migrate;
 pub mod dna;
 pub mod hdk_version;
@@ -55,7 +55,6 @@ pub mod signature;
 pub mod time;
 pub mod ugly;
 pub mod validation;
-pub mod wasm;
 #[macro_use]
 extern crate holochain_logging;
 

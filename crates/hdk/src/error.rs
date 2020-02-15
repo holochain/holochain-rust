@@ -1,13 +1,11 @@
 //! This file contains defitions for Zome errors and also Zome Results.
 
-use crate::holochain_core_types::{error::HolochainError, wasm::result::WasmError};
-
+use crate::holochain_core_types::{error::HolochainError};
+use holochain_wasmer_guest::*;
 use crate::holochain_persistence_api::error::PersistenceError;
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_json_derive::DefaultJson;
 use serde_derive::{Deserialize, Serialize};
-
-use holochain_wasm_utils::memory::allocation::AllocationError;
 use std::{error::Error, fmt};
 
 /// Error for DNA developers to use in their Zome code.
@@ -70,29 +68,6 @@ impl From<!> for ZomeApiError {
 impl From<String> for ZomeApiError {
     fn from(s: String) -> ZomeApiError {
         ZomeApiError::Internal(s)
-    }
-}
-
-impl From<WasmError> for ZomeApiError {
-    fn from(ribosome_error_code: WasmError) -> ZomeApiError {
-        ZomeApiError::from(ribosome_error_code.to_string())
-    }
-}
-
-impl From<AllocationError> for ZomeApiError {
-    fn from(allocation_error: AllocationError) -> ZomeApiError {
-        match allocation_error {
-            AllocationError::OutOfBounds => {
-                ZomeApiError::Internal("Allocation out of bounds".into())
-            }
-            AllocationError::ZeroLength => ZomeApiError::Internal("Allocation zero length".into()),
-            AllocationError::BadStackAlignment => {
-                ZomeApiError::Internal("Allocation out of alignment with stack".into())
-            }
-            AllocationError::Serialization => {
-                ZomeApiError::Internal("Allocation serialization failure".into())
-            }
-        }
     }
 }
 

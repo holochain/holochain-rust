@@ -34,14 +34,13 @@ use holochain_wasm_utils::{
         },
         validation::{EntryValidationData, LinkValidationData},
         link::LinkMatch,
-        wasm::result::{WasmResult, WasmError},
     },
     holochain_persistence_api::{
         cas::content::{Address, AddressableContent},
     },
     holochain_json_api::{error::JsonError, json::{JsonString, RawString}},
 };
-use holochain_wasmer_guest::AllocationPtr;
+use holochain_wasmer_guest::*;
 use std::{convert::TryFrom, time::Duration};
 
 #[derive(Deserialize, Serialize, Default,Clone, Debug, DefaultJson)]
@@ -103,7 +102,7 @@ pub fn handle_test_emit_signal(message: String) -> ZomeApiResult<()> {
 pub extern "C" fn check_commit_entry(
     host_allocation_ptr: AllocationPtr,
 ) -> AllocationPtr {
-    let entry = args!(host_allocation_ptr, Entry);
+    let entry = host_args!(host_allocation_ptr, Entry);
 
     hdk::debug(format!("Entry: {:?}", entry)).ok();
 

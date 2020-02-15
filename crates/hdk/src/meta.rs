@@ -12,19 +12,16 @@ use holochain_core_types::{
 };
 use holochain_json_derive::DefaultJson;
 use serde_derive::{Deserialize, Serialize};
-use crate as hdk;
 
 use holochain_json_api::{
     error::JsonError,
     json::{JsonString, RawString},
 };
 
-use crate::prelude::*;
 use holochain_wasm_utils::{
     api_serialization::validation::{
         AgentIdValidationArgs, EntryValidationArgs, LinkValidationArgs, LinkValidationPackageArgs,
     },
-    holochain_core_types::wasm::result::{WasmError, WasmResult},
 };
 use holochain_wasmer_guest::*;
 use std::{collections::BTreeMap, convert::TryFrom};
@@ -85,7 +82,7 @@ fn zome_definition() -> ZomeDefinition {
 pub extern "C" fn __hdk_get_validation_package_for_entry_type(
     host_allocation_ptr: AllocationPtr,
 ) -> AllocationPtr {
-    let name = args!(host_allocation_ptr, String);
+    let name = host_string!(host_allocation_ptr);
 
     match zome_definition()
         .entry_types
@@ -103,7 +100,7 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
 #[no_mangle]
 pub extern "C" fn __hdk_validate_app_entry(host_allocation_ptr: AllocationPtr) -> AllocationPtr {
     // Deserialize input
-    let input = args!(host_allocation_ptr, EntryValidationArgs);
+    let input = host_args!(host_allocation_ptr, EntryValidationArgs);
 
     let entry_type = try_result!(
         EntryType::try_from(input.validation_data.clone()),
@@ -127,11 +124,11 @@ pub extern "C" fn __hdk_validate_app_entry(host_allocation_ptr: AllocationPtr) -
 
 #[no_mangle]
 pub extern "C" fn __hdk_validate_agent_entry(host_allocation_ptr: AllocationPtr) -> AllocationPtr {
-    let input = args!(host_allocation_ptr, AgentIdValidationArgs);
+    let input = host_args!(host_allocation_ptr, AgentIdValidationArgs);
 
     //get the validator code
-    let mut validator = try_option!(
-        zome_definition().agent_entry_validator,
+    let mut validator = try_result!(
+        (zome_definition().agent_entry_validator).ok_or(()),
         "No agent validation callback registered for zome."
     );
 
@@ -142,7 +139,7 @@ pub extern "C" fn __hdk_validate_agent_entry(host_allocation_ptr: AllocationPtr)
 pub extern "C" fn __hdk_get_validation_package_for_link(
     host_allocation_ptr: AllocationPtr,
 ) -> AllocationPtr {
-    let input = args!(host_allocation_ptr, LinkValidationPackageArgs);
+    let input = host_args!(host_allocation_ptr, LinkValidationPackageArgs);
 
     ret!(WasmResult::Ok(
         zome_definition()
@@ -164,7 +161,7 @@ pub extern "C" fn __hdk_get_validation_package_for_link(
 
 #[no_mangle]
 pub extern "C" fn __hdk_validate_link(host_allocation_ptr: AllocationPtr) -> AllocationPtr {
-    let input = args!(host_allocation_ptr, LinkValidationArgs);
+    let input = host_args!(host_allocation_ptr, LinkValidationArgs);
 
     ret!(zome_definition()
         .entry_types

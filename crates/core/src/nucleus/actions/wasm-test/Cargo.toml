@@ -14,7 +14,7 @@ members = []
 
 [dependencies]
 hdk = { path = "../../../../../hdk" }
-holochain_json_derive = "=0.0.22"
+holochain_json_derive = "=0.0.23"
 serde = "=1.0.104"
 serde_json = { version = "=1.0.47", features = ["preserve_order"] }
 serde_derive = "=1.0.104"

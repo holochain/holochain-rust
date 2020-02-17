@@ -50,6 +50,12 @@ pub struct Sim2hConfig {
     pub sim2h_url: String,
 }
 
+struct BufferedMessage {
+    pub wire_message: WireMessage,
+    pub serial: u16,
+    pub last_sent: Option<Instant>,
+}
+
 /// removed lifetime parameter because compiler says ghost engine needs lifetime that could live statically
 #[allow(non_snake_case, dead_code)]
 pub struct Sim2hWorker {
@@ -65,7 +71,8 @@ pub struct Sim2hWorker {
     connection_timeout_backoff: u64,
     reconnect_interval: Duration,
     metric_publisher: std::sync::Arc<std::sync::RwLock<dyn MetricPublisher>>,
-    outgoing_message_buffer: Vec<WireMessage>,
+    outgoing_message_buffer: Vec<BufferedMessage>,
+    outgoing_message_next_serial: u16,
     ws_frame: Option<WsFrame>,
     initial_authoring_list: Option<EntryListData>,
     initial_gossiping_list: Option<EntryListData>,
@@ -107,6 +114,7 @@ impl Sim2hWorker {
                 DefaultMetricPublisher::default(),
             )),
             outgoing_message_buffer: Vec::new(),
+            outgoing_message_next_serial: 0,
             ws_frame: None,
             initial_authoring_list: None,
             initial_gossiping_list: None,
@@ -209,51 +217,51 @@ impl Sim2hWorker {
     }
 
     /// if we have queued wire messages and our connection is ready,
-    /// try to send them
+    /// try to send one
+    /// return if we did something
     fn try_send_from_outgoing_buffer(&mut self) -> bool {
-        let mut did_something = false;
-        loop {
-            if self.outgoing_message_buffer.is_empty() || !self.connection_ready() {
-                return did_something;
-            }
-            did_something = true;
-            let message = self.outgoing_message_buffer.get(0).unwrap();
-            debug!("WireMessage: preparing to send {:?}", message);
-            let payload: String = message.clone().into();
-            let signature = self
-                .conductor_api
-                .execute(payload.clone(), CryptoMethod::Sign)
-                .unwrap_or_else(|e| {
-                    panic!(
-                        "Couldn't sign wire message in sim2h worker: payload={}, error={:?}",
-                        payload, e
-                    )
-                });
-            let signed_wire_message = SignedWireMessage::new(
-                message.clone(),
-                Provenance::new(self.agent_id.clone(), signature.into()),
-            );
-            let to_send: Opaque = signed_wire_message.into();
-            // safe to unwrap because we check connection_ready() above
-            if let Err(e) = self
-                .connection
-                .as_mut()
-                .unwrap()
-                .write(to_send.to_vec().into())
-            {
-                error!(
-                    "TransportError trying to send message to sim2h server: {:?}",
-                    e
-                );
-                self.connection = None;
-                self.check_reconnect();
-                return did_something;
-            }
-            debug!("WireMessage: dequeuing sent message {:?}", message);
-            // if we made it here, we successfully sent the first message
-            // we can remove it from the outgoing buffer queue
-            self.outgoing_message_buffer.remove(0);
+        if self.outgoing_message_buffer.is_empty() || !self.connection_ready() {
+            return false;
         }
+        let buffered_message = self.outgoing_message_buffer.get(0).unwrap();
+        if let Some(instant_last_sent) = buffered_message.last_sent {
+            if instant_last_sent.elapsed() < RESEND_WIRE_MESSAGE_DURATION {
+                return false;
+            }
+        }
+        let message = &buffered_message.wire_message;
+        debug!("WireMessage: preparing to send {:?}", message);
+        let payload: String = message.clone().into();
+        let signature = self
+            .conductor_api
+            .execute(payload.clone(), CryptoMethod::Sign)
+            .unwrap_or_else(|e| {
+                panic!(
+                    "Couldn't sign wire message in sim2h worker: payload={}, error={:?}",
+                    payload, e
+                )
+            });
+        let signed_wire_message = SignedWireMessage::new(
+            message.clone(),
+            Provenance::new(self.agent_id.clone(), signature.into()),
+        );
+        let to_send: Opaque = signed_wire_message.into();
+        // safe to unwrap because we check connection_ready() above
+        if let Err(e) = self
+            .connection
+            .as_mut()
+            .unwrap()
+            .write(to_send.to_vec().into())
+        {
+            error!(
+                "TransportError trying to send message to sim2h server: {:?}",
+                e
+            );
+            self.connection = None;
+            self.check_reconnect();
+            return true;
+        }
+        true
     }
 
     /// queue a wire message for send
@@ -261,7 +269,12 @@ impl Sim2hWorker {
         // we always put messages in the outgoing buffer,
         // they'll be sent when the connection is ready
         debug!("WireMessage: queueing {:?}", message);
-        self.outgoing_message_buffer.push(message);
+        self.outgoing_message_next_serial += 1;
+        self.outgoing_message_buffer.push(BufferedMessage{
+            wire_message: message,
+            serial: self.outgoing_message_next_serial,
+            last_sent: None,
+        });
         Ok(())
     }
 
@@ -516,6 +529,26 @@ impl Sim2hWorker {
                 self.set_full_sync(response.redundant_count == 0);
             }
             WireMessage::StatusResponse(_) => error!("Got a StatusResponse from the Sim2h server, weird! Ignoring (I use Hello not Status)"),
+            WireMessage::Ack(serial) => {
+                if self.outgoing_message_buffer
+                    .first()
+                    .and_then(|buffered_message| buffered_message.serial == serial)
+                    .unwrap_or(false)
+                {
+                    debug!("WireMessage::Ack received => dequeuing sent message {:?}", message);
+                    // if we made it here, we successfully sent the first message
+                    // we can remove it from the outgoing buffer queue
+                    self.outgoing_message_buffer.remove(0)
+                } else {
+                    warn!(
+                        "WireMessage::Ack received that came out of order! Got serial: {}, have top serial: {}",
+                        serial,
+                        self.outgoing_message_buffer
+                            .first()
+                            .and_then(|buffered_message| buffered_message.serial)
+                    )
+                }
+            }
         };
         Ok(())
     }

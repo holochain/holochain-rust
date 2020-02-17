@@ -4,10 +4,9 @@ pub use holochain_common::paths::DNA_EXTENSION;
 use holochain_core_types::error::HcResult;
 use holochain_dpki::seed::{EncryptedSeed, MnemonicableSeed, Seed, SeedType, TypedSeed};
 use rpassword;
-use std::io::stdin;
 use std::{
     fs,
-    io::{self, ErrorKind, Write},
+    io::{self, stdin, ErrorKind, Write},
     path::PathBuf,
     process::{Command, Stdio},
 };

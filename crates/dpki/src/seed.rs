@@ -73,7 +73,6 @@ pub trait SeedTrait {
     }
 }
 
-
 /// Implement the API to create new Seeds from BIP39 Mnemonics, and to output various Seeds as BIP32
 /// Mnemonics.  Some formats require mutability in order to perform this conversion; for example, a
 /// Seed w/ a SecBuf will require it to be set to readable before its contents can be accessed.
@@ -159,7 +158,6 @@ impl MnemonicableSeed for Seed {
         })?;
         Ok(mnemonic.into_phrase())
     }
-
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -190,10 +188,7 @@ impl RootSeed {
 
     // Generate Device Seed
     /// @param {number} index - the index number in this seed group, must not be zero
-    pub fn generate_device_seed(
-        &mut self,
-        index: u64,
-    ) -> HcResult<DeviceSeed> {
+    pub fn generate_device_seed(&mut self, index: u64) -> HcResult<DeviceSeed> {
         let device_ctx = SeedContext::new(REVOKE_CTX);
         let device_seed_buf =
             generate_derived_seed_buf(&mut self.inner.buf, &device_ctx, index, SEED_SIZE)?;
@@ -202,10 +197,7 @@ impl RootSeed {
 
     /// Generate Revocation Seed
     /// @param {number} index - the index number in this seed group, must not be zero
-    pub fn generate_revocation_seed(
-        &mut self,
-        index: u64,
-    ) -> HcResult<RevocationSeed> {
+    pub fn generate_revocation_seed(&mut self, index: u64) -> HcResult<RevocationSeed> {
         let seed_context = SeedContext::new(REVOKE_CTX);
         let seed_buf =
             generate_derived_seed_buf(&mut self.inner.buf, &seed_context, index, SEED_SIZE)?;
@@ -254,10 +246,7 @@ impl DeviceSeed {
 
     /// Generate Auth Seed
     /// @param {number} index - the index number in this seed group, must not be zero
-    pub fn generate_auth_seed(
-        &mut self,
-        index: u64,
-    ) -> HcResult<AuthSeed> {
+    pub fn generate_auth_seed(&mut self, index: u64) -> HcResult<AuthSeed> {
         let seed_context = SeedContext::new(AUTH_CTX);
         let seed_buf =
             generate_derived_seed_buf(&mut self.inner.buf, &seed_context, index, SEED_SIZE)?;

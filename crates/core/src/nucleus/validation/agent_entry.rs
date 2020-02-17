@@ -15,7 +15,7 @@ use holochain_core_types::{
 use holochain_persistence_api::cas::content::AddressableContent;
 use holochain_wasm_utils::api_serialization::validation::AgentIdValidationArgs;
 
-use futures::{future, future::FutureExt};
+use futures::future::{self, FutureExt};
 use std::sync::Arc;
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]

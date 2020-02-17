@@ -125,7 +125,7 @@ impl MetricsTimerGenerator {
                     .publish(&Metric::new_timestamped_now(msg.0, None, msg.1));
             }
         }
-        .boxed();
+            .boxed();
         (Self { sender }, out)
     }
 

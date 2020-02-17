@@ -148,7 +148,7 @@ enum Cli {
         passphrase: Option<String>,
     },
     #[structopt(
-            name = "dpki-init",
+        name = "dpki-init",
         alias = "d",
         about = "Generates a new DPKI root seed and outputs the encrypted key as a BIP39 mnemonic"
     )]

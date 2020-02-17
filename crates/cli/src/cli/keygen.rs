@@ -4,8 +4,8 @@ use holochain_conductor_lib::{
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
 };
 use holochain_core_types::error::HcResult;
-use holochain_locksmith::Mutex;
 use holochain_dpki::seed::{SeedType, TypedSeed};
+use holochain_locksmith::Mutex;
 use std::{
     fs::create_dir_all,
     io::{self, Write},

@@ -887,7 +887,7 @@ impl StoreHandle {
         async move {
             let _ = receiver.await;
         }
-        .boxed()
+            .boxed()
     }
 
     pub fn spawn_new_connection(&self, space_hash: SpaceHash, agent_id: AgentId, uri: Lib3hUri) {
@@ -930,7 +930,7 @@ impl StoreHandle {
         async move {
             let _ = receiver.await;
         }
-        .boxed()
+            .boxed()
     }
 
     pub fn spawn_drop_connection_by_uri(&self, uri: Lib3hUri) {
@@ -960,7 +960,7 @@ impl StoreHandle {
         async move {
             let _ = receiver.await;
         }
-        .boxed()
+            .boxed()
     }
 
     pub fn spawn_agent_holds_aspects(

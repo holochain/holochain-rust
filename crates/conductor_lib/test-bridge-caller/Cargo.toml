@@ -17,5 +17,5 @@ serde = "=1.0.104"
 serde_json = { version = "=1.0.47", features = ["preserve_order"] }
 hdk = { path = "../../hdk" }
 serde_derive = "=1.0.104"
-holochain_json_derive = "=0.0.22"
+holochain_json_derive = "=0.0.23"
 holochain_persistence_api = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }

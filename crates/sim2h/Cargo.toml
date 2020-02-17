@@ -14,9 +14,9 @@ repository = "https://github.com/holochain/sim2h"
 [dependencies]
 backtrace = "=0.3.27"
 hcid = "=0.0.6"
-futures = "=0.3.2"
-holochain_json_api = "=0.0.22"
+holochain_json_api = "=0.0.23"
 holochain_persistence_api = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
+futures = "=0.3.2"
 lib3h = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 lib3h_crypto_api = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "transactional" }

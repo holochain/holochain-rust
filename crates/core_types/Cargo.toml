@@ -28,8 +28,8 @@ rust-base58 = "=0.0.4"
 snowflake = "=1.3.0"
 objekt= "=0.1.2"
 holochain_persistence_api = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
-holochain_json_derive = "=0.0.22"
-holochain_json_api = "=0.0.22"
+holochain_json_derive = "=0.0.23"
+holochain_json_api = "=0.0.23"
 holochain_locksmith = { version = "=0.0.43-alpha3", path = "../locksmith" }
 uuid = { version = "=0.7.1", features = ["v4"] }
 regex = "=1.1.2"

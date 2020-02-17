@@ -9,11 +9,11 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
 [dev-dependencies]
+lib3h_crypto_api = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 base64 = "=0.10.1"
 hcid = "=0.0.6"
 jsonrpc-core = "=14.0.1"
 tempfile = "=3.0.7"
-lib3h_crypto_api = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 
 [dependencies]
 failure = "=0.1.5"
@@ -28,8 +28,8 @@ holochain_metrics = { version = "=0.0.43-alpha3", path = "../metrics" }
 holochain_conductor_lib_api = { version = "=0.0.43-alpha3", path = "../conductor_api" }
 holochain_core_types = { version = "=0.0.43-alpha3", path = "../core_types" }
 holochain_locksmith = { version = "=0.0.43-alpha3", path = "../locksmith" }
-holochain_json_derive = "=0.0.22"
-holochain_json_api = "=0.0.22"
+holochain_json_derive = "=0.0.23"
+holochain_json_api = "=0.0.23"
 holochain_tracing_macros = "=0.0.19"
 holochain_persistence_api = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
 holochain_common = { version = "=0.0.43-alpha3", path = "../common" }

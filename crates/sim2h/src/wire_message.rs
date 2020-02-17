@@ -30,10 +30,10 @@ pub struct HelloData {
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum WireMessage {
-    ClientToLib3h(ht::EncodedSpanWrap<ClientToLib3h>),
+    ClientToLib3h((ht::EncodedSpanWrap<ClientToLib3h>, u16)),
     ClientToLib3hResponse(ht::EncodedSpanWrap<ClientToLib3hResponse>),
     Lib3hToClient(ht::EncodedSpanWrap<Lib3hToClient>),
-    Lib3hToClientResponse(ht::EncodedSpanWrap<Lib3hToClientResponse>),
+    Lib3hToClientResponse((ht::EncodedSpanWrap<Lib3hToClientResponse>, u16)),
     MultiSend(Vec<ht::EncodedSpanWrap<Lib3hToClient>>),
     Err(WireError),
     Ping,
@@ -42,6 +42,7 @@ pub enum WireMessage {
     HelloResponse(HelloData),
     Status,
     StatusResponse(StatusData),
+    Ack(u16),
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(SIM2H)]

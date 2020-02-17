@@ -270,6 +270,7 @@ workflows:
         only:
          - develop
          - final-exam
+         - transactional
          - trycp-update-hc
    - docker-build-trycp-server:
       requires:
@@ -284,6 +285,7 @@ workflows:
         only:
          - develop
          - final-exam
+         - transactional
          - trycp-update-hc
    - docker-build-circle-build:
       requires:

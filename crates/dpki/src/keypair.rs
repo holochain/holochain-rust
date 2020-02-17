@@ -329,4 +329,24 @@ mod tests {
         let succeeded = sign_keys.verify(&mut message, &mut signature);
         assert!(!succeeded);
     }
+
+    #[test]
+    fn keypair_should_generate_consistent_keys() {
+        let mut seed = SecBuf::with_insecure(32);
+        seed.from_array(&[
+             0u8,  1u8,  2u8,  3u8,  4u8,  5u8,  6u8,  7u8,  8u8,  9u8,
+            10u8, 11u8, 12u8, 13u8, 14u8, 15u8, 16u8, 17u8, 18u8, 19u8,
+            20u8, 21u8, 22u8, 23u8, 24u8, 25u8, 26u8, 27u8, 28u8, 29u8,
+            30u8,255u8,
+        ]).unwrap();
+        let mut keypair = SigningKeyPair::new_from_seed(&mut seed).expect("Failed to generate keypair");
+
+        assert_eq!(keypair.public(), "HcSciPgAEa7N4e6os7X7zK4JdbXnmxygkVVkHChDT3cbuh3wByfwzx9SNuo9xbz");
+
+        // ed25519 Private Keys
+        let pk = keypair.private().read_lock();
+        assert_eq!(format!("{:?}", *pk),
+                   "[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 255, 56, 192, 32, 58, 205, 19, 141, 143, 109, 220, 43, 73, 24, 108, 197, 218, 230, 85, 40, 163, 136, 227, 150, 68, 25, 159, 53, 13, 203, 92, 91, 241]"
+        );
+    }
 }

@@ -1,12 +1,78 @@
 use crate::{error::DefaultResult, NEW_RELIC_LICENSE_KEY};
 use colored::*;
 pub use holochain_common::paths::DNA_EXTENSION;
+use holochain_core_types::error::HcResult;
+use holochain_dpki::seed::{EncryptedSeed, MnemonicableSeed, Seed, SeedType, TypedSeed};
+use rpassword;
+use std::io::stdin;
 use std::{
     fs,
-    io::ErrorKind,
+    io::{self, ErrorKind, Write},
     path::PathBuf,
     process::{Command, Stdio},
 };
+
+pub fn get_secure_string_double_check(name: &str, quiet: bool) -> HcResult<String> {
+    if !quiet {
+        print!("Enter {}: ", name);
+        io::stdout().flush()?;
+    }
+    let retrieved_str_1 = rpassword::read_password()?;
+    if !quiet {
+        print!("Re-enter {}: ", name);
+        io::stdout().flush()?;
+    }
+    let retrieved_str_2 = rpassword::read_password()?;
+    if retrieved_str_1 != retrieved_str_2 {
+        panic!("Root seeds do not match. Aborting");
+    }
+    Ok(retrieved_str_1)
+}
+
+pub fn user_prompt(message: &str, quiet: bool) {
+    if !quiet {
+        println!("{}", message);
+    }
+}
+
+pub fn user_prompt_yes_no(message: &str, quiet: bool) -> bool {
+    user_prompt(format!("{} (Y/n)", message).as_str(), quiet);
+    let mut input = String::new();
+    stdin()
+        .read_line(&mut input)
+        .expect("Could not read from stdin");
+    match input.as_str() {
+        "Y\n" => true,
+        "n\n" => false,
+        _ => panic!(format!("Invalid response: {}", input)),
+    }
+}
+
+/// Retrieve a seed from a BIP39 mnemonic
+/// If a passphrase is provided assume it is encrypted and decrypt it
+/// If not then assume it is unencrypted
+pub fn get_seed(
+    seed_mnemonic: String,
+    passphrase: Option<String>,
+    seed_type: SeedType,
+) -> HcResult<TypedSeed> {
+    match passphrase {
+        Some(passphrase) => {
+            EncryptedSeed::new_with_mnemonic(seed_mnemonic, seed_type)?.decrypt(passphrase, None)
+        }
+        None => Seed::new_with_mnemonic(seed_mnemonic, seed_type)?.into_typed(),
+    }
+}
+
+pub trait WordCountable {
+    fn word_count(&self) -> usize;
+}
+
+impl WordCountable for String {
+    fn word_count(&self) -> usize {
+        self.split(" ").count()
+    }
+}
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 pub fn run_cmd(base_path: &PathBuf, bin: String, args: &[&str]) -> DefaultResult<()> {

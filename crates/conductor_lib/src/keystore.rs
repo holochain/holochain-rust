@@ -7,7 +7,7 @@ use holochain_dpki::{
     key_blob::{BlobType, Blobbable, KeyBlob},
     key_bundle::KeyBundle,
     keypair::{EncryptingKeyPair, KeyPair, SigningKeyPair},
-    seed::Seed,
+    seed::{Seed, SeedTrait},
     utils::{
         decrypt_with_passphrase_buf, encrypt_with_passphrase_buf, generate_derived_seed_buf,
         generate_random_buf, SeedContext,
@@ -44,6 +44,12 @@ pub enum Secret {
     SigningKey(SigningKeyPair),
     EncryptingKey(EncryptingKeyPair),
     Seed(SecBuf),
+}
+
+impl<S: SeedTrait> From<S> for Secret {
+    fn from(s: S) -> Self {
+        Secret::Seed(s.seed().buf.clone())
+    }
 }
 
 pub enum KeyType {
@@ -668,7 +674,7 @@ pub mod tests {
     }
 
     #[test]
-    fn test_keystore_add_random_seed() {
+    fn test_keystore_add_seed_functions() {
         let mut keystore = new_test_keystore(random_test_passphrase());
 
         assert_eq!(keystore.add_random_seed("my_root_seed", SEED_SIZE), Ok(()));
@@ -679,6 +685,26 @@ pub mod tests {
                 "identifier already exists".to_string()
             ))
         );
+        // Confirm we can round-trip a specific seed value through the Keystore
+        let seed: [u8; SEED_SIZE] = [
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+            24, 25, 26, 27, 28, 29, 30, 31,
+        ];
+        assert_eq!(keystore.add_seed("my_custom_seed", &seed), Ok(()));
+        assert_eq!(
+            keystore.list(),
+            vec!["my_custom_seed".to_string(), "my_root_seed".to_string(),]
+        );
+
+        let got_seed = match *keystore.get("my_custom_seed").unwrap().lock().unwrap() {
+            Secret::Seed(ref mut buf) => {
+                let lock = buf.read_lock();
+                format!("{:?}", *lock)
+            }
+            _ => unreachable!(),
+        };
+        assert_eq!(got_seed,
+                   "[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]");
     }
 
     #[test]

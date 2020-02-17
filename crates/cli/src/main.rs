@@ -27,6 +27,7 @@ extern crate serde_json;
 extern crate dns_lookup;
 extern crate flate2;
 extern crate glob;
+extern crate holochain_dpki;
 extern crate ignore;
 extern crate in_stream;
 extern crate rpassword;
@@ -40,7 +41,10 @@ mod config_files;
 mod error;
 mod util;
 
-use crate::error::{HolochainError, HolochainResult};
+use crate::{
+    cli::Dpki,
+    error::{HolochainError, HolochainResult},
+};
 use holochain_conductor_lib::happ_bundle::HappBundle;
 use std::{fs::File, io::Read, path::PathBuf, str::FromStr};
 use structopt::{clap::arg_enum, StructOpt};
@@ -129,10 +133,25 @@ enum Cli {
         #[structopt(long, short)]
         /// Only print machine-readable output; intended for use by programs and scripts
         quiet: bool,
-        #[structopt(long, short)]
+        #[structopt(
+            long,
+            short,
+            help = "Use insecure, hard-wired passphrase for testing and Don't ask for passphrase"
+        )]
         /// Don't ask for passphrase
         nullpass: bool,
+        #[structopt(
+            long,
+            short,
+            help = "Set passphrase via argument and don't prompt for it (not reccomended)"
+        )]
+        passphrase: Option<String>,
     },
+    #[structopt(
+            name = "dpki-init",
+        alias = "d",
+        about = "Generates a new DPKI root seed and outputs the encrypted key as a BIP39 mnemonic"
+    )]
     #[structopt(name = "chain")]
     /// View the contents of a source chain
     ChainLog {
@@ -156,6 +175,12 @@ enum Cli {
         /// Property (in the form 'name=value') that gets set/overwritten before calculating hash
         property: Option<Vec<String>>,
     },
+    #[structopt(
+        name = "dpki",
+        alias = "d",
+        about = "Operations to manage keys for DPKI"
+    )]
+    Dpki(Dpki),
     Sim2hClient {
         #[structopt(long, short = "u")]
         /// url of the sim2h server
@@ -294,15 +319,14 @@ fn run() -> HolochainResult<()> {
             path,
             quiet,
             nullpass,
-        } => {
-            let passphrase = if nullpass {
-                Some(String::from(holochain_common::DEFAULT_PASSPHRASE))
-            } else {
-                None
-            };
-            cli::keygen(path, passphrase, quiet)
-                .map_err(|e| HolochainError::Default(format_err!("{}", e)))?
-        }
+            passphrase,
+        } => cli::keygen(path, passphrase, nullpass, None, None, None, quiet)
+            .map_err(|e| HolochainError::Default(format_err!("{}", e)))?,
+
+        Cli::Dpki(dpki) => dpki
+            .execute()
+            .map(|result| println!("{}", result))
+            .map_err(|e| HolochainError::Default(format_err!("{}", e)))?,
 
         Cli::ChainLog {
             instance_id,

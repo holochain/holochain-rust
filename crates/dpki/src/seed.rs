@@ -2,7 +2,7 @@ use crate::{
     key_bundle::KeyBundle,
     password_encryption::*,
     utils::{generate_derived_seed_buf, SeedContext},
-    AGENT_ID_CTX, NEW_RELIC_LICENSE_KEY, SEED_SIZE,
+    AGENT_ID_CTX, AUTH_CTX, DEVICE_CTX, REVOKE_CTX, SEED_SIZE,
 };
 use bip39::{Language, Mnemonic, MnemonicType};
 use holochain_core_types::error::{HcResult, HolochainError};
@@ -31,6 +31,8 @@ pub enum SeedType {
     Root,
     /// Revocation seed
     Revocation,
+    /// Auth seed
+    Auth,
     /// Device seed
     Device,
     /// Derivative of a Device seed with a PIN
@@ -48,6 +50,8 @@ pub enum TypedSeed {
     Root(RootSeed),
     Device(DeviceSeed),
     DevicePin(DevicePinSeed),
+    Revocation(RevocationSeed),
+    Auth(AuthSeed),
 }
 
 /// Common Trait for TypedSeeds
@@ -69,12 +73,16 @@ pub trait SeedTrait {
     }
 }
 
+
+/// Implement the API to create new Seeds from BIP39 Mnemonics, and to output various Seeds as BIP32
+/// Mnemonics.  Some formats require mutability in order to perform this conversion; for example, a
+/// Seed w/ a SecBuf will require it to be set to readable before its contents can be accessed.
 pub trait MnemonicableSeed
 where
     Self: Sized,
 {
     fn new_with_mnemonic(phrase: String, seed_type: SeedType) -> HcResult<Self>;
-    fn get_mnemonic(&mut self) -> HcResult<String>;
+    fn get_mnemonic(&self) -> HcResult<String>;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -88,7 +96,6 @@ pub struct Seed {
     pub buf: SecBuf,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl Seed {
     pub fn new(seed_buf: SecBuf, seed_type: SeedType) -> Self {
         assert_eq!(seed_buf.len(), SEED_SIZE);
@@ -114,8 +121,10 @@ impl Seed {
             SeedType::Root => Ok(TypedSeed::Root(RootSeed::new(self.buf))),
             SeedType::Device => Ok(TypedSeed::Device(DeviceSeed::new(self.buf))),
             SeedType::DevicePin => Ok(TypedSeed::DevicePin(DevicePinSeed::new(self.buf))),
+            SeedType::Revocation => Ok(TypedSeed::Revocation(RevocationSeed::new(self.buf))),
+            SeedType::Auth => Ok(TypedSeed::Auth(AuthSeed::new(self.buf))),
             _ => Err(HolochainError::ErrorGeneric(
-                "Seed does have specific behavior for its type".to_string(),
+                "Seed does not have specific behavior for its type".to_string(),
             )),
         }
     }
@@ -141,14 +150,16 @@ impl MnemonicableSeed for Seed {
 
     /// Generate a mnemonic for the seed.
     // TODO: We need some way of zeroing the internal memory used by mnemonic
-    fn get_mnemonic(&mut self) -> HcResult<String> {
-        let entropy = self.buf.read_lock();
+    fn get_mnemonic(&self) -> HcResult<String> {
+        let mut buf = self.buf.clone();
+        let entropy = buf.read_lock();
         let e = &*entropy;
         let mnemonic = Mnemonic::from_entropy(e, Language::English).map_err(|e| {
             HolochainError::ErrorGeneric(format!("Error generating Mnemonic phrase: {}", e))
         })?;
         Ok(mnemonic.into_phrase())
     }
+
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -160,7 +171,6 @@ pub struct RootSeed {
     inner: Seed,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl SeedTrait for RootSeed {
     fn seed(&self) -> &Seed {
         &self.inner
@@ -170,7 +180,6 @@ impl SeedTrait for RootSeed {
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl RootSeed {
     /// Construct from a 32 bytes seed buffer
     pub fn new(seed_buf: SecBuf) -> Self {
@@ -179,16 +188,28 @@ impl RootSeed {
         }
     }
 
-    /// Generate Device Seed
+    // Generate Device Seed
     /// @param {number} index - the index number in this seed group, must not be zero
     pub fn generate_device_seed(
         &mut self,
-        seed_context: &SeedContext,
         index: u64,
     ) -> HcResult<DeviceSeed> {
+        let device_ctx = SeedContext::new(REVOKE_CTX);
         let device_seed_buf =
-            generate_derived_seed_buf(&mut self.inner.buf, seed_context, index, SEED_SIZE)?;
+            generate_derived_seed_buf(&mut self.inner.buf, &device_ctx, index, SEED_SIZE)?;
         Ok(DeviceSeed::new(device_seed_buf))
+    }
+
+    /// Generate Revocation Seed
+    /// @param {number} index - the index number in this seed group, must not be zero
+    pub fn generate_revocation_seed(
+        &mut self,
+        index: u64,
+    ) -> HcResult<RevocationSeed> {
+        let seed_context = SeedContext::new(REVOKE_CTX);
+        let seed_buf =
+            generate_derived_seed_buf(&mut self.inner.buf, &seed_context, index, SEED_SIZE)?;
+        Ok(RevocationSeed::new(seed_buf))
     }
 }
 
@@ -201,7 +222,6 @@ pub struct DeviceSeed {
     inner: Seed,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl SeedTrait for DeviceSeed {
     fn seed(&self) -> &Seed {
         &self.inner
@@ -211,7 +231,6 @@ impl SeedTrait for DeviceSeed {
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl DeviceSeed {
     /// Construct from a 32 bytes seed buffer
     pub fn new(seed_buf: SecBuf) -> Self {
@@ -221,7 +240,7 @@ impl DeviceSeed {
     }
 
     /// generate a device pin seed by applying pwhash of pin with this seed as the salt
-    /// @param {string} pin - should be >= 4 characters 1-9
+    /// @param {string} pin - should be >= 4 characters 0-9
     /// @return {DevicePinSeed} Resulting Device Pin Seed
     pub fn generate_device_pin_seed(
         &mut self,
@@ -231,6 +250,18 @@ impl DeviceSeed {
         let mut hash = SecBuf::with_secure(pwhash::HASHBYTES);
         pw_hash(pin, &mut self.inner.buf, &mut hash, config)?;
         Ok(DevicePinSeed::new(hash))
+    }
+
+    /// Generate Auth Seed
+    /// @param {number} index - the index number in this seed group, must not be zero
+    pub fn generate_auth_seed(
+        &mut self,
+        index: u64,
+    ) -> HcResult<AuthSeed> {
+        let seed_context = SeedContext::new(AUTH_CTX);
+        let seed_buf =
+            generate_derived_seed_buf(&mut self.inner.buf, &seed_context, index, SEED_SIZE)?;
+        Ok(AuthSeed::new(seed_buf))
     }
 }
 
@@ -243,7 +274,6 @@ pub struct DevicePinSeed {
     inner: Seed,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl SeedTrait for DevicePinSeed {
     fn seed(&self) -> &Seed {
         &self.inner
@@ -253,7 +283,6 @@ impl SeedTrait for DevicePinSeed {
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl DevicePinSeed {
     /// Construct from a 32 bytes seed buffer
     pub fn new(seed_buf: SecBuf) -> Self {
@@ -279,6 +308,91 @@ impl DevicePinSeed {
 }
 
 //--------------------------------------------------------------------------------------------------
+// Revocation Seed
+//--------------------------------------------------------------------------------------------------
+
+#[derive(Debug)]
+pub struct RevocationSeed {
+    inner: Seed,
+}
+
+impl SeedTrait for RevocationSeed {
+    fn seed(&self) -> &Seed {
+        &self.inner
+    }
+    fn seed_mut(&mut self) -> &mut Seed {
+        &mut self.inner
+    }
+}
+
+impl RevocationSeed {
+    /// Construct from a 32 bytes seed buffer
+    pub fn new(seed_buf: SecBuf) -> Self {
+        RevocationSeed {
+            inner: Seed::new_with_initializer(
+                SeedInitializer::Seed(seed_buf),
+                SeedType::Revocation,
+            ),
+        }
+    }
+
+    /// Generate a revocation key
+    pub fn generate_revocation_key(&mut self, derivation_index: u64) -> HcResult<KeyBundle> {
+        let mut ref_seed_buf = SecBuf::with_secure(SEED_SIZE);
+        let context = SeedContext::new(DEVICE_CTX);
+        let mut context = context.to_sec_buf();
+        kdf::derive(
+            &mut ref_seed_buf,
+            derivation_index,
+            &mut context,
+            &mut self.inner.buf,
+        )?;
+        Ok(KeyBundle::new_from_seed_buf(&mut ref_seed_buf)?)
+    }
+}
+
+//--------------------------------------------------------------------------------------------------
+// Auth Seed
+//--------------------------------------------------------------------------------------------------
+
+#[derive(Debug)]
+pub struct AuthSeed {
+    inner: Seed,
+}
+
+impl SeedTrait for AuthSeed {
+    fn seed(&self) -> &Seed {
+        &self.inner
+    }
+    fn seed_mut(&mut self) -> &mut Seed {
+        &mut self.inner
+    }
+}
+
+impl AuthSeed {
+    /// Construct from a 32 bytes seed buffer
+    pub fn new(seed_buf: SecBuf) -> Self {
+        AuthSeed {
+            inner: Seed::new_with_initializer(SeedInitializer::Seed(seed_buf), SeedType::Auth),
+        }
+    }
+
+    /// Generate a revocation key
+    pub fn generate_auth_key(&mut self, derivation_index: u64) -> HcResult<KeyBundle> {
+        let mut ref_seed_buf = SecBuf::with_secure(SEED_SIZE);
+        let context = SeedContext::new(DEVICE_CTX);
+        let mut context = context.to_sec_buf();
+        kdf::derive(
+            &mut ref_seed_buf,
+            derivation_index,
+            &mut context,
+            &mut self.inner.buf,
+        )?;
+        Ok(KeyBundle::new_from_seed_buf(&mut ref_seed_buf)?)
+    }
+}
+
+//--------------------------------------------------------------------------------------------------
 // Encrypted Seed
 //--------------------------------------------------------------------------------------------------
 
@@ -287,7 +401,6 @@ pub struct EncryptedSeed {
     data: EncryptedData,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl EncryptedSeed {
     fn new(data: EncryptedData, kind: SeedType) -> Self {
         Self { kind, data }
@@ -308,7 +421,6 @@ impl EncryptedSeed {
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl MnemonicableSeed for EncryptedSeed {
     fn new_with_mnemonic(phrase: String, seed_type: SeedType) -> HcResult<Self> {
         // split out the two phrases, decode then combine the bytes
@@ -341,7 +453,7 @@ impl MnemonicableSeed for EncryptedSeed {
     /// Generate a mnemonic for the seed.
     /// Encrypted seeds produce a 48 word mnemonic as the encrypted output also contains auth bytes and salt bytes
     /// which adds an extra 32 bytes. This fits nicely into two 24 word BIP39 mnemonics.
-    fn get_mnemonic(&mut self) -> HcResult<String> {
+    fn get_mnemonic(&self) -> HcResult<String> {
         let bytes: Vec<u8> = self
             .data
             .cipher
@@ -398,14 +510,13 @@ mod tests {
     #[test]
     fn it_should_create_a_device_seed() {
         let seed_buf = generate_random_seed_buf();
-        let context = SeedContext::new(*b"HCDEVICE");
         let mut root_seed = RootSeed::new(seed_buf);
 
-        let mut device_seed_3 = root_seed.generate_device_seed(&context, 3).unwrap();
+        let mut device_seed_3 = root_seed.generate_device_seed(3).unwrap();
         assert_eq!(SeedType::Device, device_seed_3.seed().kind);
-        let _ = root_seed.generate_device_seed(&context, 0).unwrap_err();
-        let mut device_seed_1 = root_seed.generate_device_seed(&context, 1).unwrap();
-        let mut device_seed_3_b = root_seed.generate_device_seed(&context, 3).unwrap();
+        let _ = root_seed.generate_device_seed(0).unwrap_err();
+        let mut device_seed_1 = root_seed.generate_device_seed(1).unwrap();
+        let mut device_seed_3_b = root_seed.generate_device_seed(3).unwrap();
         assert!(
             device_seed_3
                 .seed_mut()
@@ -427,9 +538,8 @@ mod tests {
         let seed_buf = generate_random_seed_buf();
         let mut pin = generate_random_seed_buf();
 
-        let context = SeedContext::new(*b"HCDEVICE");
         let mut root_seed = RootSeed::new(seed_buf);
-        let mut device_seed = root_seed.generate_device_seed(&context, 3).unwrap();
+        let mut device_seed = root_seed.generate_device_seed(3).unwrap();
         let device_pin_seed = device_seed
             .generate_device_pin_seed(&mut pin, TEST_CONFIG)
             .unwrap();
@@ -441,9 +551,8 @@ mod tests {
         let seed_buf = generate_random_seed_buf();
         let mut pin = generate_random_seed_buf();
 
-        let context = SeedContext::new(*b"HCDEVICE");
         let mut rs = RootSeed::new(seed_buf);
-        let mut ds = rs.generate_device_seed(&context, 3).unwrap();
+        let mut ds = rs.generate_device_seed(3).unwrap();
         let mut dps = ds.generate_device_pin_seed(&mut pin, TEST_CONFIG).unwrap();
         let mut keybundle_5 = dps.generate_dna_key(5).unwrap();
 
@@ -537,7 +646,7 @@ mod tests {
             TypedSeed::Root(s) => s,
             _ => unreachable!(),
         };
-        let mut enc_seed = seed.encrypt("some passphrase".to_string(), None).unwrap();
+        let enc_seed = seed.encrypt("some passphrase".to_string(), None).unwrap();
         let mnemonic = enc_seed.get_mnemonic().unwrap();
         println!("mnemonic: {:?}", mnemonic);
         assert_eq!(

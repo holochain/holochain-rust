@@ -1,4 +1,5 @@
 #![feature(vec_remove_item)]
+#![feature(label_break_value)]
 #![allow(clippy::redundant_clone)]
 
 extern crate backtrace;
@@ -287,13 +288,17 @@ impl Sim2hHandle {
         tokio::task::spawn(async move {
             // -- right now each agent can only be part of a single space :/ --
 
-            let state = sim2h_handle.state().get_clone().await;
-            let (agent_id, space_hash) = match state.get_space_info_from_uri(&uri) {
-                None => {
-                    error!("uri has not joined space, cannoct proceed {}", uri);
-                    return;
+            let (agent_id, space_hash) = 'got_info: {
+                for _ in 0_usize..10 {
+                    // await consistency of new connection
+                    let state = sim2h_handle.state().get_clone().await;
+                    if let Some(info) = state.get_space_info_from_uri(&uri) {
+                        break 'got_info info;
+                    }
+                    tokio::time::delay_for(std::time::Duration::from_millis(100)).await;
                 }
-                Some((agent_id, space_hash)) => (agent_id, space_hash),
+                error!("uri has not joined space, cannot proceed {}", uri);
+                return;
             };
 
             if *agent_id != signer {

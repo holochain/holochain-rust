@@ -56,6 +56,19 @@ use std::convert::TryFrom;
 use holochain_locksmith::Mutex;
 use holochain_metrics::{config::MetricPublisherConfig, Metric};
 
+lazy_static! {
+    static ref SET_THREAD_PANIC_FATAL: bool = {
+        let orig_handler = std::panic::take_hook();
+        std::panic::set_hook(Box::new(move |panic_info| {
+            eprintln!("THREAD PANIC {:#?}", panic_info);
+            // invoke the default handler and exit the process
+            orig_handler(panic_info);
+            std::process::exit(1);
+        }));
+        true
+    };
+}
+
 /// if we can't acquire a lock in 20 seconds, panic!
 const MAX_LOCK_TIMEOUT: u64 = 20000;
 
@@ -113,9 +126,9 @@ impl MetricsTimerGenerator {
         let (sender, mut recv) = tokio::sync::mpsc::unbounded_channel::<(&'static str, f64)>();
         let out = async move {
             let metric_publisher = MetricPublisherConfig::default().create_metric_publisher();
-            loop {
+            'metric_loop: loop {
                 let msg = match recv.next().await {
-                    None => return,
+                    None => break 'metric_loop,
                     Some(msg) => msg,
                 };
                 // TODO - this write is technically blocking
@@ -125,6 +138,7 @@ impl MetricsTimerGenerator {
                     .unwrap()
                     .publish(&Metric::new_timestamped_now(msg.0, None, msg.1));
             }
+            warn!("metric loop ended");
         }
         .boxed();
         (Self { sender }, out)
@@ -978,7 +992,7 @@ pub fn run_sim2h(
             }
         };
         let mut blocking_fn = Some(gen_blocking_fn(sim2h));
-        loop {
+        'sim2h_process_loop: loop {
             // NOTE - once we move everything in sim2h to futures
             //        we can get rid of the `process()` function
             //        and remove this spawn_blocking code
@@ -988,7 +1002,7 @@ pub fn run_sim2h(
                     // we can't recover because the sim2h instance is lost
                     // but don't panic... just exit
                     error!("sim2h process failed: {:?}", e);
-                    return;
+                    break 'sim2h_process_loop;
                 }
                 Ok((sim2h, Err(e))) => {
                     if e.to_string().contains("Bind error:") {
@@ -1010,6 +1024,7 @@ pub fn run_sim2h(
             };
             blocking_fn = Some(gen_blocking_fn(sim2h));
         }
+        warn!("sim2h process loop ended");
     });
 
     (rt, bind_recv)
@@ -1040,6 +1055,9 @@ impl Sim2h {
         dht_algorithm: DhtAlgorithm,
         tracer: Option<ht::Tracer>,
     ) -> Self {
+        // make sure if a thread panics, the whole process exits
+        assert!(*SET_THREAD_PANIC_FATAL);
+
         let (metric_gen, metric_task) = MetricsTimerGenerator::new();
 
         let (connection_mgr, connection_mgr_evt_recv, connection_count) = ConnectionMgr::new();

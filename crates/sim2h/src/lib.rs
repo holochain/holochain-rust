@@ -290,10 +290,10 @@ impl Sim2hHandle {
             WireMessage::Hello(version) => {
                 return spawn_handle_message_hello(sim2h_handle, uri, signer, version)
             }
-            WireMessage::ClientToLib3h((ht::EncodedSpanWrap {
+            WireMessage::ClientToLib3h(ht::EncodedSpanWrap {
                 data: ClientToLib3h::JoinSpace(data),
                 ..
-            }, _message_serial)) => return spawn_handle_message_join_space(sim2h_handle, uri, signer, data),
+            }) => return spawn_handle_message_join_space(sim2h_handle, uri, signer, data),
             message @ _ => message,
         };
 
@@ -324,7 +324,7 @@ impl Sim2hHandle {
             }
 
             match message {
-                WireMessage::ClientToLib3h((span_wrap, _message_serial)) => {
+                WireMessage::ClientToLib3h(span_wrap) => {
                     let span = ht::SpanWrap::from(span_wrap.clone())
                         .follower(&tracer, "handle_joined - ClientToLib3h");
                     let _spanguard = span.map(|span| ht::push_span(span));
@@ -367,7 +367,7 @@ impl Sim2hHandle {
                         }
                     }
                 }
-                WireMessage::Lib3hToClientResponse((span_wrap, _message_serial)) => {
+                WireMessage::Lib3hToClientResponse(span_wrap) => {
                     let span = ht::SpanWrap::from(span_wrap.clone())
                         .follower(&tracer, "handle_joined - Lib3hToClientResponse");
                     let _spanguard = span.map(|span| ht::push_span(span));

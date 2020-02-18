@@ -56,7 +56,7 @@ impl WireMessage {
             WireMessage::StatusResponse(_) => "StatusResponse",
             WireMessage::Hello(_) => "Hello",
             WireMessage::HelloResponse(_) => "HelloResponse",
-            WireMessage::ClientToLib3h((span_wrap, _message_serial)) => match span_wrap.data {
+            WireMessage::ClientToLib3h(span_wrap) => match span_wrap.data {
                 ClientToLib3h::Bootstrap(_) => "[C>L]Bootstrap",
                 ClientToLib3h::FetchEntry(_) => "[C>L]FetchEntry",
                 ClientToLib3h::JoinSpace(_) => "[C>L]JoinSpace",
@@ -85,7 +85,7 @@ impl WireMessage {
                 Lib3hToClient::SendDirectMessageResult(_) => "[L>C]SendDirectMessageResult",
                 Lib3hToClient::Unbound(_) => "[L>C]Unbound",
             },
-            WireMessage::Lib3hToClientResponse((span_wrap, _message_serial)) => match span_wrap.data {
+            WireMessage::Lib3hToClientResponse(span_wrap) => match span_wrap.data {
                 Lib3hToClientResponse::HandleDropEntryResult => "[L<C]HandleDropEntryResult",
                 Lib3hToClientResponse::HandleFetchEntryResult(_) => "[L<C]HandleFetchEntryResult",
                 Lib3hToClientResponse::HandleGetAuthoringEntryListResult(_) => {
@@ -107,7 +107,6 @@ impl WireMessage {
                 get_multi_type(messages)
             }
             WireMessage::Err(_) => "[Error] {:?}",
-            WireMessage::Ack(_) => "[Ack]"
         })
     }
 }

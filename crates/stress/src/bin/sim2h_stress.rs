@@ -362,7 +362,7 @@ impl Job {
 
     /// join the space "abcd" : )
     pub fn join_space(&mut self) {
-        self.send_wire(WireMessage::ClientToLib3h((
+        self.send_wire(WireMessage::ClientToLib3h(
             ht::top_follower("join_space")
                 .wrap(ClientToLib3h::JoinSpace(SpaceData {
                     agent_id: self.agent_id.clone().into(),
@@ -370,8 +370,7 @@ impl Job {
                     space_address: "abcd".to_string().into(),
                 }))
                 .into(),
-            0, //random message serial number since we don't care about receipts here
-        )));
+        ));
     }
 
     /// send a ping message to sim2h
@@ -394,7 +393,7 @@ impl Job {
             self.pending_dms
                 .insert(rid.clone(), std::time::Instant::now());
 
-            self.send_wire(WireMessage::ClientToLib3h((
+            self.send_wire(WireMessage::ClientToLib3h(
                 ht::top_follower("dm")
                     .wrap(ClientToLib3h::SendDirectMessage(DirectMessageData {
                         space_address: "abcd".to_string().into(),
@@ -404,8 +403,7 @@ impl Job {
                         content,
                     }))
                     .into(),
-                0, //random message serial number since we don't care about receipts here
-            )));
+            ));
 
             logger.log("dm_send_count", 1.0);
         }
@@ -455,10 +453,9 @@ impl Job {
                 aspect_list: vec![aspect],
             },
         });
-        self.send_wire(WireMessage::ClientToLib3h((
+        self.send_wire(WireMessage::ClientToLib3h(
             ht::top_follower("publish").wrap(msg).into(),
-            0, //random message serial number since we don't care about receipts here
-        )));
+        ));
 
         logger.log("publish_send_count", 1.0);
     }
@@ -511,10 +508,9 @@ impl Job {
                 let mut out_dm = dm_data.clone();
                 out_dm.to_agent_id = dm_data.from_agent_id.clone();
                 out_dm.from_agent_id = dm_data.to_agent_id.clone();
-                self.send_wire(WireMessage::Lib3hToClientResponse((
+                self.send_wire(WireMessage::Lib3hToClientResponse(
                     span_wrap.swapped(Lib3hToClientResponse::HandleSendDirectMessageResult(out_dm)),
-                    0, //random message serial number since we don't care about receipts here
-                )));
+                ));
             }
             Lib3hToClient::SendDirectMessageResult(dm_data) => {
                 let res = self.pending_dms.remove(&dm_data.request_id);

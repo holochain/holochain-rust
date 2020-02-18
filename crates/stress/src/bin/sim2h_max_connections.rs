@@ -128,7 +128,7 @@ impl Job {
 
     /// join the space "abcd" : )
     pub fn join_space(&mut self) {
-        self.send_wire(WireMessage::ClientToLib3h(
+        self.send_wire(WireMessage::ClientToLib3h((
             ht::noop("join_space")
                 .wrap(ClientToLib3h::JoinSpace(SpaceData {
                     agent_id: self.agent_id.clone().into(),
@@ -136,7 +136,8 @@ impl Job {
                     space_address: "abcd".to_string().into(),
                 }))
                 .into(),
-        ));
+            0, //random message serial number since we don't care about receipts here
+        )));
     }
 
     /// send a ping message to sim2h

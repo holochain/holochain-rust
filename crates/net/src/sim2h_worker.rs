@@ -36,6 +36,7 @@ use url2::prelude::*;
 const INITIAL_CONNECTION_TIMEOUT_MS: u64 = 2000; // The real initial is 4 seconds because one backoff happens to start
 const MAX_CONNECTION_TIMEOUT_MS: u64 = 60000;
 const SIM2H_WORKER_INTERNAL_REQUEST_ID: &str = "SIM2H_WORKER";
+const RESEND_WIRE_MESSAGE_MS: u64 = 10000;
 
 fn connect(url: Lib3hUri, timeout_ms: u64) -> NetResult<TcpWss> {
     //    let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
@@ -225,7 +226,7 @@ impl Sim2hWorker {
         }
         let buffered_message = self.outgoing_message_buffer.get(0).unwrap();
         if let Some(instant_last_sent) = buffered_message.last_sent {
-            if instant_last_sent.elapsed() < RESEND_WIRE_MESSAGE_DURATION {
+            if instant_last_sent.elapsed() < Duration::from_millis(RESEND_WIRE_MESSAGE_MS) {
                 return false;
             }
         }

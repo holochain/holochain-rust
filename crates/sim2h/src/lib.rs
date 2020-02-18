@@ -266,6 +266,7 @@ impl Sim2hHandle {
     }
 
     /// forward a message to be handled
+    #[autotrace]
     pub fn handle_message(&self, uri: Lib3hUri, message: WireMessage, signer: AgentId) {
         // dispatch to correct handler
         let sim2h_handle = self.clone();
@@ -291,6 +292,14 @@ impl Sim2hHandle {
         // you have to be in a space to proceed further
         let tracer = self.tracer.clone().unwrap_or_else(|| ht::null_tracer());
         tokio::task::spawn(async move {
+            let _spanguard = message.try_get_span().and_then(|msg| {
+                ht::follow_encoded_tag(
+                    &Some(tracer.clone()),
+                    msg,
+                    here!(()),
+                    ht::debug_tag("HandleMessageTask", message.clone()),
+                )
+            });
             // -- right now each agent can only be part of a single space :/ --
 
             let state = sim2h_handle.state().get_clone().await;

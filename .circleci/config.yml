@@ -271,7 +271,6 @@ workflows:
          - develop
          - final-exam
          - trycp-update-hc
-         - prepend-joinspace
    - docker-build-trycp-server:
       requires:
        - docker-build-minimal
@@ -286,7 +285,6 @@ workflows:
          - develop
          - final-exam
          - trycp-update-hc
-         - prepend-joinspace
    - docker-build-circle-build:
       requires:
        - docker-build-latest

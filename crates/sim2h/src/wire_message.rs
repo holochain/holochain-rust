@@ -31,6 +31,7 @@ pub struct HelloData {
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum WireMessage {
+    Ack(u8),
     ClientToLib3h(ht::EncodedSpanWrap<ClientToLib3h>),
     ClientToLib3hResponse(ht::EncodedSpanWrap<ClientToLib3hResponse>),
     Lib3hToClient(ht::EncodedSpanWrap<Lib3hToClient>),
@@ -49,6 +50,7 @@ pub enum WireMessage {
 impl WireMessage {
     pub fn message_type(&self) -> String {
         String::from(match self {
+            WireMessage::Ack(_) => "Ack",
             WireMessage::Ping => "Ping",
             WireMessage::Pong => "Pong",
             WireMessage::Status => "Status",

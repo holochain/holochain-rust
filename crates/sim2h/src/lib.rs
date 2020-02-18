@@ -275,7 +275,13 @@ impl Sim2hHandle {
     }
 
     /// forward a message to be handled
-    pub fn handle_message(&self, uri: Lib3hUri, message: WireMessage, signer: AgentId) {
+    pub fn handle_message(
+        &self,
+        ack_val: u8,
+        uri: Lib3hUri,
+        message: WireMessage,
+        signer: AgentId,
+    ) {
         // dispatch to correct handler
         let sim2h_handle = self.clone();
 
@@ -322,6 +328,8 @@ impl Sim2hHandle {
                 );
                 return;
             }
+
+            sim2h_handle.send(signer.clone(), uri.clone(), &WireMessage::Ack(ack_val));
 
             match message {
                 WireMessage::ClientToLib3h(span_wrap) => {
@@ -1218,6 +1226,14 @@ impl Sim2h {
     }
 
     fn handle_payload(sim2h_handle: Sim2hHandle, url: Lib3hUri, payload: Opaque) {
+        let mut payload: Vec<u8> = payload.into();
+        if payload.len() < 1 {
+            error!("bad empty payload");
+            return;
+        }
+        let ack_val = payload.remove(0);
+        let payload: Opaque = payload.into();
+        trace!("got ack_val: {}", ack_val);
         tokio::task::spawn(async move {
             let _m = sim2h_handle.metric_timer("sim2h-handle_payload");
             match (|| -> Sim2hResult<(AgentId, WireMessage)> {
@@ -1230,7 +1246,7 @@ impl Sim2h {
                 Ok((signed_message.provenance.source().into(), wire_message))
             })() {
                 Ok((source, wire_message)) => {
-                    sim2h_handle.handle_message(url, wire_message, source)
+                    sim2h_handle.handle_message(ack_val, url, wire_message, source)
                 }
                 Err(error) => {
                     error!(

@@ -233,7 +233,16 @@ impl Sim2hWorker {
                 message.clone(),
                 Provenance::new(self.agent_id.clone(), signature.into()),
             );
+
             let to_send: Opaque = signed_wire_message.into();
+
+            let mut to_send: Vec<u8> = to_send.into();
+
+            // insert ack_val
+            to_send.insert(0, 42);
+
+            let to_send: Opaque = to_send.into();
+
             // safe to unwrap because we check connection_ready() above
             if let Err(e) = self
                 .connection
@@ -483,6 +492,7 @@ impl Sim2hWorker {
     fn handle_server_message(&mut self, message: WireMessage) -> NetResult<()> {
         let span = ht::with_top_or_null(|s| s.child("handle_server_message"));
         match message {
+            WireMessage::Ack(ack_val) => trace!("got ack_val: {}", ack_val),
             WireMessage::Ping => self.send_wire_message(WireMessage::Pong)?,
             WireMessage::Pong => {}
             WireMessage::Lib3hToClient(span_wrap) => self.to_core.push(span_wrap.map(|m| Lib3hServerProtocol::from(m))),

@@ -188,7 +188,7 @@ impl Sim2hWorker {
                 }
             };
             debug!("SENDING JOIN {:#?}", msg);
-            self.send_wire_message(msg)
+            self.prepend_wire_message(msg)
                 .expect("can send JoinSpace on reconnect");
         }
     }
@@ -254,6 +254,14 @@ impl Sim2hWorker {
             // we can remove it from the outgoing buffer queue
             self.outgoing_message_buffer.remove(0);
         }
+    }
+
+    /// if we re-connected, we may need to send a join first,
+    /// before other queued messages
+    fn prepend_wire_message(&mut self, message: WireMessage) -> NetResult<()> {
+        debug!("WireMessage: queueing {:?}", message);
+        self.outgoing_message_buffer.insert(0, message);
+        Ok(())
     }
 
     /// queue a wire message for send

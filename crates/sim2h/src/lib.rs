@@ -1,4 +1,5 @@
 #![feature(vec_remove_item)]
+#![feature(label_break_value)]
 #![allow(clippy::redundant_clone)]
 
 extern crate backtrace;
@@ -54,6 +55,19 @@ use std::convert::TryFrom;
 
 use holochain_locksmith::Mutex;
 use holochain_metrics::{config::MetricPublisherConfig, Metric};
+
+lazy_static! {
+    static ref SET_THREAD_PANIC_FATAL: bool = {
+        let orig_handler = std::panic::take_hook();
+        std::panic::set_hook(Box::new(move |panic_info| {
+            eprintln!("THREAD PANIC {:#?}", panic_info);
+            // invoke the default handler and exit the process
+            orig_handler(panic_info);
+            std::process::exit(1);
+        }));
+        true
+    };
+}
 
 /// if we can't acquire a lock in 20 seconds, panic!
 const MAX_LOCK_TIMEOUT: u64 = 20000;
@@ -112,9 +126,9 @@ impl MetricsTimerGenerator {
         let (sender, mut recv) = tokio::sync::mpsc::unbounded_channel::<(&'static str, f64)>();
         let out = async move {
             let metric_publisher = MetricPublisherConfig::default().create_metric_publisher();
-            loop {
+            'metric_loop: loop {
                 let msg = match recv.next().await {
-                    None => return,
+                    None => break 'metric_loop,
                     Some(msg) => msg,
                 };
                 // TODO - this write is technically blocking
@@ -124,6 +138,7 @@ impl MetricsTimerGenerator {
                     .unwrap()
                     .publish(&Metric::new_timestamped_now(msg.0, None, msg.1));
             }
+            warn!("metric loop ended");
         }
         .boxed();
         (Self { sender }, out)
@@ -287,13 +302,17 @@ impl Sim2hHandle {
         tokio::task::spawn(async move {
             // -- right now each agent can only be part of a single space :/ --
 
-            let state = sim2h_handle.state().get_clone().await;
-            let (agent_id, space_hash) = match state.get_space_info_from_uri(&uri) {
-                None => {
-                    error!("uri has not joined space, cannoct proceed {}", uri);
-                    return;
+            let (agent_id, space_hash) = 'got_info: {
+                for _ in 0_usize..10 {
+                    // await consistency of new connection
+                    let state = sim2h_handle.state().get_clone().await;
+                    if let Some(info) = state.get_space_info_from_uri(&uri) {
+                        break 'got_info info;
+                    }
+                    tokio::time::delay_for(std::time::Duration::from_millis(100)).await;
                 }
-                Some((agent_id, space_hash)) => (agent_id, space_hash),
+                error!("uri has not joined space, cannot proceed {}", uri);
+                return;
             };
 
             if *agent_id != signer {
@@ -443,12 +462,17 @@ fn spawn_handle_message_status(sim2h_handle: Sim2hHandle, uri: Lib3hUri, signer:
     tokio::task::spawn(async move {
         debug!("Sending StatusResponse in response to Status");
         let state = sim2h_handle.state().get_clone().await;
+        let mut joined_connections = 0_usize;
+        for (_, space) in state.spaces.iter() {
+            joined_connections += space.connections.len();
+        }
         sim2h_handle.send(
             signer.clone(),
             uri.clone(),
             &WireMessage::StatusResponse(StatusData {
                 spaces: state.spaces_count(),
                 connections: sim2h_handle.connection_count.get().await,
+                joined_connections,
                 redundant_count: match sim2h_handle.dht_algorithm() {
                     DhtAlgorithm::FullSync => 0,
                     DhtAlgorithm::NaiveSharding { redundant_count } => *redundant_count,
@@ -968,7 +992,7 @@ pub fn run_sim2h(
             }
         };
         let mut blocking_fn = Some(gen_blocking_fn(sim2h));
-        loop {
+        'sim2h_process_loop: loop {
             // NOTE - once we move everything in sim2h to futures
             //        we can get rid of the `process()` function
             //        and remove this spawn_blocking code
@@ -978,7 +1002,7 @@ pub fn run_sim2h(
                     // we can't recover because the sim2h instance is lost
                     // but don't panic... just exit
                     error!("sim2h process failed: {:?}", e);
-                    return;
+                    break 'sim2h_process_loop;
                 }
                 Ok((sim2h, Err(e))) => {
                     if e.to_string().contains("Bind error:") {
@@ -1000,6 +1024,7 @@ pub fn run_sim2h(
             };
             blocking_fn = Some(gen_blocking_fn(sim2h));
         }
+        warn!("sim2h process loop ended");
     });
 
     (rt, bind_recv)
@@ -1030,6 +1055,9 @@ impl Sim2h {
         dht_algorithm: DhtAlgorithm,
         tracer: Option<ht::Tracer>,
     ) -> Self {
+        // make sure if a thread panics, the whole process exits
+        assert!(*SET_THREAD_PANIC_FATAL);
+
         let (metric_gen, metric_task) = MetricsTimerGenerator::new();
 
         let (connection_mgr, connection_mgr_evt_recv, connection_count) = ConnectionMgr::new();
@@ -1286,8 +1314,16 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
 
     let agents_needing_gossip = sim2h_handle.state().check_gossip().await.spaces();
 
+    if agents_needing_gossip.is_empty() {
+        debug!("sim2h gossip no agents needing gossip");
+    }
+
     for (space_hash, agents) in agents_needing_gossip.iter() {
-        trace!("sim2h gossip agent count: {}", agents.len());
+        trace!(
+            "sim2h gossip agent count: {} in space {:?}",
+            agents.len(),
+            space_hash
+        );
 
         for agent_id in agents {
             // explicitly yield here as we don't want to hog the scheduler
@@ -1300,8 +1336,6 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
                 None => continue,
                 Some(r) => r,
             };
-
-            trace!("sim2h gossip entry count: {}", r.len());
 
             for (entry_hash, aspects) in r.iter() {
                 if aspects.is_empty() {

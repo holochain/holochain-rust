@@ -16,6 +16,7 @@ pub enum WireError {
 pub struct StatusData {
     pub spaces: usize,
     pub connections: usize,
+    pub joined_connections: usize,
     pub redundant_count: u64,
     pub version: u32,
 }

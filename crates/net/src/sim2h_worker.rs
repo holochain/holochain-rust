@@ -235,7 +235,7 @@ impl Sim2hWorker {
         if self.outgoing_message_buffer.is_empty() || !self.connection_ready() {
             return false;
         }
-        let buffered_message = self.outgoing_message_buffer.get(0).unwrap();
+        let buffered_message = self.outgoing_message_buffer.get_mut(0).unwrap();
         if let Some(instant_last_sent) = buffered_message.last_sent {
             if instant_last_sent.elapsed() < Duration::from_millis(RESEND_WIRE_MESSAGE_MS) {
                 return false;
@@ -273,6 +273,7 @@ impl Sim2hWorker {
             self.check_reconnect();
             return true;
         }
+        buffered_message.last_sent = Some(Instant::now());
         true
     }
 

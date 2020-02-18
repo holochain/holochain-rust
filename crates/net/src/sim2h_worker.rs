@@ -547,15 +547,15 @@ impl Sim2hWorker {
                     debug!("WireMessage::Ack received => dequeuing sent message {:?}", message);
                     // if we made it here, we successfully sent the first message
                     // we can remove it from the outgoing buffer queue
-                    self.outgoing_message_buffer.remove(0)
+                    self.outgoing_message_buffer.remove(0);
                 } else {
                     warn!(
-                        "WireMessage::Ack received that came out of order! Got serial: {}, have top serial: {}",
+                        "WireMessage::Ack received that came out of order! Got serial: {}, have top serial: {:?}",
                         serial,
                         self.outgoing_message_buffer
                             .first()
                             .and_then(|buffered_message| buffered_message.serial)
-                    )
+                    );
                 }
             }
         };

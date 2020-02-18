@@ -323,11 +323,14 @@ impl Sim2hHandle {
                 return;
             }
 
+            let receipt = WireMessage::Ack(message.calc_hash());
+
             match message {
                 WireMessage::ClientToLib3h(span_wrap) => {
                     let span = ht::SpanWrap::from(span_wrap.clone())
                         .follower(&tracer, "handle_joined - ClientToLib3h");
                     let _spanguard = span.map(|span| ht::push_span(span));
+                    sim2h_handle.send(signer.clone(), uri.clone(), &receipt);
                     match span_wrap.data.clone() {
                         ClientToLib3h::LeaveSpace(_data) => {
                             // for now, just disconnect on LeaveSpace
@@ -371,6 +374,7 @@ impl Sim2hHandle {
                     let span = ht::SpanWrap::from(span_wrap.clone())
                         .follower(&tracer, "handle_joined - Lib3hToClientResponse");
                     let _spanguard = span.map(|span| ht::push_span(span));
+                    sim2h_handle.send(signer.clone(), uri.clone(), &receipt);
                     match span_wrap.data.clone() {
                         Lib3hToClientResponse::HandleSendDirectMessageResult(dm_data) => {
                             return spawn_handle_message_send_dm_result(

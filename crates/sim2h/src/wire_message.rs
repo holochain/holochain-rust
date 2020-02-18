@@ -2,6 +2,8 @@
 use crate::{error::Sim2hError, NEW_RELIC_LICENSE_KEY};
 use lib3h_protocol::{data_types::Opaque, protocol::*};
 use std::convert::TryFrom;
+use std::hash::{Hash, Hasher};
+use std::collections::hash_map::DefaultHasher;
 
 pub type WireMessageVersion = u32;
 pub const WIRE_VERSION: WireMessageVersion = 2;
@@ -43,6 +45,7 @@ pub enum WireMessage {
     HelloResponse(HelloData),
     Status,
     StatusResponse(StatusData),
+    Ack(u64),
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
@@ -106,7 +109,14 @@ impl WireMessage {
                 get_multi_type(messages)
             }
             WireMessage::Err(_) => "[Error] {:?}",
+            WireMessage::Ack(_) => "[Ack] {:?}",
         })
+    }
+
+    pub fn calc_hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.hash(&mut hasher);
+        hasher.finish()
     }
 }
 
@@ -133,6 +143,12 @@ impl From<WireMessage> for Opaque {
 impl From<WireMessage> for String {
     fn from(message: WireMessage) -> String {
         serde_json::to_string(&message).expect("wiremessage should serialize")
+    }
+}
+
+impl From<&WireMessage> for String {
+    fn from(message: &WireMessage) -> String {
+        serde_json::to_string(message).expect("wiremessage should serialize")
     }
 }
 
@@ -167,6 +183,13 @@ impl From<String> for WireError {
 impl From<WireError> for Sim2hError {
     fn from(err: WireError) -> Sim2hError {
         format!("{:?}", err).into()
+    }
+}
+
+impl Hash for WireMessage {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let serialized = String::from(self);
+        serialized.hash(state);
     }
 }
 

@@ -53,8 +53,19 @@ pub struct Sim2hConfig {
 
 struct BufferedMessage {
     pub wire_message: WireMessage,
-    pub serial: u16,
+    pub hash: u64,
     pub last_sent: Option<Instant>,
+}
+
+impl From<WireMessage> for BufferedMessage {
+    fn from(wire_message: WireMessage) -> BufferedMessage {
+        let hash = wire_message.calc_hash();
+        BufferedMessage {
+            wire_message,
+            hash,
+            last_sent: None,
+        }
+    }
 }
 
 /// removed lifetime parameter because compiler says ghost engine needs lifetime that could live statically
@@ -269,7 +280,7 @@ impl Sim2hWorker {
     /// before other queued messages
     fn prepend_wire_message(&mut self, message: WireMessage) -> NetResult<()> {
         debug!("WireMessage: queueing {:?}", message);
-        self.outgoing_message_buffer.insert(0, message);
+        self.outgoing_message_buffer.insert(0, message.into());
         Ok(())
     }
 
@@ -279,11 +290,7 @@ impl Sim2hWorker {
         // they'll be sent when the connection is ready
         debug!("WireMessage: queueing {:?}", message);
         self.outgoing_message_next_serial += 1;
-        self.outgoing_message_buffer.push(BufferedMessage{
-            wire_message: message,
-            serial: self.outgoing_message_next_serial,
-            last_sent: None,
-        });
+        self.outgoing_message_buffer.push(message.into());
         Ok(())
     }
 
@@ -538,10 +545,10 @@ impl Sim2hWorker {
                 self.set_full_sync(response.redundant_count == 0);
             }
             WireMessage::StatusResponse(_) => error!("Got a StatusResponse from the Sim2h server, weird! Ignoring (I use Hello not Status)"),
-            WireMessage::Ack(serial) => {
+            WireMessage::Ack(hash) => {
                 if self.outgoing_message_buffer
                     .first()
-                    .and_then(|buffered_message| buffered_message.serial == serial)
+                    .and_then(|buffered_message| Some(buffered_message.hash == hash))
                     .unwrap_or(false)
                 {
                     debug!("WireMessage::Ack received => dequeuing sent message {:?}", message);
@@ -550,11 +557,11 @@ impl Sim2hWorker {
                     self.outgoing_message_buffer.remove(0);
                 } else {
                     warn!(
-                        "WireMessage::Ack received that came out of order! Got serial: {}, have top serial: {:?}",
-                        serial,
+                        "WireMessage::Ack received that came out of order! Got hash: {}, have top hash: {:?}",
+                        hash,
                         self.outgoing_message_buffer
                             .first()
-                            .and_then(|buffered_message| buffered_message.serial)
+                            .map(|buffered_message| buffered_message.hash)
                     );
                 }
             }

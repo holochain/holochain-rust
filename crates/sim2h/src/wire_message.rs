@@ -152,9 +152,9 @@ impl WireMessage {
                 opaque.into()
             }
             WireMessage::Lib3hToClientResponse(span_wrap) => {
-                let opaque: Opaque = dbg!(serde_json::to_string(&span_wrap.data)
+                let opaque: Opaque = serde_json::to_string(&span_wrap.data)
                     .expect("wiremessage should serialize")
-                    .into());
+                    .into();
                 opaque.into()
             }
             _ => Opaque::from(self).into(),

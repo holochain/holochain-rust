@@ -29,7 +29,9 @@ use sim2h::{
     crypto::{Provenance, SignedWireMessage},
     TcpWss, WireError, WireMessage, WIRE_VERSION,
 };
-use std::{convert::TryFrom, time::Instant};
+#[allow(deprecated)]
+use std::{convert::TryFrom, hash::{Hash, Hasher, SipHasher}, time::Instant};
+
 use url::Url;
 use url2::prelude::*;
 
@@ -259,13 +261,7 @@ impl Sim2hWorker {
             Provenance::new(self.agent_id.clone(), signature.into()),
         );
         let to_send: Opaque = signed_wire_message.into();
-        let mut to_send: Vec<u8> = to_send.into();
-        // insert hash as little endian encoded bytes in front of message:
-        for byte in buffered_message.hash.to_le_bytes().iter().rev() {
-            to_send.insert(0, *byte);
-        }
 
-        let to_send: Opaque = to_send.into();
         // safe to unwrap because we check connection_ready() above
         if let Err(e) = self
             .connection
@@ -281,6 +277,10 @@ impl Sim2hWorker {
             self.check_reconnect();
             return true;
         }
+        #[allow(deprecated)]
+        let mut hasher = SipHasher::new();
+        payload.hash(&mut hasher);
+        buffered_message.hash = hasher.finish();
         buffered_message.last_sent = Some(Instant::now());
         true
     }

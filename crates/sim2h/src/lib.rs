@@ -51,7 +51,9 @@ use futures::{
 use in_stream::*;
 use log::*;
 use rand::{seq::SliceRandom, thread_rng};
-use std::convert::{TryFrom, TryInto};
+use std::convert::{TryFrom};
+#[allow(deprecated)]
+use std::hash::{Hash, Hasher, SipHasher};
 
 use holochain_locksmith::Mutex;
 use holochain_metrics::{config::MetricPublisherConfig, Metric};
@@ -1218,22 +1220,6 @@ impl Sim2h {
     }
 
     fn handle_payload(sim2h_handle: Sim2hHandle, url: Lib3hUri, payload: Opaque) {
-        let mut raw_payload: Vec<u8> = payload.into();
-        if raw_payload.len() < 8 {
-            error!("bad empty payload");
-            return;
-        }
-        let payload = raw_payload.split_off(8);
-        let hash_bytes = raw_payload;
-        let hash = u64::from_le_bytes(
-            hash_bytes
-                .as_slice()
-                .try_into()
-                .expect("to have required length of 8 because of check above"),
-        );
-        let payload: Opaque = payload.into();
-        trace!("Got message hash receipt: {}", hash);
-
         tokio::task::spawn(async move {
             let _m = sim2h_handle.metric_timer("sim2h-handle_payload");
             match (|| -> Sim2hResult<(AgentId, WireMessage)> {
@@ -1242,13 +1228,13 @@ impl Sim2h {
                 if !result {
                     return Err(VERIFY_FAILED_ERR_STR.into());
                 }
+                let agent_id: AgentId = signed_message.provenance.source().into();
+                send_receipt(sim2h_handle.clone(), &signed_message.payload, agent_id.clone(), url.clone());
                 let wire_message = WireMessage::try_from(signed_message.payload)?;
-                Ok((signed_message.provenance.source().into(), wire_message))
+                Ok((agent_id, wire_message))
             })() {
                 Ok((source, wire_message)) => {
                     sim2h_handle.handle_message(url.clone(), wire_message, source.clone());
-                    let receipt = WireMessage::Ack(hash);
-                    sim2h_handle.send(source, url, &receipt);
                 }
                 Err(error) => {
                     error!(
@@ -1325,6 +1311,15 @@ impl Sim2h {
 
         Ok(did_work)
     }
+}
+
+fn send_receipt(sim2h_handle: Sim2hHandle, payload: &Opaque, source: AgentId, url: Lib3hUri) {
+    #[allow(deprecated)]
+    let mut hasher = SipHasher::new();
+    payload.hash(&mut hasher);
+    let hash = hasher.finish();
+    let receipt = WireMessage::Ack(hash);
+    sim2h_handle.send(source, url, &receipt);
 }
 
 async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: ScheduleGuard) {

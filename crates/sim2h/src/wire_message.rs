@@ -2,10 +2,22 @@
 use crate::{error::Sim2hError, NEW_RELIC_LICENSE_KEY};
 use lib3h_protocol::{data_types::Opaque, protocol::*};
 use std::{
-    collections::hash_map::DefaultHasher,
     convert::TryFrom,
     hash::{Hash, Hasher},
 };
+
+//use hashers::fx_hash::FxHasher64;
+#[allow(deprecated)]
+//use std::hash::SipHasher;
+//use hashers::builtin::DefaultHasher;
+
+fn sdbm_hash(bytes: Vec<u8>) -> u64 {
+    let mut hash: u64 = 0;
+    for byte in bytes {
+        hash = byte as u64 + (hash << 6) + (hash << 16) - hash;
+    }
+    hash
+}
 
 pub type WireMessageVersion = u32;
 pub const WIRE_VERSION: WireMessageVersion = 2;
@@ -116,10 +128,42 @@ impl WireMessage {
     }
 
     pub fn calc_hash(&self) -> u64 {
-        let mut hasher = DefaultHasher::new();
-        self.hash(&mut hasher);
-        hasher.finish()
+        //#[allow(deprecated)]
+        //let mut hasher = DefaultHasher::new();
+        //self.hash(&mut hasher);
+        //hasher.finish()
+        let bytes: Vec<u8> = match self {
+            WireMessage::ClientToLib3h(span_wrap) => {
+                let opaque: Opaque = serde_json::to_string(&span_wrap.data)
+                    .expect("wiremessage should serialize")
+                    .into();
+                opaque.into()
+            }
+            WireMessage::ClientToLib3hResponse(span_wrap) => {
+                let opaque: Opaque = serde_json::to_string(&span_wrap.data)
+                    .expect("wiremessage should serialize")
+                    .into();
+                opaque.into()
+            }
+            WireMessage::Lib3hToClient(span_wrap) => {
+                let opaque: Opaque = serde_json::to_string(&span_wrap.data)
+                    .expect("wiremessage should serialize")
+                    .into();
+                opaque.into()
+            }
+            WireMessage::Lib3hToClientResponse(span_wrap) => {
+                let opaque: Opaque = dbg!(serde_json::to_string(&span_wrap.data)
+                    .expect("wiremessage should serialize")
+                    .into());
+                opaque.into()
+            }
+            _ => Opaque::from(self).into(),
+        };
+
+        sdbm_hash(bytes)
     }
+
+
 }
 
 fn get_multi_type(list: Vec<&Lib3hToClient>) -> &str {
@@ -137,6 +181,14 @@ fn get_multi_type(list: Vec<&Lib3hToClient>) -> &str {
 impl From<WireMessage> for Opaque {
     fn from(message: WireMessage) -> Opaque {
         serde_json::to_string(&message)
+            .expect("wiremessage should serialize")
+            .into()
+    }
+}
+
+impl From<&WireMessage> for Opaque {
+    fn from(message: &WireMessage) -> Opaque {
+        serde_json::to_string(message)
             .expect("wiremessage should serialize")
             .into()
     }
@@ -191,7 +243,7 @@ impl From<WireError> for Sim2hError {
 #[allow(clippy::derive_hash_xor_eq)]
 impl Hash for WireMessage {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        let serialized = String::from(self);
+        let serialized = Opaque::from(self);
         serialized.hash(state);
     }
 }
@@ -199,6 +251,8 @@ impl Hash for WireMessage {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use holochain_tracing::SpanWrap;
+    use lib3h_protocol::{data_types::SpaceData, types::{AgentPubKey, SpaceHash}};
 
     #[test]
     pub fn test_wire_message() {
@@ -227,5 +281,52 @@ pub mod tests {
         assert_eq!("\"\\\"Ping\\\"\"", format!("{}", opaque_msg));
         let roundtrip_msg = WireMessage::try_from(opaque_msg).expect("deserialize should work");
         assert_eq!(roundtrip_msg, msg);
+    }
+
+    fn wire_message_join_space() -> WireMessage {
+        let c2l = ClientToLib3h::JoinSpace(SpaceData{
+            request_id: String::from("0123"),
+            space_address: SpaceHash::from("QmABCDEF"),
+            agent_id: AgentPubKey::from("Hc345345"),
+        });
+        WireMessage::ClientToLib3h(SpanWrap::new(c2l, None).into())
+    }
+
+    fn wire_message_app_spec_fixture() -> WireMessage {
+        let raw = r#"{"Lib3hToClientResponse":{"data":{"HandleGetAuthoringEntryListResult":{"space_address":"QmQ7guHG2Y3fbtNaLoV1kFex66AqepoCTqQ9XtYYQKAFZK","provider_agent_id":"HcScJxNnN6Bi5d5tda7OHWGKNBgjq9oieP9GQXsmO5Svp8fa3gTK5DJQFwgditr","request_id":"","address_map":{"Qmey39PmjYAJ5r5bCKtWe4nMxVcTmTwLE3YN142kVe5CJE":["QmT3mV6mKsh4aEQoJ5J8feUruNGYTTd4FPuPicMxmZf8DY"],"HcScJxNnN6Bi5d5tda7OHWGKNBgjq9oieP9GQXsmO5Svp8fa3gTK5DJQFwgditr":["QmVr1H6B6P6iydnzCF7fh7abDz1yznrjecMwCSMmtGA4EN"],"QmW22euyQLF7wK8yYhnCZHZq64G7ryQ2TqQ5D3L7vhszg2":["QmWAU3DTuuwdNFPpX3gqEsG7bAttePbJQZjirrh39MfGxR"],"Qmavdnym3BKrKJxuNoSxLnoPwUBWtqsVhSnQmdmm4FFnyK":["QmPybN5GGibjAno6hmKCWJgM8RRkeo1vga57ZA3QbevrrL"]}}},"span_context":[149,217,162,104,57,50,215,185,128,95,199,101,105,81,143,213,10,14,105,185,134,247,194,247,0,0,0,0,0,0,0,0,1,0,0,0,0]}}"#;
+        let opaque: Opaque = raw.into();
+        WireMessage::try_from(opaque).unwrap()
+    }
+
+    #[test]
+    pub fn test_wire_message_client_to_lib3h() {
+        let msg = wire_message_join_space();
+        let opaque_msg: Opaque = msg.clone().into();
+        //assert_eq!(format!("{}", opaque_msg), "{\"ClientToLib3h\":{\"data\":{\"JoinSpace\":{\"request_id\":\"0123\",\"space_address\":\"QmABCDEF\",\"agent_id\":\"Hc345345\"}},\"span_context\":null}}");
+
+        let roundtrip_msg = WireMessage::try_from(opaque_msg).expect("deserialize should work");
+        assert_eq!(roundtrip_msg, msg);
+
+        let roundtrip_hash = roundtrip_msg.calc_hash();
+        let msg_hash = msg.calc_hash();
+        assert_eq!(roundtrip_hash, msg_hash);
+
+        let roundtrip_string: String = roundtrip_msg.into();
+        let msg_string: String = msg.into();
+        assert_eq!(roundtrip_string, msg_string);
+    }
+
+    #[test]
+    pub fn test_hash_to_be_deterministic() {
+        let msg = wire_message_join_space();
+        assert_eq!(msg.calc_hash(), 4422371451693861777);
+
+        let msg = wire_message_app_spec_fixture();
+        assert_eq!(msg.calc_hash(), 4395410145282420883);
+
+        let opaque_msg: Opaque = msg.clone().into();
+        let roundtrip_msg = WireMessage::try_from(opaque_msg).expect("deserialize should work");
+        assert_eq!(roundtrip_msg, msg);
+        assert_eq!(roundtrip_msg.calc_hash(), 4395410145282420883);
     }
 }

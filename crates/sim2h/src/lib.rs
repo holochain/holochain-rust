@@ -51,7 +51,7 @@ use futures::{
 use in_stream::*;
 use log::*;
 use rand::{seq::SliceRandom, thread_rng};
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 
 use holochain_locksmith::Mutex;
 use holochain_metrics::{config::MetricPublisherConfig, Metric};
@@ -278,9 +278,6 @@ impl Sim2hHandle {
     pub fn handle_message(&self, uri: Lib3hUri, message: WireMessage, signer: AgentId) {
         // dispatch to correct handler
         let sim2h_handle = self.clone();
-
-        let receipt = WireMessage::Ack(message.calc_hash());
-        sim2h_handle.send(signer.clone(), uri.clone(), &receipt);
 
         // these message types are allowed before joining
         let message = match message {
@@ -1221,6 +1218,22 @@ impl Sim2h {
     }
 
     fn handle_payload(sim2h_handle: Sim2hHandle, url: Lib3hUri, payload: Opaque) {
+        let mut raw_payload: Vec<u8> = payload.into();
+        if raw_payload.len() < 8 {
+            error!("bad empty payload");
+            return;
+        }
+        let payload = raw_payload.split_off(8);
+        let hash_bytes = raw_payload;
+        let hash = u64::from_le_bytes(
+            hash_bytes
+                .as_slice()
+                .try_into()
+                .expect("to have required length of 8 because of check above"),
+        );
+        let payload: Opaque = payload.into();
+        trace!("Got message hash receipt: {}", hash);
+
         tokio::task::spawn(async move {
             let _m = sim2h_handle.metric_timer("sim2h-handle_payload");
             match (|| -> Sim2hResult<(AgentId, WireMessage)> {
@@ -1233,7 +1246,9 @@ impl Sim2h {
                 Ok((signed_message.provenance.source().into(), wire_message))
             })() {
                 Ok((source, wire_message)) => {
-                    sim2h_handle.handle_message(url, wire_message, source)
+                    sim2h_handle.handle_message(url.clone(), wire_message, source.clone());
+                    let receipt = WireMessage::Ack(hash);
+                    sim2h_handle.send(source, url, &receipt);
                 }
                 Err(error) => {
                     error!(

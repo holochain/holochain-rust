@@ -258,6 +258,13 @@ impl Sim2hWorker {
             Provenance::new(self.agent_id.clone(), signature.into()),
         );
         let to_send: Opaque = signed_wire_message.into();
+        let mut to_send: Vec<u8> = to_send.into();
+        // insert hash as little endian encoded bytes in front of message:
+        for byte in buffered_message.hash.to_le_bytes().iter().rev() {
+            to_send.insert(0, *byte);
+        }
+
+        let to_send: Opaque = to_send.into();
         // safe to unwrap because we check connection_ready() above
         if let Err(e) = self
             .connection

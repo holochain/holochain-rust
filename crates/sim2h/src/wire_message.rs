@@ -162,8 +162,6 @@ impl WireMessage {
 
         sdbm_hash(bytes)
     }
-
-
 }
 
 fn get_multi_type(list: Vec<&Lib3hToClient>) -> &str {
@@ -252,7 +250,10 @@ impl Hash for WireMessage {
 pub mod tests {
     use super::*;
     use holochain_tracing::SpanWrap;
-    use lib3h_protocol::{data_types::SpaceData, types::{AgentPubKey, SpaceHash}};
+    use lib3h_protocol::{
+        data_types::SpaceData,
+        types::{AgentPubKey, SpaceHash},
+    };
 
     #[test]
     pub fn test_wire_message() {
@@ -284,7 +285,7 @@ pub mod tests {
     }
 
     fn wire_message_join_space() -> WireMessage {
-        let c2l = ClientToLib3h::JoinSpace(SpaceData{
+        let c2l = ClientToLib3h::JoinSpace(SpaceData {
             request_id: String::from("0123"),
             space_address: SpaceHash::from("QmABCDEF"),
             agent_id: AgentPubKey::from("Hc345345"),

@@ -30,7 +30,11 @@ use sim2h::{
     TcpWss, WireError, WireMessage, WIRE_VERSION,
 };
 #[allow(deprecated)]
-use std::{convert::TryFrom, hash::{Hash, Hasher, SipHasher}, time::Instant};
+use std::{
+    convert::TryFrom,
+    hash::{Hash, Hasher, SipHasher},
+    time::Instant,
+};
 
 use url::Url;
 use url2::prelude::*;

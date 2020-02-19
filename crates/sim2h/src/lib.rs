@@ -51,7 +51,7 @@ use futures::{
 use in_stream::*;
 use log::*;
 use rand::{seq::SliceRandom, thread_rng};
-use std::convert::{TryFrom};
+use std::convert::TryFrom;
 #[allow(deprecated)]
 use std::hash::{Hash, Hasher, SipHasher};
 
@@ -1229,7 +1229,12 @@ impl Sim2h {
                     return Err(VERIFY_FAILED_ERR_STR.into());
                 }
                 let agent_id: AgentId = signed_message.provenance.source().into();
-                send_receipt(sim2h_handle.clone(), &signed_message.payload, agent_id.clone(), url.clone());
+                send_receipt(
+                    sim2h_handle.clone(),
+                    &signed_message.payload,
+                    agent_id.clone(),
+                    url.clone(),
+                );
                 let wire_message = WireMessage::try_from(signed_message.payload)?;
                 Ok((agent_id, wire_message))
             })() {

@@ -253,8 +253,9 @@ impl Sim2hWorker {
                     payload, e
                 )
             });
+        let payload: Opaque = payload.into();
         let signed_wire_message = SignedWireMessage::new(
-            message.clone(),
+            payload.clone(),
             Provenance::new(self.agent_id.clone(), signature.into()),
         );
         let to_send: Opaque = signed_wire_message.into();

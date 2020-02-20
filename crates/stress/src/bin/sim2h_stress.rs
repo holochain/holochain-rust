@@ -462,6 +462,7 @@ impl Job {
 
     fn priv_handle_msg(&mut self, logger: &mut StressJobMetricLogger, msg: WireMessage) {
         match msg {
+            WireMessage::Ack(_) => (),
             WireMessage::Pong => {
                 // with the current Ping/Pong structs
                 // there's no way to correlate specific messages

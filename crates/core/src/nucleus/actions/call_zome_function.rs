@@ -292,8 +292,8 @@ pub fn spawn_zome_function(context: Arc<Context>, zome_call: ZomeFnCall) {
         .spawn(move || {
             // Have Ribosome spin up DNA and call the zome function
             let call_result = wasm_engine::run_dna(
-                Some(zome_call.clone().parameters.to_bytes()),
                 WasmCallData::new_zome_call(context.clone(), zome_call.clone()),
+                Some(zome_call.clone().parameters),
             );
             log_debug!(
                 context,

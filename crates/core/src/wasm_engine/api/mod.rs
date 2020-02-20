@@ -354,8 +354,8 @@ pub mod tests {
             test_parameters(),
         );
         wasm_engine::run_dna(
-            Some(args_bytes),
             WasmCallData::new_zome_call(context, zome_call),
+            Some(args),
         )
         .expect("test should be callable")
     }

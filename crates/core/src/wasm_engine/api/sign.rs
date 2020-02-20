@@ -1,36 +1,21 @@
 use crate::{
-    wasm_engine::{api::ZomeApiResult, Runtime},
+    wasm_engine::{api::ZomeApiResult},
     NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{error::HcResult, signature::Signature};
 use holochain_dpki::keypair::generate_random_sign_keypair;
 use holochain_wasm_utils::api_serialization::sign::{OneTimeSignArgs, SignOneTimeResult};
 use lib3h_sodium::secbuf::SecBuf;
+use std::sync::Arc;
+use crate::context::Context;
 
 /// ZomeApiFunction::SignOneTime function code
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected argument: u64
 /// Returns an HcApiReturnCode as I64
-pub fn invoke_sign_one_time(runtime: &mut Runtime, sign_args: OneTimeSignArgs) -> ZomeApiResult {
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_sign_one_time(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let context = runtime.context()?;
-
-    // deserialize args
-    let args_str = runtime.load_json_string_from_args(&args);
-
-    let sign_args = match OneTimeSignArgs::try_from(args_str.clone()) {
-        Ok(sign_input) => sign_input,
-        // Exit on error
-        Err(err) => {
-            log_error!(context, "zome: invoke_sign_one_time failed to deserialize OneTimeSignArgs: {:?} got err: {:?}",
-                args_str, err
-            );
-            return ribosome_error_code!(ArgumentDeserializationFailed);
-        }
-    };
-
-    runtime.store_result(sign_one_time(sign_args.payloads))
+pub fn invoke_sign_one_time(context: Arc<Context>, sign_args: OneTimeSignArgs) -> ZomeApiResult {
+    sign_one_time(sign_args.payloads)
 }
 
 /// creates a one-time private key and sign data returning the signature and the public key

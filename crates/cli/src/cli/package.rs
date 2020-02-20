@@ -189,11 +189,11 @@ impl Packager {
                     let wasm_binary = Arc::new(base64::decode(&wasm)?);
 
                     let json_string = run_dna(
-                        Some("{}".as_bytes().to_vec()),
                         WasmCallData::DirectCall(
                             "__hdk_get_json_definition".to_string(),
                             wasm_binary.clone(),
                         ),
+                        Some(()),
                     )?;
 
                     let json_from_wasm: Map<String, Value> =

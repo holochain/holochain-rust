@@ -1,5 +1,4 @@
 use crate::{
-    wasm_engine::{api::ZomeApiResult, Runtime},
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
     NEW_RELIC_LICENSE_KEY,
 };
@@ -7,72 +6,50 @@ use holochain_core_types::{
     entry::{deletion_entry::DeletionEntry, Entry},
     error::HolochainError,
 };
-
+use std::sync::Arc;
+use crate::context::Context;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
-
+use holochain_wasmer_host::*;
 use holochain_wasm_utils::api_serialization::get_entry::*;
 
 /// ZomeApiFunction::RemoveEntry function code
 /// args: [0] encoded MemoryAllocation
 /// Expected Address argument
 /// Stores/returns a RibosomeReturnValue
-pub fn invoke_remove_entry(runtime: &mut Runtime, deleted_entry_address: Address) -> ZomeApiResult {
-/// Stores/returns a RibosomeEncodedValue
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_remove_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let context = runtime.context()?;
-
-    // deserialize args
-    let args_str = runtime.load_json_string_from_args(&args);
-    let try_address = Address::try_from(args_str.clone());
-
-    // Exit on error
-    if try_address.is_err() {
-        log_error!(
-            context,
-            "zome: invoke_remove_entry failed to deserialize Address: {:?}",
-            args_str
-        );
-        return ribosome_error_code!(ArgumentDeserializationFailed);
-    }
-    let deleted_entry_address = try_address.unwrap();
-
+pub fn invoke_remove_entry(context: Arc<Context>, deleted_entry_address: Address) -> Result<Address, HolochainError> {
     // Get Current entry's latest version
     let get_args = GetEntryArgs {
         address: deleted_entry_address,
         options: Default::default(),
     };
-    let maybe_entry_result = runtime
-        .context()?
-        .block_on(get_entry_result_workflow(&runtime.context()?, &get_args));
+    let maybe_entry_result = context
+        .block_on(get_entry_result_workflow(context, &get_args));
 
     if let Err(err) = maybe_entry_result {
         log_error!(
-            runtime.context()?,
+            context,
             "zome: get_entry_result_workflow failed: {:?}",
             err
         );
-        return ribosome_error_code!(WorkflowFailed);
+        return Err(WasmError::WorkflowFailed);
     }
 
-    let entry_result = maybe_entry_result.unwrap();
+    let entry_result = maybe_entry_result?;
     if !entry_result.found() {
-        return ribosome_error_code!(EntryNotFound);
+        return Err(WasmError::EntryNotFound);
     }
-    let deleted_entry_address = entry_result.latest().unwrap().address();
+    let deleted_entry_address = entry_result.latest()?.address();
 
     // Create deletion entry
     let deletion_entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address.clone()));
 
-    let res: Result<Address, HolochainError> = runtime
-        .context()?
+    context
         .block_on(author_entry(
             &deletion_entry.clone(),
             Some(deleted_entry_address),
-            &runtime.context()?,
+            context,
             &vec![],
         ))
-        .map(|_| deletion_entry.address());
-
-    runtime.store_result(res)
+        .map(|_| deletion_entry.address())
 }

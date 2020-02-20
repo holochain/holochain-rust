@@ -14,7 +14,7 @@ macro_rules! link_zome_api {
         use std::convert::TryInto;
         use crate::wasm_engine::runtime::WasmCallData;
         use holochain_json_api::json::JsonString;
-        use holochain_core_types::error::AllocationPtr;
+        use $crate::holochain_wasmer_host::AllocationPtr;
 
         /// Enumeration of all the Zome Functions known and usable in Zomes.
         /// Enumeration can convert to str.
@@ -75,8 +75,8 @@ macro_rules! link_zome_api {
                 // @see: https://github.com/holochain/holochain-rust/issues/324
 
                 match *self {
-                    ZomeApiFunction::MissingNo => ribosome_success!(),
-                    ZomeApiFunction::Abort => ribosome_success!(),
+                    ZomeApiFunction::MissingNo => Ok(()),
+                    ZomeApiFunction::Abort => Ok(()),
                     $( ZomeApiFunction::$enum_variant => {
                         let parameters = runtime.load_json_string_from_args(encoded_args);
                         if let Ok(context) = runtime.context() {

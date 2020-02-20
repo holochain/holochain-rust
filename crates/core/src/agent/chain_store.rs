@@ -8,7 +8,6 @@ use holochain_core_types::{
     entry::entry_type::EntryType,
     error::{
         HcResult,
-        WasmError::{self, *},
     },
 };
 use holochain_locksmith::RwLock;
@@ -17,6 +16,7 @@ use holochain_persistence_api::cas::{
     storage::ContentAddressableStorage,
 };
 use std::{str::FromStr, sync::Arc};
+use holochain_wasmer_host::*;
 
 #[derive(Debug, Clone)]
 pub struct ChainStore {
@@ -124,7 +124,7 @@ impl ChainStore {
                 // Single EntryType without "glob" pattern; uses .iter_type()
                 let entry_type = match EntryType::from_str(&one) {
                     Ok(inner) => inner,
-                    Err(..) => return Err(UnknownEntryType),
+                    Err(..) => return Err(WasmError::UnknownEntryType),
                 };
                 if headers {
                     ChainStoreQueryResult::Headers(
@@ -155,10 +155,10 @@ impl ChainStore {
                         GlobBuilder::new(name)
                             .literal_separator(true)
                             .build()
-                            .map_err(|_| UnknownEntryType)?,
+                            .map_err(|_| WasmError::UnknownEntryType)?,
                     );
                 }
-                let globset = builder.build().map_err(|_| UnknownEntryType)?;
+                let globset = builder.build().map_err(|_| WasmError::UnknownEntryType)?;
                 if headers {
                     ChainStoreQueryResult::Headers(
                         self.iter(start_chain_header)

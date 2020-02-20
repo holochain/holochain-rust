@@ -14,6 +14,7 @@ use holochain_locksmith::LocksmithError;
 use holochain_persistence_api::{error::PersistenceError, hash::HashString};
 use lib3h_crypto_api::CryptoError;
 
+use holochain_wasmer_common::WasmError;
 use serde_json::Error as SerdeError;
 use std::{
     error::Error,
@@ -21,7 +22,6 @@ use std::{
     io::{self, Error as IoError},
     option::NoneError,
 };
-use holochain_wasmer_common::WasmError;
 
 //--------------------------------------------------------------------------------------------------
 // CoreError

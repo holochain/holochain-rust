@@ -3,7 +3,6 @@
 pub mod api;
 pub mod callback;
 pub mod factories;
-pub mod memory;
 #[autotrace]
 mod run_dna;
 pub mod runtime;

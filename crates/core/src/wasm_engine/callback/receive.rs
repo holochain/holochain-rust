@@ -36,8 +36,8 @@ pub fn receive(
     );
 
     match wasm_engine::run_dna(
-        Some(call.clone().parameters.to_bytes()),
         WasmCallData::new_callback_call(context, call),
+        Some(call.clone().parameters),
     ) {
         Ok(call_result) => CallbackResult::ReceiveResult(call_result.to_string()),
         Err(err) => CallbackResult::Fail(err.to_string()),

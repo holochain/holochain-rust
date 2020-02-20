@@ -11,26 +11,6 @@ macro_rules! zome_assert {
     };
 }
 
-#[macro_export]
-macro_rules! ribosome_success {
-    () => {
-        Ok(
-            $crate::holochain_core_types::error::RibosomeRuntimeBits::from(
-                $crate::holochain_core_types::error::RibosomeReturnValue::Success,
-            ),
-        )
-    };
-}
-
-/// Macro for creating a WasmError as a RuntimeValue Result-Option on the spot
-#[macro_export]
-macro_rules! ribosome_error_code {
-    ($s:ident) => {
-        Ok($crate::holochain_core_types::error::WasmError::$s
-            as $crate::holochain_core_types::error::RibosomeRuntimeBits)
-    };
-}
-
 /// Macro for creating a CoreError from a HolochainError on the spot with file!() and line!()
 #[macro_export]
 macro_rules! core_error {

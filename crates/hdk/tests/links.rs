@@ -13,7 +13,7 @@ use hdk::error::{ZomeApiError, ZomeApiResult};
 use holochain_core_types::{
     crud_status::CrudStatus,
     entry::Entry,
-    error::{HolochainError, RibosomeReturnValue, AllocationPtr},
+    error::{AllocationPtr, HolochainError, RibosomeReturnValue},
 };
 
 use holochain_core_types::error::CoreError;

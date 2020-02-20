@@ -1,47 +1,19 @@
 use crate::{
-    wasm_engine::{api::ZomeApiResult, Runtime},
+    wasm_engine::{api::ZomeApiResult},
     workflows::get_link_result::get_link_result_workflow,
     NEW_RELIC_LICENSE_KEY,
 };
+use std::sync::Arc;
+use crate::context::Context;
 use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
 
 /// ZomeApiFunction::GetLinks function code.
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: GetLinksArgs
 /// Returns an HcApiReturnCode as I64
-pub fn invoke_get_links(runtime: &mut Runtime, input: GetLinksArgs) -> ZomeApiResult {
-    runtime.store_result(
-        runtime
-            .context()?
-            .block_on(get_link_result_workflow(&runtime.context()?, &input)),
-    )
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let context = runtime.context()?;
-    // deserialize args
-    let args_str = runtime.load_json_string_from_args(&args);
-    let input = match GetLinksArgs::try_from(args_str.clone()) {
-        Ok(input) => {
-            log_debug!(
-                context,
-                "zome/get_links: invoke_get_links called with {:?}",
-                input,
-            );
-            input
-        }
-        Err(_) => {
-            log_error!(
-                context,
-                "zome/get_links: invoke_get_links failed to deserialize GetLinksArgs: {:?}",
-                args_str
-            );
-            return ribosome_error_code!(ArgumentDeserializationFailed);
-        }
-    };
-
-    let result = context.block_on(get_link_result_workflow(&context, &input));
-
-    runtime.store_result(result)
+pub fn invoke_get_links(context: Arc<Context>, input: GetLinksArgs) -> ZomeApiResult {
+    context.block_on(get_link_result_workflow(&context, &input));
 }
 
 #[cfg(test)]

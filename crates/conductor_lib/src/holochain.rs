@@ -135,8 +135,8 @@ impl Holochain {
 
         for zome in dna.zomes.values() {
             let maybe_json_string = run_dna(
-                Some("{}".as_bytes().to_vec()),
                 WasmCallData::DirectCall("__hdk_hdk_version".to_string(), zome.code.code.clone()),
+                Some(()),
             );
 
             if let Ok(json_string) = maybe_json_string {

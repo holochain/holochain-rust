@@ -25,8 +25,6 @@ struct TestEntryType {
     stuff: String,
 }
 
-
-
 define_zome! {
     entries: [
         entry!(

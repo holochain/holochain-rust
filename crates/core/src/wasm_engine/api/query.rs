@@ -14,6 +14,7 @@ use holochain_core_types::{
 };
 use holochain_wasm_utils::api_serialization::{QueryArgs, QueryArgsNames, QueryResult};
 use std::sync::Arc;
+use holochain_wasmer_host::*;
 
 /// ZomeApiFunction::query function code
 /// args: [0] encoded MemoryAllocation as u64
@@ -117,7 +118,7 @@ pub fn invoke_query(runtime: &mut Runtime, query: QueryArgs) -> ZomeApiResult {
 
                 match maybe_entries {
                     Ok(entries) => QueryResult::Entries(entries),
-                    Err(_e) => return ribosome_error_code!(UnknownEntryType), // TODO: return actual error?
+                    Err(_e) => return Err(WasmError::UnknownEntryType), // TODO: return actual error?
                 }
             }
             (true, ChainStoreQueryResult::Headers(headers)) => {
@@ -133,11 +134,11 @@ pub fn invoke_query(runtime: &mut Runtime, query: QueryArgs) -> ZomeApiResult {
                     Ok(headers_with_entries) => {
                         QueryResult::HeadersWithEntries(headers_with_entries)
                     }
-                    Err(_e) => return ribosome_error_code!(UnknownEntryType), // TODO: return actual error?
+                    Err(_e) => return Err(WasmError::UnknownEntryType), // TODO: return actual error?
                 }
             }
         }),
-        Err(_code) => return ribosome_error_code!(UnknownEntryType),
+        Err(_code) => return Err(WasmError::UnknownEntryType),
     };
 
     runtime.store_result(result)

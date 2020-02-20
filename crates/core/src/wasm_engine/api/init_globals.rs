@@ -1,10 +1,11 @@
 use crate::{
-    wasm_engine::{api::ZomeApiResult, Runtime},
+    wasm_engine::{api::ZomeApiResult},
     NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::entry::entry_type::EntryType;
 use holochain_wasm_utils::api_serialization::wasm_string::WasmString;
-
+use std::sync::Arc;
+use crate::context::Context;
 use holochain_persistence_api::{
     cas::content::{Address, AddressableContent},
     hash::HashString,
@@ -18,12 +19,10 @@ use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
 /// args: [0] encoded MemoryAllocation as u64
 /// Not expecting any complex input
 /// Returns an HcApiReturnCode as I64
-pub fn invoke_init_globals(runtime: &mut Runtime, _: WasmString) -> ZomeApiResult {
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeApiResult {
-    let call_data = runtime.call_data()?;
-    let dna = runtime
-        .context()?
+pub fn invoke_init_globals(context: Arc<Context>, _: WasmString) -> ZomeApiResult {
+    let call_data = context.call_data()?;
+    let dna = context
         .get_dna()
         .expect("No DNA found in invoke_init_globals");
     let dna_name = dna.name.clone();
@@ -36,7 +35,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
         agent_initial_hash: HashString::from(""),
         agent_latest_hash: HashString::from(""),
         public_token: Address::from(""),
-        cap_request: runtime
+        cap_request: context
             .zome_call_data()
             .map(|zome_call_data| Some(zome_call_data.call.cap))
             .unwrap_or_else(|_| None),
@@ -74,8 +73,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeAp
         globals.public_token = token;
     }
 
-    // Store it in wasm memory
-    runtime.store_result(Ok(globals))
+    Ok(globals)
 }
 
 #[cfg(test)]

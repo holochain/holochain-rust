@@ -37,8 +37,8 @@ pub async fn run_validation_callback(
             let cloned_context = context.clone();
 
             match wasm_engine::run_dna(
-                Some(call.clone().parameters.to_bytes()),
                 WasmCallData::new_callback_call(cloned_context, call),
+                Some(call.clone().parameters.to_bytes()),
             ) {
                 Ok(call_result) => {
                     if call_result.is_null() {
@@ -48,7 +48,7 @@ pub async fn run_validation_callback(
                     }
                 }
                 // TODO: have "not matching schema" be its own error
-                Err(HolochainError::RibosomeFailed(error_string)) => {
+                Err(HolochainError::Wasm(error_string)) => {
                     if error_string == "Argument deserialization failed" {
                         Err(ValidationError::Error(
                             String::from("JSON object does not match entry schema").into(),

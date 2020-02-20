@@ -1,6 +1,6 @@
 use crate::{
     dht::pending_validations::ValidatingWorkflow,
-    nucleus::{actions::initialize::Initialization, HdkFnCall, HdkFnCallResult, ZomeFnCall},
+    nucleus::{actions::initialize::Initialization, ZomeFnCall},
     NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{dna::Dna, error::HolochainError};
@@ -17,6 +17,8 @@ use serde::{
     Deserialize, Deserializer, Serialize, Serializer,
 };
 use std::{collections::VecDeque, convert::TryFrom, fmt};
+use crate::nucleus::WasmApiFnCall;
+use crate::nucleus::WasmApiFnCallResult;
 
 #[autotrace]
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]

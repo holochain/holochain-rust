@@ -43,8 +43,8 @@ pub fn get_validation_package_definition(
                 app_entry_type.clone(),
             );
             wasm_engine::run_dna(
-                Some(app_entry_type.to_string().into_bytes()),
                 WasmCallData::new_callback_call(context, call),
+                Some(app_entry_type.to_string()),
             )?
         }
         EntryType::LinkAdd => {
@@ -73,8 +73,8 @@ pub fn get_validation_package_definition(
             );
 
             wasm_engine::run_dna(
-                Some(call.parameters.to_bytes()),
                 WasmCallData::new_callback_call(context, call),
+                Some(call.parameters),
             )?
         }
         EntryType::LinkRemove => {
@@ -105,8 +105,8 @@ pub fn get_validation_package_definition(
             );
 
             wasm_engine::run_dna(
-                Some(call.parameters.to_bytes()),
                 WasmCallData::new_callback_call(context, call),
+                Some(call.parameters),
             )?
         }
         EntryType::Deletion => JsonString::from(ValidationPackageDefinition::ChainFull),

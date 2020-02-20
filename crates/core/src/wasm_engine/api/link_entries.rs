@@ -1,40 +1,23 @@
 use crate::{
-    wasm_engine::{api::ZomeApiResult, runtime::Runtime},
     workflows::author_entry::author_entry,
     NEW_RELIC_LICENSE_KEY,
 };
+use std::sync::Arc;
+use crate::context::Context;
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
     link::{link_data::LinkData, LinkActionKind},
 };
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
-
+use holochain_wasmer_host::*;
 use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 
 /// ZomeApiFunction::LinkEntries function code
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: LinkEntriesArgs
-pub fn invoke_link_entries(runtime: &mut Runtime, input: LinkEntriesArgs) -> ZomeApiResult {
-    let top_chain_header_option = runtime
-        .context()?
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let context = runtime.context()?;
-    // deserialize args
-    let args_str = runtime.load_json_string_from_args(&args);
-    let input = match LinkEntriesArgs::try_from(args_str.clone()) {
-        Ok(entry_input) => entry_input,
-        // Exit on error
-        Err(_) => {
-            log_error!(
-                context,
-                "zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
-                args_str
-            );
-            return ribosome_error_code!(ArgumentDeserializationFailed);
-        }
-    };
+pub fn invoke_link_entries(context: Arc<Context>, input: LinkEntriesArgs) -> Result<Address, HolochainError> {
     let top_chain_header_option = context
         .state()
         .expect("Couldn't get state in invoke_linke_entries")
@@ -45,11 +28,11 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         Some(top_chain) => top_chain,
         None => {
             log_error!(
-                runtime.context()?,
+                context,
                 "zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
                 input
             );
-            return ribosome_error_code!(ArgumentDeserializationFailed);
+            return Err(WasmError::ArgumentDeserializationFailed);
         }
     };
 
@@ -58,18 +41,15 @@ pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApi
         &link,
         LinkActionKind::ADD,
         top_chain_header,
-        runtime.context()?.agent_id.clone(),
+        context.agent_id.clone(),
     );
     let entry = Entry::LinkAdd(link_add);
 
     // Wait for future to be resolved
     // This is where the link entry actually gets created.
-    let result: Result<Address, HolochainError> = runtime
-        .context()?
-        .block_on(author_entry(&entry, None, &runtime.context()?, &vec![]))
-        .map(|_| entry.address());
-
-    runtime.store_result(result)
+    context
+        .block_on(author_entry(&entry, None, context, &vec![]))
+        .map(|_| entry.address())
 }
 
 #[cfg(test)]

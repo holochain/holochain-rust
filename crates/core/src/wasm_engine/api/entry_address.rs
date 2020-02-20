@@ -6,17 +6,17 @@ use holochain_core_types::{
     self,
     dna::Dna,
     entry::{entry_type::EntryType, Entry},
-    error::RibosomeRuntimeBits,
 };
 use holochain_persistence_api::cas::content::AddressableContent;
-
+use holochain_wasmer_host::*;
 use std::str::FromStr;
+use holochain_wasm_utils::api_serialization::wasm_string::WasmString;
+use holochain_core_types::error::HolochainError;
 
-pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, RibosomeRuntimeBits> {
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Option<RuntimeValue>> {
-    let entry_type = EntryType::from_str(&entry_type_name).map_err(|_| {
-        holochain_core_types::error::WasmError::UnknownEntryType as RibosomeRuntimeBits
+pub fn get_entry_type(dna: &Dna, entry_type_name: WasmString) -> Result<EntryType, HolochainError> {
+    let entry_type = EntryType::from_str(&entry_type_name.to_string()).map_err(|_| {
+        WasmError::UnknownEntryType
     })?;
 
     // Check if AppEntry is a valid AppEntryType
@@ -24,8 +24,7 @@ pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Opt
         let result = dna.get_entry_type_def(entry_type_name);
         if result.is_none() {
             return Err(
-                holochain_core_types::error::WasmError::UnknownEntryType
-                    as RibosomeRuntimeBits,
+                WasmError::UnknownEntryType
             );
         }
     }

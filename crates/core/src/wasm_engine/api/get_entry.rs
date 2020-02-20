@@ -1,38 +1,21 @@
 use crate::{
-    wasm_engine::{api::ZomeApiResult, Runtime},
+    wasm_engine::{api::ZomeApiResult},
     workflows::get_entry_result::get_entry_result_workflow,
     NEW_RELIC_LICENSE_KEY,
 };
+use std::sync::Arc;
+use crate::context::Context;
 use holochain_wasm_utils::api_serialization::get_entry::GetEntryArgs;
 
 /// ZomeApiFunction::GetAppEntry function code
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: GetEntryArgs
 /// Returns an HcApiReturnCode as I64
-pub fn invoke_get_entry(runtime: &mut Runtime, input: GetEntryArgs) -> ZomeApiResult {
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_get_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let context = runtime.context()?;
-    // deserialize args
-    let args_str = runtime.load_json_string_from_args(&args);
-    let input = match GetEntryArgs::try_from(args_str.clone()) {
-        Ok(input) => input,
-        // Exit on error
-        Err(_) => {
-            log_error!(
-                context,
-                "zome: invoke_get_entry() failed to deserialize: {:?}",
-                args_str
-            );
-            return ribosome_error_code!(ArgumentDeserializationFailed);
-        }
-    };
+pub fn invoke_get_entry(context: Arc<Context>, input: GetEntryArgs) -> ZomeApiResult {
     // Create workflow future and block on it
-    let result = runtime
-        .context()?
-        .block_on(get_entry_result_workflow(&runtime.context()?, &input));
-    // Store result in wasm memory
-    runtime.store_result(result)
+    context
+        .block_on(get_entry_result_workflow(context, &input))
 }
 
 #[cfg(test)]
@@ -223,8 +206,8 @@ pub mod tests {
             test_parameters(),
         );
         let call_result = wasm_engine::run_dna(
-            Some(test_commit_entry_args_bytes()),
             WasmCallData::new_zome_call(Arc::clone(&context), commit_call),
+            Some(test_commit_entry_args()),
         )
         .expect("test should be callable");
 
@@ -244,8 +227,8 @@ pub mod tests {
             test_parameters(),
         );
         let call_result = wasm_engine::run_dna(
-            Some(test_get_args_bytes()),
             WasmCallData::new_zome_call(Arc::clone(&context), get_call),
+            Some(test_get_args()),
         )
         .expect("test should be callable");
 

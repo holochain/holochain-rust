@@ -1,52 +1,33 @@
 use crate::{
-    wasm_engine::{api::ZomeApiResult, Runtime},
+    wasm_engine::{api::ZomeApiResult},
     NEW_RELIC_LICENSE_KEY,
 };
 use holochain_json_api::json::*;
+use std::sync::Arc;
+use crate::context::Context;
 use holochain_wasm_utils::api_serialization::crypto::CryptoArgs;
 
 /// ZomeApiFunction::Sign function code
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected argument: u64
 /// Returns an HcApiReturnCode as I64
-pub fn invoke_crypto(runtime: &mut Runtime, crypto_args: CryptoArgs) -> ZomeApiResult {
-    let message = runtime
-        .context()?
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_crypto(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let context = runtime.context()?;
-
-    // deserialize args
-    let args_str = runtime.load_json_string_from_args(&args);
-
-    let crypto_args = match CryptoArgs::try_from(args_str.clone()) {
-        Ok(entry_input) => entry_input,
-        // Exit on error
-        Err(_) => {
-            log_error!(
-                context,
-                "zome: invoke_crypto failed to deserialize SignArgs: {:?}",
-                args_str
-            );
-            return ribosome_error_code!(ArgumentDeserializationFailed);
-        }
-    };
-
+pub fn invoke_crypto(context: Arc<Context>, crypto_args: CryptoArgs) -> ZomeApiResult {
     let message = context
         .conductor_api
         .execute(crypto_args.payload.clone(), crypto_args.method.clone())
         .map(|sig| JsonString::from_json(&sig));
 
     log_debug!(
-        runtime.context()?,
+        context,
         "zome: crypto method {:?} of data:{:?} by:{:?} is:{:?}",
         crypto_args.method,
         crypto_args.payload,
-        runtime.context()?.agent_id,
+        context.agent_id,
         message
     );
 
-    runtime.store_result(message)
+    message
 }
 
 #[cfg(test)]

@@ -1,20 +1,20 @@
 use crate::{
     signal::{Signal, UserSignal},
-    wasm_engine::{api::ZomeApiResult, Runtime},
+    wasm_engine::{api::ZomeApiResult},
     NEW_RELIC_LICENSE_KEY,
 };
 use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
+use std::sync::Arc;
+use crate::context::Context;
 
 /// ZomeApiFunction::EmitSignal function code
 /// args: [0] encoded MemoryAllocation as u64
 /// Expecting a string as complex input argument
 /// Returns an HcApiReturnCode as I64
-pub fn invoke_emit_signal(runtime: &Runtime, emit_signal_args: EmitSignalArgs) -> ZomeApiResult {
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_emit_signal(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let context = runtime.context()?;
+pub fn invoke_emit_signal(context: Arc<Context>, input: EmitSignalArgs) -> ZomeApiResult {
     if let Some(sender) = context.signal_tx() {
-        let signal = Signal::User(UserSignal::from(emit_signal_args));
+        let signal = Signal::User(UserSignal::from(input));
         let _ = sender.send(signal).map_err(|err| {
             log_error!(
                 context,
@@ -29,7 +29,7 @@ pub fn invoke_emit_signal(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
     // We only log this case but still return Ok(()) since the semantic of sending a signal
     // is all about decoupling sender and receiver - if nobody is listening, the sender
     // should not care..
-    ribosome_success!()
+    Ok(())
 }
 
 #[cfg(test)]

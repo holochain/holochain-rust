@@ -15,6 +15,7 @@ use holochain_wasm_utils::api_serialization::{ZomeFnCallArgs, THIS_INSTANCE};
 use jsonrpc_lite::JsonRpc;
 use snowflake::ProcessUniqueId;
 use std::sync::Arc;
+use holochain_wasmer_host::*;
 
 // ZomeFnCallArgs to ZomeFnCall
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
@@ -44,26 +45,8 @@ impl ZomeFnCall {
 /// Launch an Action::Call with newly formed ZomeFnCall-
 /// Waits for a ZomeFnResult
 /// Returns an HcApiReturnCode as I64
-pub fn invoke_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> ZomeApiResult {
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
-    let context = runtime.context()?;
-    // deserialize args
-    let args_str = runtime.load_json_string_from_args(&args);
-
-    let input = match ZomeFnCallArgs::try_from(args_str.clone()) {
-        Ok(input) => input,
-        // Exit on error
-        Err(_) => {
-            log_error!(
-                context,
-                "zome: invoke_call failed to deserialize: {:?}",
-                args_str
-            );
-            return ribosome_error_code!(ArgumentDeserializationFailed);
-        }
-    };
-
+pub fn invoke_call(context: Arc<Context>, input: ZomeFnCallArgs) -> ZomeApiResult {
     let span = context
         .tracer
         .span("hdk invoke_call")
@@ -76,24 +59,24 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         // ZomeFnCallArgs to ZomeFnCall
         let zome_call = ZomeFnCall::from_args(context.clone(), input.clone());
 
-        if let Ok(zome_call_data) = runtime.zome_call_data() {
+        if let Ok(zome_call_data) = context.zome_call_data() {
             // Don't allow recursive calls
             if zome_call.same_fn_as(&zome_call_data.call) {
-                return ribosome_error_code!(RecursiveCallForbidden);
+                return Err(WasmError::RecursiveCallForbidden);
             }
         }
-        local_call(runtime, input.clone()).map_err(|error| {
+        local_call(context, input.clone()).map_err(|error| {
             log_error!(context, "zome-to-zome-call/[{:?}]: {:?}", input, error);
             error
         })
     } else {
-        bridge_call(runtime, input.clone()).map_err(|error| {
+        bridge_call(context, input.clone()).map_err(|error| {
             log_error!(context, "bridge-call/[{:?}]: {:?}", input, error);
             error
         })
     };
 
-    runtime.store_result(result)
+    Ok(result)
 }
 
 #[autotrace]
@@ -314,7 +297,7 @@ pub mod tests {
     // ZomeFnCallArgs struct which the test "{}" is not!
     // TODO: fix this bit of crazyness
     fn success_expected() -> Result<Result<JsonString, HolochainError>, RecvTimeoutError> {
-        Ok(Err(HolochainError::RibosomeFailed(
+        Ok(Err(HolochainError::Wasm(
             "Zome function failure: Argument deserialization failed".to_string(),
         )))
     }

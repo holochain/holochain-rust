@@ -1,10 +1,11 @@
 //! This file contains defitions for Zome errors and also Zome Results.
 
-use crate::holochain_core_types::{error::HolochainError};
-use holochain_wasmer_guest::*;
-use crate::holochain_persistence_api::error::PersistenceError;
+use crate::{
+    holochain_core_types::error::HolochainError, holochain_persistence_api::error::PersistenceError,
+};
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_json_derive::DefaultJson;
+use holochain_wasmer_guest::*;
 use serde_derive::{Deserialize, Serialize};
 use std::{error::Error, fmt};
 

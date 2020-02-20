@@ -18,10 +18,8 @@ use holochain_json_api::{
     json::{JsonString, RawString},
 };
 
-use holochain_wasm_utils::{
-    api_serialization::validation::{
-        AgentIdValidationArgs, EntryValidationArgs, LinkValidationArgs, LinkValidationPackageArgs,
-    },
+use holochain_wasm_utils::api_serialization::validation::{
+    AgentIdValidationArgs, EntryValidationArgs, LinkValidationArgs, LinkValidationPackageArgs,
 };
 use holochain_wasmer_guest::*;
 use std::{collections::BTreeMap, convert::TryFrom};
@@ -185,15 +183,14 @@ pub extern "C" fn __hdk_validate_link(host_allocation_ptr: AllocationPtr) -> All
                 Err(fail_string) => WasmResult::Err(WasmError::Zome(fail_string)),
             })
         })
-        .unwrap_or(WasmResult::Err(WasmError::CallbackFailed))
-    );
+        .unwrap_or(WasmResult::Err(WasmError::CallbackFailed)));
 }
 
 #[no_mangle]
 pub extern "C" fn __hdk_hdk_version(_: AllocationPtr) -> AllocationPtr {
-    ret!(WasmResult::Ok(RawString::from(
-        holochain_core_types::hdk_version::HDK_VERSION.to_string()
-    ).into()))
+    ret!(WasmResult::Ok(
+        RawString::from(holochain_core_types::hdk_version::HDK_VERSION.to_string()).into()
+    ))
 }
 
 #[no_mangle]
@@ -209,11 +206,14 @@ pub extern "C" fn __hdk_get_json_definition(_: AllocationPtr) -> AllocationPtr {
     let traits = unsafe { __list_traits() };
     let fn_declarations = unsafe { __list_functions() };
 
-    ret!(WasmResult::Ok(PartialZome {
-        entry_types,
-        traits,
-        fn_declarations,
-    }.into()));
+    ret!(WasmResult::Ok(
+        PartialZome {
+            entry_types,
+            traits,
+            fn_declarations,
+        }
+        .into()
+    ));
 }
 
 #[cfg(test)]

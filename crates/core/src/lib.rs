@@ -15,7 +15,6 @@ extern crate unwrap_to;
 #[macro_use]
 extern crate num_derive;
 
-#[macro_use]
 extern crate holochain_wasm_utils;
 #[macro_use]
 extern crate holochain_json_derive;
@@ -30,6 +29,7 @@ extern crate holochain_tracing as ht;
 extern crate holochain_tracing_macros;
 #[macro_use]
 extern crate holochain_common;
+extern crate holochain_wasmer_host;
 
 #[macro_use]
 pub mod macros;

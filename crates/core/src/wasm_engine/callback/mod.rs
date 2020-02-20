@@ -18,7 +18,7 @@ use crate::{
     NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
-    entry::Entry, error::RibosomeReturnValue, validation::ValidationPackageDefinition,
+    entry::Entry, validation::ValidationPackageDefinition,
 };
 
 use holochain_json_api::{
@@ -27,7 +27,7 @@ use holochain_json_api::{
 };
 
 use holochain_wasm_utils::{
-    api_serialization::receive::ReceiveParams, memory::allocation::WasmAllocation,
+    api_serialization::receive::ReceiveParams,
 };
 use num_traits::FromPrimitive;
 use serde_json;
@@ -154,28 +154,11 @@ impl From<JsonString> for CallbackResult {
     }
 }
 
-impl From<RibosomeReturnValue> for CallbackResult {
-    fn from(ribosome_return_code: RibosomeReturnValue) -> CallbackResult {
-        match ribosome_return_code {
-            RibosomeReturnValue::Failure(ribosome_error_code) => {
-                CallbackResult::Fail(ribosome_error_code.to_string())
-            }
-            RibosomeReturnValue::Allocation(ribosome_allocation) => {
-                match WasmAllocation::try_from(ribosome_allocation) {
-                    Ok(allocation) => CallbackResult::Fail(allocation.read_to_string()),
-                    Err(allocation_error) => CallbackResult::Fail(String::from(allocation_error)),
-                }
-            }
-            RibosomeReturnValue::Success => CallbackResult::Pass,
-        }
-    }
-}
-
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn run_callback(context: Arc<Context>, call: CallbackFnCall) -> CallbackResult {
     match wasm_engine::run_dna(
-        Some(call.clone().parameters.to_bytes()),
         WasmCallData::new_callback_call(context, call),
+        Some(call.clone().parameters),
     ) {
         Ok(call_result) => {
             if call_result.is_null() {

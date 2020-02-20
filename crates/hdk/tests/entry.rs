@@ -14,7 +14,7 @@ use hdk::error::ZomeApiResult;
 
 use holochain_core_types::{
     entry::Entry,
-    error::{RibosomeReturnValue, AllocationPtr},
+    error::{AllocationPtr, RibosomeReturnValue},
 };
 
 use holochain_json_api::json::JsonString;

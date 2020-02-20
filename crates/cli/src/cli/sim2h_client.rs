@@ -58,8 +58,14 @@ pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), St
             Ok(_) => {
                 if let WsFrame::Binary(b) = frame {
                     let msg: WireMessage = serde_json::from_slice(&b).unwrap();
-                    println!("{:?}", msg);
-                    break;
+                    match msg {
+                        WireMessage::Pong | WireMessage::HelloResponse(_) |
+                        WireMessage::StatusResponse(_) => {
+                            println!("Got response => {:?}", msg);
+                            break;
+                        }
+                        _ => println!("{:?}", msg)
+                    }
                 } else {
                     Err(format!("unexpected {:?}", frame))?;
                 }

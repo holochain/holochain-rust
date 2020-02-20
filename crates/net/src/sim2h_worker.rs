@@ -65,10 +65,9 @@ struct BufferedMessage {
 
 impl From<WireMessage> for BufferedMessage {
     fn from(wire_message: WireMessage) -> BufferedMessage {
-        let hash = wire_message.calc_hash();
         BufferedMessage {
             wire_message,
-            hash,
+            hash: 0,
             last_sent: None,
         }
     }

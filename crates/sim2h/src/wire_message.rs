@@ -6,7 +6,7 @@ use std::{
 };
 
 pub type WireMessageVersion = u32;
-pub const WIRE_VERSION: WireMessageVersion = 2;
+pub const WIRE_VERSION: WireMessageVersion = 3;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum WireError {

@@ -102,7 +102,7 @@ pub fn handle_test_emit_signal(message: String) -> ZomeApiResult<()> {
 pub extern "C" fn check_commit_entry(
     host_allocation_ptr: AllocationPtr,
 ) -> AllocationPtr {
-    let entry = host_args!(host_allocation_ptr, Entry);
+    let entry: Entry = host_args!(host_allocation_ptr);
 
     hdk::debug(format!("Entry: {:?}", entry)).ok();
 

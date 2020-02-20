@@ -15,8 +15,7 @@ pub fn invoke_debug(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult 
     let context = runtime.context()?;
     let payload = runtime.load_json_string_from_args(args);
     log_debug!(context, "dna: '{}'", payload);
-
-    ribosome_success!()
+    Ok(())
 }
 
 #[cfg(test)]

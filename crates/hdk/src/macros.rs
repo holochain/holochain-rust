@@ -251,7 +251,7 @@ macro_rules! define_zome {
         $(
             #[no_mangle]
             pub extern "C" fn receive(host_allocation_ptr: holochain_wasmer_guest::AllocationPtr) -> holochain_wasmer_guest::AllocationPtr {
-                let input = holochain_wasmer_guest::host_args!(host_allocation_ptr, $crate::holochain_wasm_utils::api_serialization::receive::ReceiveParams);
+                let input: $crate::holochain_wasm_utils::api_serialization::receive::ReceiveParams = holochain_wasmer_guest::host_args!(host_allocation_ptr);
 
                 fn execute(input: $crate::holochain_wasm_utils::api_serialization::receive::ReceiveParams ) -> String {
                     let $receive_param = input.payload;
@@ -363,7 +363,7 @@ macro_rules! define_zome {
                     }
 
                     // Deserialize input
-                    let input = holochain_wasmer_guest::host_args!(host_allocation_ptr, InputStruct);
+                    let input: InputStruct = holochain_wasmer_guest::host_args!(host_allocation_ptr);
 
                     // Macro'd function body
                     fn execute (params: InputStruct) -> $( $output_param_type )* {

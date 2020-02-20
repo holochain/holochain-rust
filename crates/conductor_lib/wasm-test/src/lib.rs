@@ -5,25 +5,23 @@ extern crate holochain_json_derive;
 extern crate serde_derive;
 extern crate holochain_wasm_utils;
 extern crate serde_json;
+extern crate holochain_wasmer_guest;
 
 use holochain_core_types::{
     entry::Entry,
     error::{
-        RibosomeReturnValue, AllocationPtr, RibosomeRuntimeBits,
         ZomeApiInternalResult,
     },
-    signature::Provenance
+    signature::Provenance,
+    validation::{ValidationResult, ValidationPackageDefinition},
 };
 
 use holochain_wasm_utils::{
     holochain_persistence_api::cas::content::Address,
     holochain_json_api::{error::JsonError, json::{JsonString, RawString}},
 };
+use holochain_wasmer_guest::*;
 
-use holochain_wasm_utils::memory::{
-    ribosome::{load_ribosome_encoded_json, return_code_for_allocation_result},
-    stack::WasmStack,
-};
 use std::convert::TryInto;
 
 //-------------------------------------------------------------------------------------------------
@@ -32,22 +30,6 @@ use std::convert::TryInto;
 
 extern "C" {
     fn hc_debug(host_allocation_ptr: AllocationPtr) -> AllocationPtr;
-}
-
-/// Call HC API DEBUG function with proper input struct: a string
-/// return error code
-fn hdk_debug(mem_stack: &mut WasmStack, json_string: &JsonString) {
-    // Write input string on stack
-    let allocation = match mem_stack.write_json(json_string.to_owned()) {
-        Ok(allocation) => allocation,
-        Err(_) => return,
-    };
-
-    // Call WASM-able DEBUG
-    unsafe { hc_debug(allocation.as_ribosome_encoding()) };
-
-    // Free input allocation and all allocations made inside print()
-    mem_stack.deallocate(allocation).ok();
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -59,18 +41,10 @@ fn hdk_debug(mem_stack: &mut WasmStack, json_string: &JsonString) {
 /// holding input arguments
 #[no_mangle]
 pub extern "C" fn debug_hello(
-    host_allocation_ptr: AllocationPtr,
+    _: AllocationPtr,
 ) -> AllocationPtr {
-    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(host_allocation_ptr) {
-        Ok(mem_stack) => mem_stack,
-        Err(code) => return code.into(),
-    };
-
-    hdk_debug(
-        &mut mem_stack,
-        &JsonString::from(RawString::from("Hello world!")),
-    );
-    RibosomeReturnValue::Success.into()
+    let _: () = try_result!(host_call!(hc_debug, RawString::from("Hello world!")), "failed to handle hc_debug result");
+    ret!(());
 }
 
 /// Function called by Holochain Instance
@@ -78,18 +52,13 @@ pub extern "C" fn debug_hello(
 /// holding input arguments
 #[no_mangle]
 pub extern "C" fn debug_multiple(
-    host_allocation_ptr: AllocationPtr,
+    _: AllocationPtr,
 ) -> AllocationPtr {
-    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(host_allocation_ptr) {
-        Ok(mem_stack) => mem_stack,
-        Err(code) => return code.into(),
-    };
+    let _: () = try_result!(host_call!(hc_debug, RawString::from("Hello")), "debug_multiple one");
+    let _: () = try_result!(host_call!(hc_debug, RawString::from("world")), "debug_multiple two");
+    let _: () = try_result!(host_call!(hc_debug, RawString::from("!")), "debug_multiple three");
 
-    hdk_debug(&mut mem_stack, &JsonString::from(RawString::from("Hello")));
-    hdk_debug(&mut mem_stack, &JsonString::from(RawString::from("world")));
-    hdk_debug(&mut mem_stack, &JsonString::from(RawString::from("!")));
-
-    RibosomeReturnValue::Success.into()
+    ret!(());
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -98,23 +67,18 @@ pub extern "C" fn debug_multiple(
 
 #[no_mangle]
 pub extern "C" fn debug_stacked_hello(
-    host_allocation_ptr: AllocationPtr,
+    _: AllocationPtr,
 ) -> AllocationPtr {
     #[derive(Serialize, Default, Clone, PartialEq, Deserialize, Debug, DefaultJson)]
     struct TestStruct {
         value: String,
     }
 
-    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(host_allocation_ptr) {
-        Ok(mem_stack) => mem_stack,
-        Err(code) => return code.into(),
-    };
-
-    let fish = mem_stack.write_json(TestStruct {
+    let fish = TestStruct {
         value: "fish".to_string(),
-    });
-    hdk_debug(&mut mem_stack, &JsonString::from(RawString::from("disruptive debug log")));
-    return_code_for_allocation_result(fish).into()
+    };
+    let _: () = try_result!(host_call!(hc_debug, RawString::from("disruptive debug log")), "debug_stacked_hello fail");
+    ret!(fish);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -128,7 +92,6 @@ extern "C" {
 /// Call HC API COMMIT function with proper input struct
 /// return address of entry added source chain
 fn hdk_commit(
-    mem_stack: &mut WasmStack,
     entry_type_name: &str,
     entry_value: &'static str,
     provenance: &Vec<Provenance>
@@ -143,19 +106,8 @@ fn hdk_commit(
         entry,
         options:holochain_wasm_utils::api_serialization::commit_entry::CommitEntryOptions::new(provenance.to_vec())
     };
-    let allocation_of_input = mem_stack.write_json(args)?;
 
-    // Call WASM-able commit
-    let encoded_allocation_of_result =
-        unsafe { hc_commit_entry(allocation_of_input.as_ribosome_encoding()) };
-    // Deserialize complex result stored in memory
-    let result: ZomeApiInternalResult = load_ribosome_encoded_json(encoded_allocation_of_result)?;
-
-    // Free result & input allocations and all allocations made inside commit()
-    mem_stack
-        .deallocate(allocation_of_input)
-        .expect("deallocate failed");
-
+    let result: ZomeApiInternalResult = host_call!(hc_commit_entry, args)?;
     match JsonString::from_json(&result.value).try_into() {
         Ok(address) => Ok(address),
         Err(hc_err) => Err(hc_err.into()),
@@ -167,22 +119,11 @@ fn hdk_commit(
 //-------------------------------------------------------------------------------------------------
 
 // Simulate error in commit function by inputing output struct as input
-fn hdk_commit_fail(mem_stack: &mut WasmStack) -> Result<Address, String> {
+fn hdk_commit_fail() -> Result<Address, String> {
     // Put args in struct and serialize into memory
     let input = ZomeApiInternalResult::failure(Address::from("whatever"));
-    let allocation_of_input = mem_stack.write_json(input)?;
 
-    // Call WASM-able commit
-    let encoded_allocation_of_result =
-        unsafe { hc_commit_entry(allocation_of_input.as_ribosome_encoding()) };
-
-    // Deserialize complex result stored in memory
-    let result: ZomeApiInternalResult = load_ribosome_encoded_json(encoded_allocation_of_result)?;
-
-    // Free result & input allocations and all allocations made inside commit()
-    mem_stack
-        .deallocate(allocation_of_input)
-        .expect("deallocate failed");
+    let result: ZomeApiInternalResult = host_call!(hc_commit_entry, input)?;
 
     let address = JsonString::from_json(&result.value).try_into()?;
 
@@ -223,16 +164,10 @@ fn test_inner(input: InputStruct) -> OutputStruct {
 /// returns encoded allocation used to store output
 #[no_mangle]
 pub extern "C" fn commit_test(
-    host_allocation_ptr: AllocationPtr,
+    _: AllocationPtr,
 ) -> AllocationPtr {
-    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(host_allocation_ptr) {
-        Ok(mem_stack) => mem_stack,
-        Err(code) => return code.into(),
-    };
-
-    let result = hdk_commit(&mut mem_stack, "testEntryType", "hello", &vec![]);
-
-    return_code_for_allocation_result(mem_stack.write_json(result)).into()
+    ret!(
+        try_result!(hdk_commit("testEntryType", "hello", &vec![]), "failed to commit in commit_test"));
 }
 
 /// Function called by Holochain Instance
@@ -241,55 +176,28 @@ pub extern "C" fn commit_test(
 /// returns encoded allocation used to store output
 #[no_mangle]
 pub extern "C" fn commit_fail_test(
-    host_allocation_ptr: AllocationPtr,
+    _: AllocationPtr,
 ) -> AllocationPtr {
-    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(host_allocation_ptr) {
-        Ok(mem_stack) => mem_stack,
-        Err(code) => return code.into(),
-    };
-
-    let result = hdk_commit_fail(&mut mem_stack);
-
-    return_code_for_allocation_result(mem_stack.write_json(result)).into()
+    ret!(try_result!(hdk_commit_fail(), "failed to fail in commit_fail_test"));
 }
 
 #[no_mangle]
 pub extern "C" fn __hdk_validate_app_entry(
-    _host_allocation_ptr: AllocationPtr,
+    _: AllocationPtr,
 ) -> AllocationPtr {
-    RibosomeReturnValue::Success.into()
+    ret!(ValidationResult::Ok);
 }
 
 #[no_mangle]
 pub extern "C" fn __hdk_get_validation_package_for_entry_type(
-    host_allocation_ptr: AllocationPtr,
-) -> RibosomeRuntimeBits {
-    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(host_allocation_ptr) {
-        Ok(mem_stack) => mem_stack,
-        Err(code) => return code.into(),
-    };
-
-    return_code_for_allocation_result(mem_stack.write_json(RawString::from("ChainFull"))).into()
+    _: AllocationPtr,
+) -> AllocationPtr {
+    ret!(ValidationPackageDefinition::ChainFull);
 }
 
-/// Function called by Holochain Instance
-/// host_allocation_ptr : encoded memory offset and length of the memory allocation
-/// holding input arguments
-/// returns encoded allocation used to store output
 #[no_mangle]
 pub extern "C" fn round_trip_test(
     host_allocation_ptr: AllocationPtr,
 ) -> AllocationPtr {
-    let mut mem_stack = match WasmStack::try_from_ribosome_encoding(host_allocation_ptr) {
-        Ok(mem_stack) => mem_stack,
-        Err(code) => return code.into(),
-    };
-
-    let input = match load_ribosome_encoded_json(host_allocation_ptr) {
-        Ok(input) => input,
-        Err(e) => return RibosomeReturnValue::from(e).into(),
-    };
-    let output = test_inner(input);
-
-    return_code_for_allocation_result(mem_stack.write_json(output)).into()
+    ret!(test_inner(host_args!(host_allocation_ptr)));
 }

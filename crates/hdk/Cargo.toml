@@ -22,7 +22,7 @@ holochain_persistence_api = "=0.0.17"
 pretty_assertions = "=0.6.1"
 env_logger = "=0.6.1"
 url = "=2.1.0"
-holochain_wasmer_guest = "=0.0.12"
+holochain_wasmer_guest = "=0.0.14"
 
 [dev-dependencies]
 test_utils = { version = "=0.0.43-alpha3", path = "../../test_utils" }

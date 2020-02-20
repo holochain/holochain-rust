@@ -19,6 +19,12 @@ use chain_header::test_chain_header;
 
 use std::convert::TryFrom;
 
+#[derive(Serialize, Deserialize, Debug, DefaultJson)]
+pub enum ValidationResult {
+    Ok,
+    Err,
+}
+
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, DefaultJson)]
 pub struct ValidationPackage {
     pub chain_header: ChainHeader,

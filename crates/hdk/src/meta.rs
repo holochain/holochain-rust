@@ -100,7 +100,7 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
 #[no_mangle]
 pub extern "C" fn __hdk_validate_app_entry(host_allocation_ptr: AllocationPtr) -> AllocationPtr {
     // Deserialize input
-    let input = host_args!(host_allocation_ptr, EntryValidationArgs);
+    let input: EntryValidationArgs = host_args!(host_allocation_ptr);
 
     let entry_type = try_result!(
         EntryType::try_from(input.validation_data.clone()),
@@ -124,7 +124,7 @@ pub extern "C" fn __hdk_validate_app_entry(host_allocation_ptr: AllocationPtr) -
 
 #[no_mangle]
 pub extern "C" fn __hdk_validate_agent_entry(host_allocation_ptr: AllocationPtr) -> AllocationPtr {
-    let input = host_args!(host_allocation_ptr, AgentIdValidationArgs);
+    let input: AgentIdValidationArgs = host_args!(host_allocation_ptr);
 
     //get the validator code
     let mut validator = try_result!(
@@ -139,7 +139,7 @@ pub extern "C" fn __hdk_validate_agent_entry(host_allocation_ptr: AllocationPtr)
 pub extern "C" fn __hdk_get_validation_package_for_link(
     host_allocation_ptr: AllocationPtr,
 ) -> AllocationPtr {
-    let input = host_args!(host_allocation_ptr, LinkValidationPackageArgs);
+    let input: LinkValidationPackageArgs = host_args!(host_allocation_ptr);
 
     ret!(WasmResult::Ok(
         zome_definition()
@@ -161,7 +161,7 @@ pub extern "C" fn __hdk_get_validation_package_for_link(
 
 #[no_mangle]
 pub extern "C" fn __hdk_validate_link(host_allocation_ptr: AllocationPtr) -> AllocationPtr {
-    let input = host_args!(host_allocation_ptr, LinkValidationArgs);
+    let input: LinkValidationArgs = host_args!(host_allocation_ptr);
 
     ret!(zome_definition()
         .entry_types

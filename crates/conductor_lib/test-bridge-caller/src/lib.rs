@@ -4,10 +4,12 @@ extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
+extern crate holochain_wasmer_guest;
 
 use hdk::holochain_persistence_api::{
     cas::content::Address,
 };
+use holochain_wasmer_guest::*;
 
 use hdk::holochain_json_api::{
     json::JsonString,

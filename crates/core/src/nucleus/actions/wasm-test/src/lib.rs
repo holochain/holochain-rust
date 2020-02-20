@@ -8,10 +8,11 @@ extern crate serde_derive;
 extern crate holochain_json_derive;
 
 extern crate boolinator;
+extern crate holochain_wasmer_guest;
 
 use boolinator::Boolinator;
 
-
+use holochain_wasmer_guest::*;
 use hdk::holochain_core_types::{
     dna::entry_types::Sharing,
     validation::EntryValidationData

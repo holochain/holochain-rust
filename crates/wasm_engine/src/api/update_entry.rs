@@ -4,17 +4,17 @@ use crate::{
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
     NEW_RELIC_LICENSE_KEY,
 };
-use holochain_core_types::error::HolochainError;
 use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_utils::api_serialization::{get_entry::*, UpdateEntryArgs};
 use holochain_wasmer_host::*;
 use std::sync::Arc;
+use holochain_core_types::error::HolochainError;
 
 /// ZomeApiFunction::UpdateEntry function code
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: UpdateEntryArgs
 /// Returns an HcApiReturnCode as I64
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_update_entry(
     context: Arc<Context>,
     entry_args: UpdateEntryArgs,
@@ -27,11 +27,11 @@ pub fn invoke_update_entry(
     let maybe_entry_result = context.block_on(get_entry_result_workflow(context, &get_args));
     if let Err(err) = maybe_entry_result {
         log_error!(context, "zome: get_entry_result_workflow failed: {:?}", err);
-        return Err(WasmError::WorkflowFailed);
+        Err(WasmError::WorkflowFailed)?;
     }
     let entry_result = maybe_entry_result?.clone();
     if !entry_result.found() {
-        return Err(WasmError::EntryNotFound);
+        Err(WasmError::EntryNotFound)?;
     }
     let latest_entry = entry_result.latest()?;
 
@@ -45,5 +45,5 @@ pub fn invoke_update_entry(
             context,
             &vec![], // TODO should provenance be a parameter?
         ))
-        .map(|result| result.address());
+        .map(|result| result.address())
 }

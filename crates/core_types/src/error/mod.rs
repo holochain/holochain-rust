@@ -119,6 +119,12 @@ pub enum HolochainError {
     List(Vec<HolochainError>),
 }
 
+impl From<WasmError> for HolochainError {
+    fn from(wasm_error: WasmError) -> HolochainError {
+        HolochainError::Wasm(wasm_error)
+    }
+}
+
 pub type HcResult<T> = Result<T, HolochainError>;
 
 impl HolochainError {

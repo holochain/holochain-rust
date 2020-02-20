@@ -11,7 +11,6 @@ macro_rules! link_zome_api {
             actions::{trace_invoke_wasm_api_function::trace_invoke_wasm_api_function, trace_return_wasm_api_function::trace_return_wasm_api_function},
             WasmApiFnCall,
         };
-        use std::convert::TryInto;
         use crate::wasm_engine::runtime::WasmCallData;
         use holochain_json_api::json::JsonString;
         use $crate::holochain_wasmer_host::AllocationPtr;

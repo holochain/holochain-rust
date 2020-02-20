@@ -66,7 +66,7 @@ pub struct LinkDefinitionPath {
 /// zomes, entry types and their links and returns the first match.
 ///
 /// Returns a LinkDefinitionPath to uniquely reference the link definition in the DNA.
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn find_link_definition_by_type(
     link_type: &String,
     context: &Arc<Context>,

@@ -6,7 +6,7 @@ use holochain_json_api::json::JsonString;
 use holochain_wasm_utils::api_serialization::{
     keystore::KeystoreListResult, wasm_string::WasmString,
 };
-use holochain_wasmer_host::WasmError::CallbackFailed;
+use holochain_wasmer_host::*;
 use jsonrpc_lite::JsonRpc;
 use serde_json::{self, Value};
 use snowflake::ProcessUniqueId;
@@ -60,7 +60,7 @@ pub fn invoke_keystore_list(context: Arc<Context>, _: WasmString) -> ZomeApiResu
                 "zome: agent/keystore/list callback failed: {:?}",
                 err
             );
-            return Err(CallbackFailed);
+            return Err(WasmError::CallbackFailed);
         }
     };
 
@@ -82,7 +82,7 @@ pub fn invoke_keystore_new_random(context: Arc<Context>, args_str: WasmString) -
                 "zome: agent/keystore/add_random_seed callback failed: {:?}",
                 err
             );
-            return Err(CallbackFailed);
+            return Err(WasmError::CallbackFailed);
         }
     };
     Ok(())
@@ -103,7 +103,7 @@ pub fn invoke_keystore_derive_seed(context: Arc<Context>, args_str: WasmString) 
                 "zome: agent/keystore/add_seed_from_seed callback failed: {:?}",
                 err
             );
-            return Err(CallbackFailed);
+            return Err(WasmError::CallbackFailed);
         }
     };
 
@@ -133,7 +133,7 @@ pub fn invoke_keystore_derive_key(context: Arc<Context>, args_str: WasmString) -
                 "zome: agent/keystore/add_key_from_seed callback failed: {:?}",
                 err
             );
-            return Err(CallbackFailed);
+            return Err(WasmError::CallbackFailed);
         }
     };
 
@@ -162,7 +162,7 @@ pub fn invoke_keystore_sign(context: Arc<Context>, args_str: WasmString) -> Zome
                 "zome: agent/keystore/sign callback failed: {:?}",
                 err
             );
-            return Err(CallbackFailed);
+            return Err(WasmError::CallbackFailed);
         }
     };
 
@@ -202,7 +202,7 @@ pub fn invoke_keystore_get_public_key(
                 "zome: agent/keystore/get_public_key callback failed: {:?}",
                 err
             );
-            return Err(CallbackFailed);
+            return Err(WasmError::CallbackFailed);
         }
     };
 

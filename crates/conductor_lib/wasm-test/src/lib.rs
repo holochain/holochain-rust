@@ -166,8 +166,8 @@ fn test_inner(input: InputStruct) -> OutputStruct {
 pub extern "C" fn commit_test(
     _: AllocationPtr,
 ) -> AllocationPtr {
-    ret!(
-        try_result!(hdk_commit("testEntryType", "hello", &vec![]), "failed to commit in commit_test"));
+    let result = try_result!(hdk_commit("testEntryType", "hello", &vec![]), "failed to commit in commit_test");
+    ret!(result);
 }
 
 /// Function called by Holochain Instance
@@ -178,7 +178,8 @@ pub extern "C" fn commit_test(
 pub extern "C" fn commit_fail_test(
     _: AllocationPtr,
 ) -> AllocationPtr {
-    ret!(try_result!(hdk_commit_fail(), "failed to fail in commit_fail_test"));
+    let result = try_result!(hdk_commit_fail(), "failed to fail in commit_fail_test");
+    ret!(result);
 }
 
 #[no_mangle]

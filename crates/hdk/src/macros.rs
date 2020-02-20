@@ -42,61 +42,61 @@
 /// # use holochain_core_types::error::AllocationPtr;
 /// # // Adding empty functions so that the cfg(test) build can link.
 /// # #[no_mangle]
-/// # pub fn hc_init_globals(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_init_globals(_: AllocationPtr) -> AllocationPtr { ret!(()); }
 /// # #[no_mangle]
-/// # pub fn hc_commit_entry(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_commit_entry(_: AllocationPtr) -> AllocationPtr { ret!(()); }
 /// # #[no_mangle]
-/// # pub fn hc_get_entry(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_get_entry(_: AllocationPtr) -> AllocationPtr { ret!(()); }
 /// # #[no_mangle]
-/// # pub fn hc_entry_address(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_entry_address(_: AllocationPtr) -> AllocationPtr { ret!(()); }
 /// # #[no_mangle]
-/// # pub fn hc_query(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_query(_: AllocationPtr) -> AllocationPtr { ret!(()); }
 /// # #[no_mangle]
-/// # pub fn hc_update_entry(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_update_entry(_: AllocationPtr) -> AllocationPtr { ret!(()); }
 /// # #[no_mangle]
-/// # pub fn hc_remove_entry(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_remove_entry(_: AllocationPtr) -> AllocationPtr { ret!(())); }
 /// # #[no_mangle]
-/// # pub fn hc_send(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_send(_: AllocationPtr) -> AllocationPtr { ret!(()); }
 /// # #[no_mangle]
-/// # pub fn hc_sleep(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_sleep(_: AllocationPtr) -> AllocationPtr { ret!(()); }
 /// # #[no_mangle]
-/// # pub fn hc_debug(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_debug(_: AllocationPtr) -> AllocationPtr { ret!(()); }
 /// # #[no_mangle]
-/// # pub fn hc_call(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_call(_: AllocationPtr) -> AllocationPtr { ret!(()); }
 /// #[no_mangle]
-/// # pub fn hc_crypto(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_crypto(_: AllocationPtr) -> AllocationPtr { ret!(()); }
 /// #[no_mangle]
-/// # pub fn hc_meta(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_meta(_: AllocationPtr) -> AllocationPtr { ret!(()); }
 /// # #[no_mangle]
-/// # pub fn hc_sign_one_time(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_sign_one_time(_: AllocationPtr) -> AllocationPtr { ret!(()); }
 /// # #[no_mangle]
-/// # pub fn hc_verify_signature(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_verify_signature(_: AllocationPtr) -> AllocationPtr { ret!(()); }
 /// # #[no_mangle]
-/// # pub fn hc_get_links(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_get_links(_: AllocationPtr) -> AllocationPtr { ret!(()); }
 /// # #[no_mangle]
-/// # pub fn hc_get_links_count(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_get_links_count(_: AllocationPtr) -> AllocationPtr { ret!(()); }
 /// # #[no_mangle]
-/// # pub fn hc_link_entries(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_link_entries(_: AllocationPtr) -> AllocationPtr { ret!(()); }
 /// # #[no_mangle]
-/// # pub fn hc_remove_link(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_remove_link(_: AllocationPtr) -> AllocationPtr { ret!(()); }
 /// # #[no_mangle]
-/// # pub fn hc_keystore_list(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_keystore_list(_: AllocationPtr) -> AllocationPtr { ret!(()); }
 /// # #[no_mangle]
-/// # pub fn hc_keystore_new_random(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_keystore_new_random(_: AllocationPtr) -> AllocationPtr { ret!(()); }
 /// # #[no_mangle]
-/// # pub fn hc_keystore_derive_seed(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_keystore_derive_seed(_: AllocationPtr) -> AllocationPtr { ret!(()); }
 /// # #[no_mangle]
-/// # pub fn hc_keystore_derive_key(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_keystore_derive_key(_: AllocationPtr) -> AllocationPtr { ret!(()); }
 /// # #[no_mangle]
-/// # pub fn hc_keystore_sign(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_keystore_sign(_: AllocationPtr) -> AllocationPtr { ret!(()); }
 /// # #[no_mangle]
-/// # pub fn hc_keystore_get_public_key(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_keystore_get_public_key(_: AllocationPtr) -> AllocationPtr { ret!(()); }
 /// # #[no_mangle]
-/// # pub fn hc_commit_capability_grant(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_commit_capability_grant(_: AllocationPtr) -> AllocationPtr { ret!(()); }
 /// # #[no_mangle]
-/// # pub fn hc_commit_capability_claim(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_commit_capability_claim(_: AllocationPtr) -> AllocationPtr { ret!(()); }
 /// # #[no_mangle]
-/// # pub fn hc_emit_signal(_: AllocationPtr) -> AllocationPtr { ret!(WasmResult::Ok(().into())); }
+/// # pub fn hc_emit_signal(_: AllocationPtr) -> AllocationPtr { ret!(()); }
 ///
 /// # fn main() {
 ///

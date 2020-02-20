@@ -94,7 +94,8 @@ pub fn invoke_query(runtime: &mut Runtime, query: QueryArgs) -> ZomeApiResult {
             )
         }
     };
-    let result = match maybe_result {
+
+    match maybe_result {
         // TODO #793: the Err(_code) is the WasmError, but we can't import that type here.
         // Perhaps return chain_store().query should return Some(result)/None instead, and the fixed
         // UnknownEntryType code here, rather than trying to return a specific error code.
@@ -139,9 +140,7 @@ pub fn invoke_query(runtime: &mut Runtime, query: QueryArgs) -> ZomeApiResult {
             }
         }),
         Err(_code) => return Err(WasmError::UnknownEntryType),
-    };
-
-    runtime.store_result(result)
+    }
 }
 
 /// Get an local-chain Entry via the provided context, returning Entry or HolochainError on failure

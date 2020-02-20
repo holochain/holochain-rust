@@ -27,7 +27,7 @@ use holochain_json_api::{
 use holochain_wasm_utils::api_serialization::receive::ReceiveParams;
 use num_traits::FromPrimitive;
 use serde_json;
-use std::{convert::TryFrom, str::FromStr, sync::Arc};
+use std::{str::FromStr, sync::Arc};
 
 /// Enumeration of all Zome Callbacks known and used by Holochain
 /// Enumeration can convert to str
@@ -58,7 +58,7 @@ impl FromStr for Callback {
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Callback {
     // cannot test this because PartialEq is not implemented for fns
     #[cfg_attr(tarpaulin, skip)]
@@ -79,7 +79,7 @@ impl Callback {
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Defn for Callback {
     fn as_str(&self) -> &'static str {
         match *self {
@@ -150,7 +150,7 @@ impl From<JsonString> for CallbackResult {
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn run_callback(context: Arc<Context>, call: CallbackFnCall) -> CallbackResult {
     match wasm_engine::run_dna(
         WasmCallData::new_callback_call(context, call),
@@ -168,7 +168,7 @@ pub(crate) fn run_callback(context: Arc<Context>, call: CallbackFnCall) -> Callb
 }
 
 #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn call(
     context: Arc<Context>,
     zome: &str,
@@ -196,7 +196,6 @@ pub mod tests {
         instance::{tests::test_instance, Instance},
         wasm_engine::{callback::Callback, Defn},
     };
-    use std::str::FromStr;
     use test_utils;
     use wabt;
 

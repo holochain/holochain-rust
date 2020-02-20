@@ -12,7 +12,7 @@ use std::sync::Arc;
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: SendArgs
 /// Returns an HcApiReturnCode as I64
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_send(context: Arc<Context>, args: SendArgs) -> ZomeApiResult {
     let span = context
         .call_data()
@@ -29,5 +29,5 @@ pub fn invoke_send(context: Arc<Context>, args: SendArgs) -> ZomeApiResult {
 
     context
         .block_on(custom_send(args.to_agent, message, args.options.0, context))
-        .map(|s| JsonString::from_json(&s))
+        .map(|s| JsonString::from_json(&String::from(s)))
 }

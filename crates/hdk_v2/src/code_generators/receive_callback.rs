@@ -25,7 +25,7 @@ impl ZomeCodeDef {
                         #receive_blocks
                     }
 
-                    $crate::holochain_wasmer_guest::ret!(execute(input));
+                    $crate::holochain_wasmer_guest::ret!($crate::hdk::holochain_wasm_utils::holochain_json_string::json::RawString::from(execute(input)));
                 }
             )*
         }

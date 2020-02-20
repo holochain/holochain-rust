@@ -108,7 +108,7 @@ pub extern "C" fn __hdk_validate_app_entry(host_allocation_ptr: AllocationPtr) -
         .into_iter()
         .find(|ref validating_entry_type| validating_entry_type.name == entry_type)
     {
-        None => ret!(WasmResult::Err(WasmError::CallbackFailed)),
+        None => holochain_wasmer_guest::json::to_allocation_ptr(WasmResult::Err(WasmError::CallbackFailed).into()),
         Some(mut entry_type_definition) => {
             ret!((*entry_type_definition.validator)(input.validation_data));
         }

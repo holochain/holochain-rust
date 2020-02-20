@@ -27,12 +27,12 @@ use std::sync::Arc;
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: GetLinksArgs
 /// Returns an HcApiReturnCode as I64
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_remove_link(
     context: Arc<Context>,
     input: LinkEntriesArgs,
 ) -> Result<(), HolochainError> {
-    let top_chain_header_option = context.state()?.agent().top_chain_header();
+    let top_chain_header_option = context.agent().top_chain_header();
 
     let top_chain_header = match top_chain_header_option {
         Some(top_chain) => top_chain,
@@ -42,7 +42,7 @@ pub fn invoke_remove_link(
                 "zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
                 input
             );
-            return Err(WasmError::ArgumentDeserializationFailed);
+            Err(WasmError::ArgumentDeserializationFailed)?;
         }
     };
 
@@ -64,7 +64,7 @@ pub fn invoke_remove_link(
     let response_result = context.block_on(query(context, method, Timeout::default()));
     if response_result.is_err() {
         log_error!("zome : Could not get links for remove_link method.");
-        Err(WasmError::WorkflowFailed)
+        Err(WasmError::WorkflowFailed)?
     } else {
         let response = response_result.expect("Could not get response");
         let links_result = match response {
@@ -75,12 +75,12 @@ pub fn invoke_remove_link(
         };
         if links_result.is_err() {
             log_error!(context, "zome : Could not get links for remove_link method");
-            Err(WasmError::WorkflowFailed)
+            Err(WasmError::WorkflowFailed)?
         } else {
             let links = links_result.expect("This is supposed to not fail");
             let links = match links {
                 GetLinksNetworkResult::Links(links) => links,
-                _ => return Err(WasmError::WorkflowFailed),
+                _ => Err(WasmError::WorkflowFailed)?,
             };
             let filtered_links = links
                 .into_iter()
@@ -93,7 +93,7 @@ pub fn invoke_remove_link(
             // Wait for future to be resolved
             context
                 .block_on(author_entry(&entry, None, context, &vec![]))
-                .map(|_| ());
+                .map(|_| ())
         }
     }
 }

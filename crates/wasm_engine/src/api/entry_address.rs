@@ -48,5 +48,5 @@ pub fn invoke_entry_address(runtime: &mut Runtime, entry: Entry) -> ZomeApiResul
     }
 
     // Return result
-    runtime.store_result(Ok(entry.address()))
+    Ok(entry.address())
 }

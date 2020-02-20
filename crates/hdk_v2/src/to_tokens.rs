@@ -51,7 +51,7 @@ impl ToTokens for ZomeFunction {
                     #function_body
                 }
 
-                ret!(WasmResult::Ok(execute(input).into()));
+                ret!(execute(input).into());
             }
         })
     }

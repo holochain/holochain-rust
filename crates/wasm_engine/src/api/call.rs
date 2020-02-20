@@ -4,7 +4,7 @@ use crate::{
         actions::call_zome_function::{call_zome_function, make_cap_request_for_call},
         ZomeFnCall,
     },
-    wasm_engine::{api::ZomeApiResult, Runtime},
+    wasm_engine::{api::ZomeApiResult},
     NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::error::HolochainError;
@@ -81,12 +81,7 @@ pub fn invoke_call(context: Arc<Context>, input: ZomeFnCallArgs) -> ZomeApiResul
 
 #[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
-    let context = runtime.context().map_err(|_| {
-        HolochainError::ErrorGeneric(
-            "expecting zome call data in local call not null call".to_string(),
-        )
-    })?;
+fn local_call(context: Arc<Context>, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
     // ZomeFnCallArgs to ZomeFnCall
     let zome_call = ZomeFnCall::from_args(context.clone(), input.clone());
     log_debug!(context, "blocking on zome call: {:?}", input.clone());
@@ -102,12 +97,7 @@ fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString
 
 #[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
-    let context = runtime.context().map_err(|_| {
-        HolochainError::ErrorGeneric(
-            "expecting zome call data in bridge call not null call".to_string(),
-        )
-    })?;
+fn bridge_call(context: Arc<Context>, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
     let conductor_api = context.conductor_api.clone();
 
     let params = format!(
@@ -115,7 +105,7 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
         input.instance_handle, input.zome_name, input.fn_name, input.fn_args
     );
 
-    let handler = conductor_api.get().write().unwrap();
+    let handler = conductor_api.get().write()?;
 
     let id = ProcessUniqueId::new();
     // json-rpc format
@@ -146,7 +136,7 @@ fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonStrin
             Ok(JsonString::from_json(&sanitized_response))
         }
         JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(
-            serde_json::to_string(&response.get_error().unwrap()).unwrap(),
+            serde_json::to_string(&response.get_error()?)?,
         )),
         _ => Err(HolochainError::ErrorGeneric(
             "Bridge call failed".to_string(),

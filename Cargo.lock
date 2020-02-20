@@ -1370,6 +1370,7 @@ dependencies = [
  "holochain_persistence_mem 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_tracing 0.0.19 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_tracing_macros 0.0.19 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_wasm_engine 0.0.43-alpha3",
  "holochain_wasm_utils 0.0.43-alpha3",
  "holochain_wasmer_host 0.0.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "im 14.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1762,6 +1763,13 @@ dependencies = [
  "proc-macro2 1.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 1.0.14 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "holochain_wasm_engine"
+version = "0.0.43-alpha3"
+dependencies = [
+ "holochain_wasmer_host 0.0.14 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

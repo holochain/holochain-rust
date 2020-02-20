@@ -7,7 +7,7 @@ use std::sync::Arc;
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected argument: u64
 /// Returns an HcApiReturnCode as I64
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_verify_signature(
     context: Arc<Context>,
     verification_args: VerifySignatureArgs,

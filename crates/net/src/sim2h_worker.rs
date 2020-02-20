@@ -90,7 +90,6 @@ pub struct Sim2hWorker {
     reconnect_interval: Duration,
     metric_publisher: std::sync::Arc<std::sync::RwLock<dyn MetricPublisher>>,
     outgoing_message_buffer: Vec<BufferedMessage>,
-    outgoing_message_next_serial: u16,
     ws_frame: Option<WsFrame>,
     initial_authoring_list: Option<EntryListData>,
     initial_gossiping_list: Option<EntryListData>,
@@ -132,7 +131,6 @@ impl Sim2hWorker {
                 DefaultMetricPublisher::default(),
             )),
             outgoing_message_buffer: Vec::new(),
-            outgoing_message_next_serial: 0,
             ws_frame: None,
             initial_authoring_list: None,
             initial_gossiping_list: None,
@@ -302,7 +300,6 @@ impl Sim2hWorker {
         // we always put messages in the outgoing buffer,
         // they'll be sent when the connection is ready
         debug!("WireMessage: queueing {:?}", message);
-        self.outgoing_message_next_serial += 1;
         self.outgoing_message_buffer.push(message.into());
         Ok(())
     }

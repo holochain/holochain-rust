@@ -506,24 +506,18 @@ impl Store {
 
         let clone_ref_clone = clone_ref.clone();
         tokio::task::spawn(async move {
-            let mut should_end_task = false;
-            let mut handle_message = move |msg| {
-                match msg {
-                    //StoreProto::GetClone(sender) => {
-                    //    let _ = sender.send(store.clone());
-                    //}
-                    StoreProto::Mutate(aol_entry, complete) => {
-                        store.mutate(aol_entry);
-                        let store_clone = store.clone();
-                        let clone_ref_clone_clone = clone_ref_clone.clone();
-                        tokio::task::spawn(async move {
-                            *clone_ref_clone_clone.write().await = store_clone;
-                            let _ = complete.send(());
-                        });
-                    }
+            let mut handle_message = move |msg| match msg {
+                StoreProto::Mutate(aol_entry, complete) => {
+                    store.mutate(aol_entry);
+                    let store_clone = store.clone();
+                    let clone_ref_clone_clone = clone_ref_clone.clone();
+                    tokio::task::spawn(async move {
+                        *clone_ref_clone_clone.write().await = store_clone;
+                        let _ = complete.send(());
+                    });
                 }
             };
-            loop {
+            'store_recv_loop: loop {
                 if let None = weak_ref_dummy.upgrade() {
                     // there are no more references to us...
                     // let this task end
@@ -546,8 +540,7 @@ impl Store {
                             match recv_mut.try_recv() {
                                 Err(tokio::sync::mpsc::error::TryRecvError::Empty) => break,
                                 Err(tokio::sync::mpsc::error::TryRecvError::Closed) => {
-                                    should_end_task = true;
-                                    break;
+                                    break 'store_recv_loop;
                                 }
                                 Ok(msg) => handle_message(msg),
                             }
@@ -559,14 +552,10 @@ impl Store {
                             count,
                             loop_start.elapsed().as_millis()
                         );
-
-                        // if we got a Closed on our recv
-                        if should_end_task {
-                            return;
-                        }
                     }
                 }
             }
+            warn!("im state store_recv_loop ended!");
         });
 
         StoreHandle::new(ref_dummy, clone_ref, send_mut, con_incr)
@@ -883,7 +872,10 @@ impl StoreHandle {
             },
             sender,
         );
-        let _ = self.send_mut.send(msg);
+        if let Err(_) = self.send_mut.send(msg) {
+            error!("failed to send im store message - shutting down?");
+            return async { () }.boxed();
+        }
         async move {
             let _ = receiver.await;
         }
@@ -899,13 +891,17 @@ impl StoreHandle {
     #[must_use]
     pub fn drop_connection(&self, space_hash: SpaceHash, agent_id: AgentId) -> BoxFuture<'static, ()> {
         let (sender, receiver) = tokio::sync::oneshot::channel();
-        let _ = self
+        if let Err(_) = self
             .send_mut
             .send(StoreProto::Mutate(AolEntry::DropConnection {
                 aol_idx: self.con_incr.inc(),
                 space_hash,
                 agent_id,
-            }, sender));
+            }, sender))
+        {
+            error!("failed to send im store message - shutting down?");
+            return async { () }.boxed();
+        }
         async move {
             let _ = receiver.await;
         }.boxed()
@@ -920,13 +916,16 @@ impl StoreHandle {
     #[must_use]
     pub fn drop_connection_by_uri(&self, uri: Lib3hUri) -> BoxFuture<'static, ()> {
         let (sender, receiver) = tokio::sync::oneshot::channel();
-        let _ = self.send_mut.send(StoreProto::Mutate(
+        if let Err(_) = self.send_mut.send(StoreProto::Mutate(
             AolEntry::DropConnectionByUri {
                 aol_idx: self.con_incr.inc(),
                 uri,
             },
             sender,
-        ));
+        )) {
+            error!("failed to send im store message - shutting down?");
+            return async { () }.boxed();
+        }
         async move {
             let _ = receiver.await;
         }
@@ -947,7 +946,7 @@ impl StoreHandle {
         aspects: im::HashSet<AspectHash>,
     ) -> BoxFuture<'static, ()> {
         let (sender, receiver) = tokio::sync::oneshot::channel();
-        let _ = self.send_mut.send(StoreProto::Mutate(
+        if let Err(_) = self.send_mut.send(StoreProto::Mutate(
             AolEntry::AgentHoldsAspects {
                 aol_idx: self.con_incr.inc(),
                 space_hash,
@@ -956,7 +955,10 @@ impl StoreHandle {
                 aspects,
             },
             sender,
-        ));
+        )) {
+            error!("failed to send im store message - shutting down?");
+            return async { () }.boxed();
+        }
         async move {
             let _ = receiver.await;
         }
@@ -984,7 +986,9 @@ impl StoreHandle {
             },
             sender_c,
         )) {
+            error!("failed to send im store message - shutting down?");
             // we're probably shutting down, prevent panic!s
+            // note this future will never resolve - because it cannot
             return futures::future::pending().await;
         }
         let _ = receiver_c.await;

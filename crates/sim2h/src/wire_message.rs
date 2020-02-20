@@ -235,6 +235,7 @@ pub mod tests {
     }
 
     // This WireMessage is a real-world example that serializes non-deterministically
+    #[allow(dead_code)]
     fn wire_message_app_spec_fixture() -> WireMessage {
         let raw = r#"{"Lib3hToClientResponse":{"data":{"HandleGetAuthoringEntryListResult":{"space_address":"QmQ7guHG2Y3fbtNaLoV1kFex66AqepoCTqQ9XtYYQKAFZK","provider_agent_id":"HcScJxNnN6Bi5d5tda7OHWGKNBgjq9oieP9GQXsmO5Svp8fa3gTK5DJQFwgditr","request_id":"","address_map":{"Qmey39PmjYAJ5r5bCKtWe4nMxVcTmTwLE3YN142kVe5CJE":["QmT3mV6mKsh4aEQoJ5J8feUruNGYTTd4FPuPicMxmZf8DY"],"HcScJxNnN6Bi5d5tda7OHWGKNBgjq9oieP9GQXsmO5Svp8fa3gTK5DJQFwgditr":["QmVr1H6B6P6iydnzCF7fh7abDz1yznrjecMwCSMmtGA4EN"],"QmW22euyQLF7wK8yYhnCZHZq64G7ryQ2TqQ5D3L7vhszg2":["QmWAU3DTuuwdNFPpX3gqEsG7bAttePbJQZjirrh39MfGxR"],"Qmavdnym3BKrKJxuNoSxLnoPwUBWtqsVhSnQmdmm4FFnyK":["QmPybN5GGibjAno6hmKCWJgM8RRkeo1vga57ZA3QbevrrL"]}}},"span_context":[149,217,162,104,57,50,215,185,128,95,199,101,105,81,143,213,10,14,105,185,134,247,194,247,0,0,0,0,0,0,0,0,1,0,0,0,0]}}"#;
         let opaque: Opaque = raw.into();

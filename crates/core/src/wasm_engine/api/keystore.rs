@@ -1,8 +1,4 @@
-use crate::{
-    context::Context,
-    wasm_engine::{api::ZomeApiResult},
-    NEW_RELIC_LICENSE_KEY,
-};
+use crate::{context::Context, wasm_engine::api::ZomeApiResult, NEW_RELIC_LICENSE_KEY};
 use holochain_core_types::error::{HcResult, HolochainError};
 
 use holochain_json_api::json::JsonString;
@@ -10,11 +6,11 @@ use holochain_json_api::json::JsonString;
 use holochain_wasm_utils::api_serialization::{
     keystore::KeystoreListResult, wasm_string::WasmString,
 };
+use holochain_wasmer_host::WasmError::CallbackFailed;
 use jsonrpc_lite::JsonRpc;
 use serde_json::{self, Value};
 use snowflake::ProcessUniqueId;
 use std::sync::Arc;
-use holochain_wasmer_host::WasmError::CallbackFailed;
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn conductor_callback<S: Into<String>>(
@@ -152,18 +148,10 @@ pub fn invoke_keystore_derive_key(context: Arc<Context>, args_str: WasmString) -
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_keystore_sign(context: Arc<Context>, args_str: WasmString) -> ZomeApiResult {
-    let result = conductor_callback(
-        "agent/keystore/sign",
-        &args_str.to_string(),
-        context,
-    );
+    let result = conductor_callback("agent/keystore/sign", &args_str.to_string(), context);
     let string: String = match result {
         Ok(json_string) => {
-            log_debug!(
-                context,
-                "zome: keystore_sign json_string:{:?}",
-                json_string
-            );
+            log_debug!(context, "zome: keystore_sign json_string:{:?}", json_string);
 
             let value: Value = serde_json::from_str(&json_string.to_string()).unwrap();
             value["signature"].as_str().unwrap().to_owned()
@@ -189,7 +177,10 @@ pub fn invoke_keystore_sign(context: Arc<Context>, args_str: WasmString) -> Zome
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_keystore_get_public_key(context: Arc<Context>, args_str: WasmString) -> ZomeApiResult {
+pub fn invoke_keystore_get_public_key(
+    context: Arc<Context>,
+    args_str: WasmString,
+) -> ZomeApiResult {
     let result = conductor_callback(
         "agent/keystore/get_public_key",
         &args_str.to_string(),

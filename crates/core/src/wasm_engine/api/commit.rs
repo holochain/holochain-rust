@@ -1,11 +1,7 @@
-use crate::{
-    workflows::author_entry::author_entry,
-    NEW_RELIC_LICENSE_KEY,
-};
+use crate::{context::Context, workflows::author_entry::author_entry, NEW_RELIC_LICENSE_KEY};
 use holochain_core_types::error::HolochainError;
 use holochain_wasm_utils::api_serialization::commit_entry::{CommitEntryArgs, CommitEntryResult};
 use std::sync::Arc;
-use crate::context::Context;
 
 /// ZomeApiFunction::CommitAppEntry function code
 /// args: [0] encoded MemoryAllocation as u64

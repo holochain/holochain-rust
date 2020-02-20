@@ -1,9 +1,4 @@
-use crate::{
-    agent::actions::commit::commit_entry,
-    NEW_RELIC_LICENSE_KEY,
-};
-use std::sync::Arc;
-use crate::context::Context;
+use crate::{agent::actions::commit::commit_entry, context::Context, NEW_RELIC_LICENSE_KEY};
 use holochain_core_types::{
     entry::{
         cap_entries::{CapTokenClaim, CapTokenGrant},
@@ -12,6 +7,7 @@ use holochain_core_types::{
     error::HolochainError,
 };
 use holochain_persistence_api::cas::content::Address;
+use std::sync::Arc;
 
 use holochain_wasm_utils::api_serialization::capabilities::{
     CommitCapabilityClaimArgs, CommitCapabilityGrantArgs,
@@ -23,26 +19,21 @@ pub fn invoke_commit_capability_grant(
     args: CommitCapabilityGrantArgs,
 ) -> Result<Address, HolochainError> {
     match CapTokenGrant::create(&args.id, args.cap_type, args.assignees, args.functions) {
-            Ok(grant) => context.block_on(commit_entry(
-                Entry::CapTokenGrant(grant),
-                None,
-                context,
-            )),
-            Err(err) => Err(HolochainError::ErrorGeneric(format!(
-                "Unable to commit capability grant: {}",
-                err
-            ))),
-        }
+        Ok(grant) => context.block_on(commit_entry(Entry::CapTokenGrant(grant), None, context)),
+        Err(err) => Err(HolochainError::ErrorGeneric(format!(
+            "Unable to commit capability grant: {}",
+            err
+        ))),
+    }
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_commit_capability_claim(context: Arc<Context>, args: CommitCapabilityClaimArgs) -> Result<Address, HolochainError> {
+pub fn invoke_commit_capability_claim(
+    context: Arc<Context>,
+    args: CommitCapabilityClaimArgs,
+) -> Result<Address, HolochainError> {
     let claim = CapTokenClaim::new(args.id, args.grantor, args.token);
-    context.block_on(commit_entry(
-        Entry::CapTokenClaim(claim),
-        None,
-        context,
-    ))
+    context.block_on(commit_entry(Entry::CapTokenClaim(claim), None, context))
 }
 
 #[cfg(test)]

@@ -1,14 +1,12 @@
-use crate::{NEW_RELIC_LICENSE_KEY};
+use crate::{
+    context::Context,
+    wasm_engine::api::{commit::invoke_commit_app_entry, debug::invoke_debug, ZomeApiResult},
+    NEW_RELIC_LICENSE_KEY,
+};
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
 use std::{convert::TryInto, sync::Arc};
-use wasmer_runtime::{
-    func, imports, instantiate, Array, Ctx, Instance, Module, WasmPtr,
-};
-use crate::context::Context;
-use crate::wasm_engine::api::ZomeApiResult;
-use crate::wasm_engine::api::debug::invoke_debug;
-use crate::wasm_engine::api::commit::invoke_commit_app_entry;
+use wasmer_runtime::{func, imports, instantiate, Array, Ctx, Instance, Module, WasmPtr};
 
 /// Creates a WASM module, that is the executable program, from a given WASM binary byte array.
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]

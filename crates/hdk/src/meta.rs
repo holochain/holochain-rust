@@ -88,9 +88,7 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
         .find(|ref validating_entry_type| {
             validating_entry_type.name == EntryType::App(AppEntryType::from(name.clone()))
         }) {
-        Some(mut entry_type_definition) => ret!(WasmResult::Ok(
-            (*entry_type_definition.package_creator)().into()
-        )),
+        Some(mut entry_type_definition) => ret!((*entry_type_definition.package_creator)()),
         None => ret!(WasmResult::Err(WasmError::CallbackFailed)),
     };
 }
@@ -112,10 +110,7 @@ pub extern "C" fn __hdk_validate_app_entry(host_allocation_ptr: AllocationPtr) -
     {
         None => ret!(WasmResult::Err(WasmError::CallbackFailed)),
         Some(mut entry_type_definition) => {
-            match (*entry_type_definition.validator)(input.validation_data) {
-                Ok(()) => ret!(WasmResult::Ok(().into())),
-                Err(fail_string) => ret!(WasmResult::Err(WasmError::Zome(fail_string.into()))),
-            }
+            ret!((*entry_type_definition.validator)(input.validation_data));
         }
     }
 }
@@ -130,7 +125,7 @@ pub extern "C" fn __hdk_validate_agent_entry(host_allocation_ptr: AllocationPtr)
         "No agent validation callback registered for zome."
     );
 
-    ret!(WasmResult::Ok((*validator)(input.validation_data).into()));
+    ret!((*validator)(input.validation_data));
 }
 
 #[no_mangle]
@@ -139,22 +134,19 @@ pub extern "C" fn __hdk_get_validation_package_for_link(
 ) -> AllocationPtr {
     let input: LinkValidationPackageArgs = host_args!(host_allocation_ptr);
 
-    ret!(WasmResult::Ok(
-        zome_definition()
-            .entry_types
-            .into_iter()
-            .find(|ref validation_entry_type| {
-                validation_entry_type.name == EntryType::from(input.entry_type.clone())
+    ret!(zome_definition()
+        .entry_types
+        .into_iter()
+        .find(|ref validation_entry_type| {
+            validation_entry_type.name == EntryType::from(input.entry_type.clone())
+        })
+        .and_then(|entry_type| {
+            entry_type.links.into_iter().find(|ref link_definition| {
+                link_definition.link_type == input.link_type
+                    && link_definition.direction == input.direction
             })
-            .and_then(|entry_type| {
-                entry_type.links.into_iter().find(|ref link_definition| {
-                    link_definition.link_type == input.link_type
-                        && link_definition.direction == input.direction
-                })
-            })
-            .and_then(|mut link_definition| { Some((*link_definition.package_creator)()) })
-            .into()
-    ));
+        })
+        .and_then(|mut link_definition| { Some((*link_definition.package_creator)()) }));
 }
 
 #[no_mangle]
@@ -177,13 +169,8 @@ pub extern "C" fn __hdk_validate_link(host_allocation_ptr: AllocationPtr) -> All
                 })
         })
         .and_then(|mut link_definition| {
-            let validation_result = (*link_definition.validator)(input.validation_data);
-            Some(match validation_result {
-                Ok(()) => WasmResult::Ok(().into()),
-                Err(fail_string) => WasmResult::Err(WasmError::Zome(fail_string)),
-            })
-        })
-        .unwrap_or(WasmResult::Err(WasmError::CallbackFailed)));
+            Some((*link_definition.validator)(input.validation_data))
+        }));
 }
 
 #[no_mangle]

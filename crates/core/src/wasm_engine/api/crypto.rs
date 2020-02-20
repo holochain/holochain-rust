@@ -1,11 +1,7 @@
-use crate::{
-    wasm_engine::{api::ZomeApiResult},
-    NEW_RELIC_LICENSE_KEY,
-};
+use crate::{context::Context, wasm_engine::api::ZomeApiResult, NEW_RELIC_LICENSE_KEY};
 use holochain_json_api::json::*;
-use std::sync::Arc;
-use crate::context::Context;
 use holochain_wasm_utils::api_serialization::crypto::CryptoArgs;
+use std::sync::Arc;
 
 /// ZomeApiFunction::Sign function code
 /// args: [0] encoded MemoryAllocation as u64

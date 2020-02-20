@@ -90,7 +90,6 @@ define_zome! {
                 {
                    EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                    {
-
                         (test_entry.stuff != "FAIL")
                         .ok_or_else(|| "FAIL content is not allowed".to_string())
                    }

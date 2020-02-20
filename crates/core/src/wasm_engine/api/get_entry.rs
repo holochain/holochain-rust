@@ -1,11 +1,9 @@
 use crate::{
-    wasm_engine::{api::ZomeApiResult},
-    workflows::get_entry_result::get_entry_result_workflow,
-    NEW_RELIC_LICENSE_KEY,
+    context::Context, wasm_engine::api::ZomeApiResult,
+    workflows::get_entry_result::get_entry_result_workflow, NEW_RELIC_LICENSE_KEY,
 };
-use std::sync::Arc;
-use crate::context::Context;
 use holochain_wasm_utils::api_serialization::get_entry::GetEntryArgs;
+use std::sync::Arc;
 
 /// ZomeApiFunction::GetAppEntry function code
 /// args: [0] encoded MemoryAllocation as u64
@@ -14,8 +12,7 @@ use holochain_wasm_utils::api_serialization::get_entry::GetEntryArgs;
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_get_entry(context: Arc<Context>, input: GetEntryArgs) -> ZomeApiResult {
     // Create workflow future and block on it
-    context
-        .block_on(get_entry_result_workflow(context, &input))
+    context.block_on(get_entry_result_workflow(context, &input))
 }
 
 #[cfg(test)]

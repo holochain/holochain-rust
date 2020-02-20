@@ -353,11 +353,8 @@ pub mod tests {
             &test_function_name(),
             test_parameters(),
         );
-        wasm_engine::run_dna(
-            WasmCallData::new_zome_call(context, zome_call),
-            Some(args),
-        )
-        .expect("test should be callable")
+        wasm_engine::run_dna(WasmCallData::new_zome_call(context, zome_call), Some(args))
+            .expect("test should be callable")
     }
 
     /// Given a canonical zome API function name and args as bytes:

@@ -6,17 +6,19 @@ use holochain_core_types::{
     agent::AgentId,
     dna::entry_types::EntryTypeDef,
     entry::{entry_type::EntryType, AppEntryValue, Entry},
-    validation::{EntryValidationData, LinkValidationData, ValidationPackageDefinition},
+    validation::{
+        EntryValidationData, LinkValidationData, ValidationPackageDefinition, ValidationResult,
+    },
 };
 use holochain_wasm_utils::api_serialization::validation::LinkDirection;
 use std::convert::TryFrom;
 
 pub type PackageCreator = Box<dyn FnMut() -> ValidationPackageDefinition + Sync>;
 
-pub type Validator = Box<dyn FnMut(EntryValidationData<Entry>) -> Result<(), String> + Sync>;
+pub type Validator = Box<dyn FnMut(EntryValidationData<Entry>) -> ValidationResult + Sync>;
 
-pub type AgentValidator = Box<dyn FnMut(EntryValidationData<AgentId>) -> Result<(), String> + Sync>;
-pub type LinkValidator = Box<dyn FnMut(LinkValidationData) -> Result<(), String> + Sync>;
+pub type AgentValidator = Box<dyn FnMut(EntryValidationData<AgentId>) -> ValidationResult + Sync>;
+pub type LinkValidator = Box<dyn FnMut(LinkValidationData) -> ValidationResult + Sync>;
 
 /// This struct represents a complete entry type definition.
 /// It wraps [EntryTypeDef](holochain_core_types::dna::entry_types::EntryTypeDef) defined in the DNA crate

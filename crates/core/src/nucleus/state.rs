@@ -5,7 +5,10 @@ use crate::{
 };
 use holochain_core_types::{dna::Dna, error::HolochainError};
 
-use crate::state::StateWrapper;
+use crate::{
+    nucleus::{WasmApiFnCall, WasmApiFnCallResult},
+    state::StateWrapper,
+};
 use holochain_json_api::{
     error::{JsonError, JsonResult},
     json::JsonString,
@@ -17,8 +20,6 @@ use serde::{
     Deserialize, Deserializer, Serialize, Serializer,
 };
 use std::{collections::VecDeque, convert::TryFrom, fmt};
-use crate::nucleus::WasmApiFnCall;
-use crate::nucleus::WasmApiFnCallResult;
 
 #[autotrace]
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]

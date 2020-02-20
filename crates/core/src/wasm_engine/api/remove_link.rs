@@ -1,4 +1,5 @@
 use crate::{
+    context::Context,
     network::{
         actions::query::{query, QueryMethod},
         query::{
@@ -9,8 +10,6 @@ use crate::{
     workflows::author_entry::author_entry,
     NEW_RELIC_LICENSE_KEY,
 };
-use std::sync::Arc;
-use crate::context::Context;
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
@@ -22,14 +21,17 @@ use holochain_wasm_utils::api_serialization::{
     link_entries::LinkEntriesArgs,
 };
 use holochain_wasmer_host::*;
+use std::sync::Arc;
 
 /// ZomeApiFunction::GetLinks function code
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: GetLinksArgs
 /// Returns an HcApiReturnCode as I64
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_remove_link(context: Arc<Context>, input: LinkEntriesArgs) -> Result<(), HolochainError> {
-
+pub fn invoke_remove_link(
+    context: Arc<Context>,
+    input: LinkEntriesArgs,
+) -> Result<(), HolochainError> {
     let top_chain_header_option = context.state()?.agent().top_chain_header();
 
     let top_chain_header = match top_chain_header_option {
@@ -59,9 +61,7 @@ pub fn invoke_remove_link(context: Arc<Context>, input: LinkEntriesArgs) -> Resu
     };
     let config = GetLinksQueryConfiguration::default();
     let method = QueryMethod::Link(get_links_args, GetLinksNetworkQuery::Links(config));
-    let response_result =
-        context
-            .block_on(query(context, method, Timeout::default()));
+    let response_result = context.block_on(query(context, method, Timeout::default()));
     if response_result.is_err() {
         log_error!("zome : Could not get links for remove_link method.");
         Err(WasmError::WorkflowFailed)
@@ -74,10 +74,7 @@ pub fn invoke_remove_link(context: Arc<Context>, input: LinkEntriesArgs) -> Resu
             )),
         };
         if links_result.is_err() {
-            log_error!(
-                context,
-                "zome : Could not get links for remove_link method"
-            );
+            log_error!(context, "zome : Could not get links for remove_link method");
             Err(WasmError::WorkflowFailed)
         } else {
             let links = links_result.expect("This is supposed to not fail");

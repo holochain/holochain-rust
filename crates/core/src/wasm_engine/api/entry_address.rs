@@ -6,26 +6,23 @@ use holochain_core_types::{
     self,
     dna::Dna,
     entry::{entry_type::EntryType, Entry},
+    error::HolochainError,
 };
 use holochain_persistence_api::cas::content::AddressableContent;
+use holochain_wasm_utils::api_serialization::wasm_string::WasmString;
 use holochain_wasmer_host::*;
 use std::str::FromStr;
-use holochain_wasm_utils::api_serialization::wasm_string::WasmString;
-use holochain_core_types::error::HolochainError;
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn get_entry_type(dna: &Dna, entry_type_name: WasmString) -> Result<EntryType, HolochainError> {
-    let entry_type = EntryType::from_str(&entry_type_name.to_string()).map_err(|_| {
-        WasmError::UnknownEntryType
-    })?;
+    let entry_type = EntryType::from_str(&entry_type_name.to_string())
+        .map_err(|_| WasmError::UnknownEntryType)?;
 
     // Check if AppEntry is a valid AppEntryType
     if entry_type.is_app() {
         let result = dna.get_entry_type_def(entry_type_name);
         if result.is_none() {
-            return Err(
-                WasmError::UnknownEntryType
-            );
+            return Err(WasmError::UnknownEntryType);
         }
     }
     // Done

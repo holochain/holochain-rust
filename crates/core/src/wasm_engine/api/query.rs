@@ -13,8 +13,8 @@ use holochain_core_types::{
     error::HolochainError,
 };
 use holochain_wasm_utils::api_serialization::{QueryArgs, QueryArgsNames, QueryResult};
-use std::sync::Arc;
 use holochain_wasmer_host::*;
+use std::sync::Arc;
 
 /// ZomeApiFunction::query function code
 /// args: [0] encoded MemoryAllocation as u64

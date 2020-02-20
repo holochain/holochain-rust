@@ -10,7 +10,6 @@ extern crate boolinator;
 extern crate holochain_json_derive;
 extern crate holochain_wasmer_guest;
 
-use boolinator::Boolinator;
 use hdk::{
     AGENT_ADDRESS,
     DNA_ADDRESS,
@@ -32,7 +31,7 @@ use holochain_wasm_utils::{
             entry_type::{AppEntryType, EntryType},
             AppEntryValue, Entry,
         },
-        validation::{EntryValidationData, LinkValidationData},
+        validation::{EntryValidationData, LinkValidationData, ValidationResult},
         link::LinkMatch,
     },
     holochain_persistence_api::{
@@ -691,10 +690,13 @@ define_zome! {
                 {
                     EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                     {
-                        (test_entry.stuff != "FAIL").ok_or_else(|| "FAIL content is not allowed".to_string())
-
+                        if test_entry.stuff != "FAIL" {
+                            ValidationResult::Ok(())
+                        } else {
+                            ValidationResult::Err("FAIL content is not allowed".to_string())
+                        }
                     },
-                    _=> Ok(()),
+                    _=> ValidationResult::Ok(()),
 
                 }
 
@@ -748,10 +750,13 @@ define_zome! {
                     EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                     {
 
-                        Err(serde_json::to_string(&test_entry).unwrap())
+                        Err(match serde_json::to_string(&test_entry) {
+                            Ok(v) => v,
+                            Err(e) => e.to_string(),
+                        })
 
                     },
-                _ => Ok(())
+                _ => Ok(()),
                 }
             }
         ),
@@ -778,7 +783,7 @@ define_zome! {
             },
 
             validation: |validation_data: hdk::EntryValidationData<TestEntryType>| {
-                Err("".to_string())
+                Err(String::new())
             }
         ),
 
@@ -811,7 +816,7 @@ define_zome! {
 
                         if link.link().tag()=="muffins"
                         {
-                            Err("invalid tag".into())
+                            ValidationResult::Err("invalid tag".into())
                         }
                         else
                         {
@@ -820,20 +825,23 @@ define_zome! {
                             let base = match hdk::get_entry(&base)? {
                                 Some(entry) => match entry {
                                     Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,
-                                    _ => Err("System entry found")?
+                                    _ => return Err("System entry found".into()),
                                 },
-                                None => Err("Base not found")?,
+                                None => return Err("Base not found".into()),
                             };
 
                             let target = match hdk::get_entry(&target)? {
                                 Some(entry) => match entry {
                                     Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,
-                                    _ => Err("System entry found")?,
+                                    _ => return Err("System entry found".into()),
                                 }
-                                None => Err("Target not found")?,
+                                None => return Err("Target not found".into()),
                             };
-                            (target.stuff.len() > base.stuff.len())
-                                .ok_or("Target stuff is not longer".to_string())
+                            if target.stuff.len() > base.stuff.len() {
+                                Ok(())
+                            } else {
+                                Err("Target stuff is not longer".into())
+                            }
                         }
 
                     }

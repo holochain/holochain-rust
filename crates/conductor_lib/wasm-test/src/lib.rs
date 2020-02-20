@@ -13,7 +13,7 @@ use holochain_core_types::{
         ZomeApiInternalResult,
     },
     signature::Provenance,
-    validation::{ValidationResult, ValidationPackageDefinition},
+    validation::{ValidationPackageDefinition, ValidationResult},
 };
 
 use holochain_wasm_utils::{
@@ -185,7 +185,7 @@ pub extern "C" fn commit_fail_test(
 pub extern "C" fn __hdk_validate_app_entry(
     _: AllocationPtr,
 ) -> AllocationPtr {
-    ret!(ValidationResult::Ok);
+    ret!(ValidationResult::Ok(()));
 }
 
 #[no_mangle]

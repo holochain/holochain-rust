@@ -12,10 +12,10 @@ use holochain_json_api::json::JsonString;
 use holochain_logging::prelude::*;
 
 use holochain_wasm_utils::api_serialization::{ZomeFnCallArgs, THIS_INSTANCE};
+use holochain_wasmer_host::*;
 use jsonrpc_lite::JsonRpc;
 use snowflake::ProcessUniqueId;
 use std::sync::Arc;
-use holochain_wasmer_host::*;
 
 // ZomeFnCallArgs to ZomeFnCall
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]

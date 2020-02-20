@@ -230,7 +230,8 @@ macro_rules! define_zome {
 
             let validator = Box::new(|validation_data: hdk::holochain_wasm_utils::holochain_core_types::validation::EntryValidationData<hdk::holochain_core_types::agent::AgentId>| {
                 let $agent_validation_param = validation_data;
-                $agent_validation_expr
+                let result: $crate::holochain_wasm_utils::holochain_core_types::validation::ValidationResult = $agent_validation_expr;
+                result
             });
             zd.define_agent_validator(validator);
         }

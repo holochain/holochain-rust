@@ -1,11 +1,11 @@
 use crate::{
+    context::Context,
     signal::{Signal, UserSignal},
-    wasm_engine::{api::ZomeApiResult},
+    wasm_engine::api::ZomeApiResult,
     NEW_RELIC_LICENSE_KEY,
 };
 use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
 use std::sync::Arc;
-use crate::context::Context;
 
 /// ZomeApiFunction::EmitSignal function code
 /// args: [0] encoded MemoryAllocation as u64

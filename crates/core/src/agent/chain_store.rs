@@ -4,19 +4,15 @@ use crate::{
 };
 use globset::{GlobBuilder, GlobSetBuilder};
 use holochain_core_types::{
-    chain_header::ChainHeader,
-    entry::entry_type::EntryType,
-    error::{
-        HcResult,
-    },
+    chain_header::ChainHeader, entry::entry_type::EntryType, error::HcResult,
 };
 use holochain_locksmith::RwLock;
 use holochain_persistence_api::cas::{
     content::{Address, AddressableContent, Content},
     storage::ContentAddressableStorage,
 };
-use std::{str::FromStr, sync::Arc};
 use holochain_wasmer_host::*;
+use std::{str::FromStr, sync::Arc};
 
 #[derive(Debug, Clone)]
 pub struct ChainStore {

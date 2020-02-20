@@ -1,10 +1,5 @@
-use crate::{
-    wasm_engine::{api::ZomeApiResult},
-    NEW_RELIC_LICENSE_KEY,
-};
-use std::{thread, time::Duration};
-use std::sync::Arc;
-use crate::context::Context;
+use crate::{context::Context, wasm_engine::api::ZomeApiResult, NEW_RELIC_LICENSE_KEY};
+use std::{sync::Arc, thread, time::Duration};
 
 /// ZomeApiFunction::Sleep function code
 /// args: [0] encoded MemoryAllocation as u64

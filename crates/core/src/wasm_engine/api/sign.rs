@@ -1,13 +1,9 @@
-use crate::{
-    wasm_engine::{api::ZomeApiResult},
-    NEW_RELIC_LICENSE_KEY,
-};
+use crate::{context::Context, wasm_engine::api::ZomeApiResult, NEW_RELIC_LICENSE_KEY};
 use holochain_core_types::{error::HcResult, signature::Signature};
 use holochain_dpki::keypair::generate_random_sign_keypair;
 use holochain_wasm_utils::api_serialization::sign::{OneTimeSignArgs, SignOneTimeResult};
 use lib3h_sodium::secbuf::SecBuf;
 use std::sync::Arc;
-use crate::context::Context;
 
 /// ZomeApiFunction::SignOneTime function code
 /// args: [0] encoded MemoryAllocation as u64

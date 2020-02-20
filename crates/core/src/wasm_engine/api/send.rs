@@ -1,12 +1,12 @@
 use crate::{
+    context::Context,
     network::{actions::custom_send::custom_send, direct_message::CustomDirectMessage},
-    wasm_engine::{api::ZomeApiResult},
+    wasm_engine::api::ZomeApiResult,
     NEW_RELIC_LICENSE_KEY,
 };
 use holochain_json_api::json::JsonString;
-use std::sync::Arc;
-use crate::context::Context;
 use holochain_wasm_utils::api_serialization::send::SendArgs;
+use std::sync::Arc;
 
 /// ZomeApiFunction::Send function code
 /// args: [0] encoded MemoryAllocation as u64
@@ -28,11 +28,6 @@ pub fn invoke_send(context: Arc<Context>, args: SendArgs) -> ZomeApiResult {
     };
 
     context
-        .block_on(custom_send(
-            args.to_agent,
-            message,
-            args.options.0,
-            context,
-        ))
+        .block_on(custom_send(args.to_agent, message, args.options.0, context))
         .map(|s| JsonString::from_json(&s))
 }

@@ -8,6 +8,7 @@ extern crate serde_json;
 use self::tempfile::Builder;
 use jsonrpc_core::{IoHandler, Params, Value};
 use jsonrpc_ws_server::ServerBuilder;
+use jsonrpc_lite::JsonRpc;
 use nix::{
     sys::signal::{self, Signal},
     unistd::Pid,
@@ -24,6 +25,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 use structopt::StructOpt;
+use snowflake::ProcessUniqueId;
 
 // NOTE: don't change without also changing in crates/holochain/src/main.rs
 const MAGIC_STRING: &str = "*** Done. All interfaces started.";
@@ -48,7 +50,7 @@ struct Cli {
     #[structopt(
         long = "port-range",
         short = "r",
-        help = "The port range to use for spawning new conductors (e.g. '9000-9150'"
+        help = "The port range to use for spawning new conductors (e.g. '9000-9150')"
     )]
     port_range_string: String,
     #[structopt(
@@ -58,6 +60,22 @@ struct Cli {
     )]
     /// allow changing the conductor
     allow_replace_conductor: bool,
+
+    #[structopt(
+        long,
+        short = "m",
+        help = "Activate ability to runs as a manager"
+    )]
+    /// activates manager mode
+    manager: bool,
+
+    #[structopt(
+        long,
+        short = "r",
+        help = "Register with a manager (url + port, e.g. ws://final-exam:9000)"
+    )]
+    /// url of manager to register availability with
+    register: String,
 }
 
 type PortRange = (u16, u16);
@@ -82,12 +100,19 @@ fn parse_port_range(s: String) -> Result<PortRange, String> {
     }
 }
 
+// info about trycp_servers so that we can in the future request
+// characteristics and set up tests based on the nodes capacities
+struct NodeInfo {
+    ram: u32, // MB of ram
+}
+
 struct TrycpServer {
     // dir: tempfile::TempDir,
     dir: PathBuf,
     dna_dir: PathBuf,
     next_port: u16,
     port_range: PortRange,
+    registered: HashMap<Url, NodeInfo>
 }
 
 fn make_conductor_dir() -> Result<PathBuf, String> {
@@ -113,6 +138,7 @@ impl TrycpServer {
             dna_dir: make_dna_dir().expect("should create dna dir"),
             next_port: port_range.0,
             port_range,
+            registered: HashMap::new(),
         }
     }
 
@@ -161,6 +187,23 @@ fn get_as_string<T: Into<String>>(
         })?
         .to_string())
 }
+
+fn get_as_int<T: Into<String>>(
+    key: T,
+    params_map: &Map<String, Value>,
+) -> Result<i64, jsonrpc_core::Error> {
+    let key = key.into();
+    Ok(params_map
+       .get(&key)
+       .ok_or_else(|| {
+           jsonrpc_core::Error::invalid_params(format!("`{}` param not provided", &key))
+       })?
+       .as_i64()
+       .ok_or_else(|| {
+           jsonrpc_core::Error::invalid_params(format!("`{}` has to be an integer", &key))
+       })?)
+}
+
 fn get_as_bool<T: Into<String>>(
     key: T,
     params_map: &Map<String, Value>,
@@ -290,6 +333,55 @@ fn main() {
     let players_arc_kill = players_arc.clone();
     let players_arc_reset = players_arc.clone();
     let players_arc_spawn = players_arc;
+
+    // if we are acting as a manger add the "register" and "request" commands
+    if args.manager {
+        let state_registered = state.clone();
+        let state_request = state.clone();
+
+        // command for other trycp server to register themselves as available
+        io.add_method("register", |params: Params| {
+            let params_map = unwrap_params_map(params)?;
+            let url_str = get_as_string("url", &params_map)?;
+            let url = Url::parse(&url_str).map_err(|e| {
+                invalid_request(format!("unable to parse url:{} got error: {}", url_str, e))
+            })?;
+            let ram = get_as_int("ram", &params_map)?;
+
+            let mut state = state_registered.write().exect("should_lock");
+            state.registered.entry(url).or_insert(url) = NodeInfo{ram};
+            Ok(Value::String("registered".into()))
+        });
+
+        // command to request a list of available trycp_servers
+        io.add_method("request", |params: Params| {
+            let params_map = unwrap_params_map(params)?;
+            let count = get_as_int("count", &params_map)?;
+            let mut endpoints : Vec<Url,NodeInfo> = Vec::new();
+            let mut state = state_registered.write().exect("should_lock");
+
+            // confirm available nodes
+            if state.registered.len() >= count {
+                while count > 0 {
+                    let (url, info) = state.registered.pop()
+                    if check_url(url) {
+                        endpoints.push((url,info))
+                    }
+                    count -= 1;
+                }
+            }
+            if count > 0 {
+                // add any nodes that got taken off the registered list that are still valid back on
+                for (url,info) {
+                    state.registered.insedrt(url,info);
+                }
+                Ok(json!({ "error": "insufficient endpoints available" }))
+            }
+            else {
+                Ok(json!({ "endpoints": endpoints }))
+            }
+        });
+    }
 
     io.add_method("ping", |_params: Params| {
         Ok(Value::String(get_info_as_json()))
@@ -483,8 +575,8 @@ fn main() {
     io.add_method("replace_conductor", move |params: Params| {
         if allow_replace_conductor {
             Ok(Value::String(os_eval(&format!("curl -L -k https://github.com/holochain/{}/releases/download/{}/{} -o holochain.tar.gz && tar -xzvf holochain.tar.gz && mv holochain /holochain/.cargo/bin/holochain && rm holochain.tar.gz",
-             get_as_string("repo", &unwrap_params_map(params.clone())?)?, 
-             get_as_string("tag", &unwrap_params_map(params.clone())?)?, 
+             get_as_string("repo", &unwrap_params_map(params.clone())?)?,
+             get_as_string("tag", &unwrap_params_map(params.clone())?)?,
              get_as_string("file_name", &unwrap_params_map(params)?)?))))
         } else {
             println!("replace not allowed (-c to enable)");
@@ -531,4 +623,56 @@ fn check_player_config(
         )));
     }
     Ok(())
+}
+
+fn check_url(url: Url) -> bool {
+    // send reset to Url to confirm that it's working, and ready.
+    let result = send_json_rpc(
+    "reset",
+    "{}"
+    );
+
+    // if there is a successful reset, the the rpc call should return "reset"
+    match result {
+        Ok("reset".to_string()) => true,
+        _ => false,
+    }
+}
+
+
+fn send_json_rpc<S: Into<String>>(
+ //   handle: Arc<RwLock<IoHandler>>,
+    method: S,
+    params: S,
+) -> Result<String, jsonrpc_core::types::error::Error> {
+  //  let handler = handle.write().unwrap();
+    let method = method.into();
+    let id = format!("{}", ProcessUniqueId::new());
+    let request = json!({
+        "jsonrpc": "2.0",
+        "method": method,
+        "params": params.into(),
+        "id": id,
+    })
+    .to_string();
+
+    /*
+    let response = handler
+        .handle_request_sync(&request)
+        .ok_or_else(|| format!("json request {} failed", method))?;
+
+    let response = JsonRpc::parse(&response)?;
+
+    match response {
+        JsonRpc::Success(_) => Ok(String::from(
+            response.get_result()?["result".into()],
+        )),
+        JsonRpc::Error(_) => internal_errror(serde_json::to_string(
+            &response.get_error()?,
+        )?),
+        _ => internal_error(format!(
+            "{} failed",
+            method
+        )),
+    }*/
 }

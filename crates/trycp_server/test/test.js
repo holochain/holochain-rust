@@ -5,7 +5,7 @@ process.on('unhandledRejection', error => {
     console.error('got unhandledRejection:', error);
 });
 
-doTest("ws://localhost:9000")
+//doTest("ws://localhost:9000")
 //doTest("wss://test1-eu-central-1.holochain-aws.org")
 //magic_remote_machine_manager("3000")
 function magic_remote_machine_manager(port) {
@@ -116,6 +116,45 @@ sim2h_url = "wss://localhost:9001"
         console.log("making player2 call with config", config)
         result = await ws.call('player', {"id": "my-player", "config": config})
         console.log(result)
+
+        // close a websocket connection
+        ws.close()
+
+        resolve()
+    })
+    })
+}
+
+doTestManager("ws://localhost:9000")
+// instantiate Client and connect to an RPC server
+function  doTestManager(url) {
+    return new Promise( (resolve) => {
+    console.log("starting up at ",url)
+    var ws = new WebSocket(url)
+    ws.on('open', async function() {
+        console.log("making register call, expect: 'registered'")
+        // call an RPC method with parameters
+        await ws.call('register', {"url": "ws://localhost:9000"}).then(function(result) {
+          console.log(result)
+        })
+
+      console.log("making request call, expect: insufficient endpoints available")
+      // call an RPC method with parameters
+      await ws.call('request', {"count": 100}).then(function(result) {
+        console.log(result.error)
+      })
+
+      console.log("making request call, expect: registered node")
+      // call an RPC method with parameters
+      await ws.call('request', {"count": 1}).then(function(result) {
+        console.log(result)
+      })
+
+      console.log("making request call, expect: insufficient endpoints available")
+      // call an RPC method with parameters
+      await ws.call('request', {"count": 1}).then(function(result) {
+        console.log(result.error)
+      })
 
         // close a websocket connection
         ws.close()

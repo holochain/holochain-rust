@@ -2,8 +2,6 @@ extern crate structopt;
 extern crate tempfile;
 #[macro_use]
 extern crate serde_json;
-#[macro_use]
-extern crate serde_derive;
 
 //use log::error;
 //use std::process::exit;
@@ -28,6 +26,7 @@ use std::{
 use structopt::StructOpt;
 //use jsonrpc_lite::JsonRpc;
 use snowflake::ProcessUniqueId;
+use serde_derive::Serialize;
 
 // NOTE: don't change without also changing in crates/holochain/src/main.rs
 const MAGIC_STRING: &str = "*** Done. All interfaces started.";
@@ -77,7 +76,7 @@ struct Cli {
         help = "Register with a manager (url + port, e.g. ws://final-exam:9000)"
     )]
     /// url of manager to register availability with
-    register: String,
+    register: Option<String>,
 }
 
 type PortRange = (u16, u16);
@@ -121,17 +120,17 @@ impl ServerList {
             servers: Vec::new()
         }
     }
-   pub fn pop(mut self) -> Option<ServerInfo> {
+   pub fn pop(&mut self) -> Option<ServerInfo> {
         self.servers.pop()
     }
-    pub fn remove(mut self, url: String) {
-        self.servers.retain(|&i| i.url != url);
+    pub fn remove(&mut self, url: String) {
+        self.servers.retain(|i| i.url != url);
     }
-    pub fn insert(mut self, info: ServerInfo) {
+    pub fn insert(&mut self, info: ServerInfo) {
         self.remove(info.url.clone());
         self.servers.push(info);
     }
-    pub fn len(self) -> usize {
+    pub fn len(&self) -> usize {
         self.servers.len()
     }
 }
@@ -364,19 +363,26 @@ fn main() {
     let players_arc_reset = players_arc.clone();
     let players_arc_spawn = players_arc;
 
+    if args.register.is_some() {
+        panic!("not_implemented");
+    }
+
     // if we are acting as a manger add the "register" and "request" commands
     if args.manager {
         let state_registered = state.clone();
         let state_request = state.clone();
 
         // command for other trycp server to register themselves as available
-        io.add_method("register", |params: Params| {
+        io.add_method("register", move |params: Params| {
             let params_map = unwrap_params_map(params)?;
             let url_str = get_as_string("url", &params_map)?;
-            let url = Url::parse(&url_str).map_err(|e| {
+            let _url = Url::parse(&url_str).map_err(|e| {
                 invalid_request(format!("unable to parse url:{} got error: {}", url_str, e))
             })?;
-            let ram = get_as_int("ram", &params_map)?;
+            let ram = match get_as_int("ram", &params_map) {
+                Ok(val) => val,
+                _ => 0,
+            };
             let ram = ram as usize;
 
             let mut state = state_registered.write().expect("should_lock");
@@ -385,12 +391,12 @@ fn main() {
         });
 
         // command to request a list of available trycp_servers
-        io.add_method("request", |params: Params| {
+        io.add_method("request", move |params: Params| {
             let params_map = unwrap_params_map(params)?;
             let count = get_as_int("count", &params_map)?;
-            let count = count as usize;
+            let mut count = count as usize;
             let mut endpoints : Vec<ServerInfo> = Vec::new();
-            let mut state = state_registered.write().expect("should_lock");
+            let mut state = state_request.write().expect("should_lock");
 
             // build up a list of confirmed available endpoints
             // TODO make confirmation happen anynchronosly so it's faster
@@ -412,10 +418,10 @@ fn main() {
                 for info in endpoints {
                     state.registered.insert(info);
                 }
-                Ok(json!({ "error": "insufficient endpoints available" }))
+                Ok(json!({"error": "insufficient endpoints available" }))
             }
             else {
-                Ok(json!({ "endpoints": endpoints }))
+                Ok(json!({"endpoints": endpoints }))
             }
         });
     }

@@ -305,16 +305,23 @@ impl Sim2hHandle {
         };
 
         // you have to be in a space to proceed further
-        let tracer = self.tracer.clone().unwrap_or_else(|| ht::null_tracer());
+        let tracer = self.tracer.clone();
         tokio::task::spawn(async move {
-            let _spanguard = message.try_get_span().and_then(|msg| {
-                ht::follow_encoded_tag(
-                    &Some(tracer.clone()),
-                    msg,
-                    here!(()),
-                    ht::debug_tag("HandleMessageTask", message.clone()),
-                )
-            });
+            let _spanguard: Option<Vec<_>> = tracer
+                .as_ref()
+                .and_then(|_| message.try_get_span())
+                .and_then(|msgs| {
+                    msgs.iter()
+                        .map(|msg| {
+                            ht::follow_encoded_tag(
+                                &tracer,
+                                msg,
+                                here!(()),
+                                ht::debug_tag("HandleMessageTask", message.clone()),
+                            )
+                        })
+                        .collect()
+                });
             // -- right now each agent can only be part of a single space :/ --
 
             let (agent_id, space_hash) = 'got_info: {
@@ -340,9 +347,21 @@ impl Sim2hHandle {
 
             match message {
                 WireMessage::ClientToLib3h(span_wrap) => {
-                    let span = ht::SpanWrap::from(span_wrap.clone())
-                        .follower(&tracer, "handle_joined - ClientToLib3h");
-                    let _spanguard = span.map(|span| ht::push_span(span));
+                    let _spanguard = span_wrap
+                        .span_context
+                        .as_ref()
+                        // This span has context, create a follow if tracing is on.
+                        .and_then(|c| ht::follow_encoded(&tracer, c, here!({})))
+                        // No context so if tracing is on then this trace was never started
+                        .or_else(|| {
+                            tracer.map(|t| {
+                                let s = t
+                                    .span("Trace was never started in Conductor!")
+                                    .tag(ht::debug_tag("ClientToLib3h", &span_wrap.data))
+                                    .start();
+                                ht::push_span(s.into())
+                            })
+                        });
                     match span_wrap.data.clone() {
                         ClientToLib3h::LeaveSpace(_data) => {
                             // for now, just disconnect on LeaveSpace
@@ -373,7 +392,7 @@ impl Sim2hHandle {
                                 uri,
                                 signer,
                                 space_hash,
-                                query_data,
+                                span_wrap.swapped(query_data),
                             );
                         }
                         message @ _ => {
@@ -383,9 +402,21 @@ impl Sim2hHandle {
                     }
                 }
                 WireMessage::Lib3hToClientResponse(span_wrap) => {
-                    let span = ht::SpanWrap::from(span_wrap.clone())
-                        .follower(&tracer, "handle_joined - Lib3hToClientResponse");
-                    let _spanguard = span.map(|span| ht::push_span(span));
+                    let _spanguard = span_wrap
+                        .span_context
+                        .as_ref()
+                        // This span has context, create a follow if tracing is on.
+                        .and_then(|c| ht::follow_encoded(&tracer, c, here!({})))
+                        // No context so if tracing is on then this trace was never started
+                        .or_else(|| {
+                            tracer.map(|t| {
+                                let s = t
+                                    .span("Trace was never started in Conductor!")
+                                    .tag(ht::debug_tag("Lib3hToClientResponse", &span_wrap.data))
+                                    .start();
+                                ht::push_span(s.into())
+                            })
+                        });
                     match span_wrap.data.clone() {
                         Lib3hToClientResponse::HandleSendDirectMessageResult(dm_data) => {
                             return spawn_handle_message_send_dm_result(
@@ -709,6 +740,7 @@ fn spawn_handle_message_publish_entry(
     });
 }
 
+#[autotrace]
 fn spawn_handle_message_list_data(
     sim2h_handle: Sim2hHandle,
     _uri: Lib3hUri,
@@ -879,8 +911,13 @@ fn spawn_handle_message_query_entry(
     _uri: Lib3hUri,
     signer: AgentId,
     space_hash: MonoRef<SpaceHash>,
-    query_data: QueryEntryData,
+    span_wrap: ht::EncodedSpanWrap<QueryEntryData>,
 ) {
+    // Avoid cloning data
+    let (span_wrap, query_data) = {
+        let s = span_wrap.swapped(());
+        (s, span_wrap.data)
+    };
     if signer != query_data.requester_agent_id || query_data.space_address != *space_hash {
         error!(
             "space mismatch - agent is in {}, message is for {}",
@@ -908,10 +945,8 @@ fn spawn_handle_message_query_entry(
             }
             Some(url) => url,
         };
-        let span = ht::top_follower("inner");
         let query_message = WireMessage::Lib3hToClient(
-            span.wrap(Lib3hToClient::HandleQueryEntry(query_data))
-                .into(),
+            span_wrap.swapped(Lib3hToClient::HandleQueryEntry(query_data)),
         );
         sim2h_handle.send((&*query_target).clone(), url.clone(), &query_message);
     });
@@ -1246,14 +1281,22 @@ impl Sim2h {
                 Ok((signed_message.provenance.source().into(), wire_message))
             })() {
                 Ok((source, wire_message)) => {
-                    let _spanguard = wire_message.try_get_span().and_then(|msg| {
-                        ht::follow_encoded_tag(
-                            &sim2h_handle.tracer,
-                            msg,
-                            here!(()),
-                            ht::debug_tag("HandlePayload", wire_message.clone()),
-                        )
-                    });
+                    let _spanguard: Option<Vec<_>> = sim2h_handle
+                        .tracer
+                        .as_ref()
+                        .and_then(|_| wire_message.try_get_span())
+                        .and_then(|msgs| {
+                            msgs.iter()
+                                .map(|msg| {
+                                    ht::follow_encoded_tag(
+                                        &sim2h_handle.tracer,
+                                        msg,
+                                        here!(()),
+                                        ht::debug_tag("HandlePayload", wire_message.clone()),
+                                    )
+                                })
+                                .collect()
+                        });
                     sim2h_handle.handle_message(url, wire_message, source)
                 }
                 Err(error) => {
@@ -1333,6 +1376,7 @@ impl Sim2h {
     }
 }
 
+#[autotrace]
 async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: ScheduleGuard) {
     let gossip_full_start = std::time::Instant::now();
 
@@ -1384,10 +1428,20 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
                     None => continue,
                     Some(uri) => uri,
                 };
+                let (_spanguard, span) = ht::with_top(|span|(None, span.follower(here!({}))))
+                    .unwrap_or_else(||
+                        {
+                            let nt = ht::null_tracer();
+                            let s: ht::Span = sim2h_handle.tracer.as_ref().unwrap_or_else(|| &nt)
+                                .span(format!("Starting trace in sim2h but not linked?! {}", here!({})))
+                                .start()
+                                .into();
+                            let f = s.follower(here!({}));
+                            (Some(ht::push_span(s)), f)
+                        });
 
                 let wire_message = WireMessage::Lib3hToClient(
-                    ht::top_follower("inner")
-                        .wrap(Lib3hToClient::HandleFetchEntry(FetchEntryData {
+                        span.wrap(Lib3hToClient::HandleFetchEntry(FetchEntryData {
                             request_id: "".to_string(),
                             space_address: (&**space_hash).clone(),
                             provider_agent_id: (&*query_agent).clone(),

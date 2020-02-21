@@ -109,12 +109,13 @@ impl WireMessage {
         })
     }
 
-    pub fn try_get_span(&self) -> Option<&ht::EncodedSpanContext> {
+    pub fn try_get_span(&self) -> Option<Vec<&ht::EncodedSpanContext>> {
         match self {
-            WireMessage::ClientToLib3h(s) => s.span_context.as_ref(),
-            WireMessage::ClientToLib3hResponse(s) => s.span_context.as_ref(),
-            WireMessage::Lib3hToClient(s) => s.span_context.as_ref(),
-            WireMessage::Lib3hToClientResponse(s) => s.span_context.as_ref(),
+            WireMessage::ClientToLib3h(s) => s.span_context.as_ref().map(|s| vec![s]),
+            WireMessage::ClientToLib3hResponse(s) => s.span_context.as_ref().map(|s| vec![s]),
+            WireMessage::Lib3hToClient(s) => s.span_context.as_ref().map(|s| vec![s]),
+            WireMessage::Lib3hToClientResponse(s) => s.span_context.as_ref().map(|s| vec![s]),
+            WireMessage::MultiSend(m) => m.iter().map(|s| s.span_context.as_ref()).collect(),
             _ => None,
         }
     }

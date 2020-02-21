@@ -2,13 +2,14 @@ extern crate structopt;
 extern crate tempfile;
 #[macro_use]
 extern crate serde_json;
+#[macro_use]
+extern crate serde_derive;
 
 //use log::error;
 //use std::process::exit;
 use self::tempfile::Builder;
 use jsonrpc_core::{IoHandler, Params, Value};
 use jsonrpc_ws_server::ServerBuilder;
-use jsonrpc_lite::JsonRpc;
 use nix::{
     sys::signal::{self, Signal},
     unistd::Pid,
@@ -25,6 +26,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 use structopt::StructOpt;
+//use jsonrpc_lite::JsonRpc;
 use snowflake::ProcessUniqueId;
 
 // NOTE: don't change without also changing in crates/holochain/src/main.rs
@@ -102,8 +104,36 @@ fn parse_port_range(s: String) -> Result<PortRange, String> {
 
 // info about trycp_servers so that we can in the future request
 // characteristics and set up tests based on the nodes capacities
-struct NodeInfo {
-    ram: u32, // MB of ram
+#[derive(Serialize, Debug, PartialEq)]
+struct ServerInfo {
+    pub url: String,
+    pub ram: usize, // MB of ram
+}
+
+#[derive(Serialize, Debug, PartialEq)]
+struct ServerList {
+    servers: Vec<ServerInfo>
+}
+
+impl ServerList {
+    pub fn new() -> Self {
+        ServerList {
+            servers: Vec::new()
+        }
+    }
+   pub fn pop(mut self) -> Option<ServerInfo> {
+        self.servers.pop()
+    }
+    pub fn remove(mut self, url: String) {
+        self.servers.retain(|&i| i.url != url);
+    }
+    pub fn insert(mut self, info: ServerInfo) {
+        self.remove(info.url.clone());
+        self.servers.push(info);
+    }
+    pub fn len(self) -> usize {
+        self.servers.len()
+    }
 }
 
 struct TrycpServer {
@@ -112,7 +142,7 @@ struct TrycpServer {
     dna_dir: PathBuf,
     next_port: u16,
     port_range: PortRange,
-    registered: HashMap<Url, NodeInfo>
+    registered: ServerList,
 }
 
 fn make_conductor_dir() -> Result<PathBuf, String> {
@@ -138,7 +168,7 @@ impl TrycpServer {
             dna_dir: make_dna_dir().expect("should create dna dir"),
             next_port: port_range.0,
             port_range,
-            registered: HashMap::new(),
+            registered: ServerList::new(),
         }
     }
 
@@ -347,9 +377,10 @@ fn main() {
                 invalid_request(format!("unable to parse url:{} got error: {}", url_str, e))
             })?;
             let ram = get_as_int("ram", &params_map)?;
+            let ram = ram as usize;
 
-            let mut state = state_registered.write().exect("should_lock");
-            state.registered.entry(url).or_insert(url) = NodeInfo{ram};
+            let mut state = state_registered.write().expect("should_lock");
+            state.registered.insert(ServerInfo{url: url_str, ram});
             Ok(Value::String("registered".into()))
         });
 
@@ -357,23 +388,29 @@ fn main() {
         io.add_method("request", |params: Params| {
             let params_map = unwrap_params_map(params)?;
             let count = get_as_int("count", &params_map)?;
-            let mut endpoints : Vec<Url,NodeInfo> = Vec::new();
-            let mut state = state_registered.write().exect("should_lock");
+            let count = count as usize;
+            let mut endpoints : Vec<ServerInfo> = Vec::new();
+            let mut state = state_registered.write().expect("should_lock");
 
-            // confirm available nodes
+            // build up a list of confirmed available endpoints
+            // TODO make confirmation happen anynchronosly so it's faster
             if state.registered.len() >= count {
                 while count > 0 {
-                    let (url, info) = state.registered.pop()
-                    if check_url(url) {
-                        endpoints.push((url,info))
+                    match state.registered.pop() {
+                        Some(info) => {
+                            if check_url(&info.url) {
+                                endpoints.push(info)
+                            }
+                        },
+                        None => break
                     }
                     count -= 1;
                 }
             }
             if count > 0 {
                 // add any nodes that got taken off the registered list that are still valid back on
-                for (url,info) {
-                    state.registered.insedrt(url,info);
+                for info in endpoints {
+                    state.registered.insert(info);
                 }
                 Ok(json!({ "error": "insufficient endpoints available" }))
             }
@@ -625,7 +662,7 @@ fn check_player_config(
     Ok(())
 }
 
-fn check_url(url: Url) -> bool {
+fn check_url(_url: &String) -> bool {
     // send reset to Url to confirm that it's working, and ready.
     let result = send_json_rpc(
     "reset",
@@ -634,7 +671,7 @@ fn check_url(url: Url) -> bool {
 
     // if there is a successful reset, the the rpc call should return "reset"
     match result {
-        Ok("reset".to_string()) => true,
+        Ok(r) => r == "reset".to_string(),
         _ => false,
     }
 }
@@ -648,14 +685,14 @@ fn send_json_rpc<S: Into<String>>(
   //  let handler = handle.write().unwrap();
     let method = method.into();
     let id = format!("{}", ProcessUniqueId::new());
-    let request = json!({
+    let _request = json!({
         "jsonrpc": "2.0",
         "method": method,
         "params": params.into(),
         "id": id,
     })
     .to_string();
-
+    Ok("reset".to_string())
     /*
     let response = handler
         .handle_request_sync(&request)

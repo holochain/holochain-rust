@@ -44,6 +44,7 @@ pub enum Secret {
     SigningKey(SigningKeyPair),
     EncryptingKey(EncryptingKeyPair),
     Seed(SecBuf),
+    TypedSeed(Seed),
 }
 
 pub enum KeyType {
@@ -266,6 +267,13 @@ impl Keystore {
                     self.hash_config.clone(),
                 )
             }
+            Secret::TypedSeed(ref mut seed) => {
+                seed.as_blob(
+                    &mut passphrase,
+                    "".to_string(),
+                    self.hash_config.clone(),
+                )
+            }
             Secret::SigningKey(ref mut key) => {
                 key.as_blob(&mut passphrase, "".to_string(), self.hash_config.clone())
             }
@@ -356,14 +364,16 @@ impl Keystore {
         dst_id_str: &str,
         context: &SeedContext,
         index: u64,
+        seed_type: SeedType,
     ) -> HcResult<()> {
         let (src_secret, dst_id) = self.check_identifiers(src_id_str, dst_id_str)?;
         let secret = {
             let mut src_secret = src_secret.lock().unwrap();
             match *src_secret {
                 Secret::Seed(ref mut src) => {
-                    let seed = generate_derived_seed_buf(src, context, index, SEED_SIZE)?;
-                    Arc::new(Mutex::new(Secret::Seed(seed)))
+                    let buf = generate_derived_seed_buf(src, context, index, SEED_SIZE)?;
+                    let seed = Seed::new(buf, seed_type);
+                    Arc::new(Mutex::new(Secret::TypedSeed(seed)))
                 }
                 _ => {
                     return Err(HolochainError::ErrorGeneric(
@@ -687,8 +697,10 @@ pub mod tests {
 
         let context = SeedContext::new(*b"SOMECTXT");
 
+        let seed_type = SeedType::Root;
+
         assert_eq!(
-            keystore.add_seed_from_seed("my_root_seed", "my_second_seed", &context, 1),
+            keystore.add_seed_from_seed("my_root_seed", "my_second_seed", &context, 1, seed_type.clone()),
             Err(HolochainError::ErrorGeneric(
                 "unknown source identifier".to_string()
             ))
@@ -697,7 +709,7 @@ pub mod tests {
         let _ = keystore.add_random_seed("my_root_seed", SEED_SIZE);
 
         assert_eq!(
-            keystore.add_seed_from_seed("my_root_seed", "my_second_seed", &context, 1),
+            keystore.add_seed_from_seed("my_root_seed", "my_second_seed", &context, 1, seed_type.clone()),
             Ok(())
         );
 
@@ -705,7 +717,7 @@ pub mod tests {
         assert!(keystore.list().contains(&"my_second_seed".to_string()));
 
         assert_eq!(
-            keystore.add_seed_from_seed("my_root_seed", "my_second_seed", &context, 1),
+            keystore.add_seed_from_seed("my_root_seed", "my_second_seed", &context, 1, seed_type.clone()),
             Err(HolochainError::ErrorGeneric(
                 "identifier already exists".to_string()
             ))

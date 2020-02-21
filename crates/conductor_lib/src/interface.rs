@@ -25,7 +25,7 @@ use crate::{
     keystore::{KeyType, Keystore, Secret},
     NEW_RELIC_LICENSE_KEY,
 };
-use holochain_dpki::utils::SeedContext;
+use holochain_dpki::{seed::SeedType, utils::SeedContext};
 use serde_json::{self, map::Map};
 
 pub type InterfaceError = String;
@@ -1161,6 +1161,7 @@ impl ConductorApiBuilder {
                 let src_id = Self::get_as_string("src_id", &params_map)?;
                 let dst_id = Self::get_as_string("dst_id", &params_map)?;
                 let context = Self::get_as_string("context", &params_map)?;
+                let seed_type_str = Self::get_as_string("seed_type", &params_map)?;
                 let index = Self::get_as_int("index", &params_map)? as u64;
 
                 let context_bytes = context.as_bytes();
@@ -1174,10 +1175,12 @@ impl ConductorApiBuilder {
                 context_bytes_array.copy_from_slice(context_bytes);
 
                 let seed_context = SeedContext::new(context_bytes_array);
+                let seed_type = SeedType::try_from(seed_type_str.as_str())
+                    .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
 
                 k.lock()
                     .unwrap()
-                    .add_seed_from_seed(&src_id, &dst_id, &seed_context, index)
+                    .add_seed_from_seed(&src_id, &dst_id, &seed_context, index, seed_type)
                     .map_err(|_| jsonrpc_core::Error::internal_error())?;
 
                 Ok(json!({"success": true}))

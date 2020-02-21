@@ -8,7 +8,7 @@ use bip39::{Language, Mnemonic, MnemonicType};
 use holochain_core_types::error::{HcResult, HolochainError};
 use lib3h_sodium::{kdf, pwhash, secbuf::SecBuf};
 use serde_derive::{Deserialize, Serialize};
-use std::str;
+use std::{convert::TryFrom, str};
 
 //--------------------------------------------------------------------------------------------------
 // SeedInitializer
@@ -41,6 +41,20 @@ pub enum SeedType {
     OneShot,
     /// Seed used only in tests or mocks
     Mock,
+}
+
+impl TryFrom<&str> for SeedType {
+    type Error = HolochainError;
+
+    fn try_from(s: &str) -> HcResult<SeedType> {
+        use SeedType::*;
+        match s {
+            "root" => Ok(Root),
+            "revocation" => Ok(Revocation),
+            "device" => Ok(Device),
+            _ => Err(HolochainError::SerializationError(format!("Unknown SeedType: {}", s)))
+        }
+    }
 }
 
 /// Enum of all the different behaviors a Seed can have

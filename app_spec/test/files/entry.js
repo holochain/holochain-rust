@@ -1,5 +1,16 @@
 const { one, two } = require('../config')
 
+const longPost = `
+LONG POST, LONG POST, LONG POST, LONG POST, LONG POST, LONG POST, 
+LONG POST, LONG POST, LONG POST, LONG POST, LONG POST, LONG POST, 
+LONG POST, LONG POST, LONG POST, LONG POST, LONG POST, LONG POST, 
+LONG POST, LONG POST, LONG POST, LONG POST, LONG POST, LONG POST, 
+LONG POST, LONG POST, LONG POST, LONG POST, LONG POST, LONG POST, 
+LONG POST, LONG POST, LONG POST, LONG POST, LONG POST, LONG POST, 
+LONG POST, LONG POST, LONG POST, LONG POST, LONG POST, LONG POST, 
+LONG POST, LONG POST, LONG POST, LONG POST, LONG POST, LONG POST, 
+`
+
 module.exports = scenario => {
   scenario('delete_entry_post', async (s, t) => {
     const { alice, bob } = await s.players({ alice: one, bob: one }, true)
@@ -175,6 +186,61 @@ module.exports = scenario => {
     t.deepEqual(JSON.parse(entryWithOptionsGetResult.Ok.App[1]), updatePostV4Content)
   })
 
+  scenario("update_post with invalid content", async (s, t) => {
+    const { alice, bob } = await s.players({ alice: one, bob: one }, true);
+    const content = "Hello Holo world 123";
+    const in_reply_to = null;
+    const params = { content, in_reply_to };
+  
+    // commit version 1
+    const createResult = await alice.call("app", "blog", "create_post", params);
+    t.ok(createResult.Ok);
+  
+    await s.consistency();
+  
+    // update to version 2
+    const updatePostContentV2 = {
+      content: longPost,
+      date_created: "now"
+    };
+    const updateParamsV2 = {
+      post_address: createResult.Ok,
+      new_content: longPost
+    };
+    const UpdateResultV2 = await alice.call(
+      "app",
+      "blog",
+      "update_post",
+      updateParamsV2
+    );
+    t.ok(UpdateResultV2.Ok);
+    t.notOk(UpdateResultV2.Err);
+  
+    await s.consistency();
+  
+    // get v2 using initial adderss
+    const updatedPostv2InitialAlice = await alice.call(
+      "app",
+      "blog",
+      "get_post",
+      { post_address: createResult.Ok }
+    );
+    t.ok(updatedPostv2InitialAlice.Ok);
+    t.notOk(updatedPostv2InitialAlice.Err);
+    t.deepEqual(
+      JSON.parse(updatedPostv2InitialAlice.Ok.App[1]),
+      updatePostContentV2
+    );
+  
+    // get v2 using initial adderss
+    const updatedPostv2Initial = await bob.call("app", "blog", "get_post", {
+      post_address: createResult.Ok
+    });
+    t.ok(updatedPostv2Initial.Ok);
+    t.notOk(updatedPostv2Initial.Err);
+    t.deepEqual(JSON.parse(updatedPostv2Initial.Ok.App[1]), updatePostContentV2);
+  });
+  
   scenario('remove_update_modifed_entry', async (s, t) => {
     const { alice, bob } = await s.players({ alice: one, bob: one }, true)
     const content = 'Hello Holo world 123'

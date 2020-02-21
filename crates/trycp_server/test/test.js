@@ -134,7 +134,7 @@ function  doTestManager(url) {
     ws.on('open', async function() {
         console.log("making register call, expect: 'registered'")
         // call an RPC method with parameters
-        await ws.call('register', {"url": "ws://localhost:9000"}).then(function(result) {
+        await ws.call('register', {"url": "ws://localhost:9001"}).then(function(result) {
           console.log(result)
         })
 

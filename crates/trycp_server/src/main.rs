@@ -25,7 +25,7 @@ use std::{
 };
 use structopt::StructOpt;
 //use jsonrpc_lite::JsonRpc;
-use snowflake::ProcessUniqueId;
+//use snowflake::ProcessUniqueId;
 use serde_derive::Serialize;
 
 // NOTE: don't change without also changing in crates/holochain/src/main.rs
@@ -386,8 +386,8 @@ fn main() {
             let ram = ram as usize;
 
             let mut state = state_registered.write().expect("should_lock");
-            state.registered.insert(ServerInfo{url: url_str, ram});
-            Ok(Value::String("registered".into()))
+            state.registered.insert(ServerInfo{url: url_str.clone(), ram});
+            Ok(Value::String(format!("registered {}", url_str)))
         });
 
         // command to request a list of available trycp_servers
@@ -463,6 +463,7 @@ fn main() {
     });
 
     io.add_method("reset", move |params: Params| {
+        println!("reset");
         let params_map = unwrap_params_map(params)?;
         let killall = get_as_bool("killall", &params_map, Some(false))?;
         {
@@ -668,11 +669,12 @@ fn check_player_config(
     Ok(())
 }
 
-fn check_url(_url: &String) -> bool {
+fn check_url(url: &String) -> bool {
     // send reset to Url to confirm that it's working, and ready.
     let result = send_json_rpc(
-    "reset",
-    "{}"
+        url,
+    &"reset".to_string(),
+    &"{}".to_string()
     );
 
     // if there is a successful reset, the the rpc call should return "reset"
@@ -684,20 +686,30 @@ fn check_url(_url: &String) -> bool {
 
 
 fn send_json_rpc<S: Into<String>>(
- //   handle: Arc<RwLock<IoHandler>>,
+    //   handle: Arc<RwLock<IoHandler>>,
+    url: S,
     method: S,
     params: S,
 ) -> Result<String, jsonrpc_core::types::error::Error> {
   //  let handler = handle.write().unwrap();
-    let method = method.into();
-    let id = format!("{}", ProcessUniqueId::new());
-    let _request = json!({
+    //let method = method.into();
+    //let id = format!("{}", ProcessUniqueId::new());
+    /*let request = json!({
         "jsonrpc": "2.0",
         "method": method,
         "params": params.into(),
         "id": id,
-    })
-    .to_string();
+}).to_string();*/
+    let url = url.into();
+    let method = method.into();
+    let params = params.into();
+    //println!("bout to call {} {} {}", url, method, params);
+    // TEMPORARY CHEAT FOR websocket JSONrpc call!!!
+    let output = Command::new("node")
+        .args(&["test/jsrpc.js", &url, &method, &params])
+        .output()
+        .expect("failed to execute process");
+    println!("JSRPC: {} err: {}", String::from_utf8(output.stdout).unwrap(),  String::from_utf8(output.stderr).unwrap());
     Ok("reset".to_string())
     /*
     let response = handler

@@ -266,11 +266,7 @@ impl Keystore {
                 )
             }
             Secret::TypedSeed(ref mut seed) => {
-                seed.as_blob(
-                    &mut passphrase,
-                    "".to_string(),
-                    self.hash_config.clone(),
-                )
+                seed.as_blob(&mut passphrase, "".to_string(), self.hash_config.clone())
             }
             Secret::SigningKey(ref mut key) => {
                 key.as_blob(&mut passphrase, "".to_string(), self.hash_config.clone())
@@ -698,7 +694,13 @@ pub mod tests {
         let seed_type = SeedType::Root;
 
         assert_eq!(
-            keystore.add_seed_from_seed("my_root_seed", "my_second_seed", &context, 1, seed_type.clone()),
+            keystore.add_seed_from_seed(
+                "my_root_seed",
+                "my_second_seed",
+                &context,
+                1,
+                seed_type.clone()
+            ),
             Err(HolochainError::ErrorGeneric(
                 "unknown source identifier".to_string()
             ))
@@ -707,7 +709,13 @@ pub mod tests {
         let _ = keystore.add_random_seed("my_root_seed", SEED_SIZE);
 
         assert_eq!(
-            keystore.add_seed_from_seed("my_root_seed", "my_second_seed", &context, 1, seed_type.clone()),
+            keystore.add_seed_from_seed(
+                "my_root_seed",
+                "my_second_seed",
+                &context,
+                1,
+                seed_type.clone()
+            ),
             Ok(())
         );
 
@@ -715,7 +723,13 @@ pub mod tests {
         assert!(keystore.list().contains(&"my_second_seed".to_string()));
 
         assert_eq!(
-            keystore.add_seed_from_seed("my_root_seed", "my_second_seed", &context, 1, seed_type.clone()),
+            keystore.add_seed_from_seed(
+                "my_root_seed",
+                "my_second_seed",
+                &context,
+                1,
+                seed_type.clone()
+            ),
             Err(HolochainError::ErrorGeneric(
                 "identifier already exists".to_string()
             ))

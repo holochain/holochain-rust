@@ -48,7 +48,6 @@ pub enum SeedType {
     Mock,
 }
 
-
 #[derive(Deserialize, Clone, PartialEq, Eq, Hash, Debug, Serialize, DefaultJson)]
 pub struct KeystoreDeriveKeyArgs {
     pub src_id: String,

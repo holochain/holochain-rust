@@ -1,7 +1,7 @@
 use crate::{error::ZomeApiResult, Dispatch};
 use holochain_wasm_utils::api_serialization::keystore::{
     KeyType, KeystoreDeriveKeyArgs, KeystoreDeriveSeedArgs, KeystoreGetPublicKeyArgs,
-    KeystoreListResult, KeystoreNewRandomArgs, KeystoreSignArgs,
+    KeystoreListResult, KeystoreNewRandomArgs, KeystoreSignArgs, SeedType,
 };
 
 // Returns a list of the named secrets stored in the keystore.
@@ -24,12 +24,14 @@ pub fn keystore_derive_seed<S: Into<String>>(
     dst_id: S,
     context: S,
     index: u64,
+    seed_type: SeedType,
 ) -> ZomeApiResult<()> {
     Dispatch::KeystoreDeriveSeed.with_input(KeystoreDeriveSeedArgs {
         src_id: src_id.into(),
         dst_id: dst_id.into(),
         context: context.into(),
         index,
+        seed_type,
     })
 }
 

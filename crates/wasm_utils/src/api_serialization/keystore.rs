@@ -21,6 +21,7 @@ pub struct KeystoreDeriveSeedArgs {
     pub dst_id: String,
     pub context: String,
     pub index: u64,
+    pub seed_type: SeedType,
 }
 
 #[derive(Deserialize, Clone, PartialEq, Eq, Hash, Debug, Serialize, DefaultJson)]
@@ -29,7 +30,7 @@ pub enum KeyType {
     Encrypting,
 }
 /// Enum of all the types of seeds
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
 pub enum SeedType {
     /// Root / Master seed
     Root,

@@ -28,6 +28,25 @@ pub enum KeyType {
     Signing,
     Encrypting,
 }
+/// Enum of all the types of seeds
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub enum SeedType {
+    /// Root / Master seed
+    Root,
+    /// Revocation seed
+    Revocation,
+    /// Device seed
+    Device,
+    /// Derivative of a Device seed with a PIN
+    DevicePin,
+    /// DNA specific seed
+    DNA,
+    /// Seed for a one use only key
+    OneShot,
+    /// Seed used only in tests or mocks
+    Mock,
+}
+
 
 #[derive(Deserialize, Clone, PartialEq, Eq, Hash, Debug, Serialize, DefaultJson)]
 pub struct KeystoreDeriveKeyArgs {

@@ -7,8 +7,7 @@ use crate::{
 use bip39::{Language, Mnemonic, MnemonicType};
 use holochain_core_types::error::{HcResult, HolochainError};
 use lib3h_sodium::{kdf, pwhash, secbuf::SecBuf};
-use serde_derive::{Deserialize, Serialize};
-use std::{convert::TryFrom, str};
+use std::str;
 
 //--------------------------------------------------------------------------------------------------
 // SeedInitializer
@@ -24,38 +23,25 @@ pub enum SeedInitializer {
 // Seed Types
 //--------------------------------------------------------------------------------------------------
 
-/// Enum of all the types of seeds
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub enum SeedType {
-    /// Root / Master seed
-    Root,
-    /// Revocation seed
-    Revocation,
-    /// Device seed
-    Device,
-    /// Derivative of a Device seed with a PIN
-    DevicePin,
-    /// DNA specific seed
-    DNA,
-    /// Seed for a one use only key
-    OneShot,
-    /// Seed used only in tests or mocks
-    Mock,
-}
+pub use holochain_wasm_utils::api_serialization::keystore::SeedType;
 
-impl TryFrom<&str> for SeedType {
-    type Error = HolochainError;
+// impl TryFrom<&str> for SeedType {
+//     type Error = HolochainError;
 
-    fn try_from(s: &str) -> HcResult<SeedType> {
-        use SeedType::*;
-        match s {
-            "root" => Ok(Root),
-            "revocation" => Ok(Revocation),
-            "device" => Ok(Device),
-            _ => Err(HolochainError::SerializationError(format!("Unknown SeedType: {}", s)))
-        }
-    }
-}
+//     fn try_from(s: &str) -> HcResult<SeedType> {
+//         use SeedType::*;
+//         match s {
+//             "root" => Ok(Root),
+//             "revocation" => Ok(Revocation),
+//             "device" => Ok(Device),
+//             "device_pin" => Ok(DevicePin),
+//             "dna" => Ok(DNA),
+//             "one_shot" => Ok(OneShot),
+//             "mock" => Ok(Mock),
+//             _ => Err(HolochainError::SerializationError(format!("Unknown SeedType: {}", s)))
+//         }
+//     }
+// }
 
 /// Enum of all the different behaviors a Seed can have
 pub enum TypedSeed {

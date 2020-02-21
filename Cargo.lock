@@ -1442,6 +1442,7 @@ dependencies = [
  "holochain_core_types 0.0.43-alpha3",
  "holochain_persistence_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_tracing_macros 0.0.19 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_wasm_utils 0.0.43-alpha3",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h_sodium 0.0.38 (registry+https://github.com/rust-lang/crates.io-index)",
  "newrelic 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",

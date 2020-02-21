@@ -22,3 +22,4 @@ serde_json = { version = "=1.0.47", features = ["preserve_order"] }
 hcid = "=0.0.6"
 bip39 = "=0.6.0-beta.1"
 holochain_common = { version = "=0.0.43-alpha3", path = "../common" }
+holochain_wasm_utils = { version = "=0.0.43-alpha3", path = "../wasm_utils" }

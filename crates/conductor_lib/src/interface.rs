@@ -25,7 +25,7 @@ use crate::{
     keystore::{KeyType, Keystore, Secret},
     NEW_RELIC_LICENSE_KEY,
 };
-use holochain_dpki::{seed::SeedType, utils::SeedContext};
+use holochain_dpki::utils::SeedContext;
 use serde_json::{self, map::Map};
 
 pub type InterfaceError = String;
@@ -1175,7 +1175,7 @@ impl ConductorApiBuilder {
                 context_bytes_array.copy_from_slice(context_bytes);
 
                 let seed_context = SeedContext::new(context_bytes_array);
-                let seed_type = SeedType::try_from(seed_type_str.as_str())
+                let seed_type = serde_json::from_str(seed_type_str.as_str())
                     .map_err(|e| jsonrpc_core::Error::invalid_params(e.to_string()))?;
 
                 k.lock()

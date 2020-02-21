@@ -47,10 +47,8 @@ pub enum Secret {
     TypedSeed(Seed),
 }
 
-pub enum KeyType {
-    Signing,
-    Encrypting,
-}
+// re-export type from wasm_utils which was previously duplicated here
+pub use holochain_wasm_utils::api_serialization::keystore::KeyType;
 
 /// A type for providing high-level crypto functions and managing secrets securely.
 /// Keystore can store an arbitrary number of named secrets such as key pairs and seeds.

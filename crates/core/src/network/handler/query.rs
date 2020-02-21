@@ -19,7 +19,7 @@ use holochain_core_types::{
 };
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::Address;
-use holochain_wasm_utils::api_serialization::get_entry::{
+use holochain_wasm_types::get_entry::{
     GetEntryArgs, GetEntryOptions, GetEntryResultType,
 };
 use lib3h_protocol::data_types::{QueryEntryData, QueryEntryResultData};

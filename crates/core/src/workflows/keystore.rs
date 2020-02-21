@@ -3,7 +3,7 @@ use holochain_core_types::error::{HcResult, HolochainError};
 
 use holochain_json_api::json::JsonString;
 
-use holochain_wasm_utils::api_serialization::{
+use holochain_wasm_types::{
     keystore::KeystoreListResult, wasm_string::WasmString,
 };
 use holochain_wasmer_host::*;

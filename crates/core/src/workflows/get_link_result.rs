@@ -11,7 +11,7 @@ use crate::{
 };
 
 use holochain_core_types::error::HolochainError;
-use holochain_wasm_utils::api_serialization::get_links::{
+use holochain_wasm_types::get_links::{
     GetLinksArgs, GetLinksResult, LinksResult,
 };
 use std::sync::Arc;

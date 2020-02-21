@@ -72,7 +72,7 @@ The development kit:
 - Exposes convenience functions for the Holochain API to handle relevant allocation/deallocations
 - Maps `u64` values to/from encoded error values and `u32` offset/length values for memory allocations
 
-For more details review the unit/integration test suites in `hdk-rust` and `wasm_utils`.
+For more details review the unit/integration test suites in `hdk-rust` and `wasm_engine`.
 
 ### Crafting the API
 

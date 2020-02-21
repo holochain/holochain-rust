@@ -24,7 +24,7 @@ use holochain_dpki::utils::Verify;
 use crate::instance::dispatch_action;
 use base64;
 use futures::{future::Future, task::Poll};
-use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
+use holochain_wasm_types::crypto::CryptoMethod;
 use std::{pin::Pin, sync::Arc};
 
 #[derive(Clone, Debug, PartialEq, Hash, Serialize)]

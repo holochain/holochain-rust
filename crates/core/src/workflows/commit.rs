@@ -1,6 +1,6 @@
 use crate::{context::Context, workflows::author_entry::author_entry, NEW_RELIC_LICENSE_KEY};
 use holochain_core_types::error::HolochainError;
-use holochain_wasm_utils::api_serialization::commit_entry::{CommitEntryArgs, CommitEntryResult};
+use holochain_wasm_types::commit_entry::{CommitEntryArgs, CommitEntryResult};
 use std::sync::Arc;
 
 /// ZomeApiFunction::CommitAppEntry function code
@@ -45,7 +45,7 @@ pub mod tests {
     };
     use holochain_json_api::json::JsonString;
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
-    use holochain_wasm_utils::api_serialization::commit_entry::{
+    use holochain_wasm_types::commit_entry::{
         CommitEntryArgs, CommitEntryOptions, CommitEntryResult,
     };
 

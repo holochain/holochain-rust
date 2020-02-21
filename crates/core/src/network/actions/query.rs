@@ -15,7 +15,7 @@ use std::{pin::Pin, sync::Arc};
 
 use snowflake::ProcessUniqueId;
 
-use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, LinksStatusRequestKind};
+use holochain_wasm_types::get_links::{GetLinksArgs, LinksStatusRequestKind};
 use std::time::SystemTime;
 
 /// FetchEntry Action Creator

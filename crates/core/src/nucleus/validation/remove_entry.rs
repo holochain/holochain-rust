@@ -11,7 +11,7 @@ use crate::{
 };
 use holochain_core_types::{entry::Entry, validation::ValidationData};
 use holochain_persistence_api::cas::content::AddressableContent;
-use holochain_wasm_utils::api_serialization::validation::EntryValidationArgs;
+use holochain_wasm_types::validation::EntryValidationArgs;
 use std::sync::Arc;
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]

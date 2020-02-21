@@ -3,9 +3,10 @@ extern crate holochain_core_types;
 extern crate holochain_json_derive;
 #[macro_use]
 extern crate serde_derive;
-extern crate holochain_wasm_utils;
+extern crate holochain_wasm_types;
 extern crate serde_json;
 extern crate holochain_wasmer_guest;
+extern crate holochain_persistence_api;
 
 use holochain_core_types::{
     entry::Entry,
@@ -16,9 +17,9 @@ use holochain_core_types::{
     validation::{ValidationPackageDefinition, ValidationResult},
 };
 
-use holochain_wasm_utils::{
-    holochain_persistence_api::cas::content::Address,
-    holochain_json_api::{error::JsonError, json::{JsonString, RawString}},
+use holochain_persistence_api::cas::content::Address;
+use holochain_json_api::{error::JsonError, json::{JsonString, RawString}};
+use holochain_wasm_types::{
 };
 use holochain_wasmer_guest::*;
 
@@ -102,9 +103,9 @@ fn hdk_commit(
         RawString::from(entry_value).into(),
     );
 
-    let args = holochain_wasm_utils::api_serialization::commit_entry::CommitEntryArgs {
+    let args = holochain_wasm_types::commit_entry::CommitEntryArgs {
         entry,
-        options:holochain_wasm_utils::api_serialization::commit_entry::CommitEntryOptions::new(provenance.to_vec())
+        options:holochain_wasm_types::commit_entry::CommitEntryOptions::new(provenance.to_vec())
     };
 
     let result: ZomeApiInternalResult = host_call!(hc_commit_entry, args)?;

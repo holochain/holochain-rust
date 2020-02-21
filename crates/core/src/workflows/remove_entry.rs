@@ -8,7 +8,7 @@ use holochain_core_types::{
     error::HolochainError,
 };
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
-use holochain_wasm_utils::api_serialization::get_entry::*;
+use holochain_wasm_types::get_entry::*;
 use holochain_wasmer_host::*;
 use std::sync::Arc;
 

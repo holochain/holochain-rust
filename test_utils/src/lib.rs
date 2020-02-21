@@ -40,7 +40,7 @@ use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 use holochain_net::p2p_config::P2pConfig;
 
-use holochain_wasm_utils::{
+use holochain_wasm_engine::{
     api_serialization::get_entry::{GetEntryResult, StatusRequestKind},
     wasm_target_dir,
 };

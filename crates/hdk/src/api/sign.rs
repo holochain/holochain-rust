@@ -1,6 +1,6 @@
 use crate::error::ZomeApiResult;
 use holochain_core_types::signature::Provenance;
-use holochain_wasm_utils::api_serialization::{
+use holochain_wasm_types::{
     crypto::{CryptoArgs, CryptoMethod},
     sign::{OneTimeSignArgs, SignOneTimeResult},
     verify_signature::VerifySignatureArgs,
@@ -55,7 +55,7 @@ pub fn sign<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::signature::{Provenance, Signature};
 /// # use hdk::error::ZomeApiResult;
-/// # use hdk::holochain_wasm_utils::api_serialization::sign::{OneTimeSignArgs, SignOneTimeResult};
+/// # use hdk::holochain_wasm_types::sign::{OneTimeSignArgs, SignOneTimeResult};
 /// # fn main() {
 /// pub fn handle_one_time_sign(key_id: String, message: String) -> ZomeApiResult<Signature> {
 ///    hdk::sign(message).map(Signature::from)

@@ -7,8 +7,8 @@ use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use lazy_static::lazy_static;
 
 use holochain_core_types::{dna::capabilities::CapabilityRequest, error::ZomeApiInternalResult};
-pub use holochain_wasm_utils::api_serialization::validation::*;
-use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
+pub use holochain_wasm_types::validation::*;
+use holochain_wasm_types::ZomeApiGlobals;
 
 use crate::init_globals::init_globals;
 use std::convert::{TryFrom, TryInto};

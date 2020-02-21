@@ -7,7 +7,7 @@ for dep in \
  holochain_metrics \
  holochain_core_types \
  holochain_core \
- holochain_wasm_utils \
+ holochain_wasm_engine \
  holochain_common \
  holochain_conductor_lib \
  holochain_dpki \

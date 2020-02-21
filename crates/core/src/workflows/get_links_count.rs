@@ -8,7 +8,7 @@ use crate::{
 };
 
 use holochain_core_types::error::HolochainError;
-use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, GetLinksResultCount};
+use holochain_wasm_types::get_links::{GetLinksArgs, GetLinksResultCount};
 use std::sync::Arc;
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]

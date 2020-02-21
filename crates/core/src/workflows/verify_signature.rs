@@ -1,6 +1,6 @@
 use crate::{context::Context, wasm_engine::api::ZomeApiResult, NEW_RELIC_LICENSE_KEY};
 use holochain_dpki::utils::Verify;
-use holochain_wasm_utils::api_serialization::verify_signature::VerifySignatureArgs;
+use holochain_wasm_types::verify_signature::VerifySignatureArgs;
 use std::sync::Arc;
 
 /// ZomeApiFunction::VerifySignature function code
@@ -27,7 +27,7 @@ pub fn invoke_verify_signature(
 #[cfg(test)]
 mod test_super {
     use crate::{
-        holochain_wasm_utils::holochain_persistence_api::cas::content::AddressableContent,
+        holochain_wasm_engine::holochain_persistence_api::cas::content::AddressableContent,
         wasm_engine::{
             api::{tests::test_zome_api_function, ZomeApiFunction},
             Defn,

@@ -16,8 +16,8 @@ use holochain_core_types::{
 
 use holochain_json_api::json::JsonString;
 
-use holochain_wasm_utils::api_serialization::validation::LinkValidationPackageArgs;
-use std::{convert::TryFrom, sync::Arc};
+use holochain_wasm_types::validation::LinkValidationPackageArgs;
+use std::{sync::Arc};
 
 #[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]

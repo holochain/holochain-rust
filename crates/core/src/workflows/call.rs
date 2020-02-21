@@ -11,7 +11,7 @@ use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
 use holochain_logging::prelude::*;
 
-use holochain_wasm_utils::api_serialization::{ZomeFnCallArgs, THIS_INSTANCE};
+use holochain_wasm_types::{ZomeFnCallArgs, THIS_INSTANCE};
 use holochain_wasmer_host::*;
 use jsonrpc_lite::JsonRpc;
 use snowflake::ProcessUniqueId;
@@ -189,7 +189,7 @@ pub mod tests {
     };
     use holochain_json_api::json::JsonString;
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
-    use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
+    use holochain_wasm_types::ZomeFnCallArgs;
     use serde_json;
     use std::{collections::BTreeMap, sync::Arc};
     use test_utils::create_test_dna_with_defs;

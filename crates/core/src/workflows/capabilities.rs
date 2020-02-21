@@ -9,7 +9,7 @@ use holochain_core_types::{
 use holochain_persistence_api::cas::content::Address;
 use std::sync::Arc;
 
-use holochain_wasm_utils::api_serialization::capabilities::{
+use holochain_wasm_types::capabilities::{
     CommitCapabilityClaimArgs, CommitCapabilityGrantArgs,
 };
 
@@ -45,7 +45,7 @@ pub mod tests {
     use holochain_core_types::{entry::cap_entries::CapabilityType, error::ZomeApiInternalResult};
     use holochain_json_api::json::JsonString;
     use holochain_persistence_api::cas::content::Address;
-    use holochain_wasm_utils::api_serialization::capabilities::{
+    use holochain_wasm_types::capabilities::{
         CommitCapabilityClaimArgs, CommitCapabilityGrantArgs,
     };
     use std::collections::BTreeMap;

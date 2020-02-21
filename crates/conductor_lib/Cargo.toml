@@ -59,7 +59,7 @@ newrelic="0.2"
 [dev-dependencies]
 test_utils = { version = "=0.0.43-alpha3", path = "../../test_utils" }
 tempfile = "=3.0.7"
-holochain_wasm_utils = { version = "=0.0.43-alpha3", path = "../wasm_utils" }
+holochain_wasm_engine = { version = "=0.0.43-alpha3", path = "../wasm_engine" }
 structopt = "=0.2.15"
 pretty_assertions = "=0.6.1"
 ws = "=0.8.0"

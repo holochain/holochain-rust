@@ -4,7 +4,7 @@ extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_json_api;
 extern crate holochain_persistence_api;
-extern crate holochain_wasm_utils;
+extern crate holochain_wasm_engine;
 extern crate tempfile;
 extern crate test_utils;
 
@@ -19,7 +19,7 @@ use holochain_core_types::{
 use holochain_core_types::error::CoreError;
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
 
-use holochain_wasm_utils::api_serialization::get_links::{GetLinksResult, LinksResult};
+use holochain_wasm_types::get_links::{GetLinksResult, LinksResult};
 
 use test_utils::{
     assert_zome_internal_errors_equivalent, generate_zome_internal_error, make_test_call,

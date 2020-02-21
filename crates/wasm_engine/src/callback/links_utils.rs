@@ -6,7 +6,7 @@ use holochain_core_types::{
     error::HolochainError,
     link::Link,
 };
-use holochain_wasm_utils::api_serialization::{get_entry::*, validation::LinkDirection};
+use holochain_wasm_types::{get_entry::*, validation::LinkDirection};
 use std::sync::Arc;
 
 /// Retrieves the base and target entries of the link and returns both.

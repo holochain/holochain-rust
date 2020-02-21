@@ -20,7 +20,7 @@ pub use holochain_core_types;
 pub use holochain_json_api;
 pub use holochain_json_derive;
 pub use holochain_persistence_api;
-pub use holochain_wasm_utils;
+pub use holochain_wasm_types;
 pub use pretty_assertions;
 pub use serde;
 pub use serde_derive;
@@ -34,7 +34,7 @@ pub mod error;
 pub mod init_globals;
 pub mod macros;
 
-pub use holochain_wasm_utils::api_serialization::{validation::*, THIS_INSTANCE};
+pub use holochain_wasm_types::{validation::*, THIS_INSTANCE};
 
 pub mod meta;
 pub mod prelude;

@@ -24,7 +24,7 @@ use holochain_json_api::{
     error::{JsonError, JsonResult},
     json::JsonString,
 };
-use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
+use holochain_wasm_types::crypto::CryptoMethod;
 use im::HashMap;
 use serde_json;
 use std::{convert::TryFrom, ops::Deref, sync::Arc, time::SystemTime};

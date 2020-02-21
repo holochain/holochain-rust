@@ -4,12 +4,12 @@ use holochain_persistence_api::{
     cas::content::{Address},
     hash::HashString,
 };
-use holochain_wasm_utils::api_serialization::wasm_string::WasmString;
+use holochain_wasm_types::wasm_string::WasmString;
 use std::sync::Arc;
 
 use holochain_json_api::json::JsonString;
 
-use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
+use holochain_wasm_types::ZomeApiGlobals;
 
 /// ZomeApiFunction::InitGlobals secret function code
 /// args: [0] encoded MemoryAllocation as u64
@@ -83,7 +83,7 @@ pub mod tests {
     };
     use holochain_json_api::json::JsonString;
     use holochain_persistence_api::cas::content::Address;
-    use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
+    use holochain_wasm_types::ZomeApiGlobals;
     use std::convert::TryFrom;
     use test_utils::mock_signing::registered_test_agent;
 

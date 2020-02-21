@@ -147,7 +147,7 @@ test_holochain: build_holochain
 	cd crates/hdk_v2 && RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc
 	cd crates/holochain && RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc 
 	cd crates/net && RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc 
-	cd crates/wasm_utils && RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc
+	cd crates/wasm_engine && RUSTFLAGS="-D warnings" $(CARGO) test --all --exclude hc
 
 # Execute cargo tests matching %
 # Eg. make test-stacked will run "cargo test stacked"
@@ -185,7 +185,7 @@ wasm_build: ensure_wasm_target
 	cd crates/conductor_lib/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd crates/conductor_lib/test-bridge-caller && $(CARGO) build --release --target wasm32-unknown-unknown
 	cd crates/hdk/wasm-test && $(CARGO) build --release --target wasm32-unknown-unknown
-	cd crates/wasm_utils/wasm-test/integration-test && $(CARGO) build --release --target wasm32-unknown-unknown
+	cd crates/wasm_engine/wasm-test/integration-test && $(CARGO) build --release --target wasm32-unknown-unknown
 
 .PHONY: install_wasm_bindgen_cli
 install_wasm_bindgen_cli:
@@ -207,7 +207,7 @@ build_holochain: wasm_build
 	cd crates/hdk_v2 && $(CARGO) build 
 	cd crates/holochain && $(CARGO) build 
 	cd crates/net && $(CARGO) build 
-	cd crates/wasm_utils && $(CARGO) build 
+	cd crates/wasm_engine && $(CARGO) build 
 
 .PHONY: build_cli
 build_cli: core_toolchain ensure_wasm_target

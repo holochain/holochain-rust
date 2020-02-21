@@ -1,5 +1,5 @@
 use crate::{context::Context, wasm_engine::api::ZomeApiResult, NEW_RELIC_LICENSE_KEY};
-use holochain_wasm_utils::api_serialization::wasm_string::WasmString;
+use holochain_wasm_types::wasm_string::WasmString;
 use std::sync::Arc;
 
 /// ZomeApiFunction::Debug function code

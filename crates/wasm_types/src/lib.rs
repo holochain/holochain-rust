@@ -1,4 +1,11 @@
-mod call;
+#[macro_use]
+extern crate serde_derive;
+#[macro_use]
+extern crate holochain_json_derive;
+
+pub use holochain_wasmer_guest::*;
+
+pub mod call;
 /// This module holds structs for all arguments and return types
 /// that get serialized and deserialized between core native and
 /// the WASM based ribosome.
@@ -29,3 +36,5 @@ pub mod wasm_string;
 mod zome_api_globals;
 
 pub use self::{call::*, query::*, update_entry::*, zome_api_globals::*};
+
+pub type ZomeApiResult = Result<AllocationPtr, WasmError>;

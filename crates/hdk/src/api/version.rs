@@ -2,7 +2,7 @@ use crate::{
     error::{ZomeApiError, ZomeApiResult},
     Dispatch,
 };
-use holochain_wasm_utils::api_serialization::meta::{MetaArgs, MetaMethod, MetaResult};
+use holochain_wasm_types::meta::{MetaArgs, MetaMethod, MetaResult};
 
 /// Returns the current `version` of the HDK as "semver" value (eg. "1.2.3-alpha4"), or
 /// `version_hash`, a 32-byte MD5 of the holochain-rust source, dependencies and build environment,

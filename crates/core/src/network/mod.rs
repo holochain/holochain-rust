@@ -37,7 +37,7 @@ pub mod tests {
     };
     use holochain_json_api::json::JsonString;
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
-    use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
+    use holochain_wasm_types::get_links::GetLinksArgs;
     use test_utils::*;
 
     // TODO: Bring the old in-memory network up to speed and turn on this test again!

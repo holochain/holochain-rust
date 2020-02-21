@@ -228,9 +228,9 @@ macro_rules! define_zome {
                 zd.define($entry_expr);
             )*
 
-            let validator = Box::new(|validation_data: hdk::holochain_wasm_utils::holochain_core_types::validation::EntryValidationData<hdk::holochain_core_types::agent::AgentId>| {
+            let validator = Box::new(|validation_data: $crate::holochain_core_types::validation::EntryValidationData<hdk::holochain_core_types::agent::AgentId>| {
                 let $agent_validation_param = validation_data;
-                let result: $crate::holochain_wasm_utils::holochain_core_types::validation::ValidationResult = $agent_validation_expr;
+                let result: $crate::holochain_core_types::validation::ValidationResult = $agent_validation_expr;
                 result
             });
             zd.define_agent_validator(validator);
@@ -252,9 +252,9 @@ macro_rules! define_zome {
         $(
             #[no_mangle]
             pub extern "C" fn receive(host_allocation_ptr: holochain_wasmer_guest::AllocationPtr) -> holochain_wasmer_guest::AllocationPtr {
-                let input: $crate::holochain_wasm_utils::api_serialization::receive::ReceiveParams = holochain_wasmer_guest::host_args!(host_allocation_ptr);
+                let input: $crate::holochain_wasm_types::receive::ReceiveParams = holochain_wasmer_guest::host_args!(host_allocation_ptr);
 
-                fn execute(input: $crate::holochain_wasm_utils::api_serialization::receive::ReceiveParams ) -> String {
+                fn execute(input: $crate::holochain_wasm_types::receive::ReceiveParams ) -> String {
                     let $receive_param = input.payload;
                     let $receive_from = input.from;
                     $receive_expr

@@ -5,7 +5,7 @@ use crate::{
     NEW_RELIC_LICENSE_KEY,
 };
 use holochain_json_api::json::JsonString;
-use holochain_wasm_utils::api_serialization::send::SendArgs;
+use holochain_wasm_types::send::SendArgs;
 use std::sync::Arc;
 
 /// ZomeApiFunction::Send function code

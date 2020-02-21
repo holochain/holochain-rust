@@ -8,7 +8,7 @@ extern crate test_utils;
 #[macro_use]
 extern crate serde_json;
 extern crate hdk;
-extern crate holochain_wasm_utils;
+extern crate holochain_wasm_engine;
 
 use hdk::error::ZomeApiResult;
 
@@ -23,7 +23,7 @@ use holochain_persistence_api::{
     hash::HashString,
 };
 
-use holochain_wasm_utils::api_serialization::get_entry::{GetEntryResult, StatusRequestKind};
+use holochain_wasm_types::get_entry::{GetEntryResult, StatusRequestKind};
 use std::path::PathBuf;
 use test_utils::{
     empty_string_validation_fail_entry, example_valid_entry, example_valid_entry_address,

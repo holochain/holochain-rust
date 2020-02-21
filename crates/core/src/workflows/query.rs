@@ -12,7 +12,7 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
 };
-use holochain_wasm_utils::api_serialization::{QueryArgs, QueryArgsNames, QueryResult};
+use holochain_wasm_types::{QueryArgs, QueryArgsNames, QueryResult};
 use holochain_wasmer_host::*;
 use std::sync::Arc;
 

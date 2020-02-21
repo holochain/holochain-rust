@@ -4,7 +4,7 @@ use crate::{
     wasm_engine::api::ZomeApiResult,
     NEW_RELIC_LICENSE_KEY,
 };
-use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
+use holochain_wasm_types::emit_signal::EmitSignalArgs;
 use std::sync::Arc;
 
 /// ZomeApiFunction::EmitSignal function code
@@ -47,7 +47,7 @@ pub mod tests {
     };
     use crossbeam_channel::unbounded;
     use holochain_json_api::json::JsonString;
-    use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
+    use holochain_wasm_types::emit_signal::EmitSignalArgs;
     use std::sync::Arc;
 
     pub fn test_signal() -> UserSignal {

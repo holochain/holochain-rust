@@ -13,7 +13,7 @@ use holochain_core_types::{
     validation::{EntryValidationData, ValidationData},
 };
 use holochain_persistence_api::cas::content::AddressableContent;
-use holochain_wasm_utils::api_serialization::validation::AgentIdValidationArgs;
+use holochain_wasm_types::validation::AgentIdValidationArgs;
 
 use futures::{future, future::FutureExt};
 use std::sync::Arc;

@@ -9,7 +9,7 @@ use holochain_core_types::{
     crud_status::CrudStatus, entry::EntryWithMetaAndHeader, error::HolochainError,
 };
 use holochain_persistence_api::cas::content::Address;
-use holochain_wasm_utils::api_serialization::get_entry::{
+use holochain_wasm_types::get_entry::{
     GetEntryArgs, GetEntryResult, StatusRequestKind,
 };
 use std::sync::Arc;
@@ -137,7 +137,7 @@ pub async fn get_entry_result_workflow<'a>(
 //        crud_status::{create_crud_status_eav, CrudStatus},
 //        entry::test_entry,
 //    };
-//    use holochain_wasm_utils::api_serialization::get_entry::*;
+//    use holochain_wasm_types::get_entry::*;
 //
 //    #[test]
 //    fn can_get_entry_result_workflow() {

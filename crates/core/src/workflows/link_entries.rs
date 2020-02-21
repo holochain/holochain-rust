@@ -5,7 +5,7 @@ use holochain_core_types::{
     link::{link_data::LinkData, LinkActionKind},
 };
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
-use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
+use holochain_wasm_types::link_entries::LinkEntriesArgs;
 use holochain_wasmer_host::*;
 use std::sync::Arc;
 
@@ -70,7 +70,7 @@ pub mod tests {
     };
     use holochain_json_api::json::JsonString;
     use holochain_persistence_api::cas::content::AddressableContent;
-    use holochain_wasm_utils::api_serialization::link_entries::*;
+    use holochain_wasm_types::link_entries::*;
 
     use serde_json;
     use std::{convert::TryFrom, sync::Arc};

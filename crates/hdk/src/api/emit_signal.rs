@@ -1,6 +1,6 @@
 use crate::{error::ZomeApiResult, Dispatch};
 use holochain_json_api::json::JsonString;
-use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
+use holochain_wasm_types::emit_signal::EmitSignalArgs;
 
 /// Emits a signal that listeners can receive.
 /// (Status: MVP)

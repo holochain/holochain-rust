@@ -18,7 +18,7 @@ use holochain_core_types::{
 
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
-use holochain_wasm_utils::api_serialization::commit_entry::CommitEntryResult;
+use holochain_wasm_types::commit_entry::CommitEntryResult;
 
 use crate::wasm_engine::callback::links_utils::get_link_entries;
 use std::{sync::Arc, vec::Vec};
@@ -115,7 +115,7 @@ pub async fn author_entry<'a>(
 pub mod tests {
 
     use crate::{
-        holochain_wasm_utils::holochain_persistence_api::cas::content::AddressableContent,
+        holochain_wasm_engine::holochain_persistence_api::cas::content::AddressableContent,
         nucleus::actions::{
             get_entry::get_entry_from_dht,
             tests::{instance_by_name, test_dna},

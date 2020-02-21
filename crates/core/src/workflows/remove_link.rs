@@ -1,95 +1,99 @@
 use crate::{
-    context::Context, dht::actions::hold_aspect::hold_aspect,
-    network::entry_with_header::EntryWithHeader, nucleus::validation::validate_entry,
-    workflows::hold_entry::hold_entry_workflow, NEW_RELIC_LICENSE_KEY,
+    context::Context,
+    network::{
+        actions::query::{query, QueryMethod},
+        query::{
+            GetLinksNetworkQuery, GetLinksNetworkResult, GetLinksQueryConfiguration,
+            NetworkQueryResult,
+        },
+    },
+    workflows::author_entry::author_entry,
+    NEW_RELIC_LICENSE_KEY,
 };
-
-use crate::{nucleus::validation::ValidationError, workflows::validation_package};
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
-    network::entry_aspect::EntryAspect,
-    validation::{EntryLifecycle, ValidationData},
+    link::{link_data::LinkData, LinkActionKind},
+    time::Timeout,
 };
+use holochain_wasm_types::{
+    get_links::{GetLinksArgs, GetLinksOptions},
+    link_entries::LinkEntriesArgs,
+};
+use holochain_wasmer_host::*;
 use std::sync::Arc;
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub async fn remove_link_workflow(
-    entry_with_header: &EntryWithHeader,
+/// ZomeApiFunction::GetLinks function code
+/// args: [0] encoded MemoryAllocation as u64
+/// Expected complex argument: GetLinksArgs
+/// Returns an HcApiReturnCode as I64
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+pub fn invoke_remove_link(
     context: Arc<Context>,
+    input: LinkEntriesArgs,
 ) -> Result<(), HolochainError> {
-    let (link_data, links_to_remove) = match &entry_with_header.entry {
-        Entry::LinkRemove(data) => data,
-        _ => Err(HolochainError::ErrorGeneric(
-            "remove_link_workflow expects entry to be an Entry::LinkRemove".to_string(),
-        ))?,
-    };
-    let link = link_data.link().clone();
+    let top_chain_header_option = context.agent().top_chain_header();
 
-    log_debug!(context, "workflow/remove_link: {:?}", link);
-    // 1. Get hold of validation package
-    log_debug!(
-        context,
-        "workflow/remove_link: getting validation package..."
-    );
-    let maybe_validation_package = validation_package(&entry_with_header, context.clone())
-        .await
-        .map_err(|err| {
-            let message = "Could not get validation package from source! -> Add to pending...";
-            log_debug!(context, "workflow/remove_link: {}", message);
-            log_debug!(context, "workflow/remove_link: Error was: {:?}", err);
-            HolochainError::ValidationPending
-        })?;
-
-    let validation_package = maybe_validation_package
-        .ok_or_else(|| "Could not get validation package from source".to_string())?;
-    log_debug!(context, "workflow/remove_link: got validation package!");
-
-    // 2. Create validation data struct
-    let validation_data = ValidationData {
-        package: validation_package,
-        lifecycle: EntryLifecycle::Meta,
-    };
-
-    // 3. Validate the entry
-    log_debug!(context, "workflow/remove_link: validate...");
-    validate_entry(
-        entry_with_header.entry.clone(),
-        None,
-        validation_data,
-        &context
-    ).await
-    .map_err(|err| {
-        if let ValidationError::UnresolvedDependencies(dependencies) = &err {
-            log_debug!(context, "workflow/remove_link: Link could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}", dependencies);
-            HolochainError::ValidationPending
-        } else {
-            log_warn!(context, "workflow/remove_link: Link {:?} is NOT valid! Validation error: {:?}",
-                entry_with_header.entry,
-                err,
+    let top_chain_header = match top_chain_header_option {
+        Some(top_chain) => top_chain,
+        None => {
+            log_error!(
+                context,
+                "zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
+                input
             );
-            HolochainError::from(err)
+            Err(WasmError::ArgumentDeserializationFailed)?;
         }
+    };
 
-    })?;
-
-    log_debug!(context, "workflow/remove_link: is valid!");
-
-    // 3. If valid store the entry aspect in the local DHT shard
-    let aspect = EntryAspect::LinkRemove(
-        (link_data.clone(), links_to_remove.clone()),
-        entry_with_header.header.clone(),
+    let link = input.to_link();
+    let link_remove = LinkData::from_link(
+        &link,
+        LinkActionKind::REMOVE,
+        top_chain_header,
+        context.agent_id.clone(),
     );
-    hold_aspect(aspect, context.clone()).await?;
-    log_debug!(context, "workflow/remove_link: added! {:?}", link);
+    let get_links_args = GetLinksArgs {
+        entry_address: link.base().clone(),
+        link_type: link.link_type().clone(),
+        tag: link.tag().clone(),
+        options: GetLinksOptions::default(),
+    };
+    let config = GetLinksQueryConfiguration::default();
+    let method = QueryMethod::Link(get_links_args, GetLinksNetworkQuery::Links(config));
+    let response_result = context.block_on(query(context, method, Timeout::default()));
+    if response_result.is_err() {
+        log_error!("zome : Could not get links for remove_link method.");
+        Err(WasmError::WorkflowFailed)?
+    } else {
+        let response = response_result.expect("Could not get response");
+        let links_result = match response {
+            NetworkQueryResult::Links(query, _, _) => Ok(query),
+            NetworkQueryResult::Entry(_) => Err(HolochainError::ErrorGeneric(
+                "Could not get links for type".to_string(),
+            )),
+        };
+        if links_result.is_err() {
+            log_error!(context, "zome : Could not get links for remove_link method");
+            Err(WasmError::WorkflowFailed)?
+        } else {
+            let links = links_result.expect("This is supposed to not fail");
+            let links = match links {
+                GetLinksNetworkResult::Links(links) => links,
+                _ => Err(WasmError::WorkflowFailed)?,
+            };
+            let filtered_links = links
+                .into_iter()
+                .filter(|link_for_filter| &link_for_filter.target == link.target())
+                .map(|s| s.address)
+                .collect::<Vec<_>>();
 
-    //4. store link_remove entry so we have all we need to respond to get links queries without any other network look-up```
-    hold_entry_workflow(&entry_with_header, context.clone()).await?;
-    log_debug!(
-        context,
-        "workflow/hold_entry: added! {:?}",
-        entry_with_header
-    );
+            let entry = Entry::LinkRemove((link_remove, filtered_links));
 
-    Ok(())
+            // Wait for future to be resolved
+            context
+                .block_on(author_entry(&entry, None, context, &vec![]))
+                .map(|_| ())
+        }
+    }
 }

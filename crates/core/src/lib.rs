@@ -15,7 +15,7 @@ extern crate unwrap_to;
 #[macro_use]
 extern crate num_derive;
 
-extern crate holochain_wasm_utils;
+extern crate holochain_wasm_engine;
 #[macro_use]
 extern crate holochain_json_derive;
 #[macro_use]

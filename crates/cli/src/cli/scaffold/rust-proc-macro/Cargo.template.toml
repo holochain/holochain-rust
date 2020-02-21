@@ -10,7 +10,7 @@ serde_json = { version = "=1.0.47", features = ["preserve_order"] }
 serde_derive = "=1.0.104"
 hdk = <<VERSION>>
 hdk_proc_macros = <<VERSION>>
-holochain_wasm_utils = <<VERSION>>
+holochain_wasm_engine = <<VERSION>>
 holochain_json_derive = "=0.0.20"
 
 [lib]

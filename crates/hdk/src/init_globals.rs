@@ -3,7 +3,7 @@
 //! It is automatically called at startup of each Zome function call.
 
 use crate::{api::Dispatch, error::ZomeApiResult};
-use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
+use holochain_wasm_types::ZomeApiGlobals;
 use holochain_wasmer_guest::AllocationPtr;
 
 #[allow(dead_code)]

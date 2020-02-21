@@ -1,7 +1,7 @@
 use crate::{error::ZomeApiResult, Dispatch};
 use holochain_core_types::entry::cap_entries::{CapFunctions, CapabilityType};
 use holochain_persistence_api::cas::content::Address;
-use holochain_wasm_utils::api_serialization::capabilities::{
+use holochain_wasm_types::capabilities::{
     CommitCapabilityClaimArgs, CommitCapabilityGrantArgs,
 };
 

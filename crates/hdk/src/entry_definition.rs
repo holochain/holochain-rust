@@ -10,7 +10,7 @@ use holochain_core_types::{
         EntryValidationData, LinkValidationData, ValidationPackageDefinition, ValidationResult,
     },
 };
-use holochain_wasm_utils::api_serialization::validation::LinkDirection;
+use holochain_wasm_types::validation::LinkDirection;
 use std::convert::TryFrom;
 
 pub type PackageCreator = Box<dyn FnMut() -> ValidationPackageDefinition + Sync>;
@@ -222,7 +222,7 @@ macro_rules! entry {
                 $package_creator
             });
 
-            let validator = Box::new(|validation_data: $crate::holochain_wasm_utils::holochain_core_types::validation::EntryValidationData<$crate::holochain_core_types::entry::Entry>| {
+            let validator = Box::new(|validation_data: $crate::holochain_core_types::validation::EntryValidationData<$crate::holochain_core_types::entry::Entry>| {
                 let $validation_data = $crate::entry_definition::entry_to_native_type::<$native_type>(validation_data.clone())?;
                 use std::convert::TryFrom;
                 let e_type = $crate::holochain_core_types::entry::entry_type::EntryType::try_from(validation_data)?;
@@ -294,7 +294,7 @@ macro_rules! link {
                 $package_creator
             });
 
-            let validator = Box::new(|validation_data: $crate::holochain_wasm_utils::holochain_core_types::validation::LinkValidationData| {
+            let validator = Box::new(|validation_data: $crate::holochain_core_types::validation::LinkValidationData| {
                 let $validation_data = validation_data;
                 $link_validation
             });

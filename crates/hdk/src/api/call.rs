@@ -1,7 +1,7 @@
 use crate::{error::ZomeApiResult, Dispatch};
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::Address;
-use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
+use holochain_wasm_types::call::ZomeFnCallArgs;
 
 /// Call an exposed function from another zome or another (bridged) instance running
 /// in the same conductor.
@@ -100,7 +100,7 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 ///     validate_agent: |validation_data : EntryValidationData::<AgentId>| {
 ///         Ok(())
 ///     }
-///     
+///
 ///     functions: [
 ///             sum: {
 ///                 inputs: |num1: u32, num2: u32|,
@@ -218,7 +218,7 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 ///     init: || {
 ///         Ok(())
 ///     }
-///     
+///
 ///     validate_agent: |validation_data : EntryValidationData::<AgentId>| {
 ///         Ok(())
 ///     }

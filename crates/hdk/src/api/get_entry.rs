@@ -4,7 +4,7 @@ use crate::{
 };
 use holochain_core_types::entry::Entry;
 use holochain_persistence_api::cas::content::Address;
-use holochain_wasm_utils::api_serialization::get_entry::{
+use holochain_wasm_types::get_entry::{
     EntryHistory, GetEntryArgs, GetEntryOptions, GetEntryResult, GetEntryResultType,
     StatusRequestKind,
 };

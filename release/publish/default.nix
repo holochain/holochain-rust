@@ -67,7 +67,7 @@ for crate in \
  common \
  metrics \
  core_types \
- wasm_utils \
+ wasm_engine \
  conductor_api \
  dpki \
  sim2h \

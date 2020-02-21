@@ -9,7 +9,7 @@ use holochain_core_types::{
     error::HolochainError,
 };
 use holochain_persistence_api::cas::content::AddressableContent;
-use holochain_wasm_utils::api_serialization::wasm_string::WasmString;
+use holochain_wasm_types::wasm_string::WasmString;
 use holochain_wasmer_host::*;
 use std::str::FromStr;
 

@@ -1,7 +1,7 @@
 use crate::{error::ZomeApiResult, Dispatch};
 use holochain_core_types::time::Timeout;
 use holochain_persistence_api::cas::content::Address;
-use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
+use holochain_wasm_types::send::{SendArgs, SendOptions};
 
 /// Sends a node-to-node message to the given agent, specified by their address.
 /// Addresses of agents can be accessed using [hdk::AGENT_ADDRESS](struct.AGENT_ADDRESS.html).

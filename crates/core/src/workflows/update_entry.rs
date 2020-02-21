@@ -1,11 +1,11 @@
 use crate::{
     context::Context,
-    holochain_wasm_utils::holochain_persistence_api::cas::content::AddressableContent,
+    holochain_wasm_engine::holochain_persistence_api::cas::content::AddressableContent,
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
     NEW_RELIC_LICENSE_KEY,
 };
 use holochain_persistence_api::cas::content::Address;
-use holochain_wasm_utils::api_serialization::{get_entry::*, UpdateEntryArgs};
+use holochain_wasm_types::{get_entry::*, UpdateEntryArgs};
 use holochain_wasmer_host::*;
 use std::sync::Arc;
 use holochain_core_types::error::HolochainError;

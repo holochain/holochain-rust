@@ -18,7 +18,7 @@ use holochain_json_api::{
     json::{JsonString, RawString},
 };
 
-use holochain_wasm_utils::api_serialization::validation::{
+use holochain_wasm_types::validation::{
     AgentIdValidationArgs, EntryValidationArgs, LinkValidationArgs, LinkValidationPackageArgs,
 };
 use holochain_wasmer_guest::*;

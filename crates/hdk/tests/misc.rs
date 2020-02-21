@@ -9,7 +9,7 @@ extern crate url;
 #[macro_use]
 extern crate serde_json;
 extern crate hdk;
-extern crate holochain_wasm_utils;
+extern crate holochain_wasm_engine;
 
 use hdk::error::ZomeApiResult;
 

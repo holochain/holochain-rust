@@ -56,7 +56,7 @@ pub mod tests {
         },
     };
     use holochain_persistence_api::cas::content::Address;
-    use holochain_wasm_utils::api_serialization::receive::ReceiveParams;
+    use holochain_wasm_types::receive::ReceiveParams;
 
     #[test]
     fn receive_fail() {

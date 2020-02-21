@@ -24,7 +24,7 @@ use holochain_json_api::{
     json::{default_to_json, JsonString},
 };
 
-use holochain_wasm_utils::api_serialization::receive::ReceiveParams;
+use holochain_wasm_types::receive::ReceiveParams;
 use num_traits::FromPrimitive;
 use serde_json;
 use std::{str::FromStr, sync::Arc};

@@ -1,46 +1,14 @@
-#[macro_use]
 extern crate hdk;
-extern crate holochain_wasm_utils;
+extern crate holochain_wasm_types;
 extern crate serde;
 extern crate serde_json;
-#[macro_use]
 extern crate serde_derive;
 extern crate boolinator;
-#[macro_use]
 extern crate holochain_json_derive;
 extern crate holochain_wasmer_guest;
 
-use hdk::{
-    AGENT_ADDRESS,
-    DNA_ADDRESS,
-    DNA_NAME,
-    AGENT_ID_STR,
-    PROPERTIES,
-    CAPABILITY_REQ,
-    error::{ZomeApiError, ZomeApiResult},
-};
-use holochain_wasm_utils::{
-    api_serialization::{
-        get_entry::{GetEntryOptions, GetEntryResult},
-        get_links::{GetLinksResult,GetLinksOptions,LinksStatusRequestKind},
-        query::{QueryArgsNames, QueryArgsOptions, QueryResult},
-    },
-    holochain_core_types::{
-        dna::{entry_types::Sharing,capabilities::CapabilityRequest},
-        entry::{
-            entry_type::{AppEntryType, EntryType},
-            AppEntryValue, Entry,
-        },
-        validation::{EntryValidationData, LinkValidationData, ValidationResult},
-        link::LinkMatch,
-    },
-    holochain_persistence_api::{
-        cas::content::{Address, AddressableContent},
-    },
-    holochain_json_api::{error::JsonError, json::{JsonString, RawString}},
-};
-use holochain_wasmer_guest::*;
-use std::{convert::TryFrom, time::Duration};
+use hdk::prelude::*;
+use std::time::Duration;
 
 #[derive(Deserialize, Serialize, Default,Clone, Debug, DefaultJson)]
 pub struct TestEntryType {

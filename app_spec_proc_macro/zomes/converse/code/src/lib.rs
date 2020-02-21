@@ -7,7 +7,7 @@ use hdk::{
     holochain_core_types::{
         signature::{Provenance, Signature},
     },
-    holochain_wasm_utils::api_serialization::keystore::KeyType,
+    holochain_wasm_utils::api_serialization::keystore::{KeyType, SeedType},
 };
 
 #[zome]
@@ -55,7 +55,7 @@ pub mod converse {
 
     #[zome_fn("hc_public")]
     pub fn add_seed(src_id: String, dst_id: String, index: u64) -> ZomeApiResult<()> {
-        hdk::keystore_derive_seed(src_id, dst_id, "mycntext".to_string(), index)
+        hdk::keystore_derive_seed(src_id, dst_id, "mycntext".to_string(), index, SeedType::OneShot)
     }
 
     #[zome_fn("hc_public")]

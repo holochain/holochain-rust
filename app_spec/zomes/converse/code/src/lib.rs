@@ -3,7 +3,7 @@ use hdk::{
     holochain_core_types::{
         signature::{Provenance, Signature},
     },
-    holochain_wasm_utils::api_serialization::keystore::KeyType,
+    holochain_wasm_utils::api_serialization::keystore::{KeyType, SeedType},
 };
 
 pub fn handle_sign_message(key_id: String, message: String) -> ZomeApiResult<Signature> {
@@ -29,7 +29,7 @@ pub fn handle_get_pubkey(src_id: String) -> ZomeApiResult<JsonString> {
 }
 
 pub fn handle_add_seed(src_id: String, dst_id: String, index: u64) -> ZomeApiResult<()> {
-    hdk::keystore_derive_seed(src_id, dst_id, "mycntext".to_string(), index)
+    hdk::keystore_derive_seed(src_id, dst_id, "mycntext".to_string(), index, SeedType::OneShot)
 }
 
 pub fn handle_list_secrets() -> ZomeApiResult<Vec<String>> {

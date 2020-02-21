@@ -144,18 +144,20 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
             return Ok(());
         }
         let message = message.unwrap();
-        let mut span = ht::SpanWrap::from(message.clone())
-            .follower(&context.tracer, "received message from handler")
-            .unwrap_or_else(|| {
-                context
-                    .tracer
-                    .span("create_handler (missing history)")
-                    .start()
-                    .into()
+        let _spanguard = message
+            .span_context
+            .as_ref()
+            // This span has context, create a follow if tracing is on.
+            .and_then(|c| ht::follow_encoded_tag(&Some((*context.tracer).clone()), 
+                c, here!({}), ht::debug_tag("message", &message.data)))
+            // No context so if tracing is on then this trace was never started
+            .or_else(|| {
+                    let s = context.tracer
+                        .span("Trace was never started in Sim2h!")
+                        .tag(ht::debug_tag("message", &message.data))
+                        .start();
+                    Some(ht::push_span(s.into()))
             });
-        span.event(format!("message.data: {:?}", message.data));
-        // Set this as the root span for autotrace
-        let _guard = ht::push_span(span);
         match message.data {
             Lib3hServerProtocol::FailureResult(failure_data) => {
                 if !is_my_dna(&my_dna_address, &failure_data.space_address.to_string()) {

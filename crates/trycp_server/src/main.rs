@@ -308,8 +308,11 @@ fn save_file(file_path: PathBuf, content: &[u8]) -> Result<(), jsonrpc_core::typ
 fn get_info_as_json() -> Value {
     let output = Command::new("holochain")
         .args(&["-i"])
-        .output()
-        .expect("failed to execute process");
+        .output();
+    if output.is_err() {
+        return Value::String("failed to execute holochain".into());
+    }
+    let output = output.unwrap();
     let info_str = String::from_utf8(output.stdout).unwrap();
 
     let re = Regex::new(r"(?P<key>[^:]+):\s+(?P<val>.*)\n").unwrap();

@@ -62,11 +62,7 @@ struct Cli {
     /// allow changing the conductor
     allow_replace_conductor: bool,
 
-    #[structopt(
-        long,
-        short = "m",
-        help = "Activate ability to runs as a manager"
-    )]
+    #[structopt(long, short = "m", help = "Activate ability to runs as a manager")]
     /// activates manager mode
     manager: bool,
 
@@ -111,16 +107,16 @@ struct ServerInfo {
 
 #[derive(Serialize, Debug, PartialEq)]
 struct ServerList {
-    servers: Vec<ServerInfo>
+    servers: Vec<ServerInfo>,
 }
 
 impl ServerList {
     pub fn new() -> Self {
         ServerList {
-            servers: Vec::new()
+            servers: Vec::new(),
         }
     }
-   pub fn pop(&mut self) -> Option<ServerInfo> {
+    pub fn pop(&mut self) -> Option<ServerInfo> {
         self.servers.pop()
     }
     pub fn remove(&mut self, url: String) {
@@ -223,14 +219,14 @@ fn get_as_int<T: Into<String>>(
 ) -> Result<i64, jsonrpc_core::Error> {
     let key = key.into();
     Ok(params_map
-       .get(&key)
-       .ok_or_else(|| {
-           jsonrpc_core::Error::invalid_params(format!("`{}` param not provided", &key))
-       })?
-       .as_i64()
-       .ok_or_else(|| {
-           jsonrpc_core::Error::invalid_params(format!("`{}` has to be an integer", &key))
-       })?)
+        .get(&key)
+        .ok_or_else(|| {
+            jsonrpc_core::Error::invalid_params(format!("`{}` param not provided", &key))
+        })?
+        .as_i64()
+        .ok_or_else(|| {
+            jsonrpc_core::Error::invalid_params(format!("`{}` has to be an integer", &key))
+        })?)
 }
 
 fn get_as_bool<T: Into<String>>(
@@ -309,7 +305,7 @@ fn save_file(file_path: PathBuf, content: &[u8]) -> Result<(), jsonrpc_core::typ
     Ok(())
 }
 
-fn get_info_as_json() -> String {
+fn get_info_as_json() -> Value {
     let output = Command::new("holochain")
         .args(&["-i"])
         .output()
@@ -318,10 +314,19 @@ fn get_info_as_json() -> String {
 
     // poor mans JSON convert
     let re = Regex::new(r"(?P<key>[^:]+):\s+(?P<val>.*)\n").unwrap();
-    let result = re.replace_all(&info_str, "\"$key\": \"$val\",");
+    /*    let result = re.replace_all(&info_str, "\"$key\": \"$val\",");
     let mut result = format!("{}", result); // pop off the final comma
     result.pop();
-    format!("{{{}}}", result)
+    format!("{{{}}}", result)*
+     */
+    let mut map: Map<String, Value> = Map::new();
+    for caps in re.captures_iter(&info_str) {
+        map.insert(
+            caps["key"].to_string(),
+            Value::String(caps["val"].to_string()),
+        );
+    }
+    Value::Object(map)
 }
 
 /// very dangerous, runs whatever strings come in from the internet directly in bash
@@ -386,7 +391,10 @@ fn main() {
             let ram = ram as usize;
 
             let mut state = state_registered.write().expect("should_lock");
-            state.registered.insert(ServerInfo{url: url_str.clone(), ram});
+            state.registered.insert(ServerInfo {
+                url: url_str.clone(),
+                ram,
+            });
             Ok(Value::String(format!("registered {}", url_str)))
         });
 
@@ -395,7 +403,7 @@ fn main() {
             let params_map = unwrap_params_map(params)?;
             let count = get_as_int("count", &params_map)?;
             let mut count = count as usize;
-            let mut endpoints : Vec<ServerInfo> = Vec::new();
+            let mut endpoints: Vec<ServerInfo> = Vec::new();
             let mut state = state_request.write().expect("should_lock");
 
             // build up a list of confirmed available endpoints
@@ -407,8 +415,8 @@ fn main() {
                             if check_url(&info.url) {
                                 endpoints.push(info)
                             }
-                        },
-                        None => break
+                        }
+                        None => break,
                     }
                     count -= 1;
                 }
@@ -419,16 +427,13 @@ fn main() {
                     state.registered.insert(info);
                 }
                 Ok(json!({"error": "insufficient endpoints available" }))
-            }
-            else {
-                Ok(json!({"endpoints": endpoints }))
+            } else {
+                Ok(json!({ "endpoints": endpoints }))
             }
         });
     }
 
-    io.add_method("ping", |_params: Params| {
-        Ok(Value::String(get_info_as_json()))
-    });
+    io.add_method("ping", |_params: Params| Ok(get_info_as_json()));
 
     io.add_method("dna", move |params: Params| {
         let params_map = unwrap_params_map(params)?;
@@ -671,11 +676,7 @@ fn check_player_config(
 
 fn check_url(url: &String) -> bool {
     // send reset to Url to confirm that it's working, and ready.
-    let result = send_json_rpc(
-        url,
-    &"reset".to_string(),
-    &"{}".to_string()
-    );
+    let result = send_json_rpc(url, &"reset".to_string(), &"{}".to_string());
 
     // if there is a successful reset, the the rpc call should return "reset"
     match result {
@@ -684,22 +685,21 @@ fn check_url(url: &String) -> bool {
     }
 }
 
-
 fn send_json_rpc<S: Into<String>>(
     //   handle: Arc<RwLock<IoHandler>>,
     url: S,
     method: S,
     params: S,
 ) -> Result<String, jsonrpc_core::types::error::Error> {
-  //  let handler = handle.write().unwrap();
+    //  let handler = handle.write().unwrap();
     //let method = method.into();
     //let id = format!("{}", ProcessUniqueId::new());
     /*let request = json!({
-        "jsonrpc": "2.0",
-        "method": method,
-        "params": params.into(),
-        "id": id,
-}).to_string();*/
+            "jsonrpc": "2.0",
+            "method": method,
+            "params": params.into(),
+            "id": id,
+    }).to_string();*/
     let url = url.into();
     let method = method.into();
     let params = params.into();
@@ -709,7 +709,11 @@ fn send_json_rpc<S: Into<String>>(
         .args(&["test/jsrpc.js", &url, &method, &params])
         .output()
         .expect("failed to execute process");
-    println!("JSRPC: {} err: {}", String::from_utf8(output.stdout).unwrap(),  String::from_utf8(output.stderr).unwrap());
+    println!(
+        "JSRPC: {} err: {}",
+        String::from_utf8(output.stdout).unwrap(),
+        String::from_utf8(output.stderr).unwrap()
+    );
     Ok("reset".to_string())
     /*
     let response = handler

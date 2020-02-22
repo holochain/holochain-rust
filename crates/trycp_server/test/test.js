@@ -5,7 +5,7 @@ process.on('unhandledRejection', error => {
     console.error('got unhandledRejection:', error);
 });
 
-//doTest("ws://localhost:9000")
+doTest("ws://localhost:9000")
 //doTest("wss://test1-eu-central-1.holochain-aws.org")
 //magic_remote_machine_manager("3000")
 function magic_remote_machine_manager(port) {
@@ -33,7 +33,6 @@ function  doTest(url) {
         // call an RPC method with parameters
 
         await ws.call('ping', {"id": "my-player"}).then(function(result) {
-             result = JSON.parse(result)
              console.log(result)
         })
 
@@ -125,7 +124,7 @@ sim2h_url = "wss://localhost:9001"
     })
 }
 
-doTestManager("ws://localhost:9000")
+//doTestManager("ws://localhost:9000")
 // instantiate Client and connect to an RPC server
 function  doTestManager(url) {
     return new Promise( (resolve) => {

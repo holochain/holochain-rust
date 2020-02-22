@@ -312,13 +312,7 @@ fn get_info_as_json() -> Value {
         .expect("failed to execute process");
     let info_str = String::from_utf8(output.stdout).unwrap();
 
-    // poor mans JSON convert
     let re = Regex::new(r"(?P<key>[^:]+):\s+(?P<val>.*)\n").unwrap();
-    /*    let result = re.replace_all(&info_str, "\"$key\": \"$val\",");
-    let mut result = format!("{}", result); // pop off the final comma
-    result.pop();
-    format!("{{{}}}", result)*
-     */
     let mut map: Map<String, Value> = Map::new();
     for caps in re.captures_iter(&info_str) {
         map.insert(

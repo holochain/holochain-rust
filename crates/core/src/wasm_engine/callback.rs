@@ -1,22 +1,5 @@
 //! Module for ZomeCallbacks
 //! ZomeCallbacks are functions in a Zome that are callable by the ribosome.
-
-pub mod init;
-pub mod links_utils;
-pub mod receive;
-pub mod validation_package;
-
-use crate::{
-    context::Context,
-    nucleus::CallbackFnCall,
-    wasm_engine::{
-        self,
-        callback::{init::init, receive::receive},
-        runtime::WasmCallData,
-        Defn,
-    },
-    NEW_RELIC_LICENSE_KEY,
-};
 use holochain_core_types::{entry::Entry, validation::ValidationPackageDefinition};
 
 use holochain_json_api::{
@@ -167,7 +150,7 @@ pub(crate) fn run_callback(context: Arc<Context>, call: CallbackFnCall) -> Callb
     }
 }
 
-#[autotrace]
+// #[autotrace]
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn call(
     context: Arc<Context>,

@@ -20,7 +20,6 @@ members = [
   "crates/trycp_server",
   "crates/sim2h",
   "crates/sim2h_server",
-  "crates/wasm_engine",
   "crates/wasm_types",
 ]
 exclude = [

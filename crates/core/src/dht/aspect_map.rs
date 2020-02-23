@@ -1,5 +1,5 @@
+use holochain_wasm_types::holochain_persistence_api::cas::content::AddressableContent;
 use crate::{
-    holochain_wasm_engine::holochain_persistence_api::cas::content::AddressableContent,
     NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::network::entry_aspect::EntryAspect;

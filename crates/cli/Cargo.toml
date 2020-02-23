@@ -26,7 +26,6 @@ lib3h_sodium = "=0.0.38"
 holochain_json_api = "=0.0.23"
 holochain_persistence_api = "=0.0.17"
 holochain_persistence_file = "=0.0.17"
-holochain_wasm_engine = { path = "../wasm_engine" }
 crossbeam-channel = "=0.3.8"
 structopt = "=0.3.3"
 failure = "=0.1.5"

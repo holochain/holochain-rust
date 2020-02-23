@@ -22,6 +22,9 @@ pub mod hold_link;
 pub mod remove_link;
 #[autotrace]
 pub mod respond_validation_package_request;
+pub mod callback_validation_package;
+pub mod callback_links_utils;
+pub mod callback_init;
 
 use crate::{
     context::Context,
@@ -33,7 +36,7 @@ use crate::{
         actions::build_validation_package::build_validation_package,
         validation::build_from_dht::try_make_validation_package_dht,
     },
-    wasm_engine::callback::{
+    wasm_engine::workflows::{
         validation_package::get_validation_package_definition, CallbackResult,
     },
     workflows::{

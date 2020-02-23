@@ -15,7 +15,6 @@ holochain_core = { version = "=0.0.43-alpha3", path = "../crates/core" }
 holochain_conductor_lib = { version = "=0.0.43-alpha3", path = "../crates/conductor_lib" }
 holochain_core_types = { version = "=0.0.43-alpha3", path = "../crates/core_types" }
 holochain_dpki = { version = "=0.0.43-alpha3", path = "../crates/dpki" }
-holochain_wasm_engine = { version = "=0.0.43-alpha3", path = "../crates/wasm_engine" }
 holochain_locksmith = { version = "=0.0.43-alpha3", path = "../crates/locksmith" }
 holochain_persistence_api = "=0.0.17"
 holochain_json_api = "=0.0.23"

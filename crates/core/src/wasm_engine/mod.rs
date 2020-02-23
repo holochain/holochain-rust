@@ -3,14 +3,14 @@ extern crate holochain_logging;
 extern crate holochain_core_types;
 extern crate holochain_json_api;
 
-pub mod api;
-pub mod callback;
+// pub mod callback;
 pub mod factories;
 #[autotrace]
 mod run_dna;
 pub mod runtime;
 pub use self::{run_dna::*, runtime::*};
 use std::str::FromStr;
+mod callback;
 
 pub const MAX_ZOME_CALLS: usize = 10;
 

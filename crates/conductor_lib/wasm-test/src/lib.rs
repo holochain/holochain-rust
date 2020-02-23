@@ -18,8 +18,8 @@ use holochain_core_types::{
 };
 
 use holochain_persistence_api::cas::content::Address;
-use holochain_json_api::{error::JsonError, json::{JsonString, RawString}};
 use holochain_wasm_types::{
+    holochain_json_api::{error::JsonError, json::{JsonString, RawString}},
 };
 use holochain_wasmer_guest::*;
 

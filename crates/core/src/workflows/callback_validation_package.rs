@@ -1,10 +1,11 @@
 use crate::{
     context::Context,
     nucleus::CallbackFnCall,
+    workflows::callback_links_utils,
     wasm_engine::{
         self,
-        callback::{links_utils, CallbackResult},
         runtime::WasmCallData,
+        callback::CallbackResult,
     },
     NEW_RELIC_LICENSE_KEY,
 };

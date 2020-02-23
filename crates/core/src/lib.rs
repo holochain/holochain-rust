@@ -15,7 +15,6 @@ extern crate unwrap_to;
 #[macro_use]
 extern crate num_derive;
 
-extern crate holochain_wasm_engine;
 #[macro_use]
 extern crate holochain_json_derive;
 #[macro_use]
@@ -30,7 +29,7 @@ extern crate holochain_tracing_macros;
 #[macro_use]
 extern crate holochain_common;
 extern crate holochain_wasmer_host;
-extern crate holochain_wasm_engine;
+extern crate holochain_wasm_types;
 
 #[macro_use]
 pub mod macros;
@@ -66,5 +65,6 @@ pub mod state;
 #[autotrace]
 pub mod state_dump;
 pub mod workflows;
+pub mod wasm_engine;
 
 new_relic_setup!("NEW_RELIC_LICENSE_KEY");

@@ -2,7 +2,8 @@
 extern crate serde_derive;
 #[macro_use]
 extern crate holochain_json_derive;
-
+pub extern crate holochain_json_api;
+pub extern crate holochain_persistence_api;
 pub use holochain_wasmer_guest::*;
 
 pub mod call;

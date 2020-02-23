@@ -5,7 +5,7 @@ use crate::{
         validation::{ValidationError, ValidationResult},
         CallbackFnCall,
     },
-    wasm_engine::callback::links_utils,
+    workflows::callback_links_utils,
     NEW_RELIC_LICENSE_KEY,
 };
 use boolinator::*;

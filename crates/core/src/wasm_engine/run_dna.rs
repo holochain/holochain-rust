@@ -1,14 +1,14 @@
 use crate::{
     // nucleus::ZomeFnResult,
     {
-        factories::{wasm_instance_factory, wasm_module_factory},
-        runtime::WasmCallData,
+        wasm_engine::factories::{wasm_instance_factory, wasm_module_factory},
+        wasm_engine::runtime::WasmCallData,
     },
     // NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
-
+use crate::nucleus::ZomeFnResult;
 use wasmer_runtime::Module;
 
 /// Returns the WASM module, i.e. the WASM binary program code to run

@@ -20,7 +20,7 @@ use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 use holochain_wasm_types::commit_entry::CommitEntryResult;
 
-use crate::wasm_engine::callback::links_utils::get_link_entries;
+use crate::workflows::callback::links_utils::get_link_entries;
 use std::{sync::Arc, vec::Vec};
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]

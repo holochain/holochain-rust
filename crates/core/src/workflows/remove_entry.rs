@@ -16,7 +16,7 @@ use std::sync::Arc;
 /// args: [0] encoded MemoryAllocation
 /// Expected Address argument
 /// Stores/returns a RibosomeReturnValue
-// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_remove_entry(
     context: Arc<Context>,
     deleted_entry_address: Address,

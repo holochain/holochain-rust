@@ -30,6 +30,7 @@ extern crate holochain_tracing_macros;
 extern crate holochain_common;
 extern crate holochain_wasmer_host;
 extern crate holochain_wasm_types;
+extern crate num;
 
 #[macro_use]
 pub mod macros;

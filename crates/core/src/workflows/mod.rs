@@ -22,9 +22,46 @@ pub mod hold_link;
 pub mod remove_link;
 #[autotrace]
 pub mod respond_validation_package_request;
-pub mod callback_validation_package;
-pub mod callback_links_utils;
-pub mod callback_init;
+#[autotrace]
+pub mod callback;
+#[autotrace]
+pub mod debug;
+#[autotrace]
+pub mod commit;
+#[autotrace]
+pub mod remove_entry;
+#[autotrace]
+pub mod update_entry;
+#[autotrace]
+pub mod call;
+#[autotrace]
+pub mod meta;
+#[autotrace]
+pub mod sleep;
+#[autotrace]
+pub mod init_globals;
+#[autotrace]
+pub mod query;
+#[autotrace]
+pub mod entry_address;
+#[autotrace]
+pub mod send;
+#[autotrace]
+pub mod invoke_remove_link;
+#[autotrace]
+pub mod emit_signal;
+#[autotrace]
+pub mod capabilities;
+#[autotrace]
+pub mod keystore;
+#[autotrace]
+pub mod sign;
+#[autotrace]
+pub mod verify_signature;
+#[autotrace]
+pub mod crypto;
+#[autotrace]
+pub mod link_entries;
 
 use crate::{
     context::Context,
@@ -36,10 +73,9 @@ use crate::{
         actions::build_validation_package::build_validation_package,
         validation::build_from_dht::try_make_validation_package_dht,
     },
-    wasm_engine::workflows::{
-        validation_package::get_validation_package_definition, CallbackResult,
-    },
+    wasm_engine::callback::CallbackResult,
     workflows::{
+        callback::validation_package::get_validation_package_definition,
         hold_entry::hold_entry_workflow, hold_entry_remove::hold_remove_workflow,
         hold_entry_update::hold_update_workflow, hold_link::hold_link_workflow,
         remove_link::remove_link_workflow,

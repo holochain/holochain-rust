@@ -2,11 +2,11 @@ use crate::{
     agent::chain_store::{ChainStoreQueryOptions, ChainStoreQueryResult},
     context::Context,
     nucleus::actions::get_entry::get_entry_from_agent_chain,
-    wasm_engine::{api::ZomeApiResult, Runtime},
+    wasm_engine::{Runtime},
 };
 
 use holochain_persistence_api::cas::content::Address;
-
+use holochain_wasm_types::ZomeApiResult;
 use holochain_core_types::{
     chain_header::ChainHeader,
     entry::{entry_type::EntryType, Entry},

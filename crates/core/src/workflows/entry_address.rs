@@ -1,7 +1,8 @@
 use crate::{
-    wasm_engine::{api::ZomeApiResult, Runtime},
+    wasm_engine::{Runtime},
     NEW_RELIC_LICENSE_KEY,
 };
+use holochain_wasm_types::ZomeApiResult;
 use holochain_core_types::{
     self,
     dna::Dna,

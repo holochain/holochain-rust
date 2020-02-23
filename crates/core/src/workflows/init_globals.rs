@@ -1,9 +1,10 @@
-use crate::{context::Context, wasm_engine::api::ZomeApiResult, NEW_RELIC_LICENSE_KEY};
+use crate::{context::Context, NEW_RELIC_LICENSE_KEY};
 use holochain_core_types::entry::entry_type::EntryType;
 use holochain_persistence_api::{
     cas::content::{Address},
     hash::HashString,
 };
+use holochain_wasm_types::ZomeApiResult;
 use holochain_wasm_types::wasm_string::WasmString;
 use std::sync::Arc;
 

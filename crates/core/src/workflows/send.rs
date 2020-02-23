@@ -1,9 +1,9 @@
 use crate::{
     context::Context,
     network::{actions::custom_send::custom_send, direct_message::CustomDirectMessage},
-    wasm_engine::api::ZomeApiResult,
     NEW_RELIC_LICENSE_KEY,
 };
+use holochain_wasm_types::ZomeApiResult;
 use holochain_json_api::json::JsonString;
 use holochain_wasm_types::send::SendArgs;
 use std::sync::Arc;
@@ -12,7 +12,7 @@ use std::sync::Arc;
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: SendArgs
 /// Returns an HcApiReturnCode as I64
-// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_send(context: Arc<Context>, args: SendArgs) -> ZomeApiResult {
     let span = context
         .call_data()

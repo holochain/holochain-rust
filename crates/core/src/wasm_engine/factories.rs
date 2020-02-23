@@ -1,15 +1,17 @@
 use crate::{
     context::Context,
-    wasm_engine::api::{commit::invoke_commit_app_entry, debug::invoke_debug, ZomeApiResult},
     NEW_RELIC_LICENSE_KEY,
 };
+use holochain_wasm_types::ZomeApiResult;
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
 use std::{sync::Arc};
 use wasmer_runtime::{func, imports, instantiate, Array, Ctx, Instance, Module, WasmPtr};
+use crate::workflows::debug::invoke_debug;
+use crate::workflows::commit::invoke_commit_app_entry;
 
 /// Creates a WASM module, that is the executable program, from a given WASM binary byte array.
-// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn wasm_module_factory(wasm: Arc<Vec<u8>>) -> Result<Module, HolochainError> {
     let import_object = imports! {};
     Ok(instantiate(&wasm, &import_object)
@@ -26,7 +28,7 @@ fn parameters_json(ctx: &Ctx, ptr: WasmPtr<u8, Array>, len: u32) -> JsonString {
 
 /// Creates a runnable WASM module instance from a module reference.
 /// Adds the Holochain specific API functions as imports.
-// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn wasm_instance_factory(
     context: Arc<Context>,
     module: &Module,

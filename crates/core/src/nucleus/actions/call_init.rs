@@ -1,7 +1,7 @@
 use crate::{
     context::Context,
     wasm_engine::callback::{CallbackParams, CallbackResult},
-    workflows::{callback_init::init},
+    workflows::{callback::init::init},
     NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{

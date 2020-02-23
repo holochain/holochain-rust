@@ -1,4 +1,5 @@
-use crate::{context::Context, wasm_engine::api::ZomeApiResult, NEW_RELIC_LICENSE_KEY};
+use crate::{context::Context, NEW_RELIC_LICENSE_KEY};
+use holochain_wasm_types::ZomeApiResult;
 use holochain_json_api::json::*;
 use holochain_wasm_types::crypto::CryptoArgs;
 use std::sync::Arc;

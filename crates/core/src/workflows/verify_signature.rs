@@ -1,4 +1,5 @@
-use crate::{context::Context, wasm_engine::api::ZomeApiResult, NEW_RELIC_LICENSE_KEY};
+use crate::{context::Context, NEW_RELIC_LICENSE_KEY};
+use holochain_wasm_types::ZomeApiResult;
 use holochain_dpki::utils::Verify;
 use holochain_wasm_types::verify_signature::VerifySignatureArgs;
 use std::sync::Arc;

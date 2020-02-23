@@ -4,9 +4,9 @@ use crate::{
         actions::call_zome_function::{call_zome_function, make_cap_request_for_call},
         ZomeFnCall,
     },
-    wasm_engine::{api::ZomeApiResult},
     NEW_RELIC_LICENSE_KEY,
 };
+use holochain_wasm_types::ZomeApiResult;
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
 use holochain_logging::prelude::*;

@@ -5,7 +5,7 @@ use crate::{
         validation::{ValidationError, ValidationResult},
         CallbackFnCall,
     },
-    workflows::callback_links_utils,
+    workflows::callback::links_utils,
     NEW_RELIC_LICENSE_KEY,
 };
 use boolinator::*;

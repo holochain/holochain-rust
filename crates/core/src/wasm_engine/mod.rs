@@ -10,7 +10,9 @@ mod run_dna;
 pub mod runtime;
 pub use self::{run_dna::*, runtime::*};
 use std::str::FromStr;
-mod callback;
+pub mod callback;
+use std::path::PathBuf;
+pub mod api;
 
 pub const MAX_ZOME_CALLS: usize = 10;
 

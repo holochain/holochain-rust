@@ -1,9 +1,9 @@
 use crate::{
     context::Context,
     signal::{Signal, UserSignal},
-    wasm_engine::api::ZomeApiResult,
     NEW_RELIC_LICENSE_KEY,
 };
+use holochain_wasm_types::ZomeApiResult;
 use holochain_wasm_types::emit_signal::EmitSignalArgs;
 use std::sync::Arc;
 

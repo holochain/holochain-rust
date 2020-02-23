@@ -3,7 +3,8 @@ use crate::{
     context::Context,
     instance::dispatch_action,
     network::direct_message::{CustomDirectMessage, DirectMessage},
-    wasm_engine::callback::{receive::receive, CallbackParams, CallbackResult},
+    workflows::callback::receive::receive,
+    wasm_engine::callback::{CallbackParams, CallbackResult},
     NEW_RELIC_LICENSE_KEY,
 };
 

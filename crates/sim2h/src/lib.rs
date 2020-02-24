@@ -496,7 +496,10 @@ fn spawn_handle_message_debug(sim2h_handle: Sim2hHandle, uri: Lib3hUri, signer: 
         let state = sim2h_handle.state().get_clone().await;
         let mut response_map: BTreeMap<SpaceHash, String> = BTreeMap::new();
         for (hash, space) in state.spaces.iter() {
-            response_map.insert((**hash).clone(), format!("{:?}", space));
+            response_map.insert(
+                (**hash).clone(),
+                serde_json::to_string(&space).expect("Space must be serializable"),
+            );
         }
         sim2h_handle.send(
             signer.clone(),

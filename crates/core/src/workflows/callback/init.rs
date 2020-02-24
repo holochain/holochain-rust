@@ -1,7 +1,7 @@
 use crate::{
     context::Context,
     wasm_engine::callback::{call, Callback, CallbackParams, CallbackResult},
-    // NEW_RELIC_LICENSE_KEY,
+    NEW_RELIC_LICENSE_KEY,
 };
 use std::sync::Arc;
 

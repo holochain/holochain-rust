@@ -1,9 +1,7 @@
 //! encapsulates lib3h ghostmessage for sim2h including security challenge
 use crate::{error::Sim2hError, NEW_RELIC_LICENSE_KEY};
-use lib3h_protocol::{data_types::Opaque, protocol::*};
-use std::convert::TryFrom;
-use lib3h_protocol::types::SpaceHash;
-use std::collections::BTreeMap;
+use lib3h_protocol::{data_types::Opaque, protocol::*, types::SpaceHash};
+use std::{collections::BTreeMap, convert::TryFrom};
 
 pub type WireMessageVersion = u32;
 pub const WIRE_VERSION: WireMessageVersion = 3;

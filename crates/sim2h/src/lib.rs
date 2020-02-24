@@ -208,8 +208,8 @@ pub enum DhtAlgorithm {
 #[allow(dead_code)]
 mod mono_ref;
 use mono_ref::*;
-use twox_hash::XxHash64;
 use std::collections::BTreeMap;
+use twox_hash::XxHash64;
 
 #[allow(dead_code)]
 mod sim2h_im_state;

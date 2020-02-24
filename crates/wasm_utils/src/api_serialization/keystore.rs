@@ -36,6 +36,8 @@ pub enum SeedType {
     Root,
     /// Revocation seed
     Revocation,
+    /// Auth seed
+    Auth,
     /// Device seed
     Device,
     /// Derivative of a Device seed with a PIN

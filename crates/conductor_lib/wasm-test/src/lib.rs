@@ -187,7 +187,7 @@ pub extern "C" fn commit_fail_test(
 pub extern "C" fn __hdk_validate_app_entry(
     _: AllocationPtr,
 ) -> AllocationPtr {
-    ret!(ValidationResult::Ok(()));
+    ret!(ValidationResult::Ok);
 }
 
 #[no_mangle]

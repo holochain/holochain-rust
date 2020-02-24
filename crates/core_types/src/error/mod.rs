@@ -10,6 +10,7 @@ use holochain_json_api::{
     error::{JsonError, JsonResult},
     json::*,
 };
+use validation::ValidationError;
 use holochain_locksmith::LocksmithError;
 use holochain_persistence_api::{error::PersistenceError, hash::HashString};
 use lib3h_crypto_api::CryptoError;
@@ -117,6 +118,12 @@ pub enum HolochainError {
     EntryNotFoundLocally,
     EntryIsPrivate,
     List(Vec<HolochainError>),
+}
+
+impl From<HolochainError> for ValidationError {
+    fn from(e: HolochainError) -> ValidationError {
+        ValidationError::Err(e)
+    }
 }
 
 impl From<WasmError> for HolochainError {

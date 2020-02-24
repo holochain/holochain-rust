@@ -235,7 +235,7 @@ macro_rules! entry {
                         $entry_validation
                     }
                     _ => {
-                        Err(String::from("Schema validation failed"))?
+                        return ValidationResult::Err(ValidationError::Fail("Schema validation failed".into()));
                     }
                 }
             });

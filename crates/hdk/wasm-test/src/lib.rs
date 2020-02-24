@@ -659,12 +659,12 @@ define_zome! {
                     EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                     {
                         if test_entry.stuff != "FAIL" {
-                            ValidationResult::Ok(())
+                            ValidationResult::Ok
                         } else {
-                            ValidationResult::Err("FAIL content is not allowed".to_string())
+                            ValidationResult::Err(ValidationError::Fail("FAIL content is not allowed".into()))
                         }
                     },
-                    _=> ValidationResult::Ok(()),
+                    _=> ValidationResult::Ok,
 
                 }
 
@@ -678,7 +678,7 @@ define_zome! {
                         hdk::ValidationPackageDefinition::ChainFull
                     },
                     validation: |validation_data: hdk::LinkValidationData | {
-                        Ok(())
+                        ValidationResult::Ok
                     }
                 ),
                 from!(
@@ -688,7 +688,7 @@ define_zome! {
                     hdk::ValidationPackageDefinition::ChainFull
                 },
                 validation: | validation_data: hdk::LinkValidationData | {
-                    Ok(())
+                    ValidationResult::Ok
                 }
                ),
                to!(
@@ -698,7 +698,7 @@ define_zome! {
                     hdk::ValidationPackageDefinition::ChainFull
                 },
                 validation: | validation_data: hdk::LinkValidationData | {
-                    Ok(())
+                    ValidationResult::Ok
                 }
                )
             ]
@@ -718,13 +718,13 @@ define_zome! {
                     EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                     {
 
-                        Err(match serde_json::to_string(&test_entry) {
+                        ValidationResult::Err(ValidationError::Fail(match serde_json::to_string(&test_entry) {
                             Ok(v) => v,
                             Err(e) => e.to_string(),
-                        })
+                        }))
 
                     },
-                _ => Ok(()),
+                _ => ValidationResult::Ok,
                 }
             }
         ),
@@ -738,7 +738,7 @@ define_zome! {
             },
 
             validation: |validation_data: hdk::EntryValidationData<TestEntryType>| {
-               Ok(())
+               ValidationResult::Ok
             }
         ),
 
@@ -751,7 +751,7 @@ define_zome! {
             },
 
             validation: |validation_data: hdk::EntryValidationData<TestEntryType>| {
-                Err(String::new())
+                ValidationResult::Err(ValidationError::Fail(String::new()))
             }
         ),
 
@@ -765,7 +765,7 @@ define_zome! {
             },
 
             validation: |validation_data: hdk::EntryValidationData<TestEntryType>| {
-                Ok(())
+                ValidationResult::Ok
             },
 
             links: [
@@ -784,7 +784,7 @@ define_zome! {
 
                         if link.link().tag()=="muffins"
                         {
-                            ValidationResult::Err("invalid tag".into())
+                            ValidationResult::Err(ValidationError::Fail("invalid tag".into()))
                         }
                         else
                         {
@@ -793,22 +793,22 @@ define_zome! {
                             let base = match hdk::get_entry(&base)? {
                                 Some(entry) => match entry {
                                     Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,
-                                    _ => return Err("System entry found".into()),
+                                    _ => return ValidationResult::Err(ValidationError::Fail("System entry found".into())),
                                 },
-                                None => return Err("Base not found".into()),
+                                None => return ValidationResult::Err(ValidationError::Fail("Base not found".into())),
                             };
 
                             let target = match hdk::get_entry(&target)? {
                                 Some(entry) => match entry {
                                     Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,
-                                    _ => return Err("System entry found".into()),
+                                    _ => return ValidationResult::Err(ValidationError::Fail("System entry found".into())),
                                 }
-                                None => return Err("Target not found".into()),
+                                None => return ValidationResult::Err(ValidationError::Fail("Target not found".into())),
                             };
                             if target.stuff.len() > base.stuff.len() {
-                                Ok(())
+                                ValidationResult::Ok
                             } else {
-                                Err("Target stuff is not longer".into())
+                                ValidationResult::Err(ValidationError::Fail("Target stuff is not longer".into()))
                             }
                         }
 
@@ -857,7 +857,7 @@ define_zome! {
     }}
 
     validate_agent: |validation_data : EntryValidationData::<AgentId>| {
-        Ok(())
+        ValidationResult::Ok
     }
 
     receive: |_from, payload| {

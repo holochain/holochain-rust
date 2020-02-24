@@ -2,14 +2,14 @@ use crate::{
     context::Context,
     dht::actions::hold_aspect::hold_aspect,
     network::entry_with_header::EntryWithHeader,
-    nucleus::validation::{validate_entry, ValidationError},
+    nucleus::validation::{validate_entry},
     workflows::validation_package,
     NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     error::HolochainError,
     network::entry_aspect::EntryAspect,
-    validation::{EntryLifecycle, ValidationData},
+    validation::{EntryLifecycle, ValidationData, ValidationError},
 };
 use std::sync::Arc;
 

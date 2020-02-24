@@ -31,6 +31,7 @@ pub use crate::{
         network::query::{Pagination, SizePagination, SortOrder, TimePagination},
         time::Iso8601,
         validation::ValidationResult,
+        validation::ValidationError,
     },
     holochain_json_api::{error::JsonError, json::JsonString, json::RawString},
     holochain_persistence_api::cas::content::{Address, AddressableContent},

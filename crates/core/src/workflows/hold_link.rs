@@ -5,13 +5,13 @@ use crate::{
 };
 
 use crate::{
-    nucleus::validation::ValidationError,
     workflows::{hold_entry::hold_entry_workflow, validation_package},
 };
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
     network::entry_aspect::EntryAspect,
+    validation::ValidationError,
     validation::{EntryLifecycle, ValidationData},
 };
 use std::sync::Arc;

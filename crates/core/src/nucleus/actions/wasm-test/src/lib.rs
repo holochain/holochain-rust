@@ -1,16 +1,7 @@
-#[macro_use]
 extern crate hdk;
-extern crate serde;
-extern crate serde_json;
-#[macro_use]
-extern crate serde_derive;
-#[macro_use]
-extern crate holochain_json_derive;
 
 extern crate boolinator;
 extern crate holochain_wasmer_guest;
-
-use boolinator::Boolinator;
 
 use holochain_wasmer_guest::*;
 use hdk::holochain_core_types::{
@@ -18,7 +9,7 @@ use hdk::holochain_core_types::{
     validation::EntryValidationData
 };
 
-use hdk::holochain_json_api::{error::JsonError, json::JsonString};
+use hdk::prelude::*;
 
 #[derive(Serialize, Deserialize, DefaultJson, Debug,Clone)]
 struct TestEntryType {
@@ -41,11 +32,15 @@ define_zome! {
                  {
                    EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                    {
-                        (test_entry.stuff != "FAIL")
-                        .ok_or_else(|| "FAIL content is not allowed".to_string())
+                        if test_entry.stuff != "FAIL" {
+                            ValidationResult::Ok
+                         }
+                         else {
+                             ValidationResult::Err(ValidationError::Fail("FAIL content is not allowed".into()))
+                         }
                    }
                    _ =>{
-                       Err("Failed to validate with wrong entry type".to_string())
+                       ValidationResult::Err(ValidationError::Fail("Failed to validate with wrong entry type".into()))
                    }
                 }
             }
@@ -65,11 +60,14 @@ define_zome! {
                 {
                    EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                    {
-                        (test_entry.stuff != "FAIL")
-                        .ok_or_else(|| "FAIL content is not allowed".to_string())
+                        if test_entry.stuff != "FAIL" {
+                            ValidationResult::Ok
+                        } else {
+                         ValidationResult::Err(ValidationError::Fail("FAIL content is not allowed".into()))
+                     }
                    }
                    _ =>{
-                       Err("Failed to validate with wrong entry type".to_string())
+                       ValidationResult::Err(ValidationError::Fail("Failed to validate with wrong entry type".into()))
                    }
                 }
 
@@ -90,11 +88,14 @@ define_zome! {
                 {
                    EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                    {
-                        (test_entry.stuff != "FAIL")
-                        .ok_or_else(|| "FAIL content is not allowed".to_string())
+                        if test_entry.stuff != "FAIL" {
+                            ValidationResult::Ok
+                        } else {
+                            ValidationResult::Err(ValidationError::Fail("FAIL content is not allowed".into()))
+                        }
                    }
                    _ =>{
-                       Err("Failed to validate with wrong entry type".to_string())
+                       ValidationResult::Err(ValidationError::Fail("Failed to validate with wrong entry type".into()))
                    }
                 }
             }
@@ -115,11 +116,14 @@ define_zome! {
                    EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                    {
 
-                        (test_entry.stuff != "FAIL")
-                        .ok_or_else(|| "FAIL content is not allowed".to_string())
+                        if test_entry.stuff != "FAIL" {
+                            ValidationResult::Ok
+                        } else {
+                            ValidationResult::Err(ValidationError::Fail("FAIL content is not allowed".into()))
+                        }
                    }
                    _ =>{
-                       Err("Failed to validate with wrong entry type".to_string())
+                       ValidationResult::Err(ValidationError::Fail("Failed to validate with wrong entry type".into()))
                    }
                 }
             }
@@ -140,11 +144,14 @@ define_zome! {
                    EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                    {
 
-                        (test_entry.stuff != "FAIL")
-                        .ok_or_else(|| "FAIL content is not allowed".to_string())
+                        if test_entry.stuff != "FAIL" {
+                            ValidationResult::Ok
+                        } else {
+                            ValidationResult::Err(ValidationError::Fail("FAIL content is not allowed".into()))
+                        }
                    }
                    _ =>{
-                       Err("Failed to validate with wrong entry type".to_string())
+                       ValidationResult::Err(ValidationError::Fail("Failed to validate with wrong entry type".into()))
                    }
                 }
             }
@@ -156,7 +163,7 @@ define_zome! {
     }
 
     validate_agent: |validation_data : EntryValidationData::<AgentId>| {
-        Ok(())
+        ValidationResult::Ok
     }
 
     functions: [

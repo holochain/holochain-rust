@@ -1,9 +1,9 @@
 use crate::{
-    nucleus::validation::{ValidationError, ValidationResult},
     NEW_RELIC_LICENSE_KEY,
 };
 use boolinator::Boolinator;
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry};
+use holochain_core_types::validation::{ValidationError, ValidationResult};
 
 use holochain_persistence_api::cas::content::AddressableContent;
 

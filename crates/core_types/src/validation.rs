@@ -19,7 +19,75 @@ use chain_header::test_chain_header;
 
 use std::convert::TryFrom;
 
-pub type ValidationResult = Result<(), String>;
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, DefaultJson)]
+/// A failed validation.
+pub enum ValidationError {
+    /// `Fail` means the validation function did run successfully and recognized the entry
+    /// as invalid. The String parameter holds the non-zero return value of the app validation
+    /// function.
+    Fail(String),
+
+    /// The entry could not get validated because known dependencies (like base and target
+    /// for links) were not present yet.
+    UnresolvedDependencies(Vec<Address>),
+
+    /// A validation function for the given entry could not be found.
+    /// This can happen if the entry's type is not defined in the DNA (which can only happen
+    /// if somebody is sending wrong entries..) or there is no native implementation for a
+    /// system entry type yet.
+    NotImplemented,
+
+    /// An error occurred that is out of the scope of validation (no state?, I/O errors..)
+    Err(HolochainError),
+}
+
+/// Result of validating an entry.
+/// Either Ok(()) if the entry is valid,
+/// or any specialization of ValidationError.
+// pub type ValidationResult = Result<(), ValidationError>;
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, DefaultJson)]
+pub enum ValidationResult {
+    Ok,
+    Err(ValidationError),
+}
+
+impl std::ops::Try for ValidationResult {
+    type Ok = ();
+    type Error = ValidationError;
+    fn from_error(e: Self::Error) -> Self {
+        Self::Err(e)
+    }
+    fn from_ok(_: <Self as std::ops::Try>::Ok) -> Self {
+        Self::Ok
+    }
+    fn into_result(self) -> Result<<Self as std::ops::Try>::Ok, Self::Error> {
+        match self {
+            Self::Ok => Ok(()),
+            Self::Err(e) => Err(e),
+        }
+    }
+}
+
+impl From<ValidationError> for HolochainError {
+    fn from(ve: ValidationError) -> Self {
+        match ve {
+            ValidationError::Fail(reason) => HolochainError::ValidationFailed(reason),
+            ValidationError::UnresolvedDependencies(_) => {
+                HolochainError::ValidationFailed("Missing dependencies".to_string())
+            }
+            ValidationError::NotImplemented => {
+                HolochainError::NotImplemented("Validation not implemented".to_string())
+            }
+            ValidationError::Err(e) => e,
+        }
+    }
+}
+
+impl From<JsonError> for ValidationError {
+    fn from(e: JsonError) -> Self {
+        Self::Err(e.into())
+    }
+}
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, DefaultJson)]
 pub struct ValidationPackage {

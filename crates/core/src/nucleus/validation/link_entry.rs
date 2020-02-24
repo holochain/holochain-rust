@@ -2,7 +2,6 @@ use crate::{
     context::Context,
     nucleus::{
         actions::run_validation_callback::run_validation_callback,
-        validation::{ValidationError, ValidationResult},
         CallbackFnCall,
     },
     workflows::callback::links_utils,
@@ -11,6 +10,7 @@ use crate::{
 use boolinator::*;
 use holochain_core_types::{
     entry::Entry,
+    validation::{ValidationError, ValidationResult},
     validation::{LinkValidationData, ValidationData},
 };
 
@@ -30,7 +30,7 @@ pub async fn validate_link_entry(
         Entry::LinkAdd(link_add) => link_add.clone(),
         Entry::LinkRemove((link_remove, _)) => link_remove,
         _ => {
-            return Err(ValidationError::Error(
+            return Err(ValidationError::Fail(
                 "Could not extract link_add from entry".into(),
             ));
         }

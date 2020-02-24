@@ -1,7 +1,7 @@
 use crate::{
-    nucleus::validation::{ValidationError, ValidationResult},
     NEW_RELIC_LICENSE_KEY,
 };
+use holochain_core_types::validation::{ValidationError, ValidationResult};
 use boolinator::Boolinator;
 use holochain_core_types::validation::ValidationData;
 use holochain_dpki::utils::Verify;

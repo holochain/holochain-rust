@@ -8,6 +8,7 @@ use holochain_json_derive::DefaultJson;
 use holochain_wasmer_guest::*;
 use serde_derive::{Deserialize, Serialize};
 use std::{error::Error, fmt};
+use holochain_core_types::validation::ValidationError;
 
 /// Error for DNA developers to use in their Zome code.
 /// This does not have to be sent back to Ribosome unless its an InternalError.
@@ -18,6 +19,12 @@ pub enum ZomeApiError {
     HashNotFound,
     ValidationFailed(String),
     Timeout,
+}
+
+impl From<ZomeApiError> for ValidationError {
+    fn from(e: ZomeApiError) -> Self {
+        Self::Err(e.into())
+    }
 }
 
 impl From<ZomeApiError> for HolochainError {

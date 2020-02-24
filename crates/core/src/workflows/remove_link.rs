@@ -4,12 +4,12 @@ use crate::{
     workflows::hold_entry::hold_entry_workflow, NEW_RELIC_LICENSE_KEY,
 };
 
-use crate::{nucleus::validation::ValidationError, workflows::validation_package};
+use crate::{workflows::validation_package};
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
     network::entry_aspect::EntryAspect,
-    validation::{EntryLifecycle, ValidationData},
+    validation::{EntryLifecycle, ValidationData, ValidationError},
 };
 use std::sync::Arc;
 

@@ -2,12 +2,12 @@ use crate::{
     context::Context,
     nucleus::{
         actions::run_validation_callback::run_validation_callback,
-        validation::{ValidationError, ValidationResult},
         CallbackFnCall,
     },
     NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
+    validation::{ValidationError, ValidationResult},
     agent::AgentId,
     entry::Entry,
     validation::{EntryValidationData, ValidationData},
@@ -57,7 +57,7 @@ pub async fn validate_agent_entry(
         log_debug!(context, "Validating agent entry success!: {:?}", results);
         Ok(())
     } else {
-        Err(ValidationError::Error(
+        Err(ValidationError::Fail(
             format!("Failed to validate agent ID on a zome, {:?}", errors).into(),
         ))
     }

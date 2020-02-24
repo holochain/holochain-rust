@@ -4,11 +4,13 @@ use crate::{
         actions::{
             get_entry::get_entry_from_dht, run_validation_callback::run_validation_callback,
         },
-        validation::{entry_to_validation_data, ValidationError, ValidationResult},
+        validation::{entry_to_validation_data},
         CallbackFnCall,
     },
     NEW_RELIC_LICENSE_KEY,
 };
+use holochain_core_types::validation::ValidationError;
+use holochain_core_types::validation::ValidationResult;
 use holochain_core_types::{entry::Entry, validation::ValidationData};
 use holochain_persistence_api::cas::content::AddressableContent;
 use holochain_wasm_types::validation::EntryValidationArgs;

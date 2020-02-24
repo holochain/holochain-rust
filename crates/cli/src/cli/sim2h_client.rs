@@ -10,6 +10,8 @@ use sim2h::{
 };
 use std::sync::{Arc, Mutex};
 use url2::prelude::*;
+use std::fs::File;
+use std::io::prelude::*;
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), String> {
@@ -62,9 +64,18 @@ pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), St
                     match msg {
                         WireMessage::Pong
                         | WireMessage::HelloResponse(_)
-                        | WireMessage::StatusResponse(_)
-                        | WireMessage::DebugResponse(_) => {
+                        | WireMessage::StatusResponse(_) => {
                             println!("Got response => {:?}", msg);
+                            break;
+                        },
+                        WireMessage::DebugResponse(debug_response_map) => {
+                            println!("Got DebugResponse for {} spaces.", debug_response_map.len());
+                            for (space, json) in debug_response_map {
+                                let filename = format!("{}.json", space);
+                                println!("Writing Sim2h state dump for space {} to file: {}", space, filename);
+                                let mut file = File::create(filename.clone()).expect(&format!("Could not create file {}!", filename));
+                                file.write_all(json.into_bytes().as_slice()).expect("Could not write to file!");
+                            }
                             break;
                         }
                         _ => println!("{:?}", msg),

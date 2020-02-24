@@ -41,6 +41,7 @@ pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), St
         "ping" => WireMessage::Ping,
         "hello" => WireMessage::Hello(WIRE_VERSION),
         "status" => WireMessage::Status,
+        "debug" => WireMessage::Debug,
         _ => {
             return Err(format!(
                 "expecting 'ping' or 'status' for message, got: {}",
@@ -61,7 +62,8 @@ pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), St
                     match msg {
                         WireMessage::Pong
                         | WireMessage::HelloResponse(_)
-                        | WireMessage::StatusResponse(_) => {
+                        | WireMessage::StatusResponse(_)
+                        | WireMessage::DebugResponse(_) => {
                             println!("Got response => {:?}", msg);
                             break;
                         }

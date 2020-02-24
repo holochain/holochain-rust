@@ -1,5 +1,5 @@
 use crate::{context::Context, NEW_RELIC_LICENSE_KEY};
-use holochain_wasm_types::ZomeApiResult;
+use holochain_core_types::error::HcResult;
 use holochain_dpki::utils::Verify;
 use holochain_wasm_types::verify_signature::VerifySignatureArgs;
 use std::sync::Arc;
@@ -12,7 +12,7 @@ use std::sync::Arc;
 pub fn invoke_verify_signature(
     context: Arc<Context>,
     verification_args: VerifySignatureArgs,
-) -> ZomeApiResult {
+) -> HcResult<bool> {
     log_debug!(
         context,
         "zome: using provenance:{:?} to verify data:{:?}",

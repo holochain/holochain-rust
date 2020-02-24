@@ -1,15 +1,17 @@
-use crate::{context::Context, NEW_RELIC_LICENSE_KEY};
-use holochain_wasm_types::ZomeApiResult;
+use crate::{NEW_RELIC_LICENSE_KEY};
 use holochain_json_api::json::*;
 use holochain_wasm_types::crypto::CryptoArgs;
-use std::sync::Arc;
+use holochain_core_types::error::HcResult;
+use holochain_wasm_types::WasmError;
+use crate::wasm_engine::runtime::Runtime;
 
 /// ZomeApiFunction::Sign function code
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected argument: u64
 /// Returns an HcApiReturnCode as I64
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_crypto(context: Arc<Context>, crypto_args: CryptoArgs) -> ZomeApiResult {
+pub fn invoke_crypto(runtime: &mut Runtime, crypto_args: CryptoArgs) -> HcResult<JsonString> {
+    let context = runtime.context().map_err(|e| WasmError::Zome(e.to_string()))?;
     let message = context
         .conductor_api
         .execute(crypto_args.payload.clone(), crypto_args.method.clone())

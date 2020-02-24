@@ -1,5 +1,4 @@
 use crate::{context::Context, NEW_RELIC_LICENSE_KEY};
-use holochain_wasm_types::ZomeApiResult;
 use holochain_core_types::error::{HcResult, HolochainError};
 
 use holochain_json_api::json::JsonString;
@@ -51,7 +50,7 @@ fn conductor_callback<S: Into<String>>(
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_keystore_list(context: Arc<Context>, _: WasmString) -> ZomeApiResult {
+pub fn invoke_keystore_list(context: Arc<Context>, _: WasmString) -> Result<KeystoreListResult, HolochainError> {
     let result = conductor_callback("agent/keystore/list", "{}", context.clone());
     let string_list: Vec<String> = match result {
         Ok(json_array) => serde_json::from_str(&json_array.to_string()).unwrap(),
@@ -61,7 +60,7 @@ pub fn invoke_keystore_list(context: Arc<Context>, _: WasmString) -> ZomeApiResu
                 "zome: agent/keystore/list callback failed: {:?}",
                 err
             );
-            return Err(WasmError::CallbackFailed);
+            return Err(WasmError::CallbackFailed)?;
         }
     };
 
@@ -69,7 +68,7 @@ pub fn invoke_keystore_list(context: Arc<Context>, _: WasmString) -> ZomeApiResu
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_keystore_new_random(context: Arc<Context>, args_str: WasmString) -> ZomeApiResult {
+pub fn invoke_keystore_new_random(context: Arc<Context>, args_str: WasmString) -> Result<(), HolochainError> {
     let result = conductor_callback(
         "agent/keystore/add_random_seed",
         &args_str.to_string(),
@@ -83,14 +82,14 @@ pub fn invoke_keystore_new_random(context: Arc<Context>, args_str: WasmString) -
                 "zome: agent/keystore/add_random_seed callback failed: {:?}",
                 err
             );
-            return Err(WasmError::CallbackFailed);
+            return Err(WasmError::CallbackFailed)?;
         }
     };
     Ok(())
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_keystore_derive_seed(context: Arc<Context>, args_str: WasmString) -> ZomeApiResult {
+pub fn invoke_keystore_derive_seed(context: Arc<Context>, args_str: WasmString) -> Result<(), HolochainError> {
     let result = conductor_callback(
         "agent/keystore/add_seed_from_seed",
         &args_str.to_string(),
@@ -104,7 +103,7 @@ pub fn invoke_keystore_derive_seed(context: Arc<Context>, args_str: WasmString) 
                 "zome: agent/keystore/add_seed_from_seed callback failed: {:?}",
                 err
             );
-            return Err(WasmError::CallbackFailed);
+            return Err(WasmError::CallbackFailed)?;
         }
     };
 
@@ -112,7 +111,7 @@ pub fn invoke_keystore_derive_seed(context: Arc<Context>, args_str: WasmString) 
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_keystore_derive_key(context: Arc<Context>, args_str: WasmString) -> ZomeApiResult {
+pub fn invoke_keystore_derive_key(context: Arc<Context>, args_str: WasmString) -> Result<JsonString, HolochainError> {
     let result = conductor_callback(
         "agent/keystore/add_key_from_seed",
         &args_str.to_string(),
@@ -134,7 +133,7 @@ pub fn invoke_keystore_derive_key(context: Arc<Context>, args_str: WasmString) -
                 "zome: agent/keystore/add_key_from_seed callback failed: {:?}",
                 err
             );
-            return Err(WasmError::CallbackFailed);
+            return Err(WasmError::CallbackFailed)?;
         }
     };
 
@@ -148,7 +147,7 @@ pub fn invoke_keystore_derive_key(context: Arc<Context>, args_str: WasmString) -
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_keystore_sign(context: Arc<Context>, args_str: WasmString) -> ZomeApiResult {
+pub fn invoke_keystore_sign(context: Arc<Context>, args_str: WasmString) -> Result<JsonString, HolochainError> {
     let result = conductor_callback("agent/keystore/sign", &args_str.to_string(), context);
     let string: String = match result {
         Ok(json_string) => {
@@ -163,7 +162,7 @@ pub fn invoke_keystore_sign(context: Arc<Context>, args_str: WasmString) -> Zome
                 "zome: agent/keystore/sign callback failed: {:?}",
                 err
             );
-            return Err(WasmError::CallbackFailed);
+            return Err(WasmError::CallbackFailed)?;
         }
     };
 
@@ -181,7 +180,7 @@ pub fn invoke_keystore_sign(context: Arc<Context>, args_str: WasmString) -> Zome
 pub fn invoke_keystore_get_public_key(
     context: Arc<Context>,
     args_str: WasmString,
-) -> ZomeApiResult {
+) -> Result<JsonString, HolochainError> {
     let result = conductor_callback(
         "agent/keystore/get_public_key",
         &args_str.to_string(),
@@ -203,7 +202,7 @@ pub fn invoke_keystore_get_public_key(
                 "zome: agent/keystore/get_public_key callback failed: {:?}",
                 err
             );
-            return Err(WasmError::CallbackFailed);
+            return Err(WasmError::CallbackFailed)?;
         }
     };
 

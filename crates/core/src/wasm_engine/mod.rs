@@ -1,8 +1,3 @@
-//! The virtual machine that runs DNA written in WASM
-extern crate holochain_logging;
-extern crate holochain_core_types;
-extern crate holochain_json_api;
-
 // pub mod callback;
 pub mod factories;
 #[autotrace]

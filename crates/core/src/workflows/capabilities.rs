@@ -19,7 +19,7 @@ pub fn invoke_commit_capability_grant(
     args: CommitCapabilityGrantArgs,
 ) -> Result<Address, HolochainError> {
     match CapTokenGrant::create(&args.id, args.cap_type, args.assignees, args.functions) {
-        Ok(grant) => context.block_on(commit_entry(Entry::CapTokenGrant(grant), None, context)),
+        Ok(grant) => context.block_on(commit_entry(Entry::CapTokenGrant(grant), None, &context)),
         Err(err) => Err(HolochainError::ErrorGeneric(format!(
             "Unable to commit capability grant: {}",
             err
@@ -33,7 +33,7 @@ pub fn invoke_commit_capability_claim(
     args: CommitCapabilityClaimArgs,
 ) -> Result<Address, HolochainError> {
     let claim = CapTokenClaim::new(args.id, args.grantor, args.token);
-    context.block_on(commit_entry(Entry::CapTokenClaim(claim), None, context))
+    context.block_on(commit_entry(Entry::CapTokenClaim(claim), None, &context))
 }
 
 #[cfg(test)]

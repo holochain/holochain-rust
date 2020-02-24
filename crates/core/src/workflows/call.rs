@@ -6,13 +6,11 @@ use crate::{
     },
     NEW_RELIC_LICENSE_KEY,
 };
-use holochain_wasm_types::ZomeApiResult;
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
 use holochain_logging::prelude::*;
 
 use holochain_wasm_types::{ZomeFnCallArgs, THIS_INSTANCE};
-use holochain_wasmer_host::*;
 use jsonrpc_lite::JsonRpc;
 use snowflake::ProcessUniqueId;
 use std::sync::Arc;
@@ -46,7 +44,7 @@ impl ZomeFnCall {
 /// Waits for a ZomeFnResult
 /// Returns an HcApiReturnCode as I64
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_call(context: Arc<Context>, input: ZomeFnCallArgs) -> ZomeApiResult {
+pub fn invoke_call(context: Arc<Context>, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
     let span = context
         .tracer
         .span("hdk invoke_call")
@@ -55,16 +53,15 @@ pub fn invoke_call(context: Arc<Context>, input: ZomeFnCallArgs) -> ZomeApiResul
         .into();
     let _spanguard = ht::push_span(span);
 
-    let result = if input.instance_handle == THIS_INSTANCE {
+    if input.instance_handle == THIS_INSTANCE {
         // ZomeFnCallArgs to ZomeFnCall
         let zome_call = ZomeFnCall::from_args(context.clone(), input.clone());
 
-        if let Ok(zome_call_data) = context.zome_call_data() {
-            // Don't allow recursive calls
-            if zome_call.same_fn_as(&zome_call_data.call) {
-                return Err(WasmError::RecursiveCallForbidden);
-            }
-        }
+        // Don't allow recursive calls
+        // @TODO is this important? it relies on data that is hard to get at from the args
+        // if zome_call.same_fn_as(&input.zome_call_data.call) {
+        //     return Err(WasmError::RecursiveCallForbidden);
+        // }
         local_call(context, input.clone()).map_err(|error| {
             log_error!(context, "zome-to-zome-call/[{:?}]: {:?}", input, error);
             error
@@ -74,9 +71,7 @@ pub fn invoke_call(context: Arc<Context>, input: ZomeFnCallArgs) -> ZomeApiResul
             log_error!(context, "bridge-call/[{:?}]: {:?}", input, error);
             error
         })
-    };
-
-    Ok(result)
+    }
 }
 
 #[autotrace]

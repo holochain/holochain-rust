@@ -50,6 +50,7 @@ macro_rules! link_zome_api {
         use $crate::wasm_engine::runtime::WasmCallData;
         use holochain_json_api::json::JsonString;
         use $crate::wasm_engine::Defn;
+        use std::convert::TryFrom;
         use num;
 
         /// Enumeration of all the Zome Functions known and usable in Zomes.
@@ -106,13 +107,13 @@ macro_rules! link_zome_api {
         impl ZomeApiFunction {
             // cannot test this because PartialEq is not implemented for fns
             #[cfg_attr(tarpaulin, skip)]
-            pub fn apply<J: Into<JsonString>>(&self, runtime: &mut Runtime, args: J) -> ZomeApiResult {
+            pub fn apply<J: TryFrom<JsonString>>(&self, runtime: &mut Runtime, args: J) -> ZomeApiResult {
                 // TODO Implement a proper "abort" function for handling assemblyscript aborts
                 // @see: https://github.com/holochain/holochain-rust/issues/324
 
                 match *self {
-                    ZomeApiFunction::MissingNo => Ok(()),
-                    ZomeApiFunction::Abort => Ok(()),
+                    ZomeApiFunction::MissingNo => Ok(holochain_wasmer_host::json::to_allocation_ptr(().into())),
+                    ZomeApiFunction::Abort => Ok(holochain_wasmer_host::json::to_allocation_ptr(().into())),
                     $( ZomeApiFunction::$enum_variant => {
                         if let Ok(context) = runtime.context() {
                             if let WasmCallData::ZomeCall(zome_call_data) = runtime.data.clone() {
@@ -120,20 +121,26 @@ macro_rules! link_zome_api {
                                 let parameters = runtime.load_json_string_from_args(&args);
                                 let hdk_fn_call = WasmApiFnCall { function: self.clone(), parameters };
                                 trace_invoke_wasm_api_function(zome_api_call.clone(), hdk_fn_call.clone(), &context);
-                                let result = $function_name(runtime, args.into());
+                                let result = $function_name(runtime, args.try_into()?);
                                 let hdk_fn_result = Ok(JsonString::from("TODO"));
                                 trace_return_wasm_api_function(zome_api_call.clone(), hdk_fn_call, hdk_fn_result, &context);
                                 match result {
-                                    Ok(v) => Ok(holochain_wasmer_host::json::to_allocation_ptr(v.into())),
+                                    Ok(v) => Ok(holochain_wasmer_host::json::to_allocation_ptr(v.try_into()?)),
                                     Err(e) => Err(WasmError::from(e)),
                                 }
                             } else {
                                 error!("Can't record zome call hdk invocations for non zome call");
-                                $function_name(runtime, args)
+                                match $function_name(runtime, args.try_into()?) {
+                                    Ok(v) => Ok(holochain_wasmer_host::json::to_allocation_ptr(v.try_into()?)),
+                                    Err(e) => Err(WasmError::from(e)),
+                                }
                             }
                         } else {
                             error!("Could not get context for runtime");
-                            $function_name(runtime, args)
+                            match $function_name(runtime, args.into()) {
+                                Ok(v) => Ok(holochain_wasmer_host::json::to_allocation_ptr(v.into())),
+                                Err(e) => Err(WasmError::from(e)),
+                            }
                         }
                     } , )*
                 }

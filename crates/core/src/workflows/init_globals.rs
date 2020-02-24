@@ -1,24 +1,25 @@
-use crate::{context::Context, NEW_RELIC_LICENSE_KEY};
+use crate::{NEW_RELIC_LICENSE_KEY};
 use holochain_core_types::entry::entry_type::EntryType;
 use holochain_persistence_api::{
     cas::content::{Address},
     hash::HashString,
 };
-use holochain_wasm_types::ZomeApiResult;
+use holochain_wasm_types::WasmError;
 use holochain_wasm_types::wasm_string::WasmString;
-use std::sync::Arc;
-
 use holochain_json_api::json::JsonString;
-
+use crate::wasm_engine::runtime::Runtime;
+use crate::holochain_wasm_types::holochain_persistence_api::cas::content::AddressableContent;
 use holochain_wasm_types::ZomeApiGlobals;
+use holochain_core_types::error::HolochainError;
 
 /// ZomeApiFunction::InitGlobals secret function code
 /// args: [0] encoded MemoryAllocation as u64
 /// Not expecting any complex input
 /// Returns an HcApiReturnCode as I64
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_init_globals(context: Arc<Context>, _: WasmString) -> ZomeApiResult {
-    let call_data = context.call_data()?;
+pub fn invoke_init_globals(runtime: &mut Runtime, _: WasmString) -> Result<ZomeApiGlobals, HolochainError> {
+    let context = runtime.context().map_err(|e| WasmError::Zome(e.to_string()))?;
+    let call_data = runtime.call_data().map_err(|e| WasmError::Zome(e.to_string()))?;
     let dna = context
         .get_dna()
         .expect("No DNA found in invoke_init_globals");
@@ -32,7 +33,7 @@ pub fn invoke_init_globals(context: Arc<Context>, _: WasmString) -> ZomeApiResul
         agent_initial_hash: HashString::from(""),
         agent_latest_hash: HashString::from(""),
         public_token: Address::from(""),
-        cap_request: context
+        cap_request: runtime
             .zome_call_data()
             .map(|zome_call_data| Some(zome_call_data.call.cap))
             .unwrap_or_else(|_| None),

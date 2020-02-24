@@ -6,7 +6,6 @@ use crate::{
 };
 
 use holochain_persistence_api::cas::content::Address;
-use holochain_wasm_types::ZomeApiResult;
 use holochain_core_types::{
     chain_header::ChainHeader,
     entry::{entry_type::EntryType, Entry},
@@ -59,8 +58,8 @@ use std::sync::Arc;
 /// `*`         Zero or more of any character
 /// `**/`       Zero or more of any namespace component
 ///
-pub fn invoke_query(runtime: &mut Runtime, query: QueryArgs) -> ZomeApiResult {
-    let context = runtime.context()?;
+pub fn invoke_query(runtime: &mut Runtime, query: QueryArgs) -> Result<QueryResult, HolochainError> {
+    let context = runtime.context().map_err(|e| WasmError::Zome(e.to_string()))?;
     // Perform query
     let agent = context
         .state()
@@ -119,7 +118,7 @@ pub fn invoke_query(runtime: &mut Runtime, query: QueryArgs) -> ZomeApiResult {
 
                 match maybe_entries {
                     Ok(entries) => QueryResult::Entries(entries),
-                    Err(_e) => return Err(WasmError::UnknownEntryType), // TODO: return actual error?
+                    Err(_e) => Err(WasmError::UnknownEntryType)?, // TODO: return actual error?
                 }
             }
             (true, ChainStoreQueryResult::Headers(headers)) => {
@@ -135,11 +134,11 @@ pub fn invoke_query(runtime: &mut Runtime, query: QueryArgs) -> ZomeApiResult {
                     Ok(headers_with_entries) => {
                         QueryResult::HeadersWithEntries(headers_with_entries)
                     }
-                    Err(_e) => return Err(WasmError::UnknownEntryType), // TODO: return actual error?
+                    Err(_e) => Err(WasmError::UnknownEntryType)?, // TODO: return actual error?
                 }
             }
         }),
-        Err(_code) => return Err(WasmError::UnknownEntryType),
+        Err(_code) => Err(WasmError::UnknownEntryType)?,
     }
 }
 

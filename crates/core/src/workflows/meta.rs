@@ -1,7 +1,6 @@
 use crate::{context::Context, NEW_RELIC_LICENSE_KEY};
 use holochain_core_types::{hdk_version::HDK_VERSION, HDK_HASH};
 use holochain_wasm_types::meta::{MetaArgs, MetaMethod, MetaResult};
-use holochain_wasm_types::ZomeApiResult;
 use std::sync::Arc;
 
 /// ZomeApiFunction::Meta function code
@@ -9,13 +8,11 @@ use std::sync::Arc;
 /// Expecting a string as complex input argument
 /// Returns an HcApiReturnCode as I64
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_meta(context: Arc<Context>, meta_args: MetaArgs) -> ZomeApiResult {
-    let method = match meta_args.method {
+pub fn invoke_meta(context: Arc<Context>, meta_args: MetaArgs) -> Result<MetaResult, ()> {
+    Ok(match meta_args.method {
         MetaMethod::Version => MetaResult::Version(HDK_VERSION.to_string()),
         MetaMethod::Hash => MetaResult::Hash(HDK_HASH.to_string()),
-    };
-
-    Ok(method)
+    })
 }
 
 #[cfg(test)]

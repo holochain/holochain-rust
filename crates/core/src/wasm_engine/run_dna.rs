@@ -4,12 +4,12 @@ use crate::{
         wasm_engine::factories::{wasm_instance_factory, wasm_module_factory},
         wasm_engine::runtime::WasmCallData,
     },
-    // NEW_RELIC_LICENSE_KEY,
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
-use crate::nucleus::ZomeFnResult;
 use wasmer_runtime::Module;
+use std::convert::TryFrom;
 
 /// Returns the WASM module, i.e. the WASM binary program code to run
 /// for the given WasmCallData.
@@ -18,7 +18,7 @@ use wasmer_runtime::Module;
 /// inside the DirectCall specialisation for WasmCallData.
 ///
 /// For ZomeCalls and CallbackCalls it gets the according module from the DNA.
-// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn get_module(data: WasmCallData) -> Result<Module, HolochainError> {
     let (context, zome_name) = if let WasmCallData::DirectCall(_, wasm) = data {
         return Ok(wasm_module_factory(wasm)?);
@@ -50,8 +50,8 @@ fn get_module(data: WasmCallData) -> Result<Module, HolochainError> {
 /// Multithreaded function
 /// panics if wasm binary isn't valid.
 #[autotrace]
-// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn run_dna<I: Into<JsonString>>(data: WasmCallData, input: I) -> ZomeFnResult {
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+pub fn run_dna<I: Into<JsonString>, O: TryFrom<JsonString>>(data: WasmCallData, input: I) -> Result<O, HolochainError> {
     let wasm_module = get_module(data.clone())?;
 
     // instantiate runtime struct for passing external state data over wasm but not to wasm
@@ -63,5 +63,5 @@ pub fn run_dna<I: Into<JsonString>>(data: WasmCallData, input: I) -> ZomeFnResul
 
     let fn_name = data.fn_name();
 
-    holochain_wasmer_host::guest::call(&mut wasm_instance, &fn_name, input);
+    holochain_wasmer_host::guest::call(&mut wasm_instance, &fn_name, input).try_into()?
 }

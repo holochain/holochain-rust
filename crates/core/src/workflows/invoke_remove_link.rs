@@ -1,5 +1,4 @@
 use crate::{
-    context::Context,
     network::{
         actions::query::{query, QueryMethod},
         query::{
@@ -21,7 +20,7 @@ use holochain_wasm_types::{
     link_entries::LinkEntriesArgs,
 };
 use holochain_wasmer_host::*;
-use std::sync::Arc;
+use crate::wasm_engine::runtime::Runtime;
 
 /// ZomeApiFunction::GetLinks function code
 /// args: [0] encoded MemoryAllocation as u64
@@ -29,10 +28,11 @@ use std::sync::Arc;
 /// Returns an HcApiReturnCode as I64
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_remove_link(
-    context: Arc<Context>,
+    runtime: &mut Runtime,
     input: LinkEntriesArgs,
 ) -> Result<(), HolochainError> {
-    let top_chain_header_option = context.agent().top_chain_header();
+    let context = runtime.context().map_err(|e| WasmError::Zome(e.to_string()))?;
+    let top_chain_header_option = context.state().unwrap().agent().top_chain_header();
 
     let top_chain_header = match top_chain_header_option {
         Some(top_chain) => top_chain,
@@ -42,7 +42,7 @@ pub fn invoke_remove_link(
                 "zome: invoke_link_entries failed to deserialize LinkEntriesArgs: {:?}",
                 input
             );
-            Err(WasmError::ArgumentDeserializationFailed)?;
+            return Err(WasmError::ArgumentDeserializationFailed)?;
         }
     };
 
@@ -92,7 +92,7 @@ pub fn invoke_remove_link(
 
             // Wait for future to be resolved
             context
-                .block_on(author_entry(&entry, None, context, &vec![]))
+                .block_on(author_entry(&entry, None, &context, &vec![]))
                 .map(|_| ())
         }
     }

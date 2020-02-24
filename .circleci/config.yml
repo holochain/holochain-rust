@@ -300,6 +300,7 @@ workflows:
         only:
          - develop
          - final-exam
+         - 5000-rollback
    - docker-build-trycp-server:
       requires:
        - docker-build-minimal
@@ -313,6 +314,7 @@ workflows:
         only:
          - develop
          - final-exam
+         - 5000-rollback
    - docker-build-circle-build:
       requires:
        - docker-build-latest

@@ -51,8 +51,10 @@ use futures::{
 use in_stream::*;
 use log::*;
 use rand::{seq::SliceRandom, thread_rng};
-use std::convert::TryFrom;
-use std::hash::{Hash, Hasher};
+use std::{
+    convert::TryFrom,
+    hash::{Hash, Hasher},
+};
 
 use holochain_locksmith::Mutex;
 use holochain_metrics::{config::MetricPublisherConfig, Metric};

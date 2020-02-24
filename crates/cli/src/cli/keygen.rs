@@ -59,7 +59,7 @@ when unlocking the keybundle to use within a Holochain conductor.\n",
                 .expect("Could not retrieve mnemonic")
         });
 
-        match root_seed_mnemonic.split(" ").count() {
+        match root_seed_mnemonic.split(' ').count() {
             24 => {
                 // unencrypted mnemonic
                 user_prompt(
@@ -153,7 +153,7 @@ fn keygen_dpki(
 pub mod test {
     use super::*;
     use cli::dpki;
-    use holochain_conductor_api::{
+    use holochain_conductor_lib::{
         key_loaders::mock_passphrase_manager,
         keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
     };

@@ -140,7 +140,7 @@ impl MetricsTimerGenerator {
             }
             warn!("metric loop ended");
         }
-            .boxed();
+        .boxed();
         (Self { sender }, out)
     }
 

@@ -59,7 +59,7 @@ when unlocking the keybundle to use within a Holochain conductor.\n",
                 .expect("Could not retrieve mnemonic")
         });
 
-        match root_seed_mnemonic.split(" ").count() {
+        match root_seed_mnemonic.split(' ').count() {
             24 => {
                 // unencrypted mnemonic
                 user_prompt(

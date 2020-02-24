@@ -69,7 +69,7 @@ pub trait WordCountable {
 
 impl WordCountable for String {
     fn word_count(&self) -> usize {
-        self.split(" ").count()
+        self.split(' ').count()
     }
 }
 

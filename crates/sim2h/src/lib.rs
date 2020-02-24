@@ -209,6 +209,7 @@ pub enum DhtAlgorithm {
 mod mono_ref;
 use mono_ref::*;
 use twox_hash::XxHash64;
+use std::collections::BTreeMap;
 
 #[allow(dead_code)]
 mod sim2h_im_state;
@@ -292,6 +293,7 @@ impl Sim2hHandle {
             }
             WireMessage::Ping => return spawn_handle_message_ping(sim2h_handle, uri, signer),
             WireMessage::Status => return spawn_handle_message_status(sim2h_handle, uri, signer),
+            WireMessage::Debug => return spawn_handle_message_debug(sim2h_handle, uri, signer),
             WireMessage::Hello(version) => {
                 return spawn_handle_message_hello(sim2h_handle, uri, signer, version)
             }
@@ -484,6 +486,22 @@ fn spawn_handle_message_status(sim2h_handle: Sim2hHandle, uri: Lib3hUri, signer:
                 },
                 version: WIRE_VERSION,
             }),
+        );
+    });
+}
+
+fn spawn_handle_message_debug(sim2h_handle: Sim2hHandle, uri: Lib3hUri, signer: AgentId) {
+    tokio::task::spawn(async move {
+        debug!("Sending DebugResponse in response to Debug");
+        let state = sim2h_handle.state().get_clone().await;
+        let mut response_map: BTreeMap<SpaceHash, String> = BTreeMap::new();
+        for (hash, space) in state.spaces.iter() {
+            response_map.insert((**hash).clone(), format!("{:?}", space));
+        }
+        sim2h_handle.send(
+            signer.clone(),
+            uri.clone(),
+            &WireMessage::DebugResponse(response_map),
         );
     });
 }

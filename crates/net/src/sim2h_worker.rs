@@ -547,6 +547,8 @@ impl Sim2hWorker {
                 WireError::Other(e) => error!("Got error from Sim2h server: {:?}", e),
             },
             WireMessage::Status => error!("Got a Status from the Sim2h server, weird! Ignoring"),
+            WireMessage::Debug => error!("Got a Debug from the Sim2h server, weird! Ignoring"),
+            WireMessage::DebugResponse(_) => error!("Got a DebugResponse from the Sim2h server, weird! Ignoring"),
             WireMessage::Hello(_) => error!("Got a Hello from the Sim2h server, weird! Ignoring"),
             WireMessage::HelloResponse(response) => {
                 if WIRE_VERSION != response.version {

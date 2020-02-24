@@ -2,6 +2,8 @@
 use crate::{error::Sim2hError, NEW_RELIC_LICENSE_KEY};
 use lib3h_protocol::{data_types::Opaque, protocol::*};
 use std::convert::TryFrom;
+use lib3h_protocol::types::SpaceHash;
+use std::collections::BTreeMap;
 
 pub type WireMessageVersion = u32;
 pub const WIRE_VERSION: WireMessageVersion = 3;
@@ -44,6 +46,8 @@ pub enum WireMessage {
     Status,
     StatusResponse(StatusData),
     Ack(u64),
+    Debug,
+    DebugResponse(BTreeMap<SpaceHash, String>),
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
@@ -56,6 +60,8 @@ impl WireMessage {
             WireMessage::StatusResponse(_) => "StatusResponse",
             WireMessage::Hello(_) => "Hello",
             WireMessage::HelloResponse(_) => "HelloResponse",
+            WireMessage::Debug => "Debug",
+            WireMessage::DebugResponse(_) => "DebugResponse",
             WireMessage::ClientToLib3h(span_wrap) => match span_wrap.data {
                 ClientToLib3h::Bootstrap(_) => "[C>L]Bootstrap",
                 ClientToLib3h::FetchEntry(_) => "[C>L]FetchEntry",

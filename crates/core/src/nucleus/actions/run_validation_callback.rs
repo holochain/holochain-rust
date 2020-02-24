@@ -10,6 +10,7 @@ use crate::{
 use holochain_core_types::error::HolochainError;
 use holochain_persistence_api::cas::content::Address;
 use std::sync::Arc;
+use holochain_wasm_types::WasmError;
 
 use holochain_metrics::with_latency_publishing;
 
@@ -48,15 +49,15 @@ pub async fn run_validation_callback(
                     }
                 }
                 // TODO: have "not matching schema" be its own error
-                Err(HolochainError::Wasm(error_string)) => {
-                    if error_string == "Argument deserialization failed" {
+                Err(HolochainError::Wasm(wasm_error)) => {
+                    if wasm_error == WasmError::ArgumentDeserializationFailed {
                         Err(ValidationError::Error(
                             String::from("JSON object does not match entry schema").into(),
                         ))
                     } else {
                         // an unknown error from the ribosome should panic rather than
                         // silently failing validation
-                        panic!(error_string)
+                        panic!(wasm_error)
                     }
                 }
                 Err(error) => panic!(error.to_string()), // same here

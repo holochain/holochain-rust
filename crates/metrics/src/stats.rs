@@ -523,7 +523,7 @@ impl<'a, D: DescriptiveStats + Clone + 'a> StatsByMetric<D> {
             data.insert(GroupingKey::new(stream_id, metric_name), stat);
         }
 
-        Ok(StatsByMetric(data))
+        Ok(Self(data))
     }
 }
 

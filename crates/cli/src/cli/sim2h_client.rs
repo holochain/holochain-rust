@@ -78,9 +78,12 @@ pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), St
                                     "Writing Sim2h state dump for space {} to file: {}",
                                     space, filename
                                 );
-                                let mut file = File::create(filename.clone())
-                                    .expect(&format!("Could not create file {}!", filename));
-                                file.write_all(json.into_bytes().as_slice())
+
+                                File::create(filename.clone())
+                                    .unwrap_or_else(|_| {
+                                        panic!("Could not create file {}!", filename)
+                                    })
+                                    .write_all(json.into_bytes().as_slice())
                                     .expect("Could not write to file!");
                             }
                             break;

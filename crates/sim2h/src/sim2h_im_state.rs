@@ -186,6 +186,7 @@ pub struct EntryInfo {
     pub aspects: Holding,
 }
 
+#[allow(clippy::trivially_copy_pass_by_ref)]
 pub fn serialize_location<S>(loc: &Location, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,

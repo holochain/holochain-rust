@@ -27,15 +27,22 @@ use lib3h_protocol::{
 use log::*;
 use sim2h::{
     crypto::{Provenance, SignedWireMessage},
-    TcpWss, WireError, WireMessage, WIRE_VERSION,
+    TcpWss, WireError, WireMessage, RECEIPT_HASH_SEED, WIRE_VERSION,
 };
-use std::{convert::TryFrom, time::Instant};
+use std::{
+    convert::TryFrom,
+    hash::{Hash, Hasher},
+    time::Instant,
+};
+
+use twox_hash::XxHash64;
 use url::Url;
 use url2::prelude::*;
 
 const INITIAL_CONNECTION_TIMEOUT_MS: u64 = 2000; // The real initial is 4 seconds because one backoff happens to start
 const MAX_CONNECTION_TIMEOUT_MS: u64 = 60000;
 const SIM2H_WORKER_INTERNAL_REQUEST_ID: &str = "SIM2H_WORKER";
+const RESEND_WIRE_MESSAGE_MS: u64 = 10000;
 
 fn connect(url: Lib3hUri, timeout_ms: u64) -> NetResult<TcpWss> {
     //    let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
@@ -48,6 +55,22 @@ fn connect(url: Lib3hUri, timeout_ms: u64) -> NetResult<TcpWss> {
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq)]
 pub struct Sim2hConfig {
     pub sim2h_url: String,
+}
+
+struct BufferedMessage {
+    pub wire_message: WireMessage,
+    pub hash: u64,
+    pub last_sent: Option<Instant>,
+}
+
+impl From<WireMessage> for BufferedMessage {
+    fn from(wire_message: WireMessage) -> BufferedMessage {
+        BufferedMessage {
+            wire_message,
+            hash: 0,
+            last_sent: None,
+        }
+    }
 }
 
 /// removed lifetime parameter because compiler says ghost engine needs lifetime that could live statically
@@ -65,7 +88,7 @@ pub struct Sim2hWorker {
     connection_timeout_backoff: u64,
     reconnect_interval: Duration,
     metric_publisher: std::sync::Arc<std::sync::RwLock<dyn MetricPublisher>>,
-    outgoing_message_buffer: Vec<WireMessage>,
+    outgoing_message_buffer: Vec<BufferedMessage>,
     ws_frame: Option<WsFrame>,
     initial_authoring_list: Option<EntryListData>,
     initial_gossiping_list: Option<EntryListData>,
@@ -209,58 +232,67 @@ impl Sim2hWorker {
     }
 
     /// if we have queued wire messages and our connection is ready,
-    /// try to send them
+    /// try to send one
+    /// return if we did something
     fn try_send_from_outgoing_buffer(&mut self) -> bool {
-        let mut did_something = false;
-        loop {
-            if self.outgoing_message_buffer.is_empty() || !self.connection_ready() {
-                return did_something;
-            }
-            did_something = true;
-            let message = self.outgoing_message_buffer.get(0).unwrap();
-            debug!("WireMessage: preparing to send {:?}", message);
-            let payload: String = message.clone().into();
-            let signature = self
-                .conductor_api
-                .execute(payload.clone(), CryptoMethod::Sign)
-                .unwrap_or_else(|e| {
-                    panic!(
-                        "Couldn't sign wire message in sim2h worker: payload={}, error={:?}",
-                        payload, e
-                    )
-                });
-            let signed_wire_message = SignedWireMessage::new(
-                message.clone(),
-                Provenance::new(self.agent_id.clone(), signature.into()),
-            );
-            let to_send: Opaque = signed_wire_message.into();
-            // safe to unwrap because we check connection_ready() above
-            if let Err(e) = self
-                .connection
-                .as_mut()
-                .unwrap()
-                .write(to_send.to_vec().into())
-            {
-                error!(
-                    "TransportError trying to send message to sim2h server: {:?}",
-                    e
-                );
-                self.connection = None;
-                self.check_reconnect();
-                return did_something;
-            }
-            debug!("WireMessage: dequeuing sent message {:?}", message);
-            // if we made it here, we successfully sent the first message
-            // we can remove it from the outgoing buffer queue
-            self.outgoing_message_buffer.remove(0);
+        if self.outgoing_message_buffer.is_empty() || !self.connection_ready() {
+            return false;
         }
+        let buffered_message = self.outgoing_message_buffer.get_mut(0).unwrap();
+        if let Some(instant_last_sent) = buffered_message.last_sent {
+            if instant_last_sent.elapsed() < Duration::from_millis(RESEND_WIRE_MESSAGE_MS) {
+                return false;
+            }
+        }
+        let message = &buffered_message.wire_message;
+        debug!("WireMessage: preparing to send {:?}", message);
+        let payload: String = message.clone().into();
+        let signature = self
+            .conductor_api
+            .execute(payload.clone(), CryptoMethod::Sign)
+            .unwrap_or_else(|e| {
+                panic!(
+                    "Couldn't sign wire message in sim2h worker: payload={}, error={:?}",
+                    payload, e
+                )
+            });
+        let payload: Opaque = payload.into();
+        let signed_wire_message = SignedWireMessage::new(
+            payload.clone(),
+            Provenance::new(self.agent_id.clone(), signature.into()),
+        );
+        let to_send: Opaque = signed_wire_message.into();
+
+        // safe to unwrap because we check connection_ready() above
+        if let Err(e) = self
+            .connection
+            .as_mut()
+            .unwrap()
+            .write(to_send.to_vec().into())
+        {
+            error!(
+                "TransportError trying to send message to sim2h server: {:?}",
+                e
+            );
+            self.connection = None;
+            self.check_reconnect();
+            return true;
+        }
+        let mut hasher = XxHash64::with_seed(RECEIPT_HASH_SEED);
+        payload.hash(&mut hasher);
+        buffered_message.hash = hasher.finish();
+        buffered_message.last_sent = Some(Instant::now());
+        true
     }
 
     /// if we re-connected, we may need to send a join first,
     /// before other queued messages
     fn prepend_wire_message(&mut self, message: WireMessage) -> NetResult<()> {
         debug!("WireMessage: queueing {:?}", message);
-        self.outgoing_message_buffer.insert(0, message);
+        for buffered_message in self.outgoing_message_buffer.iter_mut() {
+            buffered_message.last_sent = None;
+        }
+        self.outgoing_message_buffer.insert(0, message.into());
         Ok(())
     }
 
@@ -269,7 +301,7 @@ impl Sim2hWorker {
         // we always put messages in the outgoing buffer,
         // they'll be sent when the connection is ready
         debug!("WireMessage: queueing {:?}", message);
-        self.outgoing_message_buffer.push(message);
+        self.outgoing_message_buffer.push(message.into());
         Ok(())
     }
 
@@ -524,6 +556,26 @@ impl Sim2hWorker {
                 self.set_full_sync(response.redundant_count == 0);
             }
             WireMessage::StatusResponse(_) => error!("Got a StatusResponse from the Sim2h server, weird! Ignoring (I use Hello not Status)"),
+            WireMessage::Ack(hash) => {
+                if self.outgoing_message_buffer
+                    .first()
+                    .and_then(|buffered_message| Some(buffered_message.hash == hash))
+                    .unwrap_or(false)
+                {
+                    debug!("WireMessage::Ack received => dequeuing sent message {:?}", message);
+                    // if we made it here, we successfully sent the first message
+                    // we can remove it from the outgoing buffer queue
+                    self.outgoing_message_buffer.remove(0);
+                } else {
+                    warn!(
+                        "WireMessage::Ack received that came out of order! Got hash: {}, have top hash: {:?}",
+                        hash,
+                        self.outgoing_message_buffer
+                            .first()
+                            .map(|buffered_message| buffered_message.hash)
+                    );
+                }
+            }
         };
         Ok(())
     }

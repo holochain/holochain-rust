@@ -24,10 +24,10 @@ pub struct SignedWireMessage {
 
 #[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
 impl SignedWireMessage {
-    pub fn new(message: WireMessage, provenance: Provenance) -> Self {
+    pub fn new(payload: Opaque, provenance: Provenance) -> Self {
         SignedWireMessage {
             provenance,
-            payload: message.into(),
+            payload,
         }
     }
 

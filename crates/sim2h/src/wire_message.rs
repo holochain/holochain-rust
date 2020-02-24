@@ -4,7 +4,7 @@ use lib3h_protocol::{data_types::Opaque, protocol::*};
 use std::convert::TryFrom;
 
 pub type WireMessageVersion = u32;
-pub const WIRE_VERSION: WireMessageVersion = 2;
+pub const WIRE_VERSION: WireMessageVersion = 3;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum WireError {
@@ -43,6 +43,7 @@ pub enum WireMessage {
     HelloResponse(HelloData),
     Status,
     StatusResponse(StatusData),
+    Ack(u64),
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
@@ -106,6 +107,7 @@ impl WireMessage {
                 get_multi_type(messages)
             }
             WireMessage::Err(_) => "[Error] {:?}",
+            WireMessage::Ack(_) => "[Ack] {:?}",
         })
     }
 }
@@ -173,6 +175,11 @@ impl From<WireError> for Sim2hError {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use holochain_tracing::SpanWrap;
+    use lib3h_protocol::{
+        data_types::SpaceData,
+        types::{AgentPubKey, SpaceHash},
+    };
 
     #[test]
     pub fn test_wire_message() {
@@ -201,5 +208,54 @@ pub mod tests {
         assert_eq!("\"\\\"Ping\\\"\"", format!("{}", opaque_msg));
         let roundtrip_msg = WireMessage::try_from(opaque_msg).expect("deserialize should work");
         assert_eq!(roundtrip_msg, msg);
+    }
+
+    fn wire_message_join_space() -> WireMessage {
+        let c2l = ClientToLib3h::JoinSpace(SpaceData {
+            request_id: String::from("0123"),
+            space_address: SpaceHash::from("QmABCDEF"),
+            agent_id: AgentPubKey::from("Hc345345"),
+        });
+        WireMessage::ClientToLib3h(SpanWrap::new(c2l, None).into())
+    }
+
+    #[test]
+    pub fn test_wire_message_client_to_lib3h() {
+        let msg = wire_message_join_space();
+        let opaque_msg: Opaque = msg.clone().into();
+
+        let roundtrip_msg = WireMessage::try_from(opaque_msg).expect("deserialize should work");
+        assert_eq!(roundtrip_msg, msg);
+
+        let roundtrip_string: String = roundtrip_msg.into();
+        let msg_string: String = msg.into();
+        assert_eq!(roundtrip_string, msg_string);
+    }
+
+    // This WireMessage is a real-world example that serializes non-deterministically
+    #[allow(dead_code)]
+    fn wire_message_app_spec_fixture() -> WireMessage {
+        let raw = r#"{"Lib3hToClientResponse":{"data":{"HandleGetAuthoringEntryListResult":{"space_address":"QmQ7guHG2Y3fbtNaLoV1kFex66AqepoCTqQ9XtYYQKAFZK","provider_agent_id":"HcScJxNnN6Bi5d5tda7OHWGKNBgjq9oieP9GQXsmO5Svp8fa3gTK5DJQFwgditr","request_id":"","address_map":{"Qmey39PmjYAJ5r5bCKtWe4nMxVcTmTwLE3YN142kVe5CJE":["QmT3mV6mKsh4aEQoJ5J8feUruNGYTTd4FPuPicMxmZf8DY"],"HcScJxNnN6Bi5d5tda7OHWGKNBgjq9oieP9GQXsmO5Svp8fa3gTK5DJQFwgditr":["QmVr1H6B6P6iydnzCF7fh7abDz1yznrjecMwCSMmtGA4EN"],"QmW22euyQLF7wK8yYhnCZHZq64G7ryQ2TqQ5D3L7vhszg2":["QmWAU3DTuuwdNFPpX3gqEsG7bAttePbJQZjirrh39MfGxR"],"Qmavdnym3BKrKJxuNoSxLnoPwUBWtqsVhSnQmdmm4FFnyK":["QmPybN5GGibjAno6hmKCWJgM8RRkeo1vga57ZA3QbevrrL"]}}},"span_context":[149,217,162,104,57,50,215,185,128,95,199,101,105,81,143,213,10,14,105,185,134,247,194,247,0,0,0,0,0,0,0,0,1,0,0,0,0]}}"#;
+        let opaque: Opaque = raw.into();
+        WireMessage::try_from(opaque).unwrap()
+    }
+
+    // This test is broken because of the non-deterministic serialization issue of WireMessages.
+    // TODO: make serialization of WireMessages deterministic by replacing the HashMap in
+    // Lib3hProtocol with a BTreeMap or add a custom serialization routine.
+    // Then this test should be activated to ensure that WireMessages' into::<String>()
+    // always returns the same result if the WireMessage is the same.
+    #[cfg(feature = "broken-tests")]
+    #[test]
+    pub fn test_wire_message_app_spec_fixture_deterministic_serialization() {
+        let msg = wire_message_app_spec_fixture();
+        let opaque_msg: Opaque = msg.clone().into();
+
+        let roundtrip_msg = WireMessage::try_from(opaque_msg).expect("deserialize should work");
+        assert_eq!(roundtrip_msg, msg);
+
+        let roundtrip_string: String = roundtrip_msg.into();
+        let msg_string: String = msg.into();
+        assert_eq!(roundtrip_string, msg_string);
     }
 }

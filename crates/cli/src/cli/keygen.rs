@@ -153,7 +153,7 @@ fn keygen_dpki(
 pub mod test {
     use super::*;
     use cli::dpki;
-    use holochain_conductor_api::{
+    use holochain_conductor_lib::{
         key_loaders::mock_passphrase_manager,
         keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
     };

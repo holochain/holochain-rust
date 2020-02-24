@@ -27,15 +27,15 @@ use lib3h_protocol::{
 use log::*;
 use sim2h::{
     crypto::{Provenance, SignedWireMessage},
-    TcpWss, WireError, WireMessage, WIRE_VERSION,
+    TcpWss, WireError, WireMessage, RECEIPT_HASH_SEED, WIRE_VERSION,
 };
-#[allow(deprecated)]
 use std::{
     convert::TryFrom,
-    hash::{Hash, Hasher, SipHasher},
+    hash::{Hash, Hasher},
     time::Instant,
 };
 
+use twox_hash::XxHash64;
 use url::Url;
 use url2::prelude::*;
 
@@ -278,8 +278,7 @@ impl Sim2hWorker {
             self.check_reconnect();
             return true;
         }
-        #[allow(deprecated)]
-        let mut hasher = SipHasher::new();
+        let mut hasher = XxHash64::with_seed(RECEIPT_HASH_SEED);
         payload.hash(&mut hasher);
         buffered_message.hash = hasher.finish();
         buffered_message.last_sent = Some(Instant::now());

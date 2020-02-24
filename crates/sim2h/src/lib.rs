@@ -52,8 +52,7 @@ use in_stream::*;
 use log::*;
 use rand::{seq::SliceRandom, thread_rng};
 use std::convert::TryFrom;
-#[allow(deprecated)]
-use std::hash::{Hash, Hasher, SipHasher};
+use std::hash::{Hash, Hasher};
 
 use holochain_locksmith::Mutex;
 use holochain_metrics::{config::MetricPublisherConfig, Metric};
@@ -73,6 +72,7 @@ lazy_static! {
 
 /// if we can't acquire a lock in 20 seconds, panic!
 const MAX_LOCK_TIMEOUT: u64 = 20000;
+pub const RECEIPT_HASH_SEED: u64 = 0;
 
 //set up license_key
 new_relic_setup!("NEW_RELIC_LICENSE_KEY");
@@ -206,6 +206,7 @@ pub enum DhtAlgorithm {
 #[allow(dead_code)]
 mod mono_ref;
 use mono_ref::*;
+use twox_hash::XxHash64;
 
 #[allow(dead_code)]
 mod sim2h_im_state;
@@ -1319,8 +1320,7 @@ impl Sim2h {
 }
 
 fn send_receipt(sim2h_handle: Sim2hHandle, payload: &Opaque, source: AgentId, url: Lib3hUri) {
-    #[allow(deprecated)]
-    let mut hasher = SipHasher::new();
+    let mut hasher = XxHash64::with_seed(RECEIPT_HASH_SEED);
     payload.hash(&mut hasher);
     let hash = hasher.finish();
     let receipt = WireMessage::Ack(hash);

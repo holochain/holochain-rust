@@ -289,6 +289,9 @@ impl Sim2hWorker {
     /// before other queued messages
     fn prepend_wire_message(&mut self, message: WireMessage) -> NetResult<()> {
         debug!("WireMessage: queueing {:?}", message);
+        for buffered_message in self.outgoing_message_buffer.iter_mut() {
+            buffered_message.last_sent = None;
+        }
         self.outgoing_message_buffer.insert(0, message.into());
         Ok(())
     }

@@ -6,6 +6,7 @@ use holochain_json_api::{
     error::JsonError,
     json::{default_to_json, JsonString},
 };
+use crate::wasm_engine::runtime::WasmCallData;
 use crate::nucleus::CallbackFnCall;
 use crate::wasm_engine;
 use crate::wasm_engine::Defn;

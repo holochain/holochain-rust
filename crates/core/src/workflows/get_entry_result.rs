@@ -12,6 +12,7 @@ use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_types::get_entry::{
     GetEntryArgs, GetEntryResult, StatusRequestKind,
 };
+use holochain_wasm_types::ZomeApiResult;
 use std::sync::Arc;
 
 /// Get Entry workflow
@@ -126,6 +127,10 @@ pub async fn get_entry_result_workflow<'a>(
     }
 
     Ok(entry_result)
+}
+
+pub fn invoke_get_entry(context: Arc<Context>, args: GetEntryArgs) -> ZomeApiResult {
+    context.block_on(get_entry_result_workflow(&context, &args))
 }
 
 //#[cfg(test)]

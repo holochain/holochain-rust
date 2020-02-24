@@ -13,7 +13,7 @@ use holochain_core_types::{
     error::HolochainError,
     validation::ValidationPackageDefinition,
 };
-
+use std::convert::TryFrom;
 use holochain_json_api::json::JsonString;
 use crate::workflows::callback::links_utils;
 use holochain_wasm_types::validation::LinkValidationPackageArgs;

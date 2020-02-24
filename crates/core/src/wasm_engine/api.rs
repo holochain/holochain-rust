@@ -32,6 +32,7 @@ use crate::nucleus::WasmApiFnCall;
 use holochain_wasm_types::ZomeApiResult;
 use crate::wasm_engine::runtime::Runtime;
 use core::str::FromStr;
+use holochain_wasm_types::WasmError;
 
 #[macro_export]
 macro_rules! link_zome_api {
@@ -122,7 +123,10 @@ macro_rules! link_zome_api {
                                 let result = $function_name(runtime, args.into());
                                 let hdk_fn_result = Ok(JsonString::from("TODO"));
                                 trace_return_wasm_api_function(zome_api_call.clone(), hdk_fn_call, hdk_fn_result, &context);
-                                result
+                                match result {
+                                    Ok(v) => Ok(holochain_wasmer_host::json::to_allocation_ptr(v.into())),
+                                    Err(e) => Err(WasmError::from(e)),
+                                }
                             } else {
                                 error!("Can't record zome call hdk invocations for non zome call");
                                 $function_name(runtime, args)

@@ -9,7 +9,6 @@ use crate::{
     },
     NEW_RELIC_LICENSE_KEY,
 };
-use holochain_wasm_types::ZomeApiResult;
 use holochain_core_types::error::HolochainError;
 use holochain_wasm_types::get_links::{
     GetLinksArgs, GetLinksResult, LinksResult,
@@ -56,6 +55,6 @@ pub async fn get_link_result_workflow<'a>(
     }
 }
 
-pub fn invoke_get_links(context: Arc<Context>, link_args: GetLinksArgs) -> ZomeApiResult {
+pub fn invoke_get_links(context: Arc<Context>, link_args: GetLinksArgs) -> Result<GetLinksResult, HolochainError> {
     context.block_on(get_link_result_workflow(&context, &link_args))
 }

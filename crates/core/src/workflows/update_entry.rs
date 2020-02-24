@@ -24,7 +24,7 @@ pub fn invoke_update_entry(
         address: entry_args.address,
         options: Default::default(),
     };
-    let maybe_entry_result = context.block_on(get_entry_result_workflow(context, &get_args));
+    let maybe_entry_result = context.block_on(get_entry_result_workflow(&context, &get_args));
     if let Err(err) = maybe_entry_result {
         log_error!(context, "zome: get_entry_result_workflow failed: {:?}", err);
         Err(WasmError::WorkflowFailed)?;
@@ -42,7 +42,7 @@ pub fn invoke_update_entry(
         .block_on(author_entry(
             &entry,
             Some(latest_entry.address()),
-            context,
+            &context,
             &vec![], // TODO should provenance be a parameter?
         ))
         .map(|result| result.address())

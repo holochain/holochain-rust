@@ -26,7 +26,7 @@ pub fn invoke_remove_entry(
         address: deleted_entry_address,
         options: Default::default(),
     };
-    let maybe_entry_result = context.block_on(get_entry_result_workflow(context, &get_args));
+    let maybe_entry_result = context.block_on(get_entry_result_workflow(&context, &get_args));
 
     if let Err(err) = maybe_entry_result {
         log_error!(context, "zome: get_entry_result_workflow failed: {:?}", err);
@@ -46,7 +46,7 @@ pub fn invoke_remove_entry(
         .block_on(author_entry(
             &deletion_entry.clone(),
             Some(deleted_entry_address),
-            context,
+            &context,
             &vec![],
         ))
         .map(|_| deletion_entry.address())

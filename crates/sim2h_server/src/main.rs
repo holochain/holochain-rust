@@ -59,6 +59,7 @@ fn main() {
     env_logger::init();
     let args = Cli::from_args();
 
+    /*
     let tracer = if let Some(service_name) = args.tracing_name {
         let (span_tx, span_rx) = crossbeam_channel::unbounded();
         let _ = std::thread::Builder::new()
@@ -75,6 +76,14 @@ fn main() {
     } else {
         None
     };
+    */
+    let tracer = if let Some(service_name) = args.tracing_name {
+        holochain_tracing::tracing::init(service_name).expect("Failed to start tracing");
+        None
+    } else {
+        None
+    };
+
 
     let host = "ws://0.0.0.0/";
     let uri = Builder::with_raw_url(host)

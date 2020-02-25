@@ -40,8 +40,8 @@ holochain_core_types = { version = "=0.0.43-alpha3", path = "../core_types" }
 holochain_dpki = { version = "=0.0.43-alpha3", path = "../dpki" }
 holochain_locksmith = { version = "=0.0.43-alpha3", path = "../locksmith" }
 holochain_metrics = { version = "=0.0.43-alpha3", path = "../metrics" }
-holochain_tracing = "=0.0.19"
-holochain_tracing_macros = "=0.0.19"
+holochain_tracing = "=0.0.20"
+holochain_tracing_macros = "=0.0.20"
 log = "=0.4.8"
 holochain_logging = "=0.0.7"
 boolinator = "=2.4.0"
@@ -55,7 +55,7 @@ crossbeam-channel = "=0.3.8"
 regex = "=1.1.2"
 env_logger = "=0.6.1"
 url = { version = "=2.1.0", features = ["serde"] }
-rand = "0.7.2"
+rand = "=0.7.3"
 threadpool = "=1.7.1"
 im = { version = "=14.0.0", features = ["serde"] }
 itertools = "0.8.2"

@@ -1,5 +1,6 @@
 #![feature(vec_remove_item)]
 #![feature(label_break_value)]
+#![feature(proc_macro_hygiene)]
 #![allow(clippy::redundant_clone)]
 
 extern crate backtrace;
@@ -276,6 +277,18 @@ impl Sim2hHandle {
 
     /// forward a message to be handled
     pub fn handle_message(&self, uri: Lib3hUri, message: WireMessage, signer: AgentId) {
+        let context = message
+            .try_get_span()
+            .and_then(|spans| spans.get(0).map(|s| (*s).to_owned()))
+            .and_then(|span| ht::SpanContext::decode(span).ok());
+        let follow = ht::follow_span!("follower", context);
+        let _g = follow.enter();
+
+        tracing::info!("testing");
+        let span = tracing::info_span!("inner span");
+        let _guard = span.enter();
+        tracing::info!("testing again");
+
         // dispatch to correct handler
         let sim2h_handle = self.clone();
 
@@ -893,6 +906,10 @@ fn spawn_handle_message_query_entry(
             }
             Some(url) => url,
         };
+        
+        let span = tracing::info_span!("Out qe", root = true);
+        //let id = span.id();
+        let _g = span.enter();
         let span = ht::top_follower("inner");
         let query_message = WireMessage::Lib3hToClient(
             span.wrap(Lib3hToClient::HandleQueryEntry(query_data))
@@ -1360,10 +1377,13 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
                     None => continue,
                     Some(uri) => uri,
                 };
+                let span = tracing::info_span!("Out", root = true);
+                let id = span.id();
+                let _g = span.enter();
+                let context = ht::tracing::span_context(&id.unwrap()).expect("failed to create context");
 
                 let wire_message = WireMessage::Lib3hToClient(
-                    ht::top_follower("inner")
-                        .wrap(Lib3hToClient::HandleFetchEntry(FetchEntryData {
+                        context.wrap(Lib3hToClient::HandleFetchEntry(FetchEntryData {
                             request_id: "".to_string(),
                             space_address: (&**space_hash).clone(),
                             provider_agent_id: (&*query_agent).clone(),

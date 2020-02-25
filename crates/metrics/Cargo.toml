@@ -12,7 +12,7 @@ shrinkwraprs = "=0.2.1"
 serde = { version = "=1.0.104", features = ["rc"] }
 serde_derive = "=1.0.104"
 holochain_locksmith = { version = "=0.0.43-alpha3", path = "../locksmith" }
-holochain_tracing_macros = "=0.0.19"
+holochain_tracing_macros = "=0.0.20"
 holochain_common = { version = "=0.0.43-alpha3", path = "../common" }
 lazy_static = "=1.4.0"
 num-traits = "=0.2.6"
@@ -22,7 +22,7 @@ log = "=0.4.8"
 holochain_logging = "=0.0.7"
 regex = "=1.1.2"
 env_logger = "=0.6.1"
-rand = "0.7.2"
+rand = "=0.7.3"
 ## For cloudwatch logs / sts
 rusoto_sts = "=0.40.0"
 rusoto_logs = "=0.40.0"

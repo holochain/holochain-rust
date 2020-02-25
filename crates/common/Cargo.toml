@@ -9,5 +9,5 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
 [dependencies]
-directories = "=1.0.2"
-lazy_static = "=1.4.0"
+directories = "1.0.2"
+lazy_static = "1.4.0"

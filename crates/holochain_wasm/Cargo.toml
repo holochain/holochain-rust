@@ -13,5 +13,5 @@ name = "holochain_conductor_wasm"
 crate-type = ["cdylib"]
 
 [dependencies]
-holochain_core_types = { version = "=0.0.43-alpha3", path = "../core_types" }
-wasm-bindgen = "=0.2.32"
+holochain_core_types = { version = "0.0.43-alpha3", path = "../core_types" }
+wasm-bindgen = "0.2.32"

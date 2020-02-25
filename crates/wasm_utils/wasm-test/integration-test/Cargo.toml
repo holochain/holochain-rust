@@ -13,9 +13,9 @@ panic = "abort"
 members = []
 
 [dependencies]
-serde = "=1.0.104"
-wasmi = "=0.4.4"
-serde_derive = "=1.0.104"
-serde_json = { version = "=1.0.47", features = ["preserve_order"] }
+serde = "1.0.104"
+wasmi = "0.4.4"
+serde_derive = "1.0.104"
+serde_json = { version = "1.0.47", features = ["preserve_order"] }
 holochain_wasm_utils = { path = "../../"}
-holochain_json_derive = "=0.0.23"
+holochain_json_derive = "0.0.23"

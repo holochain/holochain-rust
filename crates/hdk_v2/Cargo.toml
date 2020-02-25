@@ -12,7 +12,7 @@ edition = "2018"
 proc-macro = true
 
 [dependencies]
-syn = { version = "=0.15.31", features = ["full", "extra-traits"]}
-quote = "=0.6.11"
-proc-macro2 = "=0.4.27"
-hdk = { version = "=0.0.43-alpha3", path = "../hdk" }
+syn = { version = "0.15.31", features = ["full", "extra-traits"]}
+quote = "0.6.11"
+proc-macro2 = "0.4.27"
+hdk = { version = "0.0.43-alpha3", path = "../hdk" }

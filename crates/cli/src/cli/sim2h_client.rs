@@ -48,7 +48,7 @@ pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), St
         "debug" => WireMessage::Debug,
         _ => {
             return Err(format!(
-                "expecting 'ping' or 'status' for message, got: {}",
+                "expecting 'ping', 'status' or 'debug' for message, got: {}",
                 message_string
             ))
         }

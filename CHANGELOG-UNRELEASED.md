@@ -8,6 +8,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 - Changed Pagination to have different types [#2110](https://github.com/holochain/holochain-rust/pull/2110)
+- Link matches are not based on regex anymore [#2110](https://github.com/holochain/holochain-rust/pull/2110)
 ### Deprecated
 
 ### Removed

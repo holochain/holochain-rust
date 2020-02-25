@@ -44,13 +44,10 @@ pub fn get_links_with_options(
     tag: LinkMatch<&str>,
     options: GetLinksOptions,
 ) -> ZomeApiResult<GetLinksResult> {
-    let type_re = link_type.to_regex_string()?;
-    let tag_re = tag.to_regex_string()?;
-
     Dispatch::GetLinks.with_input(GetLinksArgs {
         entry_address: base.clone(),
-        link_type: type_re,
-        tag: tag_re,
+        link_type: link_type.into(),
+        tag: tag.into(),
         options,
     })
 }
@@ -81,12 +78,10 @@ pub fn get_links_count_with_options(
     tag: LinkMatch<&str>,
     options: GetLinksOptions,
 ) -> ZomeApiResult<GetLinksResultCount> {
-    let type_re = link_type.to_regex_string()?;
-    let tag_re = tag.to_regex_string()?;
     Dispatch::GetLinksCount.with_input(GetLinksArgs {
         entry_address: base.clone(),
-        link_type: type_re,
-        tag: tag_re,
+        link_type: link_type.into(),
+        tag: tag.into(),
         options,
     })
 }

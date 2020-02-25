@@ -75,7 +75,6 @@ pub enum LinkActionKind {
 pub enum LinkMatch<S: Into<String>> {
     Any,
     Exactly(S),
-    Regex(S),
 }
 
 impl<S: Into<String>> LinkMatch<S> {
@@ -84,12 +83,20 @@ impl<S: Into<String>> LinkMatch<S> {
         let re_string: String = match self {
             LinkMatch::Any => ".*".into(),
             LinkMatch::Exactly(s) => "^".to_owned() + &regex::escape(&s.into()) + "$",
-            LinkMatch::Regex(s) => s.into(),
         };
         // check that it is a valid regex
         match Regex::new(&re_string) {
             Ok(_) => Ok(re_string),
             Err(_) => Err("Invalid regex passed to get_links".into()),
+        }
+    }
+}
+
+impl<S: Into<String>> Into<Option<String>> for LinkMatch<S> {
+    fn into(self) -> Option<String> {
+        match self {
+            LinkMatch::Exactly(s) => Some(s.into()),
+            _ => None,
         }
     }
 }

@@ -10,7 +10,7 @@ use crate::{
 use boolinator::*;
 use holochain_core_types::{
     entry::Entry,
-    validation::{ValidationError, ValidationResult},
+    validation::{ValidationResult},
     validation::{LinkValidationData, ValidationData},
 };
 
@@ -30,20 +30,20 @@ pub async fn validate_link_entry(
         Entry::LinkAdd(link_add) => link_add.clone(),
         Entry::LinkRemove((link_remove, _)) => link_remove,
         _ => {
-            return Err(ValidationError::Fail(
+            return Err(ValidationResult::Fail(
                 "Could not extract link_add from entry".into(),
             ));
         }
     };
     let link = link.link().clone();
     let (base, target) = links_utils::get_link_entries(&link, context).map_err(|_| {
-        ValidationError::UnresolvedDependencies(
+        ValidationResult::UnresolvedDependencies(
             [link.base().clone(), link.target().clone()].to_vec(),
         )
     })?;
 
     let link_definition_path = links_utils::find_link_definition_by_type(link.link_type(), context)
-        .map_err(|_| ValidationError::NotImplemented)?;
+        .map_err(|_| ValidationResult::NotImplemented)?;
 
     let dna = context
         .state()
@@ -79,7 +79,7 @@ pub async fn validate_link_entry(
     };
 
     (base.entry_type().to_string() == base_type)
-        .ok_or(ValidationError::Fail(format!(
+        .ok_or(ValidationResult::Fail(format!(
             "Wrong base type for link of type '{}'. Found '{}', but link is defined to link from '{}'s.",
             link.link_type(),
             base_type,
@@ -87,7 +87,7 @@ pub async fn validate_link_entry(
         )))?;
 
     (target.entry_type().to_string() == target_type)
-        .ok_or(ValidationError::Fail(format!(
+        .ok_or(ValidationResult::Fail(format!(
             "Wrong target type for link of type '{}'. Found '{}', but link is defined to link to '{}'s.",
             link.link_type(),
             target_type,
@@ -103,7 +103,7 @@ pub async fn validate_link_entry(
             link,
             validation_data,
         }),
-        _ => Err(ValidationError::Fail("Entry is not link".to_string())),
+        _ => Err(ValidationResult::Fail("Entry is not link".to_string())),
     }?;
 
     let params = LinkValidationArgs {

@@ -223,9 +223,15 @@ macro_rules! entry {
             });
 
             let validator = Box::new(|validation_data: $crate::holochain_core_types::validation::EntryValidationData<$crate::holochain_core_types::entry::Entry>| {
-                let $validation_data = $crate::entry_definition::entry_to_native_type::<$native_type>(validation_data.clone())?;
+                let $validation_data = match $crate::entry_definition::entry_to_native_type::<$native_type>(validation_data.clone()) {
+                    Ok(v) => v,
+                    Err(e) => return e.into(),
+                };
                 use std::convert::TryFrom;
-                let e_type = $crate::holochain_core_types::entry::entry_type::EntryType::try_from(validation_data)?;
+                let e_type = match $crate::holochain_core_types::entry::entry_type::EntryType::try_from(validation_data) {
+                    Ok(v) => v,
+                    Err(e) => return e.into(),
+                };
                 match e_type {
                     $crate::holochain_core_types::entry::entry_type::EntryType::App(_) => {
                         $entry_validation
@@ -235,7 +241,7 @@ macro_rules! entry {
                         $entry_validation
                     }
                     _ => {
-                        return ValidationResult::Err(ValidationError::Fail("Schema validation failed".into()));
+                        return ValidationResult::Fail("Schema validation failed".into());
                     }
                 }
             });

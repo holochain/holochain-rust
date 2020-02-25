@@ -20,8 +20,14 @@ use chain_header::test_chain_header;
 use std::convert::TryFrom;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, DefaultJson)]
-/// A failed validation.
-pub enum ValidationError {
+/// The result of a validation
+/// NOT used to represent an error somewhere _nearby_ validation, use something like
+/// Result<ValidationResult, HolochainError> to represent related errors
+/// If an error occurs _during_ validation, this is a `Fail`.
+pub enum ValidationResult {
+    /// `Ok` means whatever was validated is valid
+    Ok,
+
     /// `Fail` means the validation function did run successfully and recognized the entry
     /// as invalid. The String parameter holds the non-zero return value of the app validation
     /// function.
@@ -37,55 +43,48 @@ pub enum ValidationError {
     /// system entry type yet.
     NotImplemented,
 
-    /// An error occurred that is out of the scope of validation (no state?, I/O errors..)
-    Err(HolochainError),
+    /// Something timed out
+    /// @TODO maybe we want to retry or handle it gracefully somehow?
+    Timeout,
 }
 
-/// Result of validating an entry.
-/// Either Ok(()) if the entry is valid,
-/// or any specialization of ValidationError.
-// pub type ValidationResult = Result<(), ValidationError>;
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, DefaultJson)]
-pub enum ValidationResult {
-    Ok,
-    Err(ValidationError),
-}
+// impl std::ops::Try for ValidationResult {
+//     type Ok = ();
+//     type Error = HolochainError;
+//     fn from_error(e: Self::Error) -> Self {
+//         Self::Err(e)
+//     }
+//     fn from_ok(_: <Self as std::ops::Try>::Ok) -> Self {
+//         Self::Ok
+//     }
+//     fn into_result(self) -> Result<<Self as std::ops::Try>::Ok, Self::Error> {
+//         match self {
+//             Self::Ok => Ok(()),
+//             Self::Err(e) => Err(e),
+//         }
+//     }
+// }
 
-impl std::ops::Try for ValidationResult {
-    type Ok = ();
-    type Error = ValidationError;
-    fn from_error(e: Self::Error) -> Self {
-        Self::Err(e)
-    }
-    fn from_ok(_: <Self as std::ops::Try>::Ok) -> Self {
-        Self::Ok
-    }
-    fn into_result(self) -> Result<<Self as std::ops::Try>::Ok, Self::Error> {
-        match self {
-            Self::Ok => Ok(()),
-            Self::Err(e) => Err(e),
-        }
-    }
-}
+// impl From<ValidationResult> for HolochainError {
+//     fn from(v: ValidationResult) -> Self {
+//         match v {
+//             ValidationResult::Ok =>
+//             ValidationResult::Fail(reason) => HolochainError::ValidationFailed(reason),
+//             ValidationResult::UnresolvedDependencies(_) => {
+//                 HolochainError::ValidationFailed("Missing dependencies".to_string())
+//             }
+//             ValidationResult::NotImplemented => {
+//                 HolochainError::NotImplemented("Validation not implemented".to_string())
+//             }
+//             ValidationResult::Err(e) => e,
+//         }
+//     }
+// }
 
-impl From<ValidationError> for HolochainError {
-    fn from(ve: ValidationError) -> Self {
-        match ve {
-            ValidationError::Fail(reason) => HolochainError::ValidationFailed(reason),
-            ValidationError::UnresolvedDependencies(_) => {
-                HolochainError::ValidationFailed("Missing dependencies".to_string())
-            }
-            ValidationError::NotImplemented => {
-                HolochainError::NotImplemented("Validation not implemented".to_string())
-            }
-            ValidationError::Err(e) => e,
-        }
-    }
-}
-
-impl From<JsonError> for ValidationError {
+impl From<JsonError> for ValidationResult {
     fn from(e: JsonError) -> Self {
-        Self::Err(e.into())
+        // if we can't (de)serialize some data this de facto implies a validation failure
+        Self::Fail(e.into())
     }
 }
 

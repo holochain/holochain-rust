@@ -9,7 +9,6 @@ use crate::{
     },
     NEW_RELIC_LICENSE_KEY,
 };
-use holochain_core_types::validation::ValidationError;
 use holochain_core_types::validation::ValidationResult;
 use holochain_core_types::{entry::Entry, validation::ValidationData};
 use holochain_persistence_api::cas::content::AddressableContent;
@@ -26,25 +25,25 @@ pub async fn validate_remove_entry(
     let deletion_entry = unwrap_to!(entry=>Entry::Deletion);
     let deletion_address = deletion_entry.deleted_entry_address().clone();
     let entry_to_delete = get_entry_from_dht(&context.clone(), &deletion_address)
-        .map_err(|_| ValidationError::UnresolvedDependencies(vec![deletion_address.clone()]))?
+        .map_err(|_| ValidationResult::UnresolvedDependencies(vec![deletion_address.clone()]))?
         .ok_or_else(|| {
-            ValidationError::Fail("Could not obtain entry for link_update_delte".to_string())
+            ValidationResult::Fail("Could not obtain entry for link_update_delte".to_string())
         })?;
     let app_entry_type = match entry_to_delete.clone() {
         Entry::App(app_entry_type, _) => Ok(app_entry_type),
-        _ => Err(ValidationError::Fail(
+        _ => Err(ValidationResult::Fail(
             "Entry type should be App Type".to_string(),
         )),
     }?;
 
     let zome_name = dna
         .get_zome_name_for_app_entry_type(&app_entry_type)
-        .ok_or(ValidationError::NotImplemented)?;
+        .ok_or(ValidationResult::NotImplemented)?;
 
     let params = EntryValidationArgs {
         validation_data: entry_to_validation_data(context.clone(), &entry, None, validation_data)
             .map_err(|_| {
-            ValidationError::Fail("Could not get entry validation".to_string())
+            ValidationResult::Fail("Could not get entry validation".to_string())
         })?,
     };
 

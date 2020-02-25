@@ -10,7 +10,7 @@ use holochain_json_api::{
     error::{JsonError, JsonResult},
     json::*,
 };
-use validation::ValidationError;
+use validation::ValidationResult;
 use holochain_locksmith::LocksmithError;
 use holochain_persistence_api::{error::PersistenceError, hash::HashString};
 use lib3h_crypto_api::CryptoError;
@@ -120,9 +120,10 @@ pub enum HolochainError {
     List(Vec<HolochainError>),
 }
 
-impl From<HolochainError> for ValidationError {
-    fn from(e: HolochainError) -> ValidationError {
-        ValidationError::Err(e)
+impl From<HolochainError> for ValidationResult {
+    fn from(e: HolochainError) -> ValidationResult {
+        // any error _during_ validation is a failure of validation
+        ValidationResult::Fail(e.to_string())
     }
 }
 

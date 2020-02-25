@@ -9,7 +9,7 @@ use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
     network::entry_aspect::EntryAspect,
-    validation::{EntryLifecycle, ValidationData, ValidationError},
+    validation::{EntryLifecycle, ValidationData},
 };
 use std::sync::Arc;
 

@@ -7,7 +7,6 @@ use crate::{
     NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::validation::ValidationResult;
-use holochain_core_types::validation::ValidationError;
 use holochain_core_types::error::HolochainError;
 use holochain_persistence_api::cas::content::Address;
 use std::sync::Arc;
@@ -47,10 +46,8 @@ pub async fn run_validation_callback(
                 // TODO: have "not matching schema" be its own error
                 Err(HolochainError::Wasm(wasm_error)) => {
                     if wasm_error == "WasmError::ArgumentDeserializationFailed" {
-                        ValidationResult::Err(
-                            ValidationError::Fail(
+                            ValidationResult::Fail(
                             "JSON object does not match entry schema".into()
-                        )
                         )
                     } else {
                         // an unknown error from the ribosome should panic rather than

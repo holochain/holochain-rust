@@ -9,7 +9,7 @@ use crate::{
 use holochain_core_types::{
     error::HolochainError,
     network::entry_aspect::EntryAspect,
-    validation::{EntryLifecycle, ValidationData, ValidationError},
+    validation::{EntryLifecycle, ValidationData},
 };
 use std::sync::Arc;
 

@@ -545,8 +545,6 @@ fn handle_hash(content:String) ->ZomeApiResult<Address>
     ))
 }
 
-
-
 fn hdk_test_entry() -> Entry {
     Entry::App(hdk_test_app_entry_type(), hdk_test_entry_value())
 }
@@ -661,7 +659,7 @@ define_zome! {
                         if test_entry.stuff != "FAIL" {
                             ValidationResult::Ok
                         } else {
-                            ValidationResult::Err(ValidationError::Fail("FAIL content is not allowed".into()))
+                            ValidationResult::Fail("FAIL content is not allowed".into())
                         }
                     },
                     _=> ValidationResult::Ok,
@@ -717,11 +715,12 @@ define_zome! {
                 {
                     EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                     {
-
-                        ValidationResult::Err(ValidationError::Fail(match serde_json::to_string(&test_entry) {
+                        // EntryValidationData::Create is always a fail, we just need to build an
+                        // error string for it
+                        ValidationResult::Fail(match serde_json::to_string(&test_entry) {
                             Ok(v) => v,
                             Err(e) => e.to_string(),
-                        }))
+                        })
 
                     },
                 _ => ValidationResult::Ok,
@@ -751,7 +750,7 @@ define_zome! {
             },
 
             validation: |validation_data: hdk::EntryValidationData<TestEntryType>| {
-                ValidationResult::Err(ValidationError::Fail(String::new()))
+                ValidationResult::Fail(String::new())
             }
         ),
 
@@ -784,31 +783,37 @@ define_zome! {
 
                         if link.link().tag()=="muffins"
                         {
-                            ValidationResult::Err(ValidationError::Fail("invalid tag".into()))
+                            ValidationResult::Fail("invalid tag".into())
                         }
                         else
                         {
                             let base = link.link().base();
                             let target = link.link().target();
-                            let base = match hdk::get_entry(&base)? {
-                                Some(entry) => match entry {
-                                    Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,
-                                    _ => return ValidationResult::Err(ValidationError::Fail("System entry found".into())),
+                            let base = match hdk::get_entry(&base) {
+                                Ok(Some(entry)) => match entry {
+                                    Entry::App(_, test_entry) => match TestEntryType::try_from(test_entry) {
+                                        Ok(v) => v,
+                                        Err(e) => return ValidationResult::Fail(e.into()),
+                                    },
+                                    _ => return ValidationResult::Fail("System entry found".into()),
                                 },
-                                None => return ValidationResult::Err(ValidationError::Fail("Base not found".into())),
+                                _ => return ValidationResult::UnresolvedDependencies(vec![base.clone()]),
                             };
 
-                            let target = match hdk::get_entry(&target)? {
-                                Some(entry) => match entry {
-                                    Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,
-                                    _ => return ValidationResult::Err(ValidationError::Fail("System entry found".into())),
+                            let target = match hdk::get_entry(&target) {
+                                Ok(Some(entry)) => match entry {
+                                    Entry::App(_, test_entry) => match TestEntryType::try_from(test_entry) {
+                                        Ok(v) => v,
+                                        Err(e) => return ValidationResult::Fail(e.into()),
+                                    },
+                                    _ => return ValidationResult::Fail("System entry found".into()),
                                 }
-                                None => return ValidationResult::Err(ValidationError::Fail("Target not found".into())),
+                                _ => return ValidationResult::UnresolvedDependencies(vec![target.clone()]),
                             };
                             if target.stuff.len() > base.stuff.len() {
                                 ValidationResult::Ok
                             } else {
-                                ValidationResult::Err(ValidationError::Fail("Target stuff is not longer".into()))
+                                ValidationResult::Fail("Target stuff is not longer".into())
                             }
                         }
 

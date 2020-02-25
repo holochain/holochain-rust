@@ -8,7 +8,7 @@ use crate::{workflows::validation_package};
 use holochain_core_types::{
     error::HolochainError,
     network::entry_aspect::EntryAspect,
-    validation::{EntryLifecycle, ValidationData, ValidationError},
+    validation::{EntryLifecycle, ValidationData},
 };
 
 use holochain_persistence_api::cas::content::AddressableContent;

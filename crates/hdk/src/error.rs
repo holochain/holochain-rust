@@ -8,7 +8,7 @@ use holochain_json_derive::DefaultJson;
 use holochain_wasmer_guest::*;
 use serde_derive::{Deserialize, Serialize};
 use std::{error::Error, fmt};
-use holochain_core_types::validation::ValidationError;
+use holochain_core_types::validation::ValidationResult;
 
 /// Error for DNA developers to use in their Zome code.
 /// This does not have to be sent back to Ribosome unless its an InternalError.
@@ -16,21 +16,23 @@ use holochain_core_types::validation::ValidationError;
 pub enum ZomeApiError {
     Internal(String),
     FunctionNotImplemented,
-    HashNotFound,
-    ValidationFailed(String),
     Timeout,
 }
 
-impl From<ZomeApiError> for ValidationError {
+impl From<ZomeApiError> for ValidationResult {
     fn from(e: ZomeApiError) -> Self {
-        Self::Err(e.into())
+        match e {
+            // any abitrary zome string is a fail
+            ZomeApiError::Internal(s) => Self::Fail(s),
+            ZomeApiError::FunctionNotImplemented => Self::NotImplemented,
+            ZomeApiError::Timeout => Self::Timeout,
+        }
     }
 }
 
 impl From<ZomeApiError> for HolochainError {
     fn from(zome_api_error: ZomeApiError) -> Self {
         match zome_api_error {
-            ZomeApiError::ValidationFailed(s) => HolochainError::ValidationFailed(s),
             ZomeApiError::Timeout => HolochainError::Timeout,
             _ => HolochainError::Wasm(WasmError::Zome(zome_api_error.to_string())),
         }
@@ -46,7 +48,6 @@ impl From<ZomeApiError> for String {
 impl From<HolochainError> for ZomeApiError {
     fn from(holochain_error: HolochainError) -> Self {
         match holochain_error {
-            HolochainError::ValidationFailed(s) => ZomeApiError::ValidationFailed(s),
             HolochainError::Timeout => ZomeApiError::Timeout,
             _ => ZomeApiError::Internal(holochain_error.to_string()),
         }
@@ -86,8 +87,6 @@ impl fmt::Display for ZomeApiError {
         match self {
             ZomeApiError::Internal(msg) => write!(f, "{}", msg),
             ZomeApiError::FunctionNotImplemented => write!(f, "Function not implemented"),
-            ZomeApiError::HashNotFound => write!(f, "Hash not found"),
-            ZomeApiError::ValidationFailed(msg) => write!(f, "{}", msg),
             ZomeApiError::Timeout => write!(f, "Timeout"),
         }
     }

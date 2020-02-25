@@ -7,7 +7,7 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry, EntryWithMeta},
     error::HolochainError,
     time::Timeout,
-    validation::{EntryValidationData, ValidationData, ValidationError, ValidationResult},
+    validation::{EntryValidationData, ValidationData, ValidationResult},
 };
 use holochain_persistence_api::cas::content::Address;
 
@@ -85,7 +85,7 @@ pub async fn validate_entry(
         // chain headers always pass for now. In future this should check that the entry is valid
         EntryType::ChainHeader => Ok(()),
 
-        _ => Err(ValidationError::NotImplemented),
+        _ => Err(ValidationResult::NotImplemented),
     }
 }
 

@@ -36,11 +36,11 @@ define_zome! {
                             ValidationResult::Ok
                          }
                          else {
-                             ValidationResult::Err(ValidationError::Fail("FAIL content is not allowed".into()))
+                             ValidationResult::Fail("FAIL content is not allowed".into())
                          }
                    }
                    _ =>{
-                       ValidationResult::Err(ValidationError::Fail("Failed to validate with wrong entry type".into()))
+                       ValidationResult::Fail("Failed to validate with wrong entry type".into())
                    }
                 }
             }
@@ -63,11 +63,11 @@ define_zome! {
                         if test_entry.stuff != "FAIL" {
                             ValidationResult::Ok
                         } else {
-                         ValidationResult::Err(ValidationError::Fail("FAIL content is not allowed".into()))
+                         ValidationResult::Fail("FAIL content is not allowed".into())
                      }
                    }
                    _ =>{
-                       ValidationResult::Err(ValidationError::Fail("Failed to validate with wrong entry type".into()))
+                       ValidationResult::Fail("Failed to validate with wrong entry type".into())
                    }
                 }
 
@@ -91,11 +91,11 @@ define_zome! {
                         if test_entry.stuff != "FAIL" {
                             ValidationResult::Ok
                         } else {
-                            ValidationResult::Err(ValidationError::Fail("FAIL content is not allowed".into()))
+                            ValidationResult::Fail("FAIL content is not allowed".into())
                         }
                    }
                    _ =>{
-                       ValidationResult::Err(ValidationError::Fail("Failed to validate with wrong entry type".into()))
+                       ValidationResult::Fail("Failed to validate with wrong entry type".into())
                    }
                 }
             }
@@ -119,11 +119,11 @@ define_zome! {
                         if test_entry.stuff != "FAIL" {
                             ValidationResult::Ok
                         } else {
-                            ValidationResult::Err(ValidationError::Fail("FAIL content is not allowed".into()))
+                            ValidationResult::Fail("FAIL content is not allowed".into())
                         }
                    }
                    _ =>{
-                       ValidationResult::Err(ValidationError::Fail("Failed to validate with wrong entry type".into()))
+                       ValidationResult::Fail("Failed to validate with wrong entry type".into())
                    }
                 }
             }
@@ -147,11 +147,11 @@ define_zome! {
                         if test_entry.stuff != "FAIL" {
                             ValidationResult::Ok
                         } else {
-                            ValidationResult::Err(ValidationError::Fail("FAIL content is not allowed".into()))
+                            ValidationResult::Fail("FAIL content is not allowed".into())
                         }
                    }
                    _ =>{
-                       ValidationResult::Err(ValidationError::Fail("Failed to validate with wrong entry type".into()))
+                       ValidationResult::Fail("Failed to validate with wrong entry type".into())
                    }
                 }
             }

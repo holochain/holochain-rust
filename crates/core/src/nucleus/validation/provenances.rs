@@ -1,7 +1,7 @@
 use crate::{
     NEW_RELIC_LICENSE_KEY,
 };
-use holochain_core_types::validation::{ValidationError, ValidationResult};
+use holochain_core_types::validation::{ValidationResult};
 use boolinator::Boolinator;
 use holochain_core_types::validation::ValidationData;
 use holochain_dpki::utils::Verify;
@@ -16,14 +16,14 @@ pub fn validate_provenances(validation_data: &ValidationData) -> ValidationResul
             let maybe_has_authored = provenance.verify(header.entry_address().to_string());
             match maybe_has_authored {
                 Err(_) => {
-                    Err(ValidationError::Fail(format!(
+                    Err(ValidationResult::Fail(format!(
                         "Signature of entry {} from author {} failed to verify public signing key. Key might be invalid.",
                         header.entry_address(),
                         provenance.source(),
                     )))
                 },
                 Ok(has_authored) => {
-                    has_authored.ok_or(ValidationError::Fail(format!(
+                    has_authored.ok_or(ValidationResult::Fail(format!(
                         "Signature of entry {} from author {} invalid",
                         header.entry_address(),
                         provenance.source(),
@@ -31,6 +31,6 @@ pub fn validate_provenances(validation_data: &ValidationData) -> ValidationResul
                 },
             }
         })
-        .collect::<Result<Vec<()>, ValidationError>>()?;
-    Ok(())
+        .collect::<Result<Vec<()>, ValidationResult>>()?;
+    ValidationResult::Ok
 }

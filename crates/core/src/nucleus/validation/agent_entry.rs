@@ -7,7 +7,7 @@ use crate::{
     NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
-    validation::{ValidationError, ValidationResult},
+    validation::{ValidationResult},
     agent::AgentId,
     entry::Entry,
     validation::{EntryValidationData, ValidationData},
@@ -45,7 +45,7 @@ pub async fn validate_agent_entry(
     }))
     .await;
 
-    let errors: Vec<ValidationError> = results
+    let errors: Vec<ValidationResult> = results
         .iter()
         .filter_map(|r| match r {
             Ok(_) => None,
@@ -57,7 +57,7 @@ pub async fn validate_agent_entry(
         log_debug!(context, "Validating agent entry success!: {:?}", results);
         Ok(())
     } else {
-        Err(ValidationError::Fail(
+        Err(ValidationResult::Fail(
             format!("Failed to validate agent ID on a zome, {:?}", errors).into(),
         ))
     }

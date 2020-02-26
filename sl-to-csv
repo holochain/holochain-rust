@@ -1,0 +1,154 @@
+#!/usr/bin/env node
+
+const path = require('path')
+const fs = require('fs')
+
+/** Read stdin extracting json data wrapped by <SL< json-data-here >SL>
+ *  Does this in a streaming manner so works with huge log files
+ *
+ *  @param cb {function} - called back with any parsed json objects
+ */
+function parse(cb) {
+  process.stdin.setEncoding('utf8')
+
+  let state = 0
+  let msg_buffer = []
+  const checkPublish = () => {
+    const str = msg_buffer.join('').trim()
+    if (str.length > 0) {
+      try {
+        const data = JSON.parse(str)
+        cb(data)
+      } catch (e) {
+        console.error('failed to parse json:', e)
+      }
+    }
+  }
+  const handleChar = c => {
+    if (state === 0) {
+      if (c == '<') {
+        state = 1
+      } else {
+        process.stderr.write(c)
+      }
+    } else if (state === 1) {
+      if (c == 'S') {
+        state = 2
+      } else {
+        state = 0
+        process.stderr.write('<')
+        process.stderr.write(c)
+      }
+    } else if (state === 2) {
+      if (c == 'L') {
+        state = 3
+      } else {
+        state = 0
+        process.stderr.write('<')
+        process.stderr.write('S')
+        process.stderr.write(c)
+      }
+    } else if (state === 3) {
+      if (c == '<') {
+        state = 4
+        msg_buffer = []
+      } else {
+        state = 0
+        process.stderr.write('<')
+        process.stderr.write('S')
+        process.stderr.write('L')
+        process.stderr.write(c)
+      }
+    } else if (state === 4) {
+      if (c == '>') {
+        state = 5
+      } else {
+        msg_buffer.push(c)
+      }
+    } else if (state === 5) {
+      if (c == 'S') {
+        state = 6
+      } else {
+        state = 4
+        msg_buffer.push('>')
+        msg_buffer.push(c)
+      }
+    } else if (state === 6) {
+      if (c == 'L') {
+        state = 7
+      } else {
+        state = 4
+        msg_buffer.push('>')
+        msg_buffer.push('S')
+        msg_buffer.push(c)
+      }
+    } else if (state === 7) {
+      if (c == '>') {
+        checkPublish()
+        state = 0
+        msg_buffer = []
+      } else {
+        state = 4
+        msg_buffer.push('>')
+        msg_buffer.push('S')
+        msg_buffer.push('L')
+        msg_buffer.push(c)
+      }
+    }
+  }
+
+  process.stdin.on('readable', () => {
+    while ((chunk = process.stdin.read()) !== null) {
+      for (let c of chunk) {
+        handleChar(c)
+      }
+    }
+  })
+
+  process.stdin.on('end', () => {
+    checkPublish()
+  })
+
+  process.stdin.on('error', e => {
+    console.error(e)
+    process.exit(1)
+  })
+}
+
+/** Main function - parse stdin
+ */
+function main() {
+  const header_list = []
+  let header = '';
+  for (let i = 2; i < process.argv.length - 1; ++i) {
+    if (header.length > 0) {
+      header += '\t'
+    }
+    header_list.push(process.argv[i])
+    header += JSON.stringify(process.argv[i])
+  }
+  if (header.length > 0) {
+    header += '\t'
+  }
+  header += JSON.stringify('__full_log__')
+  console.log(header)
+
+  parse(data => {
+    let line = ''
+    for (let header of header_list) {
+      const value = data.hasOwnProperty(header) ? data[header] : ''
+      if (line.length > 0) {
+        line += '\t'
+      }
+      line += JSON.stringify(value.toString())
+    }
+    if (line.length > 0) {
+      line += '\t'
+    }
+    line += '"' + JSON.stringify(data).replace(/"/g, '""') + '"'
+    console.log(line)
+  })
+}
+
+// entry point
+main()

@@ -696,7 +696,9 @@ impl StressSuite for Suite {
 
 /// main function executes the stress suite given the cli arguments
 pub fn main() {
-    env_logger::init();
+    //env_logger::init();
+    ht::structured::init_fmt().expect("Failed to start structed tracing");
+    tracing_log::LogTracer::init().expect("Failed to init tracing log");
     let opt = Opt::resolve();
     if opt.sim2h.sim2h_message_log_file.is_some() {
         unimplemented!();
@@ -725,7 +727,9 @@ mod tests {
 
     #[test]
     fn it_should_start_sim2h_and_connect() {
-        env_logger::init();
+        //env_logger::init();
+        ht::structured::init_fmt().expect("Failed to start structed tracing");
+        tracing_log::LogTracer::init().expect("Failed to init tracing log");
         let suite = Suite::new(0);
         let mut stress_cfg = OptStressRunConfig::default();
         stress_cfg.publish_freq_ms = 500;

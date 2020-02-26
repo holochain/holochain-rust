@@ -663,12 +663,11 @@ impl Store {
                 None => continue,
             };
 
+            log::info!("testing");
             info!(
                 kind = "sim2h_im_state::drop_connection",
                 agent_id = %agent_id.as_ref(),
                 %uri,
-                file = file!(),
-                line = line!(),
             );
 
             Self::drop_connection_inner(space, agent_id);
@@ -910,32 +909,6 @@ impl StoreHandle {
         tokio::task::spawn(f);
     }
 
-    /*
-    #[must_use]
-    pub fn drop_connection(&self, space_hash: SpaceHash, agent_id: AgentId) -> BoxFuture<'static, ()> {
-        let (sender, receiver) = tokio::sync::oneshot::channel();
-        if let Err(_) = self
-            .send_mut
-            .send(StoreProto::Mutate(AolEntry::DropConnection {
-                aol_idx: self.con_incr.inc(),
-                space_hash,
-                agent_id,
-            }, sender))
-        {
-            error!("failed to send im store message - shutting down?");
-            return async { () }.boxed();
-        }
-        async move {
-            let _ = receiver.await;
-        }.boxed()
-    }
-
-    pub fn spawn_drop_connection(&self, space_hash: SpaceHash, agent_id: AgentId) {
-        let f = self.drop_connection(space_hash, agent_id);
-        tokio::task::spawn(f);
-    }
-    */
-
     #[must_use]
     pub fn drop_connection_by_uri(&self, uri: Lib3hUri) -> BoxFuture<'static, ()> {
         let (sender, receiver) = tokio::sync::oneshot::channel();
@@ -1022,32 +995,12 @@ impl StoreHandle {
 #[cfg(test)]
 mod tests {
     use super::*;
-    /*
-    use tracing_subscriber::{
-        filter::EnvFilter,
-        FmtSubscriber,
-    };
-    */
 
     fn async_run(f: BoxFuture<'static, ()>) {
         if std::env::var("RUST_LOG").is_err() {
             std::env::set_var("RUST_LOG", "trace");
         }
-        /*
-        let _ = env_logger::builder()
-            .default_format_timestamp(false)
-            .default_format_module_path(false)
-            .is_test(true)
-            .try_init();
-        */
         ht::structured::init_fmt().expect("Failed to start structed tracing");
-        /*
-        let subscriber = FmtSubscriber::builder()
-            .with_env_filter(EnvFilter::from_default_env())
-            .json()
-            .finish();
-        tracing::subscriber::set_global_default(subscriber).expect("can set global tracing subscriber");
-        */
         tracing_log::LogTracer::init().expect("Failed to init tracing log");
         tokio::runtime::Builder::new()
             .threaded_scheduler()

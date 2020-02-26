@@ -59,7 +59,7 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
                     did_work = true;
                     match cmd {
                         ConMgrCommand::SendData(_uri, frame) => {
-                            tracing::info!(uri = ?_uri, ws_frame = ?frame);
+                            //tracing::info!(uri = ?_uri, ws_frame = ?frame);
                             if let Err(e) = wss.write(frame) {
                                 error!("socket write error {} {:?}", uri, e);
                                 let _ = evt_send
@@ -229,7 +229,7 @@ impl ConnectionMgr {
                     did_work = true;
                     match cmd {
                         ConMgrCommand::SendData(uri, frame) => {
-                            tracing::info!(?uri, ?frame);
+                            //tracing::info!(?uri, ?frame);
                             let mut remove = false;
                             if let Some(cmd_send) = self.wss_map.get(&uri) {
                                 if let Err(_) =

@@ -1738,6 +1738,7 @@ dependencies = [
  "structopt 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "toml 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tracing-log 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "url2 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

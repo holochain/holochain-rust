@@ -44,6 +44,8 @@ pub enum WireMessage {
     Status,
     StatusResponse(StatusData),
     Ack(u64),
+    TraceFilter(String),
+    TraceFilterResponse(String),
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
@@ -56,6 +58,8 @@ impl WireMessage {
             WireMessage::StatusResponse(_) => "StatusResponse",
             WireMessage::Hello(_) => "Hello",
             WireMessage::HelloResponse(_) => "HelloResponse",
+            WireMessage::TraceFilter(_) => "TraceFilter",
+            WireMessage::TraceFilterResponse(_) => "TraceFilterResponse",
             WireMessage::ClientToLib3h(span_wrap) => match span_wrap.data {
                 ClientToLib3h::Bootstrap(_) => "[C>L]Bootstrap",
                 ClientToLib3h::FetchEntry(_) => "[C>L]FetchEntry",

@@ -12,7 +12,11 @@ use std::sync::{Arc, Mutex};
 use url2::prelude::*;
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
-pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), String> {
+pub fn sim2h_client(
+    url_string: String,
+    message_string: String,
+    trace_filter: Option<String>,
+) -> Result<(), String> {
     let url = match Url2::try_parse(url_string.clone()) {
         Err(e) => Err(format!(
             "unable to parse url:{} got error: {}",
@@ -35,12 +39,22 @@ pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), St
     }
     let url = Url2::parse(format!("{}://{}:{}", url.scheme(), ip, maybe_port.unwrap()));
 
+    if let Some(trace_filter) = trace_filter.clone() {
+        if let Err(e) = trace_filter
+            .parse::<tracing_subscriber::filter::EnvFilter>()
+            .map_err(|e| format!("{:?}", e))
+        {
+            return Err(e);
+        }
+    }
+
     println!("connecting to: {}", url);
     let mut job = Job::new(&url)?;
     job.send_wire(match message_string.as_ref() {
         "ping" => WireMessage::Ping,
         "hello" => WireMessage::Hello(WIRE_VERSION),
         "status" => WireMessage::Status,
+        "trace_filter" => WireMessage::TraceFilter(trace_filter.unwrap()),
         _ => {
             return Err(format!(
                 "expecting 'ping' or 'status' for message, got: {}",
@@ -61,7 +75,8 @@ pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), St
                     match msg {
                         WireMessage::Pong
                         | WireMessage::HelloResponse(_)
-                        | WireMessage::StatusResponse(_) => {
+                        | WireMessage::StatusResponse(_)
+                        | WireMessage::TraceFilterResponse(_) => {
                             println!("Got response => {:?}", msg);
                             break;
                         }

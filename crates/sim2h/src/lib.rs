@@ -59,6 +59,7 @@ use std::{
 
 use holochain_locksmith::Mutex;
 use holochain_metrics::{config::MetricPublisherConfig, Metric};
+use tracing_futures::Instrument;
 
 lazy_static! {
     static ref SET_THREAD_PANIC_FATAL: bool = {
@@ -911,7 +912,7 @@ fn spawn_handle_message_query_entry(
             }
             Some(url) => url,
         };
-        
+
         let span = tracing::info_span!("Out qe", root = true);
         //let id = span.id();
         let _g = span.enter();
@@ -1329,9 +1330,14 @@ impl Sim2h {
         }
 
         if self.missing_aspects_resync_schedule.should_proceed() {
+            let span = tracing::info_span!("missing aspect root", root = true);
+            let _g = span.enter();
             let schedule_guard = self.missing_aspects_resync_schedule.get_guard();
             let sim2h_handle = self.sim2h_handle.clone();
-            tokio::task::spawn(missing_aspects_resync(sim2h_handle, schedule_guard));
+            tokio::task::spawn(
+                missing_aspects_resync(sim2h_handle, schedule_guard)
+                    .instrument(tracing::info_span!("missing aspect future")),
+            );
         }
 
         Ok(did_work)
@@ -1397,23 +1403,25 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
                     None => continue,
                     Some(uri) => uri,
                 };
-                let span = tracing::info_span!("Out", root = true);
+                let span = tracing::info_span!("Out");
                 let id = span.id();
                 let _g = span.enter();
-                let context = ht::tracing::span_context(&id.unwrap()).expect("failed to create context");
+                let span_wrap: ht::EncodedSpanWrap<()> = id
+                    .and_then(|id| ht::tracing::span_context(&id).map(|context| context.wrap(())))
+                    .unwrap_or_else(|| ht::wrap((), "No context".into()))
+                    .into();
 
-                let wire_message = WireMessage::Lib3hToClient(
-                        context.wrap(Lib3hToClient::HandleFetchEntry(FetchEntryData {
-                            request_id: "".to_string(),
-                            space_address: (&**space_hash).clone(),
-                            provider_agent_id: (&*query_agent).clone(),
-                            entry_address: (&**entry_hash).clone(),
-                            aspect_address_list: Some(
-                                aspects.iter().map(|a| (&**a).clone()).collect(),
-                            ),
-                        }))
-                        .into(),
-                );
+                let wire_message = WireMessage::Lib3hToClient({
+                    let s = FetchEntryData {
+                        request_id: "".to_string(),
+                        space_address: (&**space_hash).clone(),
+                        provider_agent_id: (&*query_agent).clone(),
+                        entry_address: (&**entry_hash).clone(),
+                        aspect_address_list: Some(aspects.iter().map(|a| (&**a).clone()).collect()),
+                    };
+                    tracing::info!(wire_message = true, ?s.request_id, ?s.space_address);
+                    span_wrap.swapped(Lib3hToClient::HandleFetchEntry(s)).into()
+                });
 
                 sim2h_handle.send((&*query_agent).clone(), (&*uri).clone(), &wire_message);
             }

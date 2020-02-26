@@ -46,6 +46,9 @@ struct Cli {
         help = "The service name to use for Jaeger tracing spans. No tracing is done if not specified."
     )]
     tracing_name: Option<String>,
+
+    #[structopt(long, help = "Outputs structured json from logging")]
+    structured: bool,
 }
 
 new_relic_setup!("NEW_RELIC_LICENSE_KEY");
@@ -56,7 +59,7 @@ fn main() {
         .logging(LogLevel::Error, LogOutput::StdErr)
         .init()
         .unwrap_or_else(|_| warn!("Could not configure new relic daemon"));
-    env_logger::init();
+    //env_logger::init();
     let args = Cli::from_args();
 
     /*
@@ -78,12 +81,16 @@ fn main() {
     };
     */
     let tracer = if let Some(service_name) = args.tracing_name {
-        holochain_tracing::tracing::init(service_name).expect("Failed to start tracing");
+        ht::tracing::init(service_name, args.structured)
+            .expect("Failed to start tracing");
         None
     } else {
+        if args.structured {
+            ht::structured::init_fmt().expect("Failed to start structed tracing");
+        }
+        tracing_log::LogTracer::init().expect("Failed to init tracing log");
         None
     };
-
 
     let host = "ws://0.0.0.0/";
     let uri = Builder::with_raw_url(host)

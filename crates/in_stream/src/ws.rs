@@ -1,4 +1,8 @@
-use crate::*;
+use crate::{
+    failure_model::{FailureModel, FailureState},
+    *,
+};
+
 use std::io::{Error, ErrorKind, Result};
 use url2::prelude::*;
 
@@ -121,6 +125,7 @@ pub struct InStreamWss<Sub: InStreamStd> {
     state: Option<WssState<Sub>>,
     remote_url: Url2,
     write_buf: std::collections::VecDeque<WsFrame>,
+    failure_model: Option<FailureModel>,
 }
 
 type TungsteniteCliHandshakeResult<S> = std::result::Result<
@@ -151,6 +156,7 @@ impl<Sub: InStreamStd> InStreamWss<Sub> {
             state: None,
             remote_url,
             write_buf: std::collections::VecDeque::new(),
+            failure_model: FailureModel::new_from_env_vars().ok(),
         }
     }
 
@@ -258,6 +264,17 @@ impl<Sub: InStreamStd> InStreamWss<Sub> {
             }
         }
     }
+
+    fn is_in_failure(&mut self) -> bool {
+        if let Some(ref mut failure_model) = self.failure_model {
+            match failure_model.poll() {
+                FailureState::Failing => true,
+                FailureState::NotFailing => false,
+            }
+        } else {
+            false
+        }
+    }
 }
 
 impl<Sub: InStreamStd> InStream<&mut WsFrame, WsFrame> for InStreamWss<Sub> {
@@ -297,6 +314,10 @@ impl<Sub: InStreamStd> InStream<&mut WsFrame, WsFrame> for InStreamWss<Sub> {
     }
 
     fn read(&mut self, data: &mut WsFrame) -> Result<usize> {
+        if self.is_in_failure() {
+            return Err(ErrorKind::NotConnected.into());
+        }
+
         self.priv_process()?;
         log::trace!(
             "read from {} with connection state: {:?}",
@@ -327,6 +348,10 @@ impl<Sub: InStreamStd> InStream<&mut WsFrame, WsFrame> for InStreamWss<Sub> {
     }
 
     fn write(&mut self, data: WsFrame) -> Result<usize> {
+        if self.is_in_failure() {
+            return Err(ErrorKind::NotConnected.into());
+        }
+
         self.priv_process()?;
         self.write_buf.push_back(data);
         self.priv_write_pending()?;
@@ -334,6 +359,10 @@ impl<Sub: InStreamStd> InStream<&mut WsFrame, WsFrame> for InStreamWss<Sub> {
     }
 
     fn flush(&mut self) -> Result<()> {
+        if self.is_in_failure() {
+            return Err(ErrorKind::NotConnected.into());
+        }
+
         loop {
             self.priv_process()?;
             self.priv_write_pending()?;

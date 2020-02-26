@@ -176,6 +176,21 @@ fn get_as_bool<T: Into<String>>(
         }),
     }
 }
+fn get_as_u64<T: Into<String>>(
+    key: T,
+    params_map: &Map<String, Value>,
+    default: Option<u64>,
+) -> Result<u64, jsonrpc_core::Error> {
+    let key = key.into();
+    match params_map.get(&key) {
+        Some(value) => value.as_u64().ok_or_else(|| {
+            jsonrpc_core::Error::invalid_params(format!("`{}` has to be a u64", &key))
+        }),
+        None => default.ok_or_else(|| {
+            jsonrpc_core::Error::invalid_params(format!("required param `{}` not provided", &key))
+        }),
+    }
+}
 
 fn get_dir(state: &TrycpServer, id: &String) -> PathBuf {
     state.dir.join(id)
@@ -398,6 +413,7 @@ fn main() {
     io.add_method("spawn", move |params: Params| {
         let params_map = unwrap_params_map(params)?;
         let id = get_as_string("id", &params_map)?;
+        let failure_params = params_map.get("failureModel");
 
         let state = state_spawn.read().unwrap();
         check_player_config(&state, &id)?;
@@ -416,13 +432,33 @@ fn main() {
             .unwrap()
             .to_string();
 
-        let mut conductor = Command::new("holochain")
-            .args(&["-c", &config_path])
-            .env("RUST_BACKTRACE", "full")
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .map_err(|e| internal_error(format!("unable to spawn conductor: {:?}", e)))?;
+        let mut conductor = match failure_params {
+            Some(value) => {
+                let err = jsonrpc_core::Error::invalid_params("failureModel must be an object with integer fields MTBF and MFD in milliseconds and seed (an integer)");
+                let sub_obj = value.as_object().ok_or_else(|| err)?;
+                let seed = get_as_u64("seed", &sub_obj, None)?;
+                let mtbf = get_as_u64("MTBF", &sub_obj, None)?;
+                let mfd = get_as_u64("MFD", &sub_obj, None)?;
+
+                Command::new("holochain")
+                    .args(&["-c", &config_path])
+                    .env("RUST_BACKTRACE", "full")
+                    .env("WS_FAILURE_MODEL", format!("({}, {}, {})", seed, mtbf, mfd))
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
+                    .spawn()
+                    .map_err(|e| internal_error(format!("unable to spawn conductor: {:?}", e)))?
+            },
+            None => {
+                 Command::new("holochain")
+                    .args(&["-c", &config_path])
+                    .env("RUST_BACKTRACE", "full")
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
+                    .spawn()
+                    .map_err(|e| internal_error(format!("unable to spawn conductor: {:?}", e)))?     
+            }
+        };
 
         let mut log_stdout = Command::new("tee")
             .arg(stdout_log_path)

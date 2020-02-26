@@ -51,7 +51,10 @@ use futures::{
 use in_stream::*;
 use log::*;
 use rand::{seq::SliceRandom, thread_rng};
-use std::convert::TryFrom;
+use std::{
+    convert::TryFrom,
+    hash::{Hash, Hasher},
+};
 
 use holochain_locksmith::Mutex;
 use holochain_metrics::{config::MetricPublisherConfig, Metric};
@@ -71,6 +74,7 @@ lazy_static! {
 
 /// if we can't acquire a lock in 20 seconds, panic!
 const MAX_LOCK_TIMEOUT: u64 = 20000;
+pub const RECEIPT_HASH_SEED: u64 = 0;
 
 //set up license_key
 new_relic_setup!("NEW_RELIC_LICENSE_KEY");
@@ -204,6 +208,7 @@ pub enum DhtAlgorithm {
 #[allow(dead_code)]
 mod mono_ref;
 use mono_ref::*;
+use twox_hash::XxHash64;
 
 #[allow(dead_code)]
 mod sim2h_im_state;
@@ -1226,11 +1231,18 @@ impl Sim2h {
                 if !result {
                     return Err(VERIFY_FAILED_ERR_STR.into());
                 }
+                let agent_id: AgentId = signed_message.provenance.source().into();
+                send_receipt(
+                    sim2h_handle.clone(),
+                    &signed_message.payload,
+                    agent_id.clone(),
+                    url.clone(),
+                );
                 let wire_message = WireMessage::try_from(signed_message.payload)?;
-                Ok((signed_message.provenance.source().into(), wire_message))
+                Ok((agent_id, wire_message))
             })() {
                 Ok((source, wire_message)) => {
-                    sim2h_handle.handle_message(url, wire_message, source)
+                    sim2h_handle.handle_message(url.clone(), wire_message, source.clone());
                 }
                 Err(error) => {
                     error!(
@@ -1307,6 +1319,14 @@ impl Sim2h {
 
         Ok(did_work)
     }
+}
+
+fn send_receipt(sim2h_handle: Sim2hHandle, payload: &Opaque, source: AgentId, url: Lib3hUri) {
+    let mut hasher = XxHash64::with_seed(RECEIPT_HASH_SEED);
+    payload.hash(&mut hasher);
+    let hash = hasher.finish();
+    let receipt = WireMessage::Ack(hash);
+    sim2h_handle.send(source, url, &receipt);
 }
 
 async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: ScheduleGuard) {

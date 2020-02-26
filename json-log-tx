@@ -1,0 +1,85 @@
+#!/usr/bin/env node
+
+/** Process stdin - parse lines that start with `{` as json
+ *  print all other lines to stderr
+ */
+function get_json_lines(cb) {
+  process.stdin.setEncoding('utf8')
+
+  let state = 0
+  let msg_buffer = []
+
+  const checkPublish = () => {
+    const str = msg_buffer.join('').trim()
+    if (str.length > 0) {
+      try {
+        const data = JSON.parse(str)
+        cb(data)
+      } catch (e) {
+        console.error('[json-log-tx] failed to parse json:', e)
+      }
+    }
+  }
+
+  const handleChar = c => {
+    if (state === -1) {
+      if (c == '\n') {
+        state = 0
+        process.stderr.write(c)
+      } else {
+        process.stderr.write(c)
+      }
+    } else if (state === 0) {
+      if (c == '{') {
+        state = 1
+        msg_buffer = ['{']
+      } else {
+        state = -1
+        process.stderr.write(c)
+      }
+    } else if (state === 1) {
+      if (c == '\n') {
+        checkPublish()
+        state = 0
+        msg_buffer = []
+      } else {
+        msg_buffer.push(c)
+      }
+    }
+  }
+
+  process.stdin.on('readable', () => {
+    while ((chunk = process.stdin.read()) !== null) {
+      for (let c of chunk) {
+        handleChar(c)
+      }
+    }
+  })
+
+  process.stdin.on('end', () => {
+    checkPublish()
+  })
+
+  process.stdin.on('error', e => {
+    console.error(e)
+    process.exit(1)
+  })
+}
+
+/** Main function - parse stdin
+ */
+function main() {
+  get_json_lines(data => {
+    const complete = JSON.stringify(data)
+    const fields = data.fields
+    delete data.fields
+    for (key in fields) {
+      data[key] = fields[key]
+    }
+    data.__complete__ = complete
+    console.log(JSON.stringify(data))
+  })
+}
+
+// entry point
+main()

@@ -1,4 +1,6 @@
 use crate::*;
+#[allow(unused_imports)]
+use tracing::{error, warn, info, debug, trace};
 use lib3h::rrdht_util::Location;
 use rand::Rng;
 use std::sync::{
@@ -607,6 +609,12 @@ impl Store {
     }
 
     fn new_connection(&mut self, space_hash: SpaceHash, agent_id: AgentId, uri: Lib3hUri) {
+        info!(
+            kind = "sim2h_im_state::new_connection",
+            %space_hash,
+            %agent_id,
+            %uri,
+        );
         self.get_space_mut(space_hash)
             .check_insert_connection(&agent_id, uri);
     }
@@ -616,7 +624,7 @@ impl Store {
         space.clear_holding(&agent_id);
 
         // - remove main connection entry
-        let uri = match space.connections.entry(agent_id) {
+        let uri = match space.connections.entry(agent_id.clone()) {
             im::hashmap::Entry::Occupied(entry) => entry.remove().uri,
             _ => return,
         };
@@ -655,6 +663,14 @@ impl Store {
                 None => continue,
             };
 
+            info!(
+                kind = "sim2h_im_state::drop_connection",
+                agent_id = %agent_id.as_ref(),
+                %uri,
+                file = file!(),
+                line = line!(),
+            );
+
             Self::drop_connection_inner(space, agent_id);
         }
         self.check_drop_spaces();
@@ -667,6 +683,13 @@ impl Store {
         entry_hash: EntryHash,
         aspects: im::HashSet<AspectHash>,
     ) {
+        debug!(
+            kind = "sim2h_im_state::agent_holds_aspects",
+            %space_hash,
+            %agent_id,
+            %entry_hash,
+        );
+
         self.get_space_mut(space_hash)
             .agent_holds_aspects(&agent_id, &entry_hash, &aspects);
     }
@@ -999,16 +1022,33 @@ impl StoreHandle {
 #[cfg(test)]
 mod tests {
     use super::*;
+    /*
+    use tracing_subscriber::{
+        filter::EnvFilter,
+        FmtSubscriber,
+    };
+    */
 
     fn async_run(f: BoxFuture<'static, ()>) {
         if std::env::var("RUST_LOG").is_err() {
             std::env::set_var("RUST_LOG", "trace");
         }
+        /*
         let _ = env_logger::builder()
             .default_format_timestamp(false)
             .default_format_module_path(false)
             .is_test(true)
             .try_init();
+        */
+        ht::structured::init_fmt().expect("Failed to start structed tracing");
+        /*
+        let subscriber = FmtSubscriber::builder()
+            .with_env_filter(EnvFilter::from_default_env())
+            .json()
+            .finish();
+        tracing::subscriber::set_global_default(subscriber).expect("can set global tracing subscriber");
+        */
+        tracing_log::LogTracer::init().expect("Failed to init tracing log");
         tokio::runtime::Builder::new()
             .threaded_scheduler()
             .core_threads(num_cpus::get())

@@ -267,6 +267,9 @@ impl Sim2hHandle {
 
     /// send a message to another connected agent
     pub fn send(&self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) {
+        tracing::trace!(
+            kind = "GOSSIP_DEBUG",
+        );
         debug!(">>OUT>> {} to {}", msg.message_type(), uri);
         MESSAGE_LOGGER
             .lock()
@@ -1411,6 +1414,13 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
                     .unwrap_or_else(|| ht::wrap((), "No context".into()))
                     .into();
 
+                tracing::trace!(
+                    kind = "GOSSIP_DEBUG",
+                    agent_id = %query_agent.as_ref(),
+                    space_hash = %space_hash.as_ref(),
+                    %uri,
+                );
+
                 let wire_message = WireMessage::Lib3hToClient({
                     let s = FetchEntryData {
                         request_id: "".to_string(),
@@ -1419,7 +1429,6 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
                         entry_address: (&**entry_hash).clone(),
                         aspect_address_list: Some(aspects.iter().map(|a| (&**a).clone()).collect()),
                     };
-                    tracing::info!(wire_message = true, ?s.request_id, ?s.space_address);
                     span_wrap.swapped(Lib3hToClient::HandleFetchEntry(s)).into()
                 });
 

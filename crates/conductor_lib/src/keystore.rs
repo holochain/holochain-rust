@@ -358,7 +358,7 @@ impl Keystore {
         dst_id_str: &str,
         context: &SeedContext,
         index: u64,
-        seed_type: SeedType,
+        _seed_type: SeedType,
     ) -> HcResult<()> {
         let (src_secret, dst_id) = self.check_identifiers(src_id_str, dst_id_str)?;
         let secret = {
@@ -366,7 +366,7 @@ impl Keystore {
             match *src_secret {
                 Secret::Seed(ref mut src) => {
                     let buf = generate_derived_seed_buf(src, context, index, SEED_SIZE)?;
-                    let seed = Seed::new(buf, seed_type);
+                    let seed = Seed::new(buf, SeedType::Auth);
                     Arc::new(Mutex::new(Secret::TypedSeed(seed)))
                 }
                 _ => {

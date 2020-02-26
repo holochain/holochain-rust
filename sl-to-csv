@@ -7,6 +7,18 @@ const fs = require('fs')
  *  Does this in a streaming manner so works with huge log files
  *
  *  @param cb {function} - called back with any parsed json objects
+ *
+ *  @example
+ *  ```
+ *  # sl-to-csv will print csv to stdout and everything else to stderr
+ *  # the `tee` lets us see everything but capture only the csv to the file
+ *  echo $'bla
+ *  <SL<{"t":1}>SL>
+ *  <SL<{"t":2,
+ *    "multiline":true
+ *  }>SL>
+ *  bla' 2>&1 | ./sl-to-csv | tee test.csv
+ *  ```
  */
 function parse(cb) {
   process.stdin.setEncoding('utf8')

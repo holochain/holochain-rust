@@ -157,5 +157,6 @@ impl fmt::Debug for EntryAspect {
 impl Hash for EntryAspect {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.header().hash(state);
+        self.type_hint().hash(state);
     }
 }

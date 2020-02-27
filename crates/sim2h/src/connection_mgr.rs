@@ -164,7 +164,6 @@ async fn con_mgr_task(mut con_mgr: ConnectionMgr, weak_ref_dummy: Weak<()>) {
         }
 
         let p = con_mgr.process();
-        tracing::info!(?p);
         match p {
             DidWork => tokio::task::yield_now().await,
             NoWork => tokio::time::delay_for(std::time::Duration::from_millis(5)).await,
@@ -271,7 +270,7 @@ impl ConnectionMgr {
                         }
                     }
                 }
-                Err(tokio::sync::mpsc::error::TryRecvError::Empty) => { tracing::error!("TryRecvError::Empty"); break },
+                Err(tokio::sync::mpsc::error::TryRecvError::Empty) => break,
                 Err(tokio::sync::mpsc::error::TryRecvError::Closed) => {
                     // channel broken, end task
                     tracing::error!("Closed");
@@ -312,7 +311,7 @@ impl ConnectionMgr {
                         }
                     }
                 }
-                Err(tokio::sync::mpsc::error::TryRecvError::Empty) => { tracing::error!("Empty"); break },
+                Err(tokio::sync::mpsc::error::TryRecvError::Empty) => break,
                 Err(tokio::sync::mpsc::error::TryRecvError::Closed) => {
                     // channel broken, end task
                     tracing::error!("Closed");

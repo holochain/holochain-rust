@@ -78,7 +78,7 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
                         ConMgrCommand::Connect(_, _) => unreachable!(),
                     }
                 }
-                Err(tokio::sync::mpsc::error::TryRecvError::Empty) => { tracing::info!("TryRecvError::Empty"); break },
+                Err(tokio::sync::mpsc::error::TryRecvError::Empty) => break,
                 Err(tokio::sync::mpsc::error::TryRecvError::Closed) => {
                     debug!("socket cmd channel closed {}", uri);
                     let _ = evt_send.send(ConMgrEvent::Disconnect(uri.clone(), None));
@@ -91,7 +91,6 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
         // next process a batch of incoming websocket frames
         for _ in 0..10 {
             if frame.is_none() {
-                tracing::info!("Frame is none");
                 frame = Some(WsFrame::default());
             }
             match wss.read(frame.as_mut().unwrap()) {
@@ -106,7 +105,7 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
                         break 'wss_task_loop;
                     }
                 }
-                Err(e) if e.would_block() => { tracing::info!(?e); break },
+                Err(e) if e.would_block() => break,
                 Err(e) => {
                     error!("socket read error {} {:?}", uri, e);
                     let _ = evt_send.send(ConMgrEvent::Disconnect(uri.clone(), Some(e.into())));
@@ -301,7 +300,6 @@ impl ConnectionMgr {
                             }
                         }
                         evt @ _ => {
-                            tracing::info!(?evt);
                             // just forward
                             if let Err(e) = self.evt_send_to_parent.send(evt) {
                                 // channel broken, end task
@@ -371,7 +369,7 @@ impl ConnectionMgrHandle {
         }
     }
 
-    #[tracing::instrument(skip(self))]
+    #[tracing::instrument(skip(self, frame))]
     /// send data to a managed websocket connection
     pub fn send_data(&self, uri: Lib3hUri, frame: WsFrame) {
         tracing::info!(?uri);

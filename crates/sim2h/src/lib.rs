@@ -267,8 +267,17 @@ impl Sim2hHandle {
 
     /// send a message to another connected agent
     pub fn send(&self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) {
+        let span = tracing::trace_span!(
+            "send_data",
+            tag = "GOSSIP_DEBUG",
+        );
+        let _g = span.enter();
         tracing::trace!(
-            kind = "GOSSIP_DEBUG",
+            tag = "GOSSIP_DEBUG",
+            kind = "sim2h_handle:send_to_connection_mgr",
+            msg_type = %msg.message_type(),
+            agent_id = %agent,
+            uri = %uri,
         );
         debug!(">>OUT>> {} to {}", msg.message_type(), uri);
         MESSAGE_LOGGER
@@ -276,7 +285,10 @@ impl Sim2hHandle {
             .log_out(agent, uri.clone(), msg.clone());
         let payload: Opaque = msg.clone().into();
         self.connection_mgr
-            .send_data(uri, payload.as_bytes().into());
+            .send_data(uri, payload.as_bytes().into(), tracing::trace_span!(
+                "send_data_to_connection_mgr",
+                tag = "GOSSIP_DEBUG",
+            ));
     }
 
     /// get access to our im_state object
@@ -1191,8 +1203,8 @@ impl Sim2h {
                             debug!("disconnect {} {:?}", uri, maybe_err);
                             disconnect.push(uri);
                         }
-                        ConMgrEvent::ReceiveData(uri, data) => {
-                            self.priv_handle_recv_data(uri, data);
+                        ConMgrEvent::ReceiveData(uri, data, span) => {
+                            self.priv_handle_recv_data(uri, data, span);
                         }
                     }
                 }
@@ -1218,16 +1230,18 @@ impl Sim2h {
     }
 
     /// process an actual incoming message
-    fn priv_handle_recv_data(&mut self, uri: Lib3hUri, data: WsFrame) {
+    fn priv_handle_recv_data(&mut self, uri: Lib3hUri, data: WsFrame, span: tracing::Span) {
+        let _g = span.enter();
         match data {
             WsFrame::Text(s) => self.priv_drop_connection_for_error(
                 uri,
                 format!("unexpected text message: {:?}", s).into(),
             ),
             WsFrame::Binary(b) => {
-                trace!(
-                    "priv_check_incoming_messages: received a frame from {}",
-                    uri
+                tracing::trace!(
+                    tag = "GOSSIP_DEBUG",
+                    kind = "sim2h:handle_recv_data",
+                    %uri,
                 );
                 let payload: Opaque = b.into();
                 Sim2h::handle_payload(self.sim2h_handle.clone(), uri, payload);
@@ -1415,7 +1429,8 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
                     .into();
 
                 tracing::trace!(
-                    kind = "GOSSIP_DEBUG",
+                    tag = "GOSSIP_DEBUG",
+                    kind = "gossip:fetch_entry_data",
                     agent_id = %query_agent.as_ref(),
                     space_hash = %space_hash.as_ref(),
                     %uri,

@@ -18,7 +18,7 @@ impl ConnectionCount {
 #[derive(Debug)]
 pub enum ConMgrEvent {
     Disconnect(Lib3hUri, Option<Sim2hError>),
-    ReceiveData(Lib3hUri, WsFrame),
+    ReceiveData(Lib3hUri, WsFrame, tracing::Span),
 }
 
 /// messages for controlling the connection manager
@@ -26,7 +26,7 @@ pub enum ConMgrEvent {
 #[derive(Debug)]
 enum ConMgrCommand {
     Connect(Lib3hUri, TcpWss),
-    SendData(Lib3hUri, WsFrame),
+    SendData(Lib3hUri, WsFrame, tracing::Span),
     Disconnect(Lib3hUri),
 }
 
@@ -58,8 +58,13 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
                     cmd_count += 1;
                     did_work = true;
                     match cmd {
-                        ConMgrCommand::SendData(_uri, frame) => {
-                            //tracing::info!(uri = ?_uri, ws_frame = ?frame);
+                        ConMgrCommand::SendData(uri, frame, span) => {
+                            let _g = span.enter();
+                            tracing::trace!(
+                                tag = "GOSSIP_DEBUG",
+                                kind = "connection_mgr:send_on_real_websocket",
+                                uri = %uri,
+                            );
                             if let Err(e) = wss.write(frame) {
                                 error!("socket write error {} {:?}", uri, e);
                                 let _ = evt_send
@@ -97,8 +102,22 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
                     read_count += 1;
                     did_work = true;
                     let data = frame.take().unwrap();
+                    let span = tracing::trace_span!(
+                        "recv_data",
+                        tag = "GOSSIP_DEBUG",
+                    );
+                    let _g = span.enter();
+                    tracing::trace!(
+                        tag = "GOSSIP_DEBUG",
+                        kind = "recv_data_from_wss_task",
+                        %uri,
+                        payload_size = %data.as_bytes().len()
+                    );
                     debug!("socket {} read {} bytes", uri, data.as_bytes().len());
-                    if let Err(_) = evt_send.send(ConMgrEvent::ReceiveData(uri.clone(), data)) {
+                    if let Err(_) = evt_send.send(ConMgrEvent::ReceiveData(uri.clone(), data, tracing::trace_span!(
+                        "recv_data_sending_to_sim2h_process",
+                        tag = "GOSSIP_DEBUG",
+                    ))) {
                         debug!("socket evt channel closed {}", uri);
                         // end task
                         break 'wss_task_loop;
@@ -228,12 +247,20 @@ impl ConnectionMgr {
                     cmd_count += 1;
                     did_work = true;
                     match cmd {
-                        ConMgrCommand::SendData(uri, frame) => {
-                            //tracing::info!(?uri, ?frame);
+                        ConMgrCommand::SendData(uri, frame, span) => {
+                            let _g = span.enter();
+                            tracing::trace!(
+                                tag = "GOSSIP_DEBUG",
+                                kind = "connection_mgr:send_to_wss_task",
+                                uri = %uri,
+                            );
                             let mut remove = false;
                             if let Some(cmd_send) = self.wss_map.get(&uri) {
                                 if let Err(_) =
-                                    cmd_send.send(ConMgrCommand::SendData(uri.clone(), frame))
+                                    cmd_send.send(ConMgrCommand::SendData(uri.clone(), frame, tracing::trace_span!(
+                                        "send_data_to_wss_task",
+                                        tag = "GOSSIP_DEBUG",
+                                    )))
                                 {
                                     remove = true;
                                 }
@@ -355,8 +382,8 @@ impl ConnectionMgrHandle {
     }
 
     /// send data to a managed websocket connection
-    pub fn send_data(&self, uri: Lib3hUri, frame: WsFrame) {
-        if let Err(e) = self.send_cmd.send(ConMgrCommand::SendData(uri, frame)) {
+    pub fn send_data(&self, uri: Lib3hUri, frame: WsFrame, span: tracing::Span) {
+        if let Err(e) = self.send_cmd.send(ConMgrCommand::SendData(uri, frame, span)) {
             error!("failed to send on channel - shutting down? {:?}", e);
         }
     }

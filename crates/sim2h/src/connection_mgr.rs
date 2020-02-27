@@ -37,6 +37,7 @@ type CmdRecv = tokio::sync::mpsc::UnboundedReceiver<ConMgrCommand>;
 
 pub type ConnectionMgrEventRecv = EvtRecv;
 
+#[allow(clippy::cognitive_complexity)]
 /// internal websocket polling loop
 async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_recv: CmdRecv) {
     let mut frame = None;
@@ -45,6 +46,7 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
     //        for now, we're just pausing when no work happens
 
     'wss_task_loop: loop {
+        tracing::info_span!("wss_task");
         let mut did_work = false;
 
         let loop_start = std::time::Instant::now();
@@ -102,10 +104,7 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
                     read_count += 1;
                     did_work = true;
                     let data = frame.take().unwrap();
-                    let span = tracing::trace_span!(
-                        "recv_data",
-                        tag = "GOSSIP_DEBUG",
-                    );
+                    let span = tracing::trace_span!("recv_data", tag = "GOSSIP_DEBUG",);
                     let _g = span.enter();
                     tracing::trace!(
                         tag = "GOSSIP_DEBUG",
@@ -114,10 +113,14 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
                         payload_size = %data.as_bytes().len()
                     );
                     debug!("socket {} read {} bytes", uri, data.as_bytes().len());
-                    if let Err(_) = evt_send.send(ConMgrEvent::ReceiveData(uri.clone(), data, tracing::trace_span!(
-                        "recv_data_sending_to_sim2h_process",
-                        tag = "GOSSIP_DEBUG",
-                    ))) {
+                    if let Err(_) = evt_send.send(ConMgrEvent::ReceiveData(
+                        uri.clone(),
+                        data,
+                        tracing::trace_span!(
+                            "recv_data_sending_to_sim2h_process",
+                            tag = "GOSSIP_DEBUG",
+                        ),
+                    )) {
                         debug!("socket evt channel closed {}", uri);
                         // end task
                         break 'wss_task_loop;
@@ -153,13 +156,18 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
     debug!("wss_task ENDING {}", uri);
 }
 
+#[tracing::instrument]
 /// internal actually spawn the above wss_task into the tokio runtime
 fn spawn_wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend) -> CmdSend {
+    tracing::info!(?uri);
     let (cmd_send, cmd_recv) = tokio::sync::mpsc::unbounded_channel();
-    tokio::task::spawn(wss_task(uri, wss, evt_send, cmd_recv));
+    tokio::task::spawn(
+        wss_task(uri, wss, evt_send, cmd_recv).instrument(tracing::info_span!("wss_task")),
+    );
     cmd_send
 }
 
+#[derive(Debug)]
 /// internal result enum for connection mgr processing loop
 enum ConMgrResult {
     DidWork,
@@ -177,7 +185,8 @@ async fn con_mgr_task(mut con_mgr: ConnectionMgr, weak_ref_dummy: Weak<()>) {
             break 'con_mgr_task;
         }
 
-        match con_mgr.process() {
+        let p = con_mgr.process();
+        match p {
             DidWork => tokio::task::yield_now().await,
             NoWork => tokio::time::delay_for(std::time::Duration::from_millis(5)).await,
             EndTask => break 'con_mgr_task,
@@ -220,7 +229,9 @@ impl ConnectionMgr {
             wss_map: std::collections::HashMap::new(),
         };
 
-        tokio::task::spawn(con_mgr_task(con_mgr, weak_ref_dummy));
+        tokio::task::spawn(
+            con_mgr_task(con_mgr, weak_ref_dummy).instrument(tracing::info_span!("con_mgr_task")),
+        );
 
         (
             ConnectionMgrHandle::new(ref_dummy, cmd_send),
@@ -229,8 +240,10 @@ impl ConnectionMgr {
         )
     }
 
+    #[allow(clippy::cognitive_complexity)]
     /// internal check our channels
     fn process(&mut self) -> ConMgrResult {
+        tracing::info_span!("process");
         let mut did_work = false;
 
         let loop_start = std::time::Instant::now();
@@ -256,12 +269,15 @@ impl ConnectionMgr {
                             );
                             let mut remove = false;
                             if let Some(cmd_send) = self.wss_map.get(&uri) {
-                                if let Err(_) =
-                                    cmd_send.send(ConMgrCommand::SendData(uri.clone(), frame, tracing::trace_span!(
+                                if let Err(_) = cmd_send.send(ConMgrCommand::SendData(
+                                    uri.clone(),
+                                    frame,
+                                    tracing::trace_span!(
                                         "send_data_to_wss_task",
                                         tag = "GOSSIP_DEBUG",
-                                    )))
-                                {
+                                    ),
+                                )) {
+                                    tracing::error!(?uri);
                                     remove = true;
                                 }
                             }
@@ -271,10 +287,12 @@ impl ConnectionMgr {
                         }
                         ConMgrCommand::Disconnect(uri) => {
                             if let Some(cmd_send) = self.wss_map.remove(&uri) {
+                                tracing::error!(?uri);
                                 let _ = cmd_send.send(ConMgrCommand::Disconnect(uri));
                             }
                         }
                         ConMgrCommand::Connect(uri, wss) => {
+                            tracing::info!(?uri);
                             let cmd_send = spawn_wss_task(
                                 uri.clone(),
                                 wss,
@@ -290,6 +308,7 @@ impl ConnectionMgr {
                 Err(tokio::sync::mpsc::error::TryRecvError::Empty) => break,
                 Err(tokio::sync::mpsc::error::TryRecvError::Closed) => {
                     // channel broken, end task
+                    tracing::error!("Closed");
                     return EndTask;
                 }
             }
@@ -318,8 +337,9 @@ impl ConnectionMgr {
                         }
                         evt @ _ => {
                             // just forward
-                            if let Err(_) = self.evt_send_to_parent.send(evt) {
+                            if let Err(e) = self.evt_send_to_parent.send(evt) {
                                 // channel broken, end task
+                                tracing::error!(?e);
                                 return EndTask;
                             }
                         }
@@ -328,6 +348,7 @@ impl ConnectionMgr {
                 Err(tokio::sync::mpsc::error::TryRecvError::Empty) => break,
                 Err(tokio::sync::mpsc::error::TryRecvError::Closed) => {
                     // channel broken, end task
+                    tracing::error!("Closed");
                     return EndTask;
                 }
             }
@@ -336,9 +357,13 @@ impl ConnectionMgr {
         let new_c_count = self.wss_map.len();
         if new_c_count != c_count {
             let connection_count = self.connection_count.clone();
-            tokio::task::spawn(async move {
-                *connection_count.0.write().await = new_c_count;
-            });
+            tokio::task::spawn(
+                async move {
+                    *connection_count.0.write().await = new_c_count;
+                    tracing::info!(?new_c_count);
+                }
+                .instrument(tracing::info_span!("count")),
+            );
         }
 
         trace!(
@@ -374,22 +399,30 @@ impl ConnectionMgrHandle {
         }
     }
 
+    #[tracing::instrument(skip(self))]
     /// send in a websocket connection to be managed
     pub fn connect(&self, uri: Lib3hUri, wss: TcpWss) {
+        tracing::info!(?uri);
         if let Err(e) = self.send_cmd.send(ConMgrCommand::Connect(uri, wss)) {
-            error!("failed to send on channel - shutting down? {:?}", e);
+            tracing::error!("failed to send on channel - shutting down? {:?}", e);
         }
     }
 
+    #[tracing::instrument(skip(self, frame))]
     /// send data to a managed websocket connection
     pub fn send_data(&self, uri: Lib3hUri, frame: WsFrame, span: tracing::Span) {
-        if let Err(e) = self.send_cmd.send(ConMgrCommand::SendData(uri, frame, span)) {
+        if let Err(e) = self
+            .send_cmd
+            .send(ConMgrCommand::SendData(uri, frame, span))
+        {
             error!("failed to send on channel - shutting down? {:?}", e);
         }
     }
 
+    #[tracing::instrument(skip(self))]
     /// disconnect and forget about a managed websocket connection
     pub fn disconnect(&self, uri: Lib3hUri) {
+        tracing::info!(?uri);
         if let Err(e) = self.send_cmd.send(ConMgrCommand::Disconnect(uri)) {
             error!("failed to send on channel - shutting down? {:?}", e);
         }

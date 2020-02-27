@@ -331,7 +331,11 @@ fn run() -> HolochainResult<()> {
             println!("DNA Hash: {}", dna_hash);
         }
 
-        Cli::Sim2hClient { url, message, trace_filter} => {
+        Cli::Sim2hClient {
+            url,
+            message,
+            trace_filter,
+        } => {
             println!("url: {}", &url);
             println!("message: {}", &message);
             cli::sim2h_client(url, message, trace_filter)?;

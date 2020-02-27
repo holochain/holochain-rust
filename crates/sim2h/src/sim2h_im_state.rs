@@ -1,6 +1,4 @@
 use crate::*;
-#[allow(unused_imports)]
-use tracing::{error, warn, info, debug, trace};
 use lib3h::rrdht_util::Location;
 use rand::Rng;
 use std::sync::{
@@ -8,6 +6,8 @@ use std::sync::{
     Arc,
 };
 use tokio::stream::StreamExt;
+#[allow(unused_imports)]
+use tracing::{debug, error, info, trace, warn};
 
 fn should_store(
     agent_loc: Location,

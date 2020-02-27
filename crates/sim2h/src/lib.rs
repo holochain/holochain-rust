@@ -267,10 +267,7 @@ impl Sim2hHandle {
 
     /// send a message to another connected agent
     pub fn send(&self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) {
-        let span = tracing::trace_span!(
-            "send_data",
-            tag = "GOSSIP_DEBUG",
-        );
+        let span = tracing::trace_span!("send_data", tag = "GOSSIP_DEBUG",);
         let _g = span.enter();
         tracing::trace!(
             tag = "GOSSIP_DEBUG",
@@ -284,11 +281,11 @@ impl Sim2hHandle {
             .lock()
             .log_out(agent, uri.clone(), msg.clone());
         let payload: Opaque = msg.clone().into();
-        self.connection_mgr
-            .send_data(uri, payload.as_bytes().into(), tracing::trace_span!(
-                "send_data_to_connection_mgr",
-                tag = "GOSSIP_DEBUG",
-            ));
+        self.connection_mgr.send_data(
+            uri,
+            payload.as_bytes().into(),
+            tracing::trace_span!("send_data_to_connection_mgr", tag = "GOSSIP_DEBUG",),
+        );
     }
 
     /// get access to our im_state object
@@ -297,7 +294,13 @@ impl Sim2hHandle {
     }
 
     /// forward a message to be handled
-    pub fn handle_message(&self, uri: Lib3hUri, message: WireMessage, signer: AgentId, span: tracing::Span) {
+    pub fn handle_message(
+        &self,
+        uri: Lib3hUri,
+        message: WireMessage,
+        signer: AgentId,
+        span: tracing::Span,
+    ) {
         let _g = span.enter();
         tracing::trace!(
             tag = "GOSSIP_DEBUG",
@@ -1240,7 +1243,12 @@ impl Sim2h {
                     %uri,
                 );
                 let payload: Opaque = b.into();
-                Sim2h::handle_payload(self.sim2h_handle.clone(), uri.clone(), payload, tracing::trace_span!("recv_data:handle_payload"));
+                Sim2h::handle_payload(
+                    self.sim2h_handle.clone(),
+                    uri.clone(),
+                    payload,
+                    tracing::trace_span!("recv_data:handle_payload"),
+                );
             }
             // TODO - we should use websocket ping/pong
             //        instead of rolling our own on top of Binary
@@ -1253,7 +1261,12 @@ impl Sim2h {
         }
     }
 
-    fn handle_payload(sim2h_handle: Sim2hHandle, url: Lib3hUri, payload: Opaque, span: tracing::Span) {
+    fn handle_payload(
+        sim2h_handle: Sim2hHandle,
+        url: Lib3hUri,
+        payload: Opaque,
+        span: tracing::Span,
+    ) {
         tokio::task::spawn(async move {
             let _g = span.enter();
             tracing::trace!(
@@ -1279,7 +1292,12 @@ impl Sim2h {
                 Ok((agent_id, wire_message))
             })() {
                 Ok((source, wire_message)) => {
-                    sim2h_handle.handle_message(url.clone(), wire_message, source.clone(), tracing::trace_span!("recv_data:handle_message"));
+                    sim2h_handle.handle_message(
+                        url.clone(),
+                        wire_message,
+                        source.clone(),
+                        tracing::trace_span!("recv_data:handle_message"),
+                    );
                 }
                 Err(error) => {
                     error!(
@@ -1446,7 +1464,7 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
                         entry_address: (&**entry_hash).clone(),
                         aspect_address_list: Some(aspects.iter().map(|a| (&**a).clone()).collect()),
                     };
-                    span_wrap.swapped(Lib3hToClient::HandleFetchEntry(s)).into()
+                    span_wrap.swapped(Lib3hToClient::HandleFetchEntry(s))
                 });
 
                 sim2h_handle.send((&*query_agent).clone(), (&*uri).clone(), &wire_message);

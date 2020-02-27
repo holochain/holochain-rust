@@ -47,8 +47,8 @@ struct Cli {
     )]
     tracing_name: Option<String>,
 
-    #[structopt(long, help = "Outputs structured json from logging")]
-    structured: bool,
+    #[structopt(long, help = "Outputs structured json from logging", default_value = "Json")]
+    structured: ht::structured::Output,
 }
 
 new_relic_setup!("NEW_RELIC_LICENSE_KEY");
@@ -81,13 +81,10 @@ fn main() {
     };
     */
     let tracer = if let Some(service_name) = args.tracing_name {
-        ht::tracing::init(service_name, args.structured)
-            .expect("Failed to start tracing");
+        ht::tracing::init(service_name).expect("Failed to start tracing");
         None
     } else {
-        if args.structured {
-            ht::structured::init_fmt().expect("Failed to start structed tracing");
-        }
+        ht::structured::init_fmt(args.structured).expect("Failed to start structed tracing");
         tracing_log::LogTracer::init().expect("Failed to init tracing log");
         None
     };

@@ -1419,7 +1419,7 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
                         entry_address: (&**entry_hash).clone(),
                         aspect_address_list: Some(aspects.iter().map(|a| (&**a).clone()).collect()),
                     };
-                    tracing::info!(wire_message = true, ?s.request_id, ?s.space_address);
+                    tracing::info!(message = "wire_message", ?s.request_id, ?s.space_address);
                     span_wrap.swapped(Lib3hToClient::HandleFetchEntry(s)).into()
                 });
 

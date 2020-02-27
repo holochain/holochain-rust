@@ -297,18 +297,14 @@ impl Sim2hHandle {
     }
 
     /// forward a message to be handled
-    pub fn handle_message(&self, uri: Lib3hUri, message: WireMessage, signer: AgentId) {
-        let context = message
-            .try_get_span()
-            .and_then(|spans| spans.get(0).map(|s| (*s).to_owned()))
-            .and_then(|span| ht::SpanContext::decode(span).ok());
-        let follow = ht::follow_span!("follower", context);
-        let _g = follow.enter();
-
-        tracing::info!("testing");
-        let span = tracing::info_span!("inner span");
-        let _guard = span.enter();
-        tracing::info!("testing again");
+    pub fn handle_message(&self, uri: Lib3hUri, message: WireMessage, signer: AgentId, span: tracing::Span) {
+        let _g = span.enter();
+        tracing::trace!(
+            tag = "GOSSIP_DEBUG",
+            kind = "handle_message",
+            msg_type = %message.message_type(),
+            from_agent = %signer,
+        );
 
         // dispatch to correct handler
         let sim2h_handle = self.clone();
@@ -1244,7 +1240,7 @@ impl Sim2h {
                     %uri,
                 );
                 let payload: Opaque = b.into();
-                Sim2h::handle_payload(self.sim2h_handle.clone(), uri, payload);
+                Sim2h::handle_payload(self.sim2h_handle.clone(), uri.clone(), payload, tracing::trace_span!("recv_data:handle_payload"));
             }
             // TODO - we should use websocket ping/pong
             //        instead of rolling our own on top of Binary
@@ -1257,8 +1253,14 @@ impl Sim2h {
         }
     }
 
-    fn handle_payload(sim2h_handle: Sim2hHandle, url: Lib3hUri, payload: Opaque) {
+    fn handle_payload(sim2h_handle: Sim2hHandle, url: Lib3hUri, payload: Opaque, span: tracing::Span) {
         tokio::task::spawn(async move {
+            let _g = span.enter();
+            tracing::trace!(
+                tag = "GOSSIP_DEBUG",
+                kind = "sim2h:handle_recv_data",
+                uri = %url,
+            );
             let _m = sim2h_handle.metric_timer("sim2h-handle_payload");
             match (|| -> Sim2hResult<(AgentId, WireMessage)> {
                 let signed_message = SignedWireMessage::try_from(payload.clone())?;
@@ -1277,7 +1279,7 @@ impl Sim2h {
                 Ok((agent_id, wire_message))
             })() {
                 Ok((source, wire_message)) => {
-                    sim2h_handle.handle_message(url.clone(), wire_message, source.clone());
+                    sim2h_handle.handle_message(url.clone(), wire_message, source.clone(), tracing::trace_span!("recv_data:handle_message"));
                 }
                 Err(error) => {
                     error!(

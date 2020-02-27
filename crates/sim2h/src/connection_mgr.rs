@@ -252,7 +252,7 @@ impl ConnectionMgr {
                             tracing::trace!(
                                 tag = "GOSSIP_DEBUG",
                                 kind = "connection_mgr:send_to_wss_task",
-                                uri = %uri,
+                                %uri,
                             );
                             let mut remove = false;
                             if let Some(cmd_send) = self.wss_map.get(&uri) {

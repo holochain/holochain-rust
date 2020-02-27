@@ -1,16 +1,26 @@
 #!/usr/bin/env node
 
-/** Process stdin - parse lines that start with `{` as json
- *  print all other lines to stderr
- */
+const INIT_BUF_SIZE = 2
+
+const NL = '\n'.charCodeAt(0) // New Line
+const LCB = '{'.charCodeAt(0) // Left Curly Brace
+
 function get_json_lines(cb) {
-  process.stdin.setEncoding('utf8')
+  let buffer = Buffer.alloc(INIT_BUF_SIZE)
+  let write_pos = 0
 
-  let state = 0
-  let msg_buffer = []
+  const appendBuf = chunk => {
+    if (write_pos + chunk.byteLength > buffer.byteLength) {
+      const tmp = Buffer.alloc((write_pos + chunk.byteLength) * 2)
+      buffer.copy(tmp)
+      buffer = tmp
+    }
+    chunk.copy(buffer, write_pos)
+    write_pos += chunk.byteLength
+  }
 
-  const checkPublish = () => {
-    const str = msg_buffer.join('').trim()
+  const checkPublish = view => {
+    const str = view.toString('utf8').trim()
     if (str.length > 0) {
       try {
         const data = JSON.parse(str)
@@ -21,43 +31,34 @@ function get_json_lines(cb) {
     }
   }
 
-  const handleChar = c => {
-    if (state === -1) {
-      if (c == '\n') {
-        state = 0
-        process.stderr.write(c)
-      } else {
-        process.stderr.write(c)
-      }
-    } else if (state === 0) {
-      if (c == '{') {
-        state = 1
-        msg_buffer = ['{']
-      } else {
-        state = -1
-        process.stderr.write(c)
-      }
-    } else if (state === 1) {
-      if (c == '\n') {
-        checkPublish()
-        state = 0
-        msg_buffer = []
-      } else {
-        msg_buffer.push(c)
-      }
+  const checkProcess = () => {
+    if (write_pos < 1) {
+      return
     }
+    let view = buffer.slice(0, write_pos)
+    const idx = view.indexOf(NL)
+    if (idx < 0) {
+      return
+    }
+    view = view.slice(0, idx)
+    if (view[0] === LCB) {
+      checkPublish(view)
+    }
+    buffer.copy(buffer, 0, idx + 1)
+    write_pos -= idx + 1
+    checkProcess()
   }
 
   process.stdin.on('readable', () => {
     while ((chunk = process.stdin.read()) !== null) {
-      for (let c of chunk) {
-        handleChar(c)
-      }
+      appendBuf(chunk)
+      checkProcess()
     }
   })
 
   process.stdin.on('end', () => {
-    checkPublish()
+    appendBuf(Buffer.from([NL]))
+    checkProcess()
   })
 
   process.stdin.on('error', e => {
@@ -66,16 +67,16 @@ function get_json_lines(cb) {
   })
 }
 
-/** Main function - parse stdin
- */
 function main() {
   get_json_lines(data => {
     const complete = JSON.stringify(data)
+    /*
     const fields = data.fields
     delete data.fields
     for (key in fields) {
       data[key] = fields[key]
     }
+    */
     data.__complete__ = complete
     console.log(JSON.stringify(data))
   })

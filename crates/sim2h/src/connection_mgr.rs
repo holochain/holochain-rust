@@ -140,7 +140,9 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
 fn spawn_wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend) -> CmdSend {
     tracing::info!(?uri);
     let (cmd_send, cmd_recv) = tokio::sync::mpsc::unbounded_channel();
-    tokio::task::spawn(wss_task(uri, wss, evt_send, cmd_recv).instrument(tracing::info_span!("wss_task")));
+    tokio::task::spawn(
+        wss_task(uri, wss, evt_send, cmd_recv).instrument(tracing::info_span!("wss_task")),
+    );
     cmd_send
 }
 
@@ -206,7 +208,9 @@ impl ConnectionMgr {
             wss_map: std::collections::HashMap::new(),
         };
 
-        tokio::task::spawn(con_mgr_task(con_mgr, weak_ref_dummy).instrument(tracing::info_span!("con_mgr_task")));
+        tokio::task::spawn(
+            con_mgr_task(con_mgr, weak_ref_dummy).instrument(tracing::info_span!("con_mgr_task")),
+        );
 
         (
             ConnectionMgrHandle::new(ref_dummy, cmd_send),
@@ -321,10 +325,13 @@ impl ConnectionMgr {
         let new_c_count = self.wss_map.len();
         if new_c_count != c_count {
             let connection_count = self.connection_count.clone();
-            tokio::task::spawn(async move {
-                *connection_count.0.write().await = new_c_count;
-                tracing::info!(?new_c_count);
-            }.instrument(tracing::info_span!("count")));
+            tokio::task::spawn(
+                async move {
+                    *connection_count.0.write().await = new_c_count;
+                    tracing::info!(?new_c_count);
+                }
+                .instrument(tracing::info_span!("count")),
+            );
         }
 
         trace!(

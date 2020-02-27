@@ -47,7 +47,11 @@ struct Cli {
     )]
     tracing_name: Option<String>,
 
-    #[structopt(long, help = "Outputs structured json from logging", default_value = "Json")]
+    #[structopt(
+        long,
+        help = "Outputs structured json from logging",
+        default_value = "Json"
+    )]
     structured: ht::structured::Output,
 }
 

@@ -156,7 +156,6 @@ impl fmt::Debug for EntryAspect {
 // the entry addresses which is part of all. QED.
 impl Hash for EntryAspect {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        let address: String = self.header().entry_address().to_owned().into();
-        state.write(address.as_bytes());
+        self.header().hash(state);
     }
 }

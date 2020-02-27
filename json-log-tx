@@ -69,15 +69,28 @@ function get_json_lines(cb) {
 
 function main() {
   get_json_lines(data => {
-    const complete = JSON.stringify(data)
     /*
+    const complete = JSON.stringify(data)
+    for (let fname in data) {
+      const value = data[fname]
+      delete data[fname]
+      if (fname.startsWith('event-metadata')) {
+        / * pass * /
+      } else if (fname.startsWith('event-')) {
+        data[fname.substr(6)] = value
+      } else if (fname.startsWith('parents-')) {
+        / * pass * /
+      } else {
+        data[fname] = value
+      }
+    }
     const fields = data.fields
     delete data.fields
     for (key in fields) {
       data[key] = fields[key]
     }
-    */
     data.__complete__ = complete
+    */
     console.log(JSON.stringify(data))
   })
 }

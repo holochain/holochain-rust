@@ -812,6 +812,12 @@ fn spawn_handle_message_authoring_entry_list(
     });
 }
 
+lazy_static! {
+    static ref FETCH_ENTRY_RESULT_COUNT: std::sync::Arc<tokio::sync::RwLock<u64>> = {
+        std::sync::Arc::new(tokio::sync::RwLock::new(0))
+    };
+}
+
 fn spawn_handle_message_fetch_entry_result(
     sim2h_handle: Sim2hHandle,
     _uri: Lib3hUri,
@@ -831,6 +837,10 @@ fn spawn_handle_message_fetch_entry_result(
         );
         return;
     }
+
+    tokio::task::spawn(async move {
+        *FETCH_ENTRY_RESULT_COUNT.write().await += 1;
+    });
 
     tokio::task::spawn(async move {
         let state = sim2h_handle.state().get_clone().await;
@@ -1129,9 +1139,24 @@ impl Sim2h {
             missing_aspects_resync_schedule: Schedule::new(std::time::Duration::from_millis(
                 RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS,
             )),
-            sim2h_handle,
+            sim2h_handle: sim2h_handle.clone(),
             metric_gen,
         };
+
+        tokio::task::spawn(missing_aspects_resync(sim2h_handle.clone()));
+
+        tokio::task::spawn(async move {
+            loop {
+                tokio::time::delay_for(std::time::Duration::from_secs(1)).await;
+                let mut count = FETCH_ENTRY_RESULT_COUNT.write().await;
+                tracing::info!(
+                    tag = "GOSSIP_DEBUG",
+                    kind = "fetch_entry_result_count:for_last_second",
+                    count = %*count,
+                );
+                *count = 0;
+            }
+        });
 
         // trigger an initial schedule ready event
         let _ = sim2h.missing_aspects_resync_schedule.get_guard();
@@ -1366,6 +1391,7 @@ impl Sim2h {
             did_work = true;
         }
 
+        /*
         if self.missing_aspects_resync_schedule.should_proceed() {
             let span = tracing::info_span!("missing aspect root", root = true);
             let _g = span.enter();
@@ -1376,6 +1402,7 @@ impl Sim2h {
                     .instrument(tracing::info_span!("missing aspect future")),
             );
         }
+        */
 
         Ok(did_work)
     }
@@ -1389,8 +1416,40 @@ fn send_receipt(sim2h_handle: Sim2hHandle, payload: &Opaque, source: AgentId, ur
     sim2h_handle.send(source, url, &receipt);
 }
 
-async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: ScheduleGuard) {
+lazy_static! {
+    static ref ALREADY_FETCHED: tokio::sync::RwLock<std::collections::HashSet<String>> = {
+        tokio::sync::RwLock::new(std::collections::HashSet::new())
+    };
+}
+
+async fn already_fetched(entry_hash: &MonoRef<EntryHash>, aspects: &im::HashSet<MonoRef<AspectHash>>) -> bool {
+    let mut all_existed = true;
+    let mut set = ALREADY_FETCHED.write().await;
+    for aspect in aspects {
+        let key = format!("{:?}:{:?}", entry_hash, aspect);
+        if set.insert(key) {
+            all_existed = false;
+        }
+    }
+    return all_existed
+}
+
+//async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: ScheduleGuard) {
+async fn missing_aspects_resync(sim2h_handle: Sim2hHandle) {
+    let mut loop_start;
+    loop {
+        loop_start = std::time::Instant::now();
+        missing_aspects_resync_inner(sim2h_handle.clone()).await;
+        let need_wait_ms = RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS as i128 - loop_start.elapsed().as_millis() as i128;
+        if need_wait_ms > 0 {
+            tokio::time::delay_for(std::time::Duration::from_millis(need_wait_ms as u64)).await;
+        }
+    }
+}
+
+async fn missing_aspects_resync_inner(sim2h_handle: Sim2hHandle) {
     let gossip_full_start = std::time::Instant::now();
+    let mut fetch_entry_send_count = 0;
 
     let agents_needing_gossip = sim2h_handle.state().check_gossip().await.spaces();
 
@@ -1456,6 +1515,14 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
                     %uri,
                 );
 
+                if already_fetched(entry_hash, aspects).await {
+                    tracing::warn!(
+                        tag = "GOSSIP_DEBUG",
+                        kind = "ALREADY FETCHED ALL THESE ASPECTS!",
+                        entry_hash = %entry_hash.as_ref(),
+                    );
+                }
+
                 let wire_message = WireMessage::Lib3hToClient({
                     let s = FetchEntryData {
                         request_id: "".to_string(),
@@ -1467,6 +1534,7 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
                     span_wrap.swapped(Lib3hToClient::HandleFetchEntry(s))
                 });
 
+                fetch_entry_send_count += 1;
                 sim2h_handle.send((&*query_agent).clone(), (&*uri).clone(), &wire_message);
             }
             trace!(
@@ -1475,5 +1543,11 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
             );
         }
     }
-    trace!("sim2h gossip full loop in {} ms (ok to be long, this task is broken into multiple sub-loops)", gossip_full_start.elapsed().as_millis());
+
+    tracing::warn!(
+        tag = "GOSSIP_DEBUG",
+        kind = "gossip:one_loop",
+        loop_ms = %gossip_full_start.elapsed().as_millis(),
+        %fetch_entry_send_count,
+    );
 }

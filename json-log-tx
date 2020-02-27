@@ -43,6 +43,9 @@ function get_json_lines(cb) {
     view = view.slice(0, idx)
     if (view[0] === LCB) {
       checkPublish(view)
+    } else {
+      process.stderr.write(view)
+      console.error() // newline + flush
     }
     buffer.copy(buffer, 0, idx + 1)
     write_pos -= idx + 1
@@ -69,28 +72,40 @@ function get_json_lines(cb) {
 
 function main() {
   get_json_lines(data => {
-    /*
-    const complete = JSON.stringify(data)
-    for (let fname in data) {
-      const value = data[fname]
-      delete data[fname]
-      if (fname.startsWith('event-metadata')) {
-        / * pass * /
-      } else if (fname.startsWith('event-')) {
-        data[fname.substr(6)] = value
-      } else if (fname.startsWith('parents-')) {
-        / * pass * /
-      } else {
-        data[fname] = value
+    delete data.name
+    const spans = data.spans
+    delete data.spans
+    let parents = ''
+    let parents_long = []
+    for (let p of spans) {
+      if (parents.length > 0) {
+        parents += '/'
       }
+      parents += p.name.replace(/\//g, "\\/")
+      parents_long.push([p.name, p.id, `${p.file}:${p.line}`])
     }
+    data.parents = parents
+    data.parents_long = parents_long
     const fields = data.fields
     delete data.fields
     for (key in fields) {
       data[key] = fields[key]
     }
-    data.__complete__ = complete
-    */
+    const target = data['log.target'] || data.target
+    const mod = data['log.module_path'] || data.module_path
+    const file = data['log.file'] || data.file
+    const line = data['log.line'] || data.line
+    delete data['log.target']
+    delete data['log.module_path']
+    delete data['log.file']
+    delete data['log.line']
+    delete data['log.target']
+    data.target = target
+    data.module_path = mod
+    delete data.file
+    delete data.line
+    data.src = `${file}:${line}`
+    data.__complete__ = JSON.stringify(data)
     console.log(JSON.stringify(data))
   })
 }

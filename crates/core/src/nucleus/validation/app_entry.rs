@@ -29,20 +29,22 @@ pub async fn validate_app_entry(
 ) -> ValidationResult {
     let dna = context.get_dna().expect("Callback called without DNA set!");
 
-    let zome_name = dna
-        .get_zome_name_for_app_entry_type(&app_entry_type)
-        .ok_or(ValidationResult::NotImplemented)?;
+    let zome_name = match dna.get_zome_name_for_app_entry_type(&app_entry_type) {
+        Some(v) => v,
+        None => return ValidationResult::NotImplemented,
+    };
+
     if let Some(expected_link_update) = link.clone() {
-        get_entry_from_dht(&context.clone(), &expected_link_update).map_err(|_| {
-            ValidationResult::UnresolvedDependencies(vec![expected_link_update.clone()])
-        })?;
+        if let Err(_) = get_entry_from_dht(&context.clone(), &expected_link_update) {
+            return ValidationResult::UnresolvedDependencies(vec![expected_link_update.clone()]);
+        };
     };
 
     let params = EntryValidationArgs {
-        validation_data: entry_to_validation_data(context.clone(), &entry, link, validation_data)
-            .map_err(|_| {
-            ValidationResult::Fail("Could not get entry validation".to_string())
-        })?,
+        validation_data: match entry_to_validation_data(context.clone(), &entry, link, validation_data) {
+            Ok(v) => v,
+            Err(_) => return ValidationResult::Fail("Could not get entry validation".to_string()),
+        },
     };
     let call = CallbackFnCall::new(&zome_name, "__hdk_validate_app_entry", params);
 

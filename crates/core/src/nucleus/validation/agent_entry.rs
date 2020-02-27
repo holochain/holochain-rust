@@ -48,17 +48,17 @@ pub async fn validate_agent_entry(
     let errors: Vec<ValidationResult> = results
         .iter()
         .filter_map(|r| match r {
-            Ok(_) => None,
-            Err(e) => Some(e.to_owned()),
+            ValidationResult::Ok => None,
+            v => Some(v.to_owned()),
         })
         .collect();
 
     if errors.is_empty() {
         log_debug!(context, "Validating agent entry success!: {:?}", results);
-        Ok(())
+        ValidationResult::Ok
     } else {
-        Err(ValidationResult::Fail(
+        ValidationResult::Fail(
             format!("Failed to validate agent ID on a zome, {:?}", errors).into(),
-        ))
+        )
     }
 }

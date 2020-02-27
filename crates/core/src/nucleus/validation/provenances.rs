@@ -2,14 +2,13 @@ use crate::{
     NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::validation::{ValidationResult};
-use boolinator::Boolinator;
 use holochain_core_types::validation::ValidationData;
 use holochain_dpki::utils::Verify;
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn validate_provenances(validation_data: &ValidationData) -> ValidationResult {
     let header = &validation_data.package.chain_header;
-    header
+    match header
         .provenances()
         .iter()
         .map(|provenance| {
@@ -23,14 +22,20 @@ pub fn validate_provenances(validation_data: &ValidationData) -> ValidationResul
                     )))
                 },
                 Ok(has_authored) => {
-                    has_authored.ok_or(ValidationResult::Fail(format!(
-                        "Signature of entry {} from author {} invalid",
-                        header.entry_address(),
-                        provenance.source(),
-                    )))
+                    if has_authored {
+                        Ok(())
+                    } else {
+                        Err(ValidationResult::Fail(format!(
+                            "Signature of entry {} from author {} invalid",
+                            header.entry_address(),
+                            provenance.source(),
+                        )))
+                    }
                 },
             }
         })
-        .collect::<Result<Vec<()>, ValidationResult>>()?;
-    ValidationResult::Ok
+        .collect::<Result<Vec<()>, ValidationResult>>() {
+            Ok(_) => ValidationResult::Ok,
+            Err(v) => v,
+    }
 }

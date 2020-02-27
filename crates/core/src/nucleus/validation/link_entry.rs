@@ -30,20 +30,25 @@ pub async fn validate_link_entry(
         Entry::LinkAdd(link_add) => link_add.clone(),
         Entry::LinkRemove((link_remove, _)) => link_remove,
         _ => {
-            return Err(ValidationResult::Fail(
+            return ValidationResult::Fail(
                 "Could not extract link_add from entry".into(),
-            ));
+            );
         }
     };
     let link = link.link().clone();
-    let (base, target) = links_utils::get_link_entries(&link, context).map_err(|_| {
-        ValidationResult::UnresolvedDependencies(
-            [link.base().clone(), link.target().clone()].to_vec(),
-        )
-    })?;
+    let (base, target) = match links_utils::get_link_entries(&link, context) {
+        Ok(v) => v,
+        Err(_) => {
+            return ValidationResult::UnresolvedDependencies(
+                [link.base().clone(), link.target().clone()].to_vec(),
+            );
+        },
+    };
 
-    let link_definition_path = links_utils::find_link_definition_by_type(link.link_type(), context)
-        .map_err(|_| ValidationResult::NotImplemented)?;
+    let link_definition_path = match links_utils::find_link_definition_by_type(link.link_type(), context) {
+        Ok(v) => v,
+        Err(_) => return ValidationResult::NotImplemented,
+    };
 
     let dna = context
         .state()
@@ -78,33 +83,35 @@ pub async fn validate_link_entry(
         )
     };
 
-    (base.entry_type().to_string() == base_type)
-        .ok_or(ValidationResult::Fail(format!(
+    if base.entry_type().to_string() != base_type {
+        return ValidationResult::Fail(format!(
             "Wrong base type for link of type '{}'. Found '{}', but link is defined to link from '{}'s.",
             link.link_type(),
             base_type,
             base.entry_type().to_string(),
-        )))?;
+        ));
+    };
 
-    (target.entry_type().to_string() == target_type)
-        .ok_or(ValidationResult::Fail(format!(
+    if target.entry_type().to_string() != target_type {
+        return ValidationResult::Fail(format!(
             "Wrong target type for link of type '{}'. Found '{}', but link is defined to link to '{}'s.",
             link.link_type(),
             target_type,
             target.entry_type().to_string(),
-        )))?;
+        ));
+    };
 
     let validation_data = match entry.clone() {
-        Entry::LinkAdd(link) => Ok(LinkValidationData::LinkAdd {
+        Entry::LinkAdd(link) => LinkValidationData::LinkAdd {
             link,
             validation_data,
-        }),
-        Entry::LinkRemove((link, _)) => Ok(LinkValidationData::LinkRemove {
+        },
+        Entry::LinkRemove((link, _)) => LinkValidationData::LinkRemove {
             link,
             validation_data,
-        }),
-        _ => Err(ValidationResult::Fail("Entry is not link".to_string())),
-    }?;
+        },
+        _ => return ValidationResult::Fail("Entry is not link".to_string()),
+    };
 
     let params = LinkValidationArgs {
         entry_type: link_definition_path.entry_type_name,

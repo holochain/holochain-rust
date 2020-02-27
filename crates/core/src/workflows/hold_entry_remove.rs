@@ -8,7 +8,7 @@ use crate::{workflows::validation_package};
 use holochain_core_types::{
     error::HolochainError,
     network::entry_aspect::EntryAspect,
-    validation::{EntryLifecycle, ValidationData},
+    validation::{EntryLifecycle, ValidationData, ValidationResult},
 };
 use std::sync::Arc;
 
@@ -36,25 +36,25 @@ pub async fn hold_remove_workflow(
     };
 
     // 3. Validate the entry
-    validate_entry(
+    match validate_entry(
         entry_with_header.entry.clone(),
         None,
         validation_data,
         &context
-    ).await
-    .map_err(|err| {
-        if let ValidationError::UnresolvedDependencies(dependencies) = &err {
+    ).await {
+        ValidationResult::Ok => (),
+        ValidationResult::UnresolvedDependencies(dependencies) => {
             log_debug!(context, "workflow/hold_remove: Entry removal could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}", dependencies);
-            HolochainError::ValidationPending
-        } else {
+            return Err(HolochainError::ValidationPending);
+        },
+        ValidationResult::Fail(e) => {
             log_warn!(context, "workflow/hold_remove: Entry removal {:?} is NOT valid! Validation error: {:?}",
                 entry_with_header.entry,
-                err,
+                e,
             );
-            HolochainError::from(err)
+            return Err(HolochainError::from(e));
         }
-
-    })?;
+    };
 
     // 4. If valid store the entry aspect in the local DHT shard
     let aspect = EntryAspect::Deletion(entry_with_header.header.clone());

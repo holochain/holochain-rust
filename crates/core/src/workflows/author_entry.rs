@@ -8,12 +8,11 @@ use crate::{
     },
     NEW_RELIC_LICENSE_KEY,
 };
-
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
     signature::Provenance,
-    validation::{EntryLifecycle, ValidationData},
+    validation::{EntryLifecycle, ValidationData, ValidationResult},
 };
 
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
@@ -59,13 +58,17 @@ pub async fn author_entry<'a>(
         "workflow/authoring_entry/{}: validating...",
         address
     );
-    validate_entry(
+    match validate_entry(
         entry.clone(),
         maybe_link_update_delete.clone(),
         validation_data,
         &context,
     )
-    .await?;
+    .await {
+        ValidationResult::Ok => (),
+        // @TODO what should we do if the dependencies don't exist?
+        ValidationResult::Fail(err) => return Err(HolochainError::from(err)),
+    };
     log_debug!(context, "worflow/authoring_entry {}: is valid!", address);
 
     // 3. Commit the entry

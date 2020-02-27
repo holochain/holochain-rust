@@ -42,51 +42,57 @@ pub async fn validate_entry(
 ) -> ValidationResult {
     log_debug!(context, "workflow/validate_entry: {:?}", entry);
     //check_entry_type(entry.entry_type(), context)?;
-    header_address::validate_header_address(&entry, &validation_data.package.chain_header)?;
-    provenances::validate_provenances(&validation_data)?;
+    match header_address::validate_header_address(&entry, &validation_data.package.chain_header) {
+        ValidationResult::Ok => {
+            match provenances::validate_provenances(&validation_data) {
+                ValidationResult::Ok => {
+                    match entry.entry_type() {
+                        // DNA entries are not validated currently and always valid
+                        // TODO: Specify when DNA can be commited as an update and how to implement validation of DNA entries then.
+                        EntryType::Dna => ValidationResult::Ok,
 
-    match entry.entry_type() {
-        // DNA entries are not validated currently and always valid
-        // TODO: Specify when DNA can be commited as an update and how to implement validation of DNA entries then.
-        EntryType::Dna => Ok(()),
+                        EntryType::App(app_entry_type) => {
+                            app_entry::validate_app_entry(
+                                entry.clone(),
+                                app_entry_type.clone(),
+                                context,
+                                link,
+                                validation_data,
+                            )
+                            .await
+                        }
 
-        EntryType::App(app_entry_type) => {
-            app_entry::validate_app_entry(
-                entry.clone(),
-                app_entry_type.clone(),
-                context,
-                link,
-                validation_data,
-            )
-            .await
-        }
+                        EntryType::LinkAdd => {
+                            link_entry::validate_link_entry(entry.clone(), validation_data, context).await
+                        }
 
-        EntryType::LinkAdd => {
-            link_entry::validate_link_entry(entry.clone(), validation_data, context).await
-        }
+                        EntryType::LinkRemove => {
+                            link_entry::validate_link_entry(entry.clone(), validation_data, context).await
+                        }
 
-        EntryType::LinkRemove => {
-            link_entry::validate_link_entry(entry.clone(), validation_data, context).await
-        }
+                        // Deletion entries are not validated currently and always valid
+                        // TODO: Specify how Deletion can be commited to chain.
+                        EntryType::Deletion => {
+                            remove_entry::validate_remove_entry(entry.clone(), validation_data, context).await
+                        }
 
-        // Deletion entries are not validated currently and always valid
-        // TODO: Specify how Deletion can be commited to chain.
-        EntryType::Deletion => {
-            remove_entry::validate_remove_entry(entry.clone(), validation_data, context).await
-        }
+                        // a grant should always be private, so it should always pass
+                        EntryType::CapTokenGrant => ValidationResult::Ok,
 
-        // a grant should always be private, so it should always pass
-        EntryType::CapTokenGrant => Ok(()),
+                        EntryType::AgentId => {
+                            agent_entry::validate_agent_entry(entry.clone(), validation_data, context).await
+                        }
 
-        EntryType::AgentId => {
-            agent_entry::validate_agent_entry(entry.clone(), validation_data, context).await
-        }
-
-        // chain headers always pass for now. In future this should check that the entry is valid
-        EntryType::ChainHeader => Ok(()),
-
-        _ => Err(ValidationResult::NotImplemented),
+                        // chain headers always pass for now. In future this should check that the entry is valid
+                        EntryType::ChainHeader => ValidationResult::Ok,
+                    }
+                },
+                v => v,
+            }
+        },
+        v => v,
     }
+
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]

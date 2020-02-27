@@ -9,7 +9,7 @@ use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
     network::entry_aspect::EntryAspect,
-    validation::{EntryLifecycle, ValidationData},
+    validation::{EntryLifecycle, ValidationData, ValidationResult},
 };
 use std::sync::Arc;
 
@@ -53,25 +53,25 @@ pub async fn remove_link_workflow(
 
     // 3. Validate the entry
     log_debug!(context, "workflow/remove_link: validate...");
-    validate_entry(
+    match validate_entry(
         entry_with_header.entry.clone(),
         None,
         validation_data,
         &context
-    ).await
-    .map_err(|err| {
-        if let ValidationError::UnresolvedDependencies(dependencies) = &err {
+    ).await {
+        ValidationResult::Ok => (),
+        ValidationResult::UnresolvedDependencies(dependencies) => {
             log_debug!(context, "workflow/remove_link: Link could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}", dependencies);
-            HolochainError::ValidationPending
-        } else {
+            return Err(HolochainError::ValidationPending);
+        },
+        ValidationResult::Fail(e) => {
             log_warn!(context, "workflow/remove_link: Link {:?} is NOT valid! Validation error: {:?}",
                 entry_with_header.entry,
-                err,
+                e,
             );
-            HolochainError::from(err)
-        }
-
-    })?;
+            return Err(HolochainError::from(e));
+        },
+    };
 
     log_debug!(context, "workflow/remove_link: is valid!");
 

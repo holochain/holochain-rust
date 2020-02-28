@@ -52,6 +52,8 @@ use in_stream::*;
 use log::*;
 use rand::{seq::SliceRandom, thread_rng};
 use std::{
+    fs::File,
+    io::prelude::*,
     convert::TryFrom,
     hash::{Hash, Hasher},
 };
@@ -496,10 +498,19 @@ fn spawn_handle_message_debug(sim2h_handle: Sim2hHandle, uri: Lib3hUri, signer: 
         let state = sim2h_handle.state().get_clone().await;
         let mut response_map: BTreeMap<SpaceHash, String> = BTreeMap::new();
         for (hash, space) in state.spaces.iter() {
+            let json = serde_json::to_string(&space).expect("Space must be serializable");
             response_map.insert(
                 (**hash).clone(),
-                serde_json::to_string(&space).expect("Space must be serializable"),
+                json.clone(),
             );
+            let filename = format!("{}.json", **hash);
+            if let Ok(mut file) = File::create(filename.clone()) {
+                file.write_all(json.into_bytes().as_slice()).unwrap_or_else(|_| {
+                    error!("Could not write to file {}!", filename)
+                })
+            } else {
+                error!("Could not create file {}!", filename)
+            }
         }
         sim2h_handle.send(
             signer.clone(),

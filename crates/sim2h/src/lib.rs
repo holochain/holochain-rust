@@ -322,7 +322,7 @@ impl Sim2hHandle {
             // -- right now each agent can only be part of a single space :/ --
 
             let (agent_id, space_hash) = 'got_info: {
-                for _ in 0_usize..10 {
+                for _ in 0_usize..600 {
                     // await consistency of new connection
                     let state = sim2h_handle.state().get_clone().await;
                     if let Some(info) = state.get_space_info_from_uri(&uri) {
@@ -332,7 +332,7 @@ impl Sim2hHandle {
                 }
                 let s = tracing::error_span!("uri_error");
                 let _g = s.enter();
-                tracing::error!(?message);
+                tracing::error!(?message, ?uri, ?agent_id, ?space_hash);
                 error!("uri has not joined space, cannot proceed {}", uri);
                 return;
             };

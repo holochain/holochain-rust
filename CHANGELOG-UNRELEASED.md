@@ -15,5 +15,6 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Fixed
 
 - Fixing wire message TK-01102
+- Fixed `panic!("entry/aspect mismatch - corrupted data?")`
 
 ### Security

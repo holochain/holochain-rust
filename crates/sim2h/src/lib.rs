@@ -330,6 +330,9 @@ impl Sim2hHandle {
                     }
                     tokio::time::delay_for(std::time::Duration::from_millis(100)).await;
                 }
+                let s = tracing::error_span!("uri_error");
+                let _g = s.enter();
+                tracing::error!(?message);
                 error!("uri has not joined space, cannot proceed {}", uri);
                 return;
             };

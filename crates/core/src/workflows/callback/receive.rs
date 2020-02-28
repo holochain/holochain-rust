@@ -2,10 +2,8 @@ use crate::{
     context::Context,
     nucleus::CallbackFnCall,
     wasm_engine::{
-        self,
         callback::{Callback, CallbackParams, CallbackResult},
         runtime::WasmCallData,
-        Defn,
     },
     NEW_RELIC_LICENSE_KEY,
 };
@@ -36,10 +34,10 @@ pub fn receive(
         JsonString::from(params),
     );
 
-    let call_data = WasmCallData::new_callback_call(context, call);
+    let call_data = WasmCallData::new_callback_call(context, call.clone());
 
     let call_result: Result<CallbackResult, WasmError> = holochain_wasmer_host::guest::call(
-        &mut match wasm_engine::factories::instance_for_call_data(&call_data) {
+        &mut match call_data.instance() {
             Ok(instance) => instance,
             Err(_) => return CallbackResult::Fail(format!("Failed to get an instance for call data: {:?}", &call_data)),
         },

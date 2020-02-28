@@ -75,7 +75,7 @@ pub fn invoke_keystore_new_random(runtime: &mut Runtime, args_str: WasmString) -
     let result = conductor_callback(
         "agent/keystore/add_random_seed",
         &args_str.to_string(),
-        context,
+        context.clone(),
     );
     match result {
         Ok(_) => (),
@@ -97,7 +97,7 @@ pub fn invoke_keystore_derive_seed(runtime: &mut Runtime, args_str: WasmString) 
     let result = conductor_callback(
         "agent/keystore/add_seed_from_seed",
         &args_str.to_string(),
-        context,
+        context.clone(),
     );
     match result {
         Ok(_) => (),
@@ -120,7 +120,7 @@ pub fn invoke_keystore_derive_key(runtime: &mut Runtime, args_str: WasmString) -
     let result = conductor_callback(
         "agent/keystore/add_key_from_seed",
         &args_str.to_string(),
-        context,
+        context.clone(),
     );
     let string: String = match result {
         Ok(json_string) => {
@@ -154,7 +154,7 @@ pub fn invoke_keystore_derive_key(runtime: &mut Runtime, args_str: WasmString) -
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_keystore_sign(runtime: &mut Runtime, args_str: WasmString) -> Result<JsonString, HolochainError> {
     let context = runtime.context()?;
-    let result = conductor_callback("agent/keystore/sign", &args_str.to_string(), context);
+    let result = conductor_callback("agent/keystore/sign", &args_str.to_string(), context.clone());
     let string: String = match result {
         Ok(json_string) => {
             log_debug!(context, "zome: keystore_sign json_string:{:?}", json_string);
@@ -191,7 +191,7 @@ pub fn invoke_keystore_get_public_key(
     let result = conductor_callback(
         "agent/keystore/get_public_key",
         &args_str.to_string(),
-        context,
+        context.clone(),
     );
     let string: String = match result {
         Ok(json_string) => {

@@ -1281,6 +1281,7 @@ dependencies = [
  "holochain_persistence_pickle 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_tracing 0.0.19 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_tracing_macros 0.0.19 (registry+https://github.com/rust-lang/crates.io-index)",
+ "holochain_wasm_types 0.0.43-alpha3",
  "hyper 0.12.25 (registry+https://github.com/rust-lang/crates.io-index)",
  "json-patch 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-core 14.0.1 (registry+https://github.com/rust-lang/crates.io-index)",

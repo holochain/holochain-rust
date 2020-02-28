@@ -100,13 +100,13 @@ use holochain_core::{
     instance::Instance,
     nucleus::{call_zome_function, ZomeFnCall},
     persister::{Persister, SimplePersister},
-    wasm_engine::{run_dna, WasmCallData},
+    wasm_engine::{WasmCallData},
 };
 use holochain_core_types::{
     dna::{capabilities::CapabilityRequest, Dna},
     error::HolochainError,
 };
-
+use holochain_wasm_types::wasm_string::WasmString;
 use holochain_json_api::json::JsonString;
 
 use holochain_core::{
@@ -116,7 +116,6 @@ use holochain_core::{
 use holochain_persistence_api::cas::content::Address;
 use jsonrpc_core::IoHandler;
 use std::sync::Arc;
-
 use holochain_metrics::with_latency_publishing;
 
 /// contains a Holochain application instance
@@ -134,22 +133,26 @@ impl Holochain {
         let instance = Instance::new(context.clone());
 
         for zome in dna.zomes.values() {
-            let maybe_json_string = run_dna(
-                WasmCallData::DirectCall("__hdk_hdk_version".to_string(), zome.code.code.clone()),
-                Some(()),
-            );
+            let call_data = WasmCallData::DirectCall("__hdk_hdk_version".to_string(), zome.code.code.clone());
 
-            if let Ok(json_string) = maybe_json_string {
-                if json_string.to_string()
-                    != holochain_core_types::hdk_version::HDK_VERSION.to_string()
-                {
-                    eprintln!("WARNING! The HDK Version of the runtime and the zome don't match.");
-                    eprintln!(
-                        "Runtime HDK Version: {}",
-                        holochain_core_types::hdk_version::HDK_VERSION.to_string()
-                    );
-                    eprintln!("Zome HDK Version: {}", json_string);
-                }
+            let hdk_version: WasmString = match holochain_core::wasm_engine::guest::call(
+                &mut call_data.instance()?,
+                &call_data.fn_name(),
+                (),
+            ) {
+                Ok(v) => v,
+                Err(e) => return Err(HolochainInstanceError::InternalFailure(HolochainError::Wasm(e))),
+            };
+
+            if hdk_version.to_string()
+                != holochain_core_types::hdk_version::HDK_VERSION.to_string()
+            {
+                eprintln!("WARNING! The HDK Version of the runtime and the zome don't match.");
+                eprintln!(
+                    "Runtime HDK Version: {}",
+                    holochain_core_types::hdk_version::HDK_VERSION.to_string()
+                );
+                eprintln!("Zome HDK Version: {}", hdk_version.to_string());
             }
         }
 

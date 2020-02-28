@@ -8,11 +8,8 @@ use holochain_json_api::{
 };
 use crate::wasm_engine::runtime::WasmCallData;
 use crate::nucleus::CallbackFnCall;
-use crate::wasm_engine;
-use crate::wasm_engine::Defn;
 use crate::workflows::callback::init::init;
 use holochain_wasm_types::receive::ReceiveParams;
-use num_traits::FromPrimitive;
 use std::{str::FromStr, sync::Arc};
 use crate::context::Context;
 use crate::workflows::callback::receive::receive;
@@ -65,29 +62,12 @@ impl Callback {
             Callback::Receive => receive,
         }
     }
-}
 
-// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-impl Defn for Callback {
-    fn as_str(&self) -> &'static str {
+    pub fn as_str(&self) -> &'static str {
         match *self {
             Callback::MissingNo => "",
             Callback::Init => "init",
             Callback::Receive => "receive",
-        }
-    }
-
-    fn str_to_index(s: &str) -> usize {
-        match Callback::from_str(s) {
-            Ok(i) => i as usize,
-            Err(_) => Callback::MissingNo as usize,
-        }
-    }
-
-    fn from_index(i: usize) -> Self {
-        match FromPrimitive::from_usize(i) {
-            Some(v) => v,
-            None => Callback::MissingNo,
         }
     }
 }
@@ -142,7 +122,7 @@ pub enum CallbackResult {
 pub(crate) fn run_callback(context: Arc<Context>, call: CallbackFnCall) -> CallbackResult {
     let call_data = WasmCallData::new_callback_call(context, call.clone());
     match holochain_wasmer_host::guest::call(
-        &mut match wasm_engine::factories::instance_for_call_data(&call_data) {
+        &mut match call_data.instance() {
             Ok(instance) => instance,
             Err(_) => return CallbackResult::NotImplemented("run_callback missing instance".into()),
         },

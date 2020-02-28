@@ -13,7 +13,6 @@ pub use crate::{
         reducers::reduce,
         state::ZomeFnCallState,
     },
-    wasm_engine::api::ZomeApiFunction,
 };
 use holochain_core_types::{dna::capabilities::CapabilityRequest, error::HcResult};
 use holochain_json_api::json::JsonString;
@@ -24,7 +23,8 @@ use std::sync::Arc;
 /// Struct holding data for tracing the call of an HDK function from a zome function
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize)]
 pub struct WasmApiFnCall {
-    pub function: ZomeApiFunction,
+    /// imports! name of the function that is invoked by the wasm guest
+    pub function: String,
     pub parameters: JsonString,
 }
 

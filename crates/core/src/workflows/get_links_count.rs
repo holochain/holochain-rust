@@ -11,9 +11,9 @@ use holochain_wasm_types::get_links::{GetLinksArgs, GetLinksResultCount};
 use std::sync::Arc;
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub async fn get_link_result_count_workflow<'a>(
+pub async fn get_link_result_count_workflow(
     context: Arc<Context>,
-    link_args: &'a GetLinksArgs,
+    link_args: GetLinksArgs,
 ) -> Result<GetLinksResultCount, HolochainError> {
     let method = QueryMethod::Link(link_args.clone(), GetLinksNetworkQuery::Count);
     let response = query(context.clone(), method, link_args.options.timeout.clone()).await?;
@@ -33,8 +33,4 @@ pub async fn get_link_result_count_workflow<'a>(
     }?;
 
     Ok(GetLinksResultCount { count: links_count })
-}
-
-pub fn invoke_get_links_count(context: Arc<Context>, link_args: GetLinksArgs) -> Result<GetLinksResultCount, HolochainError> {
-    context.block_on(get_link_result_count_workflow(context, &link_args))
 }

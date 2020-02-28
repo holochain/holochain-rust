@@ -27,11 +27,11 @@ pub fn invoke_update_entry(
     let maybe_entry_result = context.block_on(get_entry_result_workflow(&context, &get_args));
     if let Err(err) = maybe_entry_result {
         log_error!(context, "zome: get_entry_result_workflow failed: {:?}", err);
-        Err(WasmError::WorkflowFailed)?;
+        return Err(HolochainError::Wasm(WasmError::WorkflowFailed));
     }
     let entry_result = maybe_entry_result?.clone();
     if !entry_result.found() {
-        Err(WasmError::EntryNotFound)?;
+        return Err(HolochainError::Wasm(WasmError::EntryNotFound));
     }
     let latest_entry = entry_result.latest()?;
 

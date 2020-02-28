@@ -11,6 +11,7 @@ edition = "2018"
 [dependencies]
 holochain_core = { version = "=0.0.43-alpha3", path = "../core" }
 holochain_core_types = { version = "=0.0.43-alpha3", path = "../core_types" }
+holochain_wasm_types = { version = "=0.0.43-alpha3", path = "../wasm_types" }
 holochain_locksmith = { version = "=0.0.43-alpha3", path = "../locksmith" }
 holochain_json_derive = "=0.0.23"
 holochain_json_api = "=0.0.23"

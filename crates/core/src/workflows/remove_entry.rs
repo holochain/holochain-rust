@@ -30,12 +30,12 @@ pub fn invoke_remove_entry(
 
     if let Err(err) = maybe_entry_result {
         log_error!(context, "zome: get_entry_result_workflow failed: {:?}", err);
-        Err(WasmError::WorkflowFailed)?;
+        return Err(HolochainError::Wasm(WasmError::WorkflowFailed));
     }
 
     let entry_result = maybe_entry_result?;
     if !entry_result.found() {
-        Err(WasmError::EntryNotFound)?;
+        return Err(HolochainError::Wasm(WasmError::EntryNotFound));
     }
     let deleted_entry_address = entry_result.latest()?.address();
 

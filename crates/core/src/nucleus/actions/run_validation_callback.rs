@@ -3,7 +3,7 @@ use crate::{
     nucleus::{
         CallbackFnCall,
     },
-    wasm_engine::{self, runtime::WasmCallData},
+    wasm_engine::{runtime::WasmCallData},
     // NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::validation::ValidationResult;
@@ -36,9 +36,9 @@ pub async fn run_validation_callback(
         |()| {
             let cloned_context = context.clone();
 
-            let call_data = WasmCallData::new_callback_call(cloned_context, call);
+            let call_data = WasmCallData::new_callback_call(cloned_context, call.clone());
             match holochain_wasmer_host::guest::call(
-                &mut wasm_engine::factories::instance_for_call_data(&call_data).expect(&format!("there is no wasm module for call data: {:?}", &call_data)),
+                &mut call_data.instance().expect(&format!("there is no wasm module for call data: {:?}", &call_data)),
                 &call_data.fn_name(),
                 call.clone().parameters,
             ) {

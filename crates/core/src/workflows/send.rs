@@ -25,10 +25,10 @@ pub fn invoke_send(runtime: &mut Runtime, args: SendArgs) -> Result<JsonString, 
 
     let message = CustomDirectMessage {
         payload: Ok(args.payload),
-        zome: runtime.call_data().map_err(|e| WasmError::Zome(e.to_string()))?.zome_name,
+        zome: call_data.zome_name,
     };
 
     context
-        .block_on(custom_send(args.to_agent, message, args.options.0, context))
+        .block_on(custom_send(args.to_agent, message, args.options.0, context.clone()))
         .map(|s| JsonString::from_json(&String::from(s)))
 }

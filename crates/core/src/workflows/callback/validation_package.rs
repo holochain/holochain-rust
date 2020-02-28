@@ -2,7 +2,6 @@ use crate::{
     context::Context,
     nucleus::CallbackFnCall,
     wasm_engine::{
-        self,
         runtime::WasmCallData,
         callback::CallbackResult,
     },
@@ -44,7 +43,7 @@ pub fn get_validation_package_definition(
             );
             let call_data = WasmCallData::new_callback_call(context, call);
             holochain_wasmer_host::guest::call(
-                &mut wasm_engine::factories::instance_for_call_data(&call_data)?,
+                &mut call_data.instance()?,
                 &call_data.fn_name(),
                 app_entry_type,
             )?
@@ -74,9 +73,9 @@ pub fn get_validation_package_definition(
                 params,
             );
 
-            let call_data = WasmCallData::new_callback_call(context, call);
+            let call_data = WasmCallData::new_callback_call(context, call.clone());
             holochain_wasmer_host::guest::call(
-                &mut wasm_engine::factories::instance_for_call_data(&call_data)?,
+                &mut call_data.instance()?,
                 &call_data.fn_name(),
                 call.parameters,
             )?
@@ -108,9 +107,9 @@ pub fn get_validation_package_definition(
                 params,
             );
 
-            let call_data = WasmCallData::new_callback_call(context, call);
+            let call_data = WasmCallData::new_callback_call(context, call.clone());
             holochain_wasmer_host::guest::call(
-                &mut wasm_engine::factories::instance_for_call_data(&call_data)?,
+                &mut call_data.instance()?,
                 &call_data.fn_name(),
                 call.parameters,
             )?

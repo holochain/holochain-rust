@@ -6,7 +6,13 @@ use crate::{
 use holochain_json_api::json::JsonString;
 use holochain_core_types::error::HolochainError;
 use std::{fmt, sync::Arc};
-use wasmer_runtime::{error::RuntimeError, Instance};
+use wasmer_runtime::{error::RuntimeError, Instance, imports, func, instantiate};
+use holochain_wasmer_host::WasmError;
+use wasmer_runtime::Ctx;
+use crate::workflows::debug::debug_workflow;
+use holochain_wasm_types::ZomeApiResult;
+use std::convert::TryInto;
+use crate::workflows::get_links_count::get_link_result_count_workflow;
 
 #[derive(Clone)]
 pub struct ZomeCallData {
@@ -41,7 +47,7 @@ impl fmt::Display for BadCallError {
 
 // impl HostError for BadCallError {}
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl WasmCallData {
     pub fn new_zome_call(context: Arc<Context>, call: ZomeFnCall) -> Self {
         WasmCallData::ZomeCall(ZomeCallData { context, call })
@@ -65,6 +71,68 @@ impl WasmCallData {
             WasmCallData::CallbackCall(ref data) => Ok(data.context.clone()),
             _ => Err(HolochainError::ErrorGeneric(format!("context data: {:?}", &self))),
         }
+    }
+
+    pub fn instance(&self) -> Result<Instance, HolochainError> {
+        macro_rules! invoke_workflow {
+            ( $workflow:ident ) => {{
+                let closure_arc = std::sync::Arc::new(self.clone());
+                move |ctx: &mut Ctx, guest_allocation_ptr: holochain_wasmer_host::AllocationPtr| -> ZomeApiResult {
+                    let guest_bytes = holochain_wasmer_host::guest::read_from_allocation_ptr(ctx, guest_allocation_ptr)?;
+                    let guest_json = JsonString::from(guest_bytes);
+                    let context = std::sync::Arc::clone(&closure_arc.context().map_err(|_| WasmError::Unspecified )?);
+
+                    Ok(holochain_wasmer_host::json::to_allocation_ptr(
+                        context.block_on(
+                            $workflow(context.clone(), guest_json.try_into()?)
+                        ).map_err(|e| WasmError::Zome(e.to_string()))?.into()
+                    ))
+                }
+            }}
+        }
+
+        let wasm_imports = imports! {
+                // move || {
+                //     let call_data: *mut WasmCallData = Arc::into_raw(Arc::clone(&self_arc)) as _;
+                //     (call_data as _, |_| {})
+                // },
+                "env" => {
+                    // "hc_debug" => zome_api_func!(context, invoke_debug),
+                    "hc_debug" => func!(invoke_workflow!(debug_workflow)),
+                    "hc_get_links_count" => func!(invoke_workflow!(get_link_result_count_workflow)),
+                    // "hc_commit_entry" => zome_api_func!(context, invoke_commit_app_entry),
+                },
+            };
+
+        let new_instance = |wasm: &Vec<u8>| {
+            Ok(instantiate(wasm, &wasm_imports).map_err(|e| HolochainError::from(e.to_string()))?)
+        };
+
+        let (context, zome_name) = if let WasmCallData::DirectCall(_, wasm) = self {
+            return new_instance(&wasm);
+        } else {
+            match self {
+                WasmCallData::ZomeCall(d) => (d.context.clone(), d.call.zome_name.clone()),
+                WasmCallData::CallbackCall(d) => (d.context.clone(), d.call.zome_name.clone()),
+                WasmCallData::DirectCall(_, _) => unreachable!(),
+            }
+        };
+
+        let state_lock = context.state()?;
+        // @TODO caching for wasm and/or modules, just reinstance them
+        let wasm = state_lock
+            .nucleus()
+            .dna
+            .as_ref()
+            .unwrap()
+            .zomes
+            .get(&zome_name)
+            .ok_or_else(|| HolochainError::new(&format!("No Ribosome found for Zome '{}'", zome_name)))?
+            .code
+            .code
+            .clone();
+
+        new_instance(&wasm)
     }
 }
 

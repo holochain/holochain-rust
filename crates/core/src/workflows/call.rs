@@ -56,20 +56,20 @@ pub fn invoke_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonS
     let _spanguard = ht::push_span(span);
 
     if input.instance_handle == THIS_INSTANCE {
-        // ZomeFnCallArgs to ZomeFnCall
-        let zome_call = ZomeFnCall::from_args(context.clone(), input.clone());
 
+        // ZomeFnCallArgs to ZomeFnCall
         // Don't allow recursive calls
         // @TODO is this important? it relies on data that is hard to get at from the args
+        // let zome_call = ZomeFnCall::from_args(context.clone(), input.clone());
         // if zome_call.same_fn_as(&input.zome_call_data.call) {
         //     return Err(WasmError::RecursiveCallForbidden);
         // }
-        local_call(context, input.clone()).map_err(|error| {
+        local_call(context.clone(), input.clone()).map_err(|error| {
             log_error!(context, "zome-to-zome-call/[{:?}]: {:?}", input, error);
             error
         })
     } else {
-        bridge_call(context, input.clone()).map_err(|error| {
+        bridge_call(context.clone(), input.clone()).map_err(|error| {
             log_error!(context, "bridge-call/[{:?}]: {:?}", input, error);
             error
         })

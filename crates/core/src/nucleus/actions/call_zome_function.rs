@@ -2,7 +2,7 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     nucleus::{actions::get_entry::get_entry_from_agent_chain, ZomeFnCall, ZomeFnResult},
-    wasm_engine::{self, WasmCallData},
+    wasm_engine::{WasmCallData},
     NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
@@ -306,11 +306,11 @@ pub fn spawn_zome_function(context: Arc<Context>, zome_call: ZomeFnCall) {
         .spawn(move || {
             // Have Ribosome spin up DNA and call the zome function
             let call_data = WasmCallData::new_zome_call(context.clone(), zome_call.clone());
-            let maybe_instance: Result<Instance, HolochainError> = wasm_engine::factories::instance_for_call_data(&call_data);
+            let maybe_instance: Result<Instance, HolochainError> = call_data.instance();
 
             let call_result: ZomeFnResult = match maybe_instance {
                 Err(e) => Err(e),
-                Ok(instance) => {
+                Ok(mut instance) => {
                     let call_result_hack: Result<CallResult, WasmError> = holochain_wasmer_host::guest::call(
                         &mut instance,
                         &call_data.fn_name(),

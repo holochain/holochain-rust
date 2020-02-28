@@ -298,7 +298,11 @@ impl Sim2hHandle {
             WireMessage::ClientToLib3h(ht::EncodedSpanWrap {
                 data: ClientToLib3h::JoinSpace(data),
                 ..
-            }) => return spawn_handle_message_join_space(sim2h_handle, uri, signer, data),
+            }) => {
+                let _ =
+                    tokio::task::spawn(handle_message_join_space(sim2h_handle, uri, signer, data));
+                return;
+            }
             message @ _ => message,
         };
 
@@ -307,17 +311,19 @@ impl Sim2hHandle {
         tokio::task::spawn(async move {
             // -- right now each agent can only be part of a single space :/ --
 
-            let (agent_id, space_hash) = 'got_info: {
-                for _ in 0_usize..10 {
-                    // await consistency of new connection
-                    let state = sim2h_handle.state().get_clone().await;
-                    if let Some(info) = state.get_space_info_from_uri(&uri) {
-                        break 'got_info info;
-                    }
-                    tokio::time::delay_for(std::time::Duration::from_millis(100)).await;
+            let (agent_id, space_hash) = {
+                let state = sim2h_handle.state().get_clone().await;
+                if let Some(info) = state.get_space_info_from_uri(&uri) {
+                    info
+                } else {
+                    error!(
+                        "uri has not joined space, cannot proceed {} {}",
+                        uri,
+                        message.message_type()
+                    );
+                    sim2h_handle.disconnect(vec![uri.clone()]);
+                    return;
                 }
-                error!("uri has not joined space, cannot proceed {}", uri);
-                return;
             };
 
             if *agent_id != signer {
@@ -522,17 +528,20 @@ fn spawn_handle_message_hello(
     }
 }
 
-fn spawn_handle_message_join_space(
+async fn handle_message_join_space(
     sim2h_handle: Sim2hHandle,
     uri: Lib3hUri,
     _signer: AgentId,
     data: SpaceData,
 ) {
-    sim2h_handle.state().spawn_new_connection(
-        data.space_address.clone(),
-        data.agent_id.clone(),
-        uri.clone(),
-    );
+    sim2h_handle
+        .state()
+        .new_connection(
+            data.space_address.clone(),
+            data.agent_id.clone(),
+            uri.clone(),
+        )
+        .await;
 
     sim2h_handle.send(
         data.agent_id.clone(),

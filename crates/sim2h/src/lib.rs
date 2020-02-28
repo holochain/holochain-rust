@@ -312,7 +312,7 @@ impl Sim2hHandle {
             // -- right now each agent can only be part of a single space :/ --
 
             let (agent_id, space_hash) = 'got_info: {
-                // TODO might need to up this amount of tries if we get the bellow error
+                // TODO might need to up this amount of tries if we get the below error
                 for _ in 0_usize..10 {
                     // await consistency of new connection
                     let state = sim2h_handle.state().get_clone().await;

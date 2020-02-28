@@ -178,7 +178,7 @@ pub struct EntryInfo {
 pub struct Space {
     pub crypto: Box<dyn CryptoSystem>,
     pub redundancy: u64,
-    pub aspect_to_entry_hash: im::HashMap<MonoAspectHash, (MonoAspectHash, MonoEntryHash)>,
+    pub all_aspects: im::HashMap<MonoAspectHash, MonoAspectHash>,
     pub entry_to_all_aspects: im::HashMap<MonoEntryHash, EntryInfo>,
     pub connections: im::HashMap<MonoAgentId, ConnectionState>,
     pub uri_to_connection: im::HashMap<MonoUri, MonoAgentId>,
@@ -188,7 +188,7 @@ pub struct Space {
 impl std::fmt::Debug for Space {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Store")
-            .field("aspect_to_entry_hash", &self.aspect_to_entry_hash)
+            .field("all_aspects", &self.all_aspects)
             .field("entry_to_all_aspects", &self.entry_to_all_aspects)
             .field("connections", &self.connections)
             .field("uri_to_connection", &self.uri_to_connection)
@@ -201,7 +201,7 @@ impl Clone for Space {
         Self {
             crypto: self.crypto.box_clone(),
             redundancy: self.redundancy,
-            aspect_to_entry_hash: self.aspect_to_entry_hash.clone(),
+            all_aspects: self.all_aspects.clone(),
             entry_to_all_aspects: self.entry_to_all_aspects.clone(),
             connections: self.connections.clone(),
             uri_to_connection: self.uri_to_connection.clone(),
@@ -215,7 +215,7 @@ impl Space {
         Space {
             crypto,
             redundancy,
-            aspect_to_entry_hash: im::HashMap::new(),
+            all_aspects: im::HashMap::new(),
             entry_to_all_aspects: im::HashMap::new(),
             connections: im::HashMap::new(),
             uri_to_connection: im::HashMap::new(),
@@ -389,20 +389,13 @@ impl Space {
         entry_hash
     }
 
-    fn priv_check_insert_aspect_to_entry(
-        &mut self,
-        entry_hash: MonoEntryHash,
-        aspect_hash: &AspectHash,
-    ) -> MonoAspectHash {
-        if let Some((a, e)) = self.aspect_to_entry_hash.get(aspect_hash) {
-            if e != &entry_hash {
-                panic!("entry/aspect mismatch - corrupted data?");
-            }
+    fn priv_check_insert_aspect(&mut self, aspect_hash: &AspectHash) -> MonoAspectHash {
+        if let Some(a) = self.all_aspects.get(aspect_hash) {
             return a.clone();
         }
         let aspect_hash: MonoAspectHash = aspect_hash.clone().into();
-        self.aspect_to_entry_hash
-            .insert(aspect_hash.clone(), (aspect_hash.clone(), entry_hash));
+        self.all_aspects
+            .insert(aspect_hash.clone(), aspect_hash.clone());
         aspect_hash
     }
 
@@ -416,8 +409,7 @@ impl Space {
         let entry_hash = self.priv_check_insert_entry_hash(entry_hash);
         let mut mono_aspects = Vec::new();
         for aspect_hash in aspects {
-            mono_aspects
-                .push(self.priv_check_insert_aspect_to_entry(entry_hash.clone(), aspect_hash));
+            mono_aspects.push(self.priv_check_insert_aspect(aspect_hash));
         }
         let e = self.entry_to_all_aspects.get_mut(&entry_hash).unwrap();
         for a in mono_aspects {
@@ -1111,6 +1103,58 @@ mod tests {
     #[test]
     fn workflow_test() {
         async_run(async_workflow_test().boxed());
+    }
+
+    async fn async_same_aspect_in_differing_entries_test() {
+        let aid1 = gen_agent();
+
+        let space_hash: SpaceHash = "abcd".into();
+        let entry_hash_1: EntryHash = "test1".into();
+        let entry_hash_2: EntryHash = "test2".into();
+        let aspect_hash: AspectHash = "one".into();
+        let uri1: Lib3hUri = url::Url::parse("ws://yada1").unwrap().into();
+
+        let crypto = Box::new(lib3h_sodium::SodiumCryptoSystem::new());
+        let store = Store::new(
+            crypto,
+            0,       // FULL SYNC
+            Some(6), // set a nice/short 6ms gossip interval for testing : )
+        );
+
+        store
+            .new_connection(space_hash.clone(), aid1.clone(), uri1.clone())
+            .await;
+
+        store
+            .agent_holds_aspects(
+                space_hash.clone(),
+                aid1.clone(),
+                entry_hash_1.clone(),
+                im::hashset! {aspect_hash.clone()},
+            )
+            .await;
+
+        store
+            .agent_holds_aspects(
+                space_hash.clone(),
+                aid1.clone(),
+                entry_hash_2.clone(),
+                im::hashset! {aspect_hash.clone()},
+            )
+            .await;
+
+        let state = store.get_clone().await;
+        debug!("GOT: {:#?}", state);
+
+        let space = state.spaces.get(&space_hash).unwrap();
+
+        assert_eq!(1, space.all_aspects.len());
+        assert_eq!(2, space.entry_to_all_aspects.len());
+    }
+
+    #[test]
+    fn same_aspect_in_differing_entries_test() {
+        async_run(async_same_aspect_in_differing_entries_test().boxed());
     }
 
     async fn async_gossip_test() {

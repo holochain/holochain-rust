@@ -9,7 +9,7 @@ use holochain_persistence_api::{
         storage::{
             EntityAttributeValueStorage as GenericStorage, ExampleEntityAttributeValueStorage,
         },
-        AttributeError, IndexFilter,
+        AddEavi, AttributeError, FetchEavi, IndexFilter,
     },
     error::{PersistenceError, PersistenceResult},
 };
@@ -57,8 +57,6 @@ impl Default for Attribute {
 
 unsafe impl Sync for Attribute {}
 unsafe impl Send for Attribute {}
-
-impl holochain_persistence_api::eav::Attribute for Attribute {}
 
 impl From<AttributeError> for HolochainError {
     fn from(err: AttributeError) -> HolochainError {
@@ -216,7 +214,7 @@ pub fn eav_round_trip_test_runner(
         &value_content.address(),
     )
     .expect("Could not create EAV");
-    let mut eav_storage = ExampleEntityAttributeValueStorage::new();
+    let eav_storage = ExampleEntityAttributeValueStorage::new();
 
     assert_eq!(
         BTreeSet::new(),

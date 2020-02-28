@@ -515,7 +515,6 @@ pub mod tests {
     };
     use holochain_locksmith::{Mutex, RwLock};
     use holochain_persistence_api::cas::content::AddressableContent;
-    use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use tempfile;
     use test_utils;
 
@@ -528,8 +527,6 @@ pub mod tests {
     use crate::nucleus::state::NucleusStatus;
     use holochain_core_types::entry::Entry;
     use holochain_json_api::json::JsonString;
-    use holochain_persistence_lmdb::{cas::lmdb::LmdbStorage, eav::lmdb::EavLmdbStorage};
-    use holochain_persistence_mem::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
 
     /// create a test context and TestLogger pair so we can use the logger in assertions
     #[cfg_attr(tarpaulin, skip)]
@@ -547,17 +544,17 @@ pub mod tests {
         network_name: Option<&str>,
     ) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
         let agent = registered_test_agent(agent_name);
-        let content_storage = Arc::new(RwLock::new(MemoryStorage::new()));
-        let meta_storage = Arc::new(RwLock::new(EavMemoryStorage::new()));
+
+        let persistence_manager = Arc::new(holochain_persistence_mem::txn::new_manager());
         let logger = test_logger();
         (
             Arc::new(Context::new(
                 "Test-context-and-logger-instance",
                 agent,
-                Arc::new(RwLock::new(SimplePersister::new(content_storage.clone()))),
-                content_storage.clone(),
-                content_storage.clone(),
-                meta_storage,
+                Arc::new(RwLock::new(SimplePersister::new(
+                    persistence_manager.clone(),
+                ))),
+                persistence_manager.clone(),
                 test_memory_network_config(network_name),
                 None,
                 None,
@@ -595,22 +592,20 @@ pub mod tests {
         network_name: Option<&str>,
     ) -> Arc<Context> {
         let agent = AgentId::generate_fake(agent_name);
-        let file_storage = Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-        ));
+
+        let persistence_manager = Arc::new(holochain_persistence_file::txn::default_manager());
+
         Arc::new(
             Context::new_with_channels(
                 "Test-context-with-channels-instance",
                 agent,
-                Arc::new(RwLock::new(SimplePersister::new(file_storage.clone()))),
+                Arc::new(RwLock::new(SimplePersister::new(
+                    persistence_manager.clone(),
+                ))),
+                persistence_manager.clone(),
                 Some(action_channel.clone()),
                 None,
                 Some(observer_channel.clone()),
-                file_storage.clone(),
-                Arc::new(RwLock::new(
-                    EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                        .unwrap(),
-                )),
                 // TODO should bootstrap nodes be set here?
                 test_memory_network_config(network_name),
                 false,
@@ -625,19 +620,14 @@ pub mod tests {
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_context_with_state(network_name: Option<&str>) -> Arc<Context> {
-        let file_storage = Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-        ));
+        let persistence_manager = Arc::new(holochain_persistence_file::txn::default_manager());
         let mut context = Context::new(
             "test-context-with-state-instance",
             registered_test_agent("Florence"),
-            Arc::new(RwLock::new(SimplePersister::new(file_storage.clone()))),
-            file_storage.clone(),
-            file_storage.clone(),
-            Arc::new(RwLock::new(
-                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                    .unwrap(),
-            )),
+            Arc::new(RwLock::new(SimplePersister::new(
+                persistence_manager.clone(),
+            ))),
+            persistence_manager.clone(),
             // TODO BLOCKER should bootstrap nodes be set here?
             test_memory_network_config(network_name),
             None,
@@ -655,19 +645,14 @@ pub mod tests {
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_context_with_agent_state(network_name: Option<&str>) -> Arc<Context> {
-        let file_system =
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap();
-        let cas = Arc::new(RwLock::new(file_system.clone()));
+        let persistence_manager = Arc::new(holochain_persistence_file::txn::default_manager());
         let mut context = Context::new(
             "test-context-with-agent-state-instance",
             registered_test_agent("Florence"),
-            Arc::new(RwLock::new(SimplePersister::new(cas.clone()))),
-            cas.clone(),
-            cas.clone(),
-            Arc::new(RwLock::new(
-                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                    .unwrap(),
-            )),
+            Arc::new(RwLock::new(SimplePersister::new(
+                persistence_manager.clone(),
+            ))),
+            persistence_manager.clone(),
             // TODO BLOCKER should bootstrap nodes be set here?
             test_memory_network_config(network_name),
             None,
@@ -678,7 +663,7 @@ pub mod tests {
             )),
             Arc::new(ht::null_tracer()),
         );
-        let chain_store = ChainStore::new(cas.clone());
+        let chain_store = ChainStore::new(persistence_manager.clone());
         let chain_header = test_chain_header();
         let agent_state = AgentState::new_with_top_chain_header(
             chain_store,
@@ -948,23 +933,27 @@ pub mod tests {
     ) -> (Arc<Context>, Arc<Mutex<TestLogger>>) {
         let agent = registered_test_agent(agent_name);
 
-        let cas_dir = tempdir().expect("Could not create a tempdir for CAS testing");
-        let eav_dir = tempdir().expect("Could not create a tempdir for CAS testing");
+        let lmdb_dir = tempdir().expect("Could not create a tempdir for CAS testing");
 
-        let content_storage = Arc::new(RwLock::new(LmdbStorage::new(
-            cas_dir.path(),
+        let staging_path_prefix: Option<String> = None;
+        let persistence_manager = Arc::new(holochain_persistence_lmdb::txn::new_manager(
+            lmdb_dir.path(),
+            staging_path_prefix,
             cas_initial_mmap,
-        )));
-        let meta_storage = Arc::new(RwLock::new(EavLmdbStorage::new(eav_dir.path(), None)));
+            None,
+            None,
+            None,
+        ));
+
         let logger = test_logger();
         (
             Arc::new(Context::new(
                 "Test-context-lmdb",
                 agent,
-                Arc::new(RwLock::new(SimplePersister::new(content_storage.clone()))),
-                content_storage.clone(),
-                content_storage.clone(),
-                meta_storage,
+                Arc::new(RwLock::new(SimplePersister::new(
+                    persistence_manager.clone(),
+                ))),
+                persistence_manager,
                 test_memory_network_config(network_name),
                 None,
                 None,
@@ -1007,7 +996,7 @@ pub mod tests {
             .unwrap();
 
         // ensure it was added
-        let dht = context.dht_storage.read().unwrap();
+        let dht = context.persistence_manager.cas();
         assert!(dht.contains(&entry.address()).unwrap());
     }
 }

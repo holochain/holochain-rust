@@ -95,23 +95,17 @@ fn context_log_macro_test() {
     use holochain_core_types::agent::AgentId;
     use holochain_locksmith::RwLock;
     use holochain_net::p2p_config::P2pConfig;
-    use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use holochain_tracing as ht;
     use std::sync::Arc;
-    use tempfile::tempdir;
+    let persistence_manager = Arc::new(holochain_persistence_file::txn::default_manager());
 
-    let file_storage = Arc::new(RwLock::new(
-        FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-    ));
     let ctx = Context::new(
         "LOG-TEST-ID",
         AgentId::generate_fake("Bilbo"),
-        Arc::new(RwLock::new(SimplePersister::new(file_storage.clone()))),
-        file_storage.clone(),
-        file_storage.clone(),
-        Arc::new(RwLock::new(
-            EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string()).unwrap(),
-        )),
+        Arc::new(RwLock::new(SimplePersister::new(
+            persistence_manager.clone(),
+        ))),
+        persistence_manager.clone(),
         P2pConfig::new_with_unique_memory_backend(),
         None,
         None,

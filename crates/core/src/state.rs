@@ -19,7 +19,6 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::{HcResult, HolochainError},
 };
-use holochain_locksmith::RwLock;
 use holochain_persistence_api::{
     cas::{
         content::{Address, AddressableContent},
@@ -71,16 +70,13 @@ impl State {
         // @TODO file table
         // @see https://github.com/holochain/holochain-rust/pull/246
 
-        let chain_cas = &(*context).chain_storage;
-        let dht_cas = &(*context).dht_storage;
-        let eav = context.eav_storage.clone();
         State {
             nucleus: Arc::new(NucleusState::new()),
             agent: Arc::new(AgentState::new(
-                ChainStore::new(chain_cas.clone()),
+                ChainStore::new(context.persistence_manager.clone()),
                 context.agent_id.address(),
             )),
-            dht: Arc::new(DhtStore::new(dht_cas.clone(), eav)),
+            dht: Arc::new(DhtStore::new(context.persistence_manager.clone())),
             network: Arc::new(NetworkState::new()),
             conductor_api: context.conductor_api.clone(),
         }
@@ -95,10 +91,7 @@ impl State {
         agent_state: AgentState,
         nucleus_state: NucleusState,
     ) -> Self {
-        let cas = context.dht_storage.clone();
-        let eav = context.eav_storage.clone();
-
-        let dht_store = DhtStore::new(cas.clone(), eav.clone());
+        let dht_store = DhtStore::new(context.persistence_manager.clone());
         Self::new_with_agent_nucleus_dht(context, agent_state, nucleus_state, dht_store)
     }
 
@@ -108,9 +101,7 @@ impl State {
         mut nucleus_state: NucleusState,
         dht_store: DhtStore,
     ) -> Self {
-        let cas = context.dht_storage.clone();
-        //let eav = context.eav_storage.clone();
-
+        let cas = context.persistence_manager.cas();
         nucleus_state.dna = Self::get_dna(&agent_state, cas.clone()).ok();
 
         State {
@@ -122,10 +113,7 @@ impl State {
         }
     }
 
-    fn get_dna(
-        agent_state: &AgentState,
-        cas: Arc<RwLock<dyn ContentAddressableStorage>>,
-    ) -> HcResult<Dna> {
+    fn get_dna(agent_state: &AgentState, cas: Arc<dyn ContentAddressableStorage>) -> HcResult<Dna> {
         let dna_entry_header = agent_state
             .chain_store()
             .iter_type(&agent_state.top_chain_header(), &EntryType::Dna)
@@ -136,7 +124,7 @@ impl State {
                         .to_string(),
                 )
             })?;
-        let json = (*cas.read().unwrap()).fetch(dna_entry_header.entry_address())?;
+        let json = (*cas).fetch(dna_entry_header.entry_address())?;
         let entry: Entry = json.map(|e| e.try_into()).ok_or_else(|| {
             HolochainError::ErrorGeneric(
                 "No DNA entry found in storage while creating state from agent".to_string(),
@@ -198,16 +186,13 @@ impl State {
         dht_store_snapshot: DhtStoreSnapshot,
     ) -> HcResult<State> {
         let agent_state = AgentState::new_with_top_chain_header(
-            ChainStore::new(context.chain_storage.clone()),
+            ChainStore::new(context.persistence_manager.clone()),
             agent_snapshot.top_chain_header().map(|h| h.to_owned()),
             context.agent_id.address(),
         );
         let nucleus_state = NucleusState::from(nucleus_snapshot);
-        let dht_store = DhtStore::new_from_snapshot(
-            context.dht_storage.clone(),
-            context.eav_storage.clone(),
-            dht_store_snapshot,
-        );
+        let dht_store =
+            DhtStore::new_from_snapshot(context.persistence_manager.clone(), dht_store_snapshot);
         Ok(State::new_with_agent_nucleus_dht(
             context,
             agent_state,

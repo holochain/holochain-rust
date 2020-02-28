@@ -8,9 +8,7 @@ use holochain_core::{
     content_store::GetContent,
 };
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry};
-use holochain_locksmith::RwLock;
 use holochain_persistence_api::cas::content::Address;
-use holochain_persistence_file::cas::file::FilesystemStorage;
 use std::{fs, path::PathBuf};
 
 // TODO: use system-agnostic default path
@@ -21,10 +19,13 @@ pub fn chain_log(storage_path: Option<PathBuf>, instance_id: String) -> DefaultR
     let storage_path = storage_path.ok_or_else(|| {
         format_err!("Please specify the path to CAS storage with the --path option.")
     })?;
-    let cas_path = storage_path.join(instance_id).join("cas");
-    let chain_store = ChainStore::new(std::sync::Arc::new(RwLock::new(
-        FilesystemStorage::new(cas_path.clone()).expect("Could not create chain store"),
-    )));
+    let cas_path = storage_path.join(instance_id.clone()).join("cas");
+    let eav_path = storage_path.join(instance_id).join("eav");
+
+    let chain_store = ChainStore::new(std::sync::Arc::new(
+        holochain_persistence_file::txn::new_manager(cas_path.clone(), eav_path)
+            .expect("Could not create chain store"),
+    ));
 
     let agent = chain_store
         .get_raw(&Address::from("AgentState"))?

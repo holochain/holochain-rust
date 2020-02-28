@@ -1,5 +1,5 @@
 use crate::{
-    content_store::{AddContent, GetContent},
+    content_store::GetContent,
     dht::{
         aspect_map::{AspectMap, AspectMapBare},
         pending_validations::{PendingValidationWithTimeout, ValidationTimeout},
@@ -18,13 +18,10 @@ use holochain_core_types::{
     },
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
-use holochain_locksmith::RwLock;
 use holochain_persistence_api::{
-    cas::{
-        content::{Address, AddressableContent, Content},
-        storage::ContentAddressableStorage,
-    },
-    eav::{EavFilter, EntityAttributeValueStorage, IndexFilter},
+    cas::content::{Address, AddressableContent, Content},
+    eav::{EavFilter, IndexFilter},
+    txn::{Cursor, CursorProviderDyn, CursorRwDyn, PersistenceManagerDyn},
 };
 use regex::Regex;
 
@@ -44,10 +41,8 @@ use std::{
 /// as well as the holding list, i.e. list of all entries held for the DHT.
 #[derive(Clone, Debug)]
 pub struct DhtStore {
+    persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>>,
     // Storages holding local shard data
-    content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
-    meta_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
-
     /// All the entry aspects that the network has told us to hold
     holding_map: AspectMap,
 
@@ -56,14 +51,8 @@ pub struct DhtStore {
 
 impl PartialEq for DhtStore {
     fn eq(&self, other: &DhtStore) -> bool {
-        let content = &self.content_storage.clone();
-        let other_content = &other.content_storage.clone();
-        let meta = &self.meta_storage.clone();
-        let other_meta = &other.meta_storage.clone();
-
         self.holding_map == other.holding_map
-            && (*content.read().unwrap()).get_id() == (*other_content.read().unwrap()).get_id()
-            && *meta.read().unwrap() == *other_meta.read().unwrap()
+            && (*self.persistence_manager).get_id() == (*other.persistence_manager).get_id()
     }
 }
 
@@ -128,29 +117,32 @@ pub fn create_get_links_eavi_query<'a>(
         })),
     ))
 }
+impl CursorProviderDyn<Attribute> for DhtStore {
+    fn create_cursor(&self) -> PersistenceResult<Box<dyn Cursor<Attribute>>> {
+        self.persistence_manager.create_cursor()
+    }
+    fn create_cursor_rw(&self) -> PersistenceResult<Box<dyn CursorRwDyn<Attribute>>> {
+        self.persistence_manager.create_cursor_rw()
+    }
+}
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl DhtStore {
     // LifeCycle
     // =========
-    pub fn new(
-        content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
-        meta_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
-    ) -> Self {
+    pub fn new(persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>>) -> Self {
         DhtStore {
-            content_storage,
-            meta_storage,
+            persistence_manager,
             holding_map: AspectMap::new(),
             queued_holding_workflows: VecDeque::new(),
         }
     }
 
     pub fn new_from_snapshot(
-        content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
-        meta_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
+        persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>>,
         snapshot: DhtStoreSnapshot,
     ) -> Self {
-        let mut new_dht_store = Self::new(content_storage, meta_storage);
+        let mut new_dht_store = Self::new(persistence_manager);
         new_dht_store.holding_map = snapshot.holding_map.into();
         new_dht_store.queued_holding_workflows = snapshot.queued_holding_workflows;
         new_dht_store
@@ -170,7 +162,10 @@ impl DhtStore {
         configuration: GetLinksQueryConfiguration,
     ) -> Result<Vec<(EntityAttributeValueIndex, CrudStatus)>, HolochainError> {
         let get_links_query = create_get_links_eavi_query(address, link_type, tag)?;
-        let filtered = self.meta_storage.read()?.fetch_eavi(&get_links_query)?;
+        let filtered = self
+            .persistence_manager
+            .eav()
+            .fetch_eavi(&get_links_query)?;
         let pagination = configuration.pagination;
         let filter_with_sort_order: Box<dyn Iterator<Item = EntityAttributeValueIndex>> =
             match configuration.sort_order.unwrap_or_default() {
@@ -227,46 +222,51 @@ impl DhtStore {
             IndexFilter::LatestByAttribute,
             None,
         );
-        Ok(self.meta_storage.read()?.fetch_eavi(&query)?)
+        Ok(self.persistence_manager.eav().fetch_eavi(&query)?)
     }
 
     /// Get all headers for an entry by first looking in the DHT meta store
     /// for header addresses, then resolving them with the DHT CAS
-    pub fn get_headers(&self, entry_address: Address) -> Result<Vec<ChainHeader>, HolochainError> {
-        self.meta_storage
-            .read()
-            .unwrap()
-            // fetch all EAV references to chain headers for this entry
+    pub fn get_headers(&self, entry_address: Address) -> HcResult<Vec<ChainHeader>> {
+        let cursor: Box<dyn Cursor<Attribute>> = self.create_cursor()?;
+        // fetch all EAV references to chain headers for this entry
+        let eavis = cursor
             .fetch_eavi(&EaviQuery::new(
                 Some(entry_address).into(),
                 Some(Attribute::EntryHeader).into(),
                 None.into(),
                 IndexFilter::LatestByAttribute,
                 None,
-            ))?
-            .into_iter()
-            // get the header addresses
+            ))
+            .map_err(|e| {
+                let e: HolochainError = format!("Persistence error: {:?}", e).into();
+                e
+            })?
+            .into_iter();
+
+        // get the header addresses
+        let maybe_entries: Vec<Option<Entry>> = eavis
             .map(|eavi| eavi.value())
             // fetch the header content from CAS
-            .map(|address| self.get(&address))
-            // rearrange
-            .collect::<Result<Vec<Option<_>>, _>>()
-            .map(|r| {
-                r.into_iter()
-                    // ignore None values
-                    .flatten()
-                    .map(|entry| match entry {
-                        Entry::ChainHeader(chain_header) => Ok(chain_header),
-                        _ => Err(HolochainError::ErrorGeneric(
-                            "Unexpected non-chain_header entry".to_string(),
-                        )),
-                    })
-                    .collect::<Result<Vec<_>, _>>()
-            })?
-            .map_err(|err| {
-                let hc_error: HolochainError = err;
-                hc_error
+            .map(|address| {
+                let entry: Option<Entry> = cursor.get(&address)?;
+                Ok(entry)
             })
+            // rearrange
+            .collect::<Result<Vec<Option<_>>, HolochainError>>()?;
+
+        let chain_headers = maybe_entries
+            .into_iter()
+            // ignore None values
+            .flatten()
+            .map(|entry| match entry {
+                Entry::ChainHeader(chain_header) => Ok(chain_header),
+                _ => Err(HolochainError::ErrorGeneric(
+                    "Unexpected non-chain_header entry".to_string(),
+                )),
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(chain_headers)
     }
 
     /// Add an entry and header to the CAS and EAV, respectively
@@ -280,8 +280,10 @@ impl DhtStore {
             &Attribute::EntryHeader,
             &header.address(),
         )?;
-        self.add(header)?;
-        self.meta_storage.write().unwrap().add_eavi(&eavi)?;
+        let cursor: Box<dyn CursorRwDyn<Attribute>> = self.create_cursor_rw()?;
+        cursor.add(header)?;
+        cursor.add_eavi(&eavi)?;
+        cursor.commit()?;
         Ok(())
     }
 
@@ -297,14 +299,7 @@ impl DhtStore {
         &self,
         query: &EaviQuery,
     ) -> PersistenceResult<BTreeSet<EntityAttributeValueIndex>> {
-        self.meta_storage.read().unwrap().fetch_eavi(query)
-    }
-
-    pub(crate) fn add_eavi(
-        &mut self,
-        eavi: &EntityAttributeValueIndex,
-    ) -> PersistenceResult<Option<EntityAttributeValueIndex>> {
-        self.meta_storage.write().unwrap().add_eavi(&eavi)
+        self.persistence_manager.eav().fetch_eavi(query)
     }
 
     pub(crate) fn next_queued_holding_workflow(
@@ -395,15 +390,7 @@ where
 
 impl GetContent for DhtStore {
     fn get_raw(&self, address: &Address) -> HcResult<Option<Content>> {
-        Ok((*self.content_storage.read().unwrap()).fetch(address)?)
-    }
-}
-
-impl AddContent for DhtStore {
-    fn add<T: AddressableContent>(&mut self, content: &T) -> HcResult<()> {
-        (*self.content_storage.write().unwrap())
-            .add(content)
-            .map_err(|e| e.into())
+        Ok((*self.persistence_manager.cas()).fetch(address)?)
     }
 }
 
@@ -419,18 +406,11 @@ pub mod tests {
         entry::{test_entry, test_entry_a, test_entry_b, test_entry_c},
     };
 
-    use holochain_persistence_api::{
-        cas::storage::ExampleContentAddressableStorage, eav::ExampleEntityAttributeValueStorage,
-    };
-
     #[test]
     fn get_headers_roundtrip() {
-        let mut store = DhtStore::new(
-            Arc::new(RwLock::new(
-                ExampleContentAddressableStorage::new().unwrap(),
-            )),
-            Arc::new(RwLock::new(ExampleEntityAttributeValueStorage::new())),
-        );
+        let mut store = DhtStore::new(Arc::new(
+            holochain_persistence_api::txn::new_example_persistence_manager().unwrap(),
+        ));
         let entry = test_entry();
         let header1 = test_chain_header_with_sig("sig1");
         let header2 = test_chain_header_with_sig("sig2");

@@ -98,8 +98,8 @@ pub fn address_to_content_and_type(
     context: Arc<Context>,
 ) -> Result<(String, String), HolochainError> {
     let raw_content = context
-        .dht_storage
-        .read()?
+        .persistence_manager
+        .cas()
         .fetch(address)?
         .ok_or(HolochainError::EntryNotFoundLocally)?;
     let maybe_entry: Result<Entry, _> = raw_content.clone().try_into();

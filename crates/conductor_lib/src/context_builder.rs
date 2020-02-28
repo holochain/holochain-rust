@@ -2,13 +2,7 @@ use holochain_core::{context::Context, persister::SimplePersister, signal::Signa
 use holochain_core_types::{agent::AgentId, eav::Attribute, error::HolochainError};
 use holochain_locksmith::RwLock;
 use holochain_net::p2p_config::P2pConfig;
-use holochain_persistence_api::{
-    cas::storage::ContentAddressableStorage, eav::EntityAttributeValueStorage,
-};
-use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
-use holochain_persistence_lmdb::{cas::lmdb::LmdbStorage, eav::lmdb::EavLmdbStorage};
-use holochain_persistence_mem::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
-use holochain_persistence_pickle::{cas::pickle::PickleStorage, eav::pickle::EavPickleStorage};
+use holochain_persistence_api::txn::PersistenceManagerDyn;
 use holochain_tracing;
 
 use jsonrpc_core::IoHandler;
@@ -34,9 +28,7 @@ pub struct ContextBuilder {
     // Persister is currently set to a reasonable default in spawn().
     // TODO: add with_persister() function to ContextBuilder.
     //persister: Option<Arc<Mutex<Persister>>>,
-    chain_storage: Option<Arc<RwLock<dyn ContentAddressableStorage>>>,
-    dht_storage: Option<Arc<RwLock<dyn ContentAddressableStorage>>>,
-    eav_storage: Option<Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>>,
+    persistence_manager: Option<Arc<dyn PersistenceManagerDyn<Attribute>>>,
     p2p_config: Option<P2pConfig>,
     conductor_api: Option<Arc<RwLock<IoHandler>>>,
     signal_tx: Option<SignalSender>,
@@ -50,9 +42,7 @@ impl ContextBuilder {
         ContextBuilder {
             instance_name: None,
             agent_id: None,
-            chain_storage: None,
-            dht_storage: None,
-            eav_storage: None,
+            persistence_manager: None,
             p2p_config: None,
             conductor_api: None,
             signal_tx: None,
@@ -71,12 +61,8 @@ impl ContextBuilder {
     /// Sets all three storages, chain, DHT and EAV storage, to transient memory implementations.
     /// Chain and DHT storages get set to the same memory CAS.
     pub fn with_memory_storage(mut self) -> Self {
-        let cas = Arc::new(RwLock::new(MemoryStorage::new()));
-        let eav = //Arc<RwLock<holochain_persistence_api::eav::EntityAttributeValueStorage<Attribute>>> =
-            Arc::new(RwLock::new(EavMemoryStorage::new()));
-        self.chain_storage = Some(cas.clone());
-        self.dht_storage = Some(cas);
-        self.eav_storage = Some(eav);
+        let persistence_manager = Arc::new(holochain_persistence_mem::txn::new_manager());
+        self.persistence_manager = Some(persistence_manager);
         self
     }
 
@@ -90,12 +76,10 @@ impl ContextBuilder {
         fs::create_dir_all(&cas_path)?;
         fs::create_dir_all(&eav_path)?;
 
-        let file_storage = Arc::new(RwLock::new(FilesystemStorage::new(&cas_path)?));
-        let eav_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>> =
-            Arc::new(RwLock::new(EavFileStorage::new(eav_path)?));
-        self.chain_storage = Some(file_storage.clone());
-        self.dht_storage = Some(file_storage);
-        self.eav_storage = Some(eav_storage);
+        let persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>> =
+            Arc::new(holochain_persistence_file::txn::new_manager(cas_path, eav_path).unwrap());
+
+        self.persistence_manager = Some(persistence_manager);
         Ok(self)
     }
 
@@ -108,37 +92,34 @@ impl ContextBuilder {
         let eav_path = base_path.join("eav");
         fs::create_dir_all(&cas_path)?;
         fs::create_dir_all(&eav_path)?;
-
-        let file_storage = Arc::new(RwLock::new(PickleStorage::new(&cas_path)));
-        let eav_storage = Arc::new(RwLock::new(EavPickleStorage::new(eav_path)));
-        self.chain_storage = Some(file_storage.clone());
-        self.dht_storage = Some(file_storage);
-        self.eav_storage = Some(eav_storage);
+        let persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>> = Arc::new(
+            holochain_persistence_pickle::txn::new_manager(cas_path, eav_path),
+        );
+        self.persistence_manager = Some(persistence_manager);
         Ok(self)
     }
 
     /// Sets all three storages, chain, DHT and EAV storage, to persistent lmdb based implementations.
     /// Chain and DHT storages get set to the same pikcle CAS.
     /// Returns an error if no lmdb storage could be spawned on the given path.
-    pub fn with_lmdb_storage<P: AsRef<Path>>(
+    pub fn with_lmdb_storage<P: AsRef<Path>, P2: AsRef<Path> + Clone>(
         mut self,
         path: P,
+        staging_path_prefix: Option<P2>,
         initial_mmap_bytes: Option<usize>,
     ) -> Result<Self, HolochainError> {
-        let base_path: PathBuf = path.as_ref().into();
-        let cas_path = base_path.join("cas");
-        let eav_path = base_path.join("eav");
-        fs::create_dir_all(&cas_path)?;
-        fs::create_dir_all(&eav_path)?;
+        let env_path: PathBuf = path.as_ref().into();
 
-        let cas_storage = Arc::new(RwLock::new(LmdbStorage::new(&cas_path, initial_mmap_bytes)));
-        let eav_storage = Arc::new(RwLock::new(EavLmdbStorage::new(
-            eav_path,
-            initial_mmap_bytes,
-        )));
-        self.chain_storage = Some(cas_storage.clone());
-        self.dht_storage = Some(cas_storage);
-        self.eav_storage = Some(eav_storage);
+        let persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>> =
+            Arc::new(holochain_persistence_lmdb::txn::new_manager(
+                env_path,
+                staging_path_prefix,
+                initial_mmap_bytes,
+                None,
+                None,
+                None,
+            ));
+        self.persistence_manager = Some(persistence_manager);
         Ok(self)
     }
 
@@ -199,15 +180,9 @@ impl ContextBuilder {
     /// Defaults to memory storages, an in-memory network config and a fake agent called "alice".
     /// The persister gets set to SimplePersister based on the chain storage.
     pub fn spawn(self) -> Context {
-        let chain_storage = self
-            .chain_storage
-            .unwrap_or_else(|| Arc::new(RwLock::new(MemoryStorage::new())));
-        let dht_storage = self
-            .dht_storage
-            .unwrap_or_else(|| Arc::new(RwLock::new(MemoryStorage::new())));
-        let eav_storage = self
-            .eav_storage
-            .unwrap_or_else(|| Arc::new(RwLock::new(EavMemoryStorage::new())));
+        let persistence_manager = self
+            .persistence_manager
+            .unwrap_or_else(|| Arc::new(holochain_persistence_mem::txn::new_manager()));
         let metric_publisher = self
             .metric_publisher
             .unwrap_or_else(|| Arc::new(RwLock::new(DefaultMetricPublisher::default())));
@@ -218,10 +193,10 @@ impl ContextBuilder {
                 .unwrap_or_else(|| "Anonymous-instance".to_string()),
             self.agent_id
                 .unwrap_or_else(|| AgentId::generate_fake("alice")),
-            Arc::new(RwLock::new(SimplePersister::new(chain_storage.clone()))),
-            chain_storage,
-            dht_storage,
-            eav_storage,
+            Arc::new(RwLock::new(SimplePersister::new(
+                persistence_manager.clone(),
+            ))),
+            persistence_manager,
             // TODO BLOCKER pass a peer list here?
             self.p2p_config
                 .unwrap_or_else(P2pConfig::new_with_unique_memory_backend),

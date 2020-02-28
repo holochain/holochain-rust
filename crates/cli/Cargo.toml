@@ -24,8 +24,8 @@ in_stream = { version = "=0.0.43-alpha3", path = "../in_stream" }
 url2 = "=0.0.4"
 lib3h_sodium = "=0.0.38"
 holochain_json_api = "=0.0.23"
-holochain_persistence_api = "=0.0.17"
-holochain_persistence_file = "=0.0.17"
+holochain_persistence_api = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
+holochain_persistence_file = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
 holochain_wasm_utils = { path = "../wasm_utils" }
 crossbeam-channel = "=0.3.8"
 structopt = "=0.3.3"
@@ -45,7 +45,7 @@ rustyline = "=5.0.0"
 json-patch = "=0.2.2"
 reqwest = "=0.9.11"
 tempfile = "=3.0.7"
-lib3h_protocol = "=0.0.38"
+lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 tar = "=0.4.26"
 flate2 = "=1.0.12"
 log = "=0.4.8"

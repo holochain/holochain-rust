@@ -137,9 +137,10 @@ pub fn get_entry_with_meta(
 
 #[cfg(test)]
 pub mod tests {
-    use crate::{content_store::AddContent, instance::tests::test_context_with_state};
+    use crate::instance::tests::test_context_with_state;
     use holochain_core_types::entry::test_entry;
     use holochain_persistence_api::cas::content::AddressableContent;
+    use holochain_wasm_utils::holochain_persistence_api::txn::CursorProviderDyn;
 
     #[test]
     fn test_get_entry_from_dht_cas() {
@@ -147,7 +148,12 @@ pub mod tests {
         let context = test_context_with_state(None);
         let result = super::get_entry_from_dht(&context, &entry.address());
         assert_eq!(Ok(None), result);
-        let _ = (*context.state().unwrap().dht()).clone().add(&entry);
+        let cursor = (*context.state().unwrap().dht())
+            .clone()
+            .create_cursor_rw()
+            .unwrap();
+        cursor.add(&entry).unwrap();
+        cursor.commit().unwrap();
         let result = super::get_entry_from_dht(&context, &entry.address());
         assert_eq!(Ok(Some(entry.clone())), result);
     }

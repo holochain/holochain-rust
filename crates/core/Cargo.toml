@@ -25,17 +25,17 @@ num-traits = "=0.2.6"
 num-derive = "=0.2.4"
 toml = "=0.5.0"
 futures = { version = "=0.3.2", features = [ "thread-pool" ] }
+lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
+lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch = "transactional" }
 holochain_net = { version = "=0.0.43-alpha3", path = "../net" }
 holochain_wasm_utils = { version = "=0.0.43-alpha3", path = "../wasm_utils" }
 holochain_common = { version = "=0.0.43-alpha3", path = "../common" }
 holochain_conductor_lib_api = { version = "=0.0.43-alpha3", path = "../conductor_api" }
-lib3h_protocol = "=0.0.38"
-lib3h_sodium = "=0.0.38"
 holochain_json_derive = "=0.0.23"
 holochain_json_api = "=0.0.23"
-holochain_persistence_api = "=0.0.17"
-holochain_persistence_file = "=0.0.17"
-holochain_persistence_mem = "=0.0.17"
+holochain_persistence_api = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
+holochain_persistence_file = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
+holochain_persistence_mem = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }
 holochain_core_types = { version = "=0.0.43-alpha3", path = "../core_types" }
 holochain_dpki = { version = "=0.0.43-alpha3", path = "../dpki" }
 holochain_locksmith = { version = "=0.0.43-alpha3", path = "../locksmith" }
@@ -65,4 +65,4 @@ newrelic="0.2"
 wabt = "=0.7.4"
 test_utils = { version = "=0.0.43-alpha3", path = "../../test_utils" }
 tempfile = "=3.0.7"
-holochain_persistence_lmdb = "=0.0.17"
+holochain_persistence_lmdb = { git = "https://github.com/holochain/holochain-persistence", branch = "transactional" }

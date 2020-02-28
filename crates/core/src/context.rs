@@ -36,6 +36,7 @@ use holochain_persistence_api::{
         storage::ContentAddressableStorage,
     },
     eav::EntityAttributeValueStorage,
+    txn::PersistenceManagerDyn,
 };
 use holochain_tracing as ht;
 use jsonrpc_core::{self, IoHandler};
@@ -95,9 +96,7 @@ pub struct Context {
     state: Option<Arc<RwLock<StateWrapper>>>,
     pub action_channel: Option<ActionSender>,
     pub observer_channel: Option<Sender<Observer>>,
-    pub chain_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
-    pub dht_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
-    pub eav_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
+    pub persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>>,
     pub p2p_config: P2pConfig,
     pub conductor_api: ConductorApi,
     pub(crate) signal_tx: Option<Sender<Signal>>,
@@ -142,9 +141,7 @@ impl Context {
         instance_name: &str,
         agent_id: AgentId,
         persister: Arc<RwLock<dyn Persister>>,
-        chain_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
-        dht_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
-        eav: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
+        persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>>,
         p2p_config: P2pConfig,
         conductor_api: Option<Arc<RwLock<IoHandler>>>,
         signal_tx: Option<SignalSender>,
@@ -160,9 +157,7 @@ impl Context {
             action_channel: None,
             signal_tx,
             observer_channel: None,
-            chain_storage,
-            dht_storage,
-            eav_storage: eav,
+            persistence_manager,
             p2p_config,
             conductor_api: ConductorApi::new(Self::test_check_conductor_api(
                 conductor_api,
@@ -182,11 +177,10 @@ impl Context {
         instance_name: &str,
         agent_id: AgentId,
         persister: Arc<RwLock<dyn Persister>>,
+        persistence_manager: Arc<dyn PersistenceManagerDyn<Attribute>>,
         action_channel: Option<ActionSender>,
         signal_tx: Option<Sender<Signal>>,
         observer_channel: Option<Sender<Observer>>,
-        cas: Arc<RwLock<dyn ContentAddressableStorage>>,
-        eav: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
         p2p_config: P2pConfig,
         state_dump_logging: bool,
         metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
@@ -196,13 +190,11 @@ impl Context {
             instance_name: instance_name.to_owned(),
             agent_id: agent_id.clone(),
             persister,
+            persistence_manager,
             state: None,
             action_channel,
             signal_tx,
             observer_channel,
-            chain_storage: cas.clone(),
-            dht_storage: cas,
-            eav_storage: eav,
             p2p_config,
             conductor_api: ConductorApi::new(Self::test_check_conductor_api(None, agent_id)),
             instance_is_alive: Arc::new(AtomicBool::new(true)),
@@ -439,6 +431,18 @@ impl Context {
             offline: false,
         })
     }
+
+    pub fn chain_storage(&self) -> Arc<dyn ContentAddressableStorage> {
+        self.persistence_manager.cas()
+    }
+
+    pub fn dht_storage(&self) -> Arc<dyn ContentAddressableStorage> {
+        self.persistence_manager.cas()
+    }
+
+    pub fn eav_storage(&self) -> Arc<dyn EntityAttributeValueStorage<Attribute>> {
+        self.persistence_manager.eav()
+    }
 }
 
 #[autotrace]
@@ -472,32 +476,25 @@ pub fn test_memory_network_config(network_name: Option<&str>) -> P2pConfig {
 
 #[cfg(test)]
 pub mod tests {
-    use self::tempfile::tempdir;
     use super::*;
     use crate::persister::SimplePersister;
     use holochain_core_types::agent::AgentId;
     use holochain_locksmith::RwLock;
-    use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
     use std::sync::Arc;
-    use tempfile;
 
     #[test]
     fn context_log_macro_test_from_context() {
         use crate::*;
 
-        let file_storage = Arc::new(RwLock::new(
-            FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
-        ));
+        let persistence_manager = Arc::new(holochain_persistence_file::txn::default_manager());
+
         let ctx = Context::new(
             "LOG-TEST-ID",
             AgentId::generate_fake("Bilbo"),
-            Arc::new(RwLock::new(SimplePersister::new(file_storage.clone()))),
-            file_storage.clone(),
-            file_storage.clone(),
-            Arc::new(RwLock::new(
-                EavFileStorage::new(tempdir().unwrap().path().to_str().unwrap().to_string())
-                    .unwrap(),
-            )),
+            Arc::new(RwLock::new(SimplePersister::new(
+                persistence_manager.clone(),
+            ))),
+            persistence_manager.clone(),
             P2pConfig::new_with_unique_memory_backend(),
             None,
             None,

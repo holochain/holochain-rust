@@ -219,6 +219,7 @@ impl ConductorAdmin for Conductor {
             None | Some("lmdb") => StorageConfiguration::Lmdb {
                 path: storage_path,
                 initial_mmap_bytes: None,
+                staging_path_prefix: None,
             },
             Some(s) => {
                 return Err(HolochainError::ConfigError(format!(

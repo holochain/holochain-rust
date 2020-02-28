@@ -15,6 +15,6 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Fixed
 
 - Fixing wire message TK-01102
-- Fixed `panic!("entry/aspect mismatch - corrupted data?")`
+- Fixed `panic!("entry/aspect mismatch - corrupted data?")` [#2135](https://github.com/holochain/holochain-rust/pull/2135)
 
 ### Security

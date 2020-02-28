@@ -312,7 +312,15 @@ impl Sim2hHandle {
             WireMessage::ClientToLib3h(ht::EncodedSpanWrap {
                 data: ClientToLib3h::JoinSpace(data),
                 ..
-            }) => return spawn_handle_message_join_space(sim2h_handle, uri, signer, data),
+            }) => {
+                let _ = tokio::task::spawn(spawn_handle_message_join_space(
+                    sim2h_handle,
+                    uri,
+                    signer,
+                    data,
+                ));
+                return;
+            }
             message @ _ => message,
         };
 
@@ -332,7 +340,7 @@ impl Sim2hHandle {
                 }
                 let s = tracing::error_span!("uri_error");
                 let _g = s.enter();
-                tracing::error!(?message, ?uri);
+                tracing::error!(?message, ?uri, ?signer);
                 error!("uri has not joined space, cannot proceed {}", uri);
                 return;
             };
@@ -539,17 +547,20 @@ fn spawn_handle_message_hello(
     }
 }
 
-fn spawn_handle_message_join_space(
+async fn spawn_handle_message_join_space(
     sim2h_handle: Sim2hHandle,
     uri: Lib3hUri,
     _signer: AgentId,
     data: SpaceData,
 ) {
-    sim2h_handle.state().spawn_new_connection(
-        data.space_address.clone(),
-        data.agent_id.clone(),
-        uri.clone(),
-    );
+    sim2h_handle
+        .state()
+        .spawn_new_connection(
+            data.space_address.clone(),
+            data.agent_id.clone(),
+            uri.clone(),
+        )
+        .await;
 
     sim2h_handle.send(
         data.agent_id.clone(),
@@ -565,12 +576,18 @@ fn spawn_handle_message_join_space(
         ),
     );
 
-    let span = ht::top_follower("inner");
+    let span = tracing::info_span!("Out");
+    let id = span.id();
+    let _g = span.enter();
+    let span_wrap: ht::EncodedSpanWrap<()> = id
+        .and_then(|id| ht::tracing::span_context(&id).map(|context| context.wrap(())))
+        .unwrap_or_else(|| ht::wrap((), "No context".into()))
+        .into();
     sim2h_handle.send(
         data.agent_id.clone(),
         uri,
         &WireMessage::Lib3hToClient(
-            span.wrap(Lib3hToClient::HandleGetAuthoringEntryList(GetListData {
+            span_wrap.swapped(Lib3hToClient::HandleGetAuthoringEntryList(GetListData {
                 request_id: "".into(),
                 space_address: data.space_address.clone(),
                 provider_agent_id: data.agent_id,

@@ -72,6 +72,7 @@ impl WireMessage {
             WireMessage::ClientToLib3hResponse(span_wrap) => match span_wrap.data {
                 ClientToLib3hResponse::BootstrapSuccess => "[C<L]BootsrapSuccess",
                 ClientToLib3hResponse::FetchEntryResult(_) => "[C<L]FetchEntryResult",
+                // TODO this needs to respond because core will never know it has joined.
                 ClientToLib3hResponse::JoinSpaceResult => "[C<L]JoinSpaceResult",
                 ClientToLib3hResponse::LeaveSpaceResult => "[C<L]LeaveSpaceResult",
                 ClientToLib3hResponse::QueryEntryResult(_) => "[C<L]QueryEntryResult",

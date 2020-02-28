@@ -311,18 +311,19 @@ impl Sim2hHandle {
         tokio::task::spawn(async move {
             // -- right now each agent can only be part of a single space :/ --
 
-            let (agent_id, space_hash) = 'got_info: {
-                // TODO might need to up this amount of tries if we get the below error
-                for _ in 0_usize..10 {
-                    // await consistency of new connection
-                    let state = sim2h_handle.state().get_clone().await;
-                    if let Some(info) = state.get_space_info_from_uri(&uri) {
-                        break 'got_info info;
-                    }
-                    tokio::time::delay_for(std::time::Duration::from_millis(100)).await;
+            let (agent_id, space_hash) = {
+                let state = sim2h_handle.state().get_clone().await;
+                if let Some(info) = state.get_space_info_from_uri(&uri) {
+                    info
+                } else {
+                    error!(
+                        "uri has not joined space, cannot proceed {} {}",
+                        uri,
+                        message.message_type()
+                    );
+                    sim2h_handle.disconnect(vec![uri.clone()]);
+                    return;
                 }
-                error!("uri has not joined space, cannot proceed {}", uri);
-                return;
             };
 
             if *agent_id != signer {

@@ -332,7 +332,7 @@ impl Sim2hHandle {
                 }
                 let s = tracing::error_span!("uri_error");
                 let _g = s.enter();
-                tracing::error!(?message, ?uri, ?agent_id, ?space_hash);
+                tracing::error!(?message, ?uri);
                 error!("uri has not joined space, cannot proceed {}", uri);
                 return;
             };

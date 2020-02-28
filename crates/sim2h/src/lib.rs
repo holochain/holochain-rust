@@ -298,7 +298,15 @@ impl Sim2hHandle {
             WireMessage::ClientToLib3h(ht::EncodedSpanWrap {
                 data: ClientToLib3h::JoinSpace(data),
                 ..
-            }) => return spawn_handle_message_join_space(sim2h_handle, uri, signer, data),
+            }) => {
+                let _ = tokio::task::spawn(spawn_handle_message_join_space(
+                    sim2h_handle,
+                    uri,
+                    signer,
+                    data,
+                ));
+                return;
+            }
             message @ _ => message,
         };
 
@@ -308,6 +316,7 @@ impl Sim2hHandle {
             // -- right now each agent can only be part of a single space :/ --
 
             let (agent_id, space_hash) = 'got_info: {
+                // TODO might need to up this amount of tries if we get the bellow error
                 for _ in 0_usize..10 {
                     // await consistency of new connection
                     let state = sim2h_handle.state().get_clone().await;
@@ -522,17 +531,20 @@ fn spawn_handle_message_hello(
     }
 }
 
-fn spawn_handle_message_join_space(
+async fn spawn_handle_message_join_space(
     sim2h_handle: Sim2hHandle,
     uri: Lib3hUri,
     _signer: AgentId,
     data: SpaceData,
 ) {
-    sim2h_handle.state().spawn_new_connection(
-        data.space_address.clone(),
-        data.agent_id.clone(),
-        uri.clone(),
-    );
+    sim2h_handle
+        .state()
+        .spawn_new_connection(
+            data.space_address.clone(),
+            data.agent_id.clone(),
+            uri.clone(),
+        )
+        .await;
 
     sim2h_handle.send(
         data.agent_id.clone(),

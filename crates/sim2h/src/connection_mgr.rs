@@ -67,6 +67,7 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
                                 kind = "connection_mgr:send_on_real_websocket",
                                 uri = %uri,
                             );
+                            COUNT_REPORTERS.inc_ws_messages_sent();
                             if let Err(e) = wss.write(frame) {
                                 error!("socket write error {} {:?}", uri, e);
                                 let _ = evt_send
@@ -101,6 +102,8 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
             }
             match wss.read(frame.as_mut().unwrap()) {
                 Ok(_) => {
+                    COUNT_REPORTERS.inc_ws_messages_received();
+
                     read_count += 1;
                     did_work = true;
                     let data = frame.take().unwrap();

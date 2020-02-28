@@ -309,6 +309,8 @@ impl Sim2hHandle {
             from_agent = %signer,
         );
 
+        COUNT_REPORTERS.inc_handle_message_count();
+
         // dispatch to correct handler
         let sim2h_handle = self.clone();
 
@@ -812,9 +814,99 @@ fn spawn_handle_message_authoring_entry_list(
     });
 }
 
+struct CountReporter(std::sync::Arc<tokio::sync::Mutex<u64>>);
+
+impl CountReporter {
+    pub fn new() -> Self {
+        Self(std::sync::Arc::new(tokio::sync::Mutex::new(0)))
+    }
+
+    pub fn inc(&self) {
+        let r = self.0.clone();
+        tokio::task::spawn(async move {
+            *r.lock().await += 1;
+        });
+    }
+
+    pub fn report(&self) -> BoxFuture<'static, u64> {
+        let r = self.0.clone();
+        async move {
+            let mut g = r.lock().await;
+            let out = *g;
+            *g = 0;
+            out
+        }.boxed()
+    }
+}
+
+struct CountReporters {
+    fetch_entry_result_count: CountReporter,
+    already_fetched_aspects: CountReporter,
+    handle_message_count: CountReporter,
+    ws_messages_sent: CountReporter,
+    ws_messages_received: CountReporter,
+}
+
+impl CountReporters {
+    pub fn new() -> Self {
+        Self {
+            fetch_entry_result_count: CountReporter::new(),
+            already_fetched_aspects: CountReporter::new(),
+            handle_message_count: CountReporter::new(),
+            ws_messages_sent: CountReporter::new(),
+            ws_messages_received: CountReporter::new(),
+        }
+    }
+
+    pub fn inc_fetch_entry_result_count(&self) {
+        self.fetch_entry_result_count.inc();
+    }
+
+    pub fn inc_already_fetched_aspects(&self) {
+        self.already_fetched_aspects.inc();
+    }
+
+    pub fn inc_handle_message_count(&self) {
+        self.handle_message_count.inc();
+    }
+
+    pub fn inc_ws_messages_sent(&self) {
+        self.ws_messages_sent.inc();
+    }
+
+    pub fn inc_ws_messages_received(&self) {
+        self.ws_messages_received.inc();
+    }
+
+    pub async fn report(&self) {
+        let ferc_fut = self.fetch_entry_result_count.report();
+        let afa_fut = self.already_fetched_aspects.report();
+        let hmc_fut = self.handle_message_count.report();
+        let wms_fut = self.ws_messages_sent.report();
+        let wmr_fut = self.ws_messages_received.report();
+        tokio::task::spawn(async move {
+            let ferc = ferc_fut.await;
+            let afa = afa_fut.await;
+            let hmc = hmc_fut.await;
+            let wms = wms_fut.await;
+            let wmr = wmr_fut.await;
+
+            tracing::info!(
+                tag = "GOSSIP_DEBUG",
+                kind = "COUNT_REPORT",
+                fetch_entry_result_count = %ferc,
+                already_fetched_aspects = %afa,
+                handle_message_count = %hmc,
+                websocket_messages_sent = %wms,
+                websocket_messages_received = %wmr,
+            );
+        });
+    }
+}
+
 lazy_static! {
-    static ref FETCH_ENTRY_RESULT_COUNT: std::sync::Arc<tokio::sync::RwLock<u64>> = {
-        std::sync::Arc::new(tokio::sync::RwLock::new(0))
+    static ref COUNT_REPORTERS: std::sync::Arc<CountReporters> = {
+        std::sync::Arc::new(CountReporters::new())
     };
 }
 
@@ -838,9 +930,7 @@ fn spawn_handle_message_fetch_entry_result(
         return;
     }
 
-    tokio::task::spawn(async move {
-        *FETCH_ENTRY_RESULT_COUNT.write().await += 1;
-    });
+    COUNT_REPORTERS.inc_fetch_entry_result_count();
 
     tokio::task::spawn(async move {
         let state = sim2h_handle.state().get_clone().await;
@@ -1148,13 +1238,7 @@ impl Sim2h {
         tokio::task::spawn(async move {
             loop {
                 tokio::time::delay_for(std::time::Duration::from_secs(1)).await;
-                let mut count = FETCH_ENTRY_RESULT_COUNT.write().await;
-                tracing::info!(
-                    tag = "GOSSIP_DEBUG",
-                    kind = "fetch_entry_result_count:for_last_second",
-                    count = %*count,
-                );
-                *count = 0;
+                COUNT_REPORTERS.report().await;
             }
         });
 
@@ -1453,9 +1537,15 @@ async fn missing_aspects_resync_inner(sim2h_handle: Sim2hHandle) {
 
     let agents_needing_gossip = sim2h_handle.state().check_gossip().await.spaces();
 
-    if agents_needing_gossip.is_empty() {
-        debug!("sim2h gossip no agents needing gossip");
+    let mut total_agents = 0;
+    for (_, agents) in agents_needing_gossip.iter() {
+        total_agents += agents.len();
     }
+    tracing::info!(
+        tag = "GOSSIP_DEBUG",
+        kind = "gossip_needed",
+        agents_needing_gossip = %total_agents,
+    );
 
     for (space_hash, agents) in agents_needing_gossip.iter() {
         trace!(
@@ -1516,11 +1606,7 @@ async fn missing_aspects_resync_inner(sim2h_handle: Sim2hHandle) {
                 );
 
                 if already_fetched(entry_hash, aspects).await {
-                    tracing::warn!(
-                        tag = "GOSSIP_DEBUG",
-                        kind = "ALREADY FETCHED ALL THESE ASPECTS!",
-                        entry_hash = %entry_hash.as_ref(),
-                    );
+                    COUNT_REPORTERS.inc_already_fetched_aspects();
                 }
 
                 let wire_message = WireMessage::Lib3hToClient({

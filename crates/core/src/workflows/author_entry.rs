@@ -66,8 +66,7 @@ pub async fn author_entry<'a>(
     )
     .await {
         ValidationResult::Ok => (),
-        // @TODO what should we do if the dependencies don't exist?
-        ValidationResult::Fail(err) => return Err(HolochainError::from(err)),
+        err => return Err(HolochainError::ValidationFailed(err)),
     };
     log_debug!(context, "worflow/authoring_entry {}: is valid!", address);
 

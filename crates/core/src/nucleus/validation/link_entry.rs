@@ -7,7 +7,6 @@ use crate::{
     workflows::callback::links_utils,
     NEW_RELIC_LICENSE_KEY,
 };
-use boolinator::*;
 use holochain_core_types::{
     entry::Entry,
     validation::{ValidationResult},

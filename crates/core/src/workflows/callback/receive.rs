@@ -9,7 +9,7 @@ use crate::{
     },
     NEW_RELIC_LICENSE_KEY,
 };
-
+use holochain_wasmer_host::WasmError;
 use holochain_json_api::{error::JsonError, json::JsonString};
 use std::sync::Arc;
 
@@ -36,12 +36,21 @@ pub fn receive(
         JsonString::from(params),
     );
 
-    match wasm_engine::run_dna(
-        WasmCallData::new_callback_call(context, call),
-        Some(call.clone().parameters),
-    ) {
-        Ok(call_result) => CallbackResult::ReceiveResult(call_result.to_string()),
-        Err(err) => CallbackResult::Fail(err.to_string()),
+    let call_data = WasmCallData::new_callback_call(context, call);
+
+    let call_result: Result<CallbackResult, WasmError> = holochain_wasmer_host::guest::call(
+        &mut match wasm_engine::factories::instance_for_call_data(&call_data) {
+            Ok(instance) => instance,
+            Err(_) => return CallbackResult::Fail(format!("Failed to get an instance for call data: {:?}", &call_data)),
+        },
+        &call_data.fn_name(),
+        call.clone().parameters,
+    );
+
+    match call_result {
+        Ok(CallbackResult::ReceiveResult(receive_result)) => CallbackResult::ReceiveResult(receive_result),
+        Ok(v) => CallbackResult::Fail(format!("Expected a CallbackResult::ReceiveResult, got {:?}", v)),
+        Err(err) => CallbackResult::Fail(format!("Wasm errored while attempting a receive callback {:?}", err)),
     }
 }
 

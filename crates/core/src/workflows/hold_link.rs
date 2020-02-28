@@ -72,6 +72,7 @@ pub async fn hold_link_workflow(
             );
             return Err(HolochainError::from(e));
         },
+        v => return Err(HolochainError::ValidationFailed(v)),
     };
 
     log_debug!(context, "workflow/hold_link: is valid!");

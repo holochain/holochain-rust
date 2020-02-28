@@ -1,5 +1,4 @@
 use crate::{
-    context::Context,
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
     NEW_RELIC_LICENSE_KEY,
 };
@@ -10,7 +9,7 @@ use holochain_core_types::{
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use holochain_wasm_types::get_entry::*;
 use holochain_wasmer_host::*;
-use std::sync::Arc;
+use crate::wasm_engine::runtime::Runtime;
 
 /// ZomeApiFunction::RemoveEntry function code
 /// args: [0] encoded MemoryAllocation
@@ -18,9 +17,10 @@ use std::sync::Arc;
 /// Stores/returns a RibosomeReturnValue
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_remove_entry(
-    context: Arc<Context>,
+    runtime: &mut Runtime,
     deleted_entry_address: Address,
 ) -> Result<Address, HolochainError> {
+    let context = runtime.context()?;
     // Get Current entry's latest version
     let get_args = GetEntryArgs {
         address: deleted_entry_address,

@@ -1,14 +1,17 @@
-use crate::{context::Context, NEW_RELIC_LICENSE_KEY};
+use crate::{NEW_RELIC_LICENSE_KEY};
 use holochain_wasm_types::wasm_string::WasmString;
-use std::sync::Arc;
+// use std::sync::Arc;
+use crate::context::Context;
 use holochain_core_types::error::HolochainError;
+// use crate::wasm_engine::runtime::WasmCallData;
 
 /// ZomeApiFunction::Debug function code
 /// args: [0] encoded MemoryAllocation as u64
 /// Expecting a string as complex input argument
 /// Returns an HcApiReturnCode as I64
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_debug(context: Arc<Context>, input: WasmString) -> Result<(), HolochainError> {
+pub fn invoke_debug(context: std::sync::Weak<Context>, input: WasmString) -> Result<(), HolochainError> {
+    // let context = call_data.context()?;
     log_debug!(context, "dna: '{}'", input.to_string());
     Ok(())
 }

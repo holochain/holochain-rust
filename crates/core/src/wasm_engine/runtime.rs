@@ -4,7 +4,7 @@ use crate::{
     NEW_RELIC_LICENSE_KEY,
 };
 use holochain_json_api::json::JsonString;
-
+use holochain_core_types::error::HolochainError;
 use std::{fmt, sync::Arc};
 use wasmer_runtime::{error::RuntimeError, Instance};
 
@@ -59,13 +59,11 @@ impl WasmCallData {
         }
     }
 
-    pub fn context(&self) -> Result<Arc<Context>, RuntimeError> {
+    pub fn context(&self) -> Result<Arc<Context>, HolochainError> {
         match &self {
             WasmCallData::ZomeCall(ref data) => Ok(data.context.clone()),
             WasmCallData::CallbackCall(ref data) => Ok(data.context.clone()),
-            _ => Err(RuntimeError::Trap {
-                msg: format!("context data: {:?}", &self).into_boxed_str(),
-            }),
+            _ => Err(HolochainError::ErrorGeneric(format!("context data: {:?}", &self))),
         }
     }
 }
@@ -144,7 +142,7 @@ impl Runtime {
         }
     }
 
-    pub fn context(&self) -> Result<Arc<Context>, RuntimeError> {
+    pub fn context(&self) -> Result<Arc<Context>, HolochainError> {
         self.data.context()
     }
 }

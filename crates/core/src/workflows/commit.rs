@@ -1,6 +1,7 @@
-use crate::{context::Context, workflows::author_entry::author_entry, NEW_RELIC_LICENSE_KEY};
+use crate::{workflows::author_entry::author_entry, NEW_RELIC_LICENSE_KEY};
 use holochain_core_types::error::HolochainError;
 use holochain_wasm_types::commit_entry::{CommitEntryArgs, CommitEntryResult};
+use crate::context::Context;
 use std::sync::Arc;
 
 /// ZomeApiFunction::CommitAppEntry function code

@@ -64,7 +64,19 @@ pub async fn hold_entry_workflow(
                 s,
             );
             return Err(HolochainError::from(s));
-        }
+        },
+        ValidationResult::NotImplemented => {
+            log_warn!(context, "workflow/hold_entry: Entry {} could not be validated due to missing validation!",
+                entry_with_header.entry.address(),
+            );
+            return Err(HolochainError::ValidationFailed(ValidationResult::NotImplemented));
+        },
+        ValidationResult::Timeout => {
+            log_debug!(context, "workflow/hold_entry: {} timed out",
+                entry_with_header.entry.address(),
+            );
+            return Err(HolochainError::Timeout);
+        },
     };
 
     log_debug!(

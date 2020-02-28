@@ -1,16 +1,16 @@
-use crate::{context::Context, NEW_RELIC_LICENSE_KEY};
+use crate::{NEW_RELIC_LICENSE_KEY};
 use holochain_core_types::{error::HcResult, signature::Signature};
 use holochain_dpki::keypair::generate_random_sign_keypair;
 use holochain_wasm_types::sign::{OneTimeSignArgs, SignOneTimeResult};
 use lib3h_sodium::secbuf::SecBuf;
-use std::sync::Arc;
+use crate::wasm_engine::runtime::Runtime;
 
 /// ZomeApiFunction::SignOneTime function code
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected argument: u64
 /// Returns an HcApiReturnCode as I64
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_sign_one_time(context: Arc<Context>, sign_args: OneTimeSignArgs) -> HcResult<SignOneTimeResult> {
+pub fn invoke_sign_one_time(_: &mut Runtime, sign_args: OneTimeSignArgs) -> HcResult<SignOneTimeResult> {
     sign_one_time(sign_args.payloads)
 }
 

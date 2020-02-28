@@ -54,6 +54,7 @@ pub async fn hold_remove_workflow(
             );
             return Err(HolochainError::from(e));
         }
+        v => return Err(HolochainError::ValidationFailed(v)),
     };
 
     // 4. If valid store the entry aspect in the local DHT shard

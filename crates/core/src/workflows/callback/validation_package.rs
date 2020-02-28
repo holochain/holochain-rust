@@ -12,21 +12,21 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
     validation::ValidationPackageDefinition,
+    validation::ValidationResult,
 };
-use std::convert::TryFrom;
-use holochain_json_api::json::JsonString;
 use crate::workflows::callback::links_utils;
 use holochain_wasm_types::validation::LinkValidationPackageArgs;
 use std::{sync::Arc};
 
-#[autotrace]
+// @TODO fix line number mangling
+// #[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn get_validation_package_definition(
     entry: &Entry,
     context: Arc<Context>,
 ) -> Result<CallbackResult, HolochainError> {
     let dna = context.get_dna().expect("Callback called without DNA set!");
-    let result = match entry.entry_type() {
+    let result: ValidationPackageDefinition = match entry.entry_type() {
         EntryType::App(app_entry_type) => {
             let zome_name = dna.get_zome_name_for_app_entry_type(&app_entry_type);
             if zome_name.is_none() {
@@ -42,18 +42,20 @@ pub fn get_validation_package_definition(
                 "__hdk_get_validation_package_for_entry_type",
                 app_entry_type.clone(),
             );
-            wasm_engine::run_dna(
-                WasmCallData::new_callback_call(context, call),
-                Some(app_entry_type.to_string()),
+            let call_data = WasmCallData::new_callback_call(context, call);
+            holochain_wasmer_host::guest::call(
+                &mut wasm_engine::factories::instance_for_call_data(&call_data)?,
+                &call_data.fn_name(),
+                app_entry_type,
             )?
         }
         EntryType::LinkAdd => {
             let link_add = match entry {
                 Entry::LinkAdd(link_add) => link_add,
                 _ => {
-                    return Err(HolochainError::ValidationFailed(
+                    return Err(HolochainError::ValidationFailed(ValidationResult::Fail(
                         "Failed to extract LinkAdd".into(),
-                    ));
+                    )));
                 }
             };
 
@@ -72,18 +74,20 @@ pub fn get_validation_package_definition(
                 params,
             );
 
-            wasm_engine::run_dna(
-                WasmCallData::new_callback_call(context, call),
-                Some(call.parameters),
+            let call_data = WasmCallData::new_callback_call(context, call);
+            holochain_wasmer_host::guest::call(
+                &mut wasm_engine::factories::instance_for_call_data(&call_data)?,
+                &call_data.fn_name(),
+                call.parameters,
             )?
         }
         EntryType::LinkRemove => {
             let link_remove = match entry {
                 Entry::LinkRemove((link_remove, _)) => link_remove,
                 _ => {
-                    return Err(HolochainError::ValidationFailed(
+                    return Err(HolochainError::ValidationFailed(ValidationResult::Fail(
                         "Failed to extract LinkRemove".into(),
-                    ));
+                    )));
                 }
             };
 
@@ -104,30 +108,21 @@ pub fn get_validation_package_definition(
                 params,
             );
 
-            wasm_engine::run_dna(
-                WasmCallData::new_callback_call(context, call),
-                Some(call.parameters),
+            let call_data = WasmCallData::new_callback_call(context, call);
+            holochain_wasmer_host::guest::call(
+                &mut wasm_engine::factories::instance_for_call_data(&call_data)?,
+                &call_data.fn_name(),
+                call.parameters,
             )?
         }
-        EntryType::Deletion => JsonString::from(ValidationPackageDefinition::ChainFull),
-        EntryType::CapTokenGrant => JsonString::from(ValidationPackageDefinition::Entry),
-        EntryType::AgentId => JsonString::from(ValidationPackageDefinition::Entry),
-        EntryType::ChainHeader => JsonString::from(ValidationPackageDefinition::Entry),
+        EntryType::Deletion => ValidationPackageDefinition::ChainFull,
+        EntryType::CapTokenGrant => ValidationPackageDefinition::Entry,
+        EntryType::AgentId => ValidationPackageDefinition::Entry,
+        EntryType::ChainHeader => ValidationPackageDefinition::Entry,
         _ => Err(HolochainError::NotImplemented(
             "get_validation_package_definition/3".into(),
         ))?,
     };
 
-    if result.is_null() {
-        Err(HolochainError::SerializationError(String::from(
-            "__hdk_get_validation_package_for_entry_type returned empty result",
-        )))
-    } else {
-        match ValidationPackageDefinition::try_from(result) {
-            Ok(package) => Ok(CallbackResult::ValidationPackageDefinition(package)),
-            Err(_) => Err(HolochainError::SerializationError(String::from(
-                "validation_package result could not be deserialized as ValidationPackage",
-            ))),
-        }
-    }
+    Ok(CallbackResult::ValidationPackageDefinition(result))
 }

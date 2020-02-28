@@ -7,11 +7,9 @@ use crate::{
     // NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::validation::ValidationResult;
-use holochain_core_types::error::HolochainError;
 use holochain_persistence_api::cas::content::Address;
 use std::sync::Arc;
 use holochain_wasm_types::WasmError;
-use std::string::ToString;
 use holochain_metrics::with_latency_publishing;
 
 /// Validation callback action creator.
@@ -38,13 +36,15 @@ pub async fn run_validation_callback(
         |()| {
             let cloned_context = context.clone();
 
-            match wasm_engine::run_dna(
-                WasmCallData::new_callback_call(cloned_context, call),
-                Some(call.clone().parameters.to_bytes()),
+            let call_data = WasmCallData::new_callback_call(cloned_context, call);
+            match holochain_wasmer_host::guest::call(
+                &mut wasm_engine::factories::instance_for_call_data(&call_data).expect(&format!("there is no wasm module for call data: {:?}", &call_data)),
+                &call_data.fn_name(),
+                call.clone().parameters,
             ) {
                 Ok(v) => v,
                 // TODO: have "not matching schema" be its own error
-                Err(HolochainError::Wasm(wasm_error)) => {
+                Err(wasm_error) => {
                     if wasm_error == WasmError::ArgumentDeserializationFailed {
                             ValidationResult::Fail(
                             "JSON object does not match entry schema".into()
@@ -54,8 +54,7 @@ pub async fn run_validation_callback(
                         // silently failing validation
                         panic!(wasm_error)
                     }
-                }
-                Err(error) => panic!(error.to_string()), // same here
+                },
             }
         },
         ()

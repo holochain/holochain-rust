@@ -15,7 +15,7 @@ use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
     signature::Provenance,
-    validation::{ValidationPackage, ValidationPackageDefinition::*},
+    validation::{ValidationPackage, ValidationPackageDefinition::*, ValidationResult},
 };
 use std::{sync::Arc, vec::Vec};
 
@@ -36,10 +36,10 @@ pub fn build_validation_package<'a>(
                 .get_zome_name_for_app_entry_type(&app_entry_type)
                 .is_none()
             {
-                return Err(HolochainError::ValidationFailed(format!(
+                return Err(HolochainError::ValidationFailed(ValidationResult::Fail(format!(
                     "Unknown app entry type '{}'",
                     String::from(app_entry_type),
-                )));
+                ))));
             }
         }
 
@@ -63,10 +63,10 @@ pub fn build_validation_package<'a>(
             // FIXME
         }
         _ => {
-            return Err(HolochainError::ValidationFailed(format!(
+            return Err(HolochainError::ValidationFailed(ValidationResult::Fail(format!(
                 "Attempted to validate system entry type {:?}",
                 entry.entry_type(),
-            )));
+            ))));
         }
     };
 

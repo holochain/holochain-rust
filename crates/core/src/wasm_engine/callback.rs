@@ -4,7 +4,7 @@ use holochain_core_types::{entry::Entry, validation::ValidationPackageDefinition
 
 use holochain_json_api::{
     error::JsonError,
-    json::{default_to_json, JsonString},
+    json::{JsonString},
 };
 use crate::wasm_engine::runtime::WasmCallData;
 use crate::nucleus::CallbackFnCall;
@@ -13,7 +13,6 @@ use crate::wasm_engine::Defn;
 use crate::workflows::callback::init::init;
 use holochain_wasm_types::receive::ReceiveParams;
 use num_traits::FromPrimitive;
-use serde_json;
 use std::{str::FromStr, sync::Arc};
 use crate::context::Context;
 use crate::workflows::callback::receive::receive;
@@ -113,7 +112,7 @@ impl ToString for CallbackParams {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, DefaultJson)]
 pub enum CallbackResult {
     Pass,
     Fail(String),
@@ -122,36 +121,35 @@ pub enum CallbackResult {
     ReceiveResult(String),
 }
 
-impl From<CallbackResult> for JsonString {
-    fn from(v: CallbackResult) -> Self {
-        default_to_json(v)
-    }
-}
-
-impl From<JsonString> for CallbackResult {
-    fn from(json_string: JsonString) -> CallbackResult {
-        let r#try: Result<CallbackResult, serde_json::Error> =
-            serde_json::from_str(&String::from(json_string.clone()));
-        match r#try {
-            Ok(callback_result) => callback_result,
-            Err(_) => CallbackResult::Fail(String::from(json_string)),
-        }
-    }
-}
+// impl From<CallbackResult> for JsonString {
+//     fn from(v: CallbackResult) -> Self {
+//         default_to_json(v)
+//     }
+// }
+//
+// impl From<JsonString> for CallbackResult {
+//     fn from(json_string: JsonString) -> CallbackResult {
+//         let r#try: Result<CallbackResult, serde_json::Error> =
+//             serde_json::from_str(&String::from(json_string.clone()));
+//         match r#try {
+//             Ok(callback_result) => callback_result,
+//             Err(_) => CallbackResult::Fail(String::from(json_string)),
+//         }
+//     }
+// }
 
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn run_callback(context: Arc<Context>, call: CallbackFnCall) -> CallbackResult {
-    match wasm_engine::run_dna(
-        WasmCallData::new_callback_call(context, call),
-        Some(call.clone().parameters),
+    let call_data = WasmCallData::new_callback_call(context, call.clone());
+    match holochain_wasmer_host::guest::call(
+        &mut match wasm_engine::factories::instance_for_call_data(&call_data) {
+            Ok(instance) => instance,
+            Err(_) => return CallbackResult::NotImplemented("run_callback missing instance".into()),
+        },
+        &call_data.fn_name(),
+        call.clone().parameters,
     ) {
-        Ok(call_result) => {
-            if call_result.is_null() {
-                CallbackResult::Pass
-            } else {
-                CallbackResult::Fail(call_result.to_string())
-            }
-        }
+        Ok(v) => v,
         Err(_) => CallbackResult::NotImplemented("run_callback".into()),
     }
 }

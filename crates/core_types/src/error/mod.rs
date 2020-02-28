@@ -107,7 +107,7 @@ pub enum HolochainError {
     SerializationError(String),
     InvalidOperationOnSysEntry,
     CapabilityCheckFailed,
-    ValidationFailed(String),
+    ValidationFailed(ValidationResult),
     ValidationPending,
     Wasm(WasmError),
     ConfigError(String),
@@ -162,7 +162,7 @@ impl fmt::Display for HolochainError {
                 write!(f, "operation cannot be done on a system entry type")
             }
             CapabilityCheckFailed => write!(f, "Caller does not have Capability to make that call"),
-            ValidationFailed(fail_msg) => write!(f, "{}", fail_msg),
+            ValidationFailed(fail_msg) => write!(f, "{:?}", fail_msg),
             ValidationPending => write!(f, "Entry validation could not be completed"),
             Wasm(err) => write!(f, "{:?}", err),
             ConfigError(err_msg) => write!(f, "{}", err_msg),

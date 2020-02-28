@@ -19,7 +19,7 @@ use chain_header::test_chain_header;
 
 use std::convert::TryFrom;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, DefaultJson)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, DefaultJson)]
 /// The result of a validation
 /// NOT used to represent an error somewhere _nearby_ validation, use something like
 /// Result<ValidationResult, HolochainError> to represent related errors
@@ -47,39 +47,6 @@ pub enum ValidationResult {
     /// @TODO maybe we want to retry or handle it gracefully somehow?
     Timeout,
 }
-
-// impl std::ops::Try for ValidationResult {
-//     type Ok = ();
-//     type Error = HolochainError;
-//     fn from_error(e: Self::Error) -> Self {
-//         Self::Err(e)
-//     }
-//     fn from_ok(_: <Self as std::ops::Try>::Ok) -> Self {
-//         Self::Ok
-//     }
-//     fn into_result(self) -> Result<<Self as std::ops::Try>::Ok, Self::Error> {
-//         match self {
-//             Self::Ok => Ok(()),
-//             Self::Err(e) => Err(e),
-//         }
-//     }
-// }
-
-// impl From<ValidationResult> for HolochainError {
-//     fn from(v: ValidationResult) -> Self {
-//         match v {
-//             ValidationResult::Ok =>
-//             ValidationResult::Fail(reason) => HolochainError::ValidationFailed(reason),
-//             ValidationResult::UnresolvedDependencies(_) => {
-//                 HolochainError::ValidationFailed("Missing dependencies".to_string())
-//             }
-//             ValidationResult::NotImplemented => {
-//                 HolochainError::NotImplemented("Validation not implemented".to_string())
-//             }
-//             ValidationResult::Err(e) => e,
-//         }
-//     }
-// }
 
 impl From<JsonError> for ValidationResult {
     fn from(e: JsonError) -> Self {

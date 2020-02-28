@@ -4,7 +4,7 @@ use crate::{
     state::{State, StateWrapper},
     NEW_RELIC_LICENSE_KEY,
 };
-use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
+use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError, validation::ValidationResult};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -24,8 +24,8 @@ impl EntryWithHeader {
         header: ChainHeader,
     ) -> Result<EntryWithHeader, HolochainError> {
         if entry.address() != *header.entry_address() {
-            Err(HolochainError::ValidationFailed(String::from(
-                "Entry/Header mismatch",
+            Err(HolochainError::ValidationFailed(ValidationResult::Fail(
+                "Entry/Header mismatch".into()
             )))
         } else {
             Ok(EntryWithHeader::new(entry, header))

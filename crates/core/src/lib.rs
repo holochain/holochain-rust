@@ -28,8 +28,9 @@ extern crate holochain_tracing as ht;
 extern crate holochain_tracing_macros;
 #[macro_use]
 extern crate holochain_common;
-extern crate holochain_wasmer_host;
-extern crate holochain_wasm_types;
+
+use holochain_wasm_types;
+// use holochain_wasmer_host;
 
 #[macro_use]
 pub mod macros;

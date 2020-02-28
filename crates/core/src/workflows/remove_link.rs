@@ -71,6 +71,7 @@ pub async fn remove_link_workflow(
             );
             return Err(HolochainError::from(e));
         },
+        v => return Err(HolochainError::ValidationFailed(v)),
     };
 
     log_debug!(context, "workflow/remove_link: is valid!");

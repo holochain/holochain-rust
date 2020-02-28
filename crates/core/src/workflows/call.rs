@@ -13,6 +13,7 @@ use holochain_logging::prelude::*;
 use holochain_wasm_types::{ZomeFnCallArgs, THIS_INSTANCE};
 use jsonrpc_lite::JsonRpc;
 use snowflake::ProcessUniqueId;
+use crate::wasm_engine::runtime::Runtime;
 use std::sync::Arc;
 
 // ZomeFnCallArgs to ZomeFnCall
@@ -44,7 +45,8 @@ impl ZomeFnCall {
 /// Waits for a ZomeFnResult
 /// Returns an HcApiReturnCode as I64
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_call(context: Arc<Context>, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
+pub fn invoke_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
+    let context = runtime.context()?;
     let span = context
         .tracer
         .span("hdk invoke_call")

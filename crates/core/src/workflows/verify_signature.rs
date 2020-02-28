@@ -1,8 +1,8 @@
-use crate::{context::Context, NEW_RELIC_LICENSE_KEY};
+use crate::{ NEW_RELIC_LICENSE_KEY};
 use holochain_core_types::error::HcResult;
 use holochain_dpki::utils::Verify;
 use holochain_wasm_types::verify_signature::VerifySignatureArgs;
-use std::sync::Arc;
+use crate::wasm_engine::runtime::Runtime;
 
 /// ZomeApiFunction::VerifySignature function code
 /// args: [0] encoded MemoryAllocation as u64
@@ -10,9 +10,10 @@ use std::sync::Arc;
 /// Returns an HcApiReturnCode as I64
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_verify_signature(
-    context: Arc<Context>,
+    runtime: &mut Runtime,
     verification_args: VerifySignatureArgs,
 ) -> HcResult<bool> {
+    let context = runtime.context()?;
     log_debug!(
         context,
         "zome: using provenance:{:?} to verify data:{:?}",

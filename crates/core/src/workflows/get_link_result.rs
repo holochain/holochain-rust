@@ -14,6 +14,7 @@ use holochain_wasm_types::get_links::{
     GetLinksArgs, GetLinksResult, LinksResult,
 };
 use std::sync::Arc;
+use crate::wasm_engine::runtime::Runtime;
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn get_link_result_workflow<'a>(
@@ -55,6 +56,7 @@ pub async fn get_link_result_workflow<'a>(
     }
 }
 
-pub fn invoke_get_links(context: Arc<Context>, link_args: GetLinksArgs) -> Result<GetLinksResult, HolochainError> {
+pub fn invoke_get_links(runtime: &mut Runtime, link_args: GetLinksArgs) -> Result<GetLinksResult, HolochainError> {
+    let context = runtime.context()?;
     context.block_on(get_link_result_workflow(&context, &link_args))
 }

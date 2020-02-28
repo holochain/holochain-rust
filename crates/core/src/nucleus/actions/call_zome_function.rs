@@ -26,6 +26,10 @@ use base64;
 use futures::{future::Future, task::Poll};
 use holochain_wasm_types::crypto::CryptoMethod;
 use std::{pin::Pin, sync::Arc};
+use std::convert::TryFrom;
+use holochain_wasmer_host::JsonError;
+use holochain_wasmer_host::WasmError;
+use wasmer_runtime::Instance;
 
 #[derive(Clone, Debug, PartialEq, Hash, Serialize)]
 pub struct ExecuteZomeFnResponse {
@@ -287,20 +291,45 @@ pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &Zome
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn spawn_zome_function(context: Arc<Context>, zome_call: ZomeFnCall) {
+    // this is a hack for backwards compatibility
+    struct CallResult(JsonString);
+
+    impl TryFrom<JsonString> for CallResult {
+        type Error = JsonError;
+        fn try_from(j: JsonString) -> Result<Self, Self::Error> {
+            Ok(CallResult(j))
+        }
+    }
+
     std::thread::Builder::new()
         .name(format!("{:?}", zome_call))
         .spawn(move || {
             // Have Ribosome spin up DNA and call the zome function
-            let call_result = wasm_engine::run_dna(
-                WasmCallData::new_zome_call(context.clone(), zome_call.clone()),
-                Some(zome_call.clone().parameters),
-            );
+            let call_data = WasmCallData::new_zome_call(context.clone(), zome_call.clone());
+            let maybe_instance: Result<Instance, HolochainError> = wasm_engine::factories::instance_for_call_data(&call_data);
+
+            let call_result: ZomeFnResult = match maybe_instance {
+                Err(e) => Err(e),
+                Ok(instance) => {
+                    let call_result_hack: Result<CallResult, WasmError> = holochain_wasmer_host::guest::call(
+                        &mut instance,
+                        &call_data.fn_name(),
+                        zome_call.clone().parameters,
+                    );
+                    match call_result_hack {
+                        Ok(call_result) => Ok(call_result.0),
+                        Err(e) => Err(HolochainError::Wasm(e)),
+                    }
+                },
+            };
+
             log_debug!(
                 context,
                 "actions/call_zome_fn: got call_result from ribosome::run_dna."
             );
             // Construct response
             let response = ExecuteZomeFnResponse::new(zome_call, call_result);
+
             // Send ReturnZomeFunctionResult Action
             log_debug!(
                 context,

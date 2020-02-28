@@ -12,6 +12,7 @@ use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_types::get_entry::{
     GetEntryArgs, GetEntryResult, StatusRequestKind,
 };
+use crate::wasm_engine::runtime::Runtime;
 use std::sync::Arc;
 
 /// Get Entry workflow
@@ -128,7 +129,8 @@ pub async fn get_entry_result_workflow<'a>(
     Ok(entry_result)
 }
 
-pub fn invoke_get_entry(context: Arc<Context>, args: GetEntryArgs) -> Result<GetEntryResult, HolochainError> {
+pub fn invoke_get_entry(runtime: &mut Runtime, args: GetEntryArgs) -> Result<GetEntryResult, HolochainError> {
+    let context = runtime.context()?;
     context.block_on(get_entry_result_workflow(&context, &args))
 }
 

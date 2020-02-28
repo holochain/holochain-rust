@@ -1,5 +1,4 @@
 use crate::{
-    context::Context,
     holochain_wasm_types::holochain_persistence_api::cas::content::AddressableContent,
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
     NEW_RELIC_LICENSE_KEY,
@@ -7,8 +6,8 @@ use crate::{
 use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_types::{get_entry::*, UpdateEntryArgs};
 use holochain_wasmer_host::*;
-use std::sync::Arc;
 use holochain_core_types::error::HolochainError;
+use crate::wasm_engine::runtime::Runtime;
 
 /// ZomeApiFunction::UpdateEntry function code
 /// args: [0] encoded MemoryAllocation as u64
@@ -16,9 +15,10 @@ use holochain_core_types::error::HolochainError;
 /// Returns an HcApiReturnCode as I64
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_update_entry(
-    context: Arc<Context>,
+    runtime: &mut Runtime,
     entry_args: UpdateEntryArgs,
 ) -> Result<Address, HolochainError> {
+    let context = runtime.context()?;
     // Get Current entry's latest version
     let get_args = GetEntryArgs {
         address: entry_args.address,

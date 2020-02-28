@@ -272,6 +272,7 @@ workflows:
          - final-exam
          - transactional
          - trycp-update-hc
+         - wire-message-receipts
    - docker-build-trycp-server:
       requires:
        - docker-build-minimal
@@ -287,6 +288,7 @@ workflows:
          - final-exam
          - transactional
          - trycp-update-hc
+         - wire-message-receipts
    - docker-build-circle-build:
       requires:
        - docker-build-latest

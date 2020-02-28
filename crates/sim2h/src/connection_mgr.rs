@@ -44,7 +44,7 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
     // TODO - this should be done with tokio tcp streams && selecting
     //        for now, we're just pausing when no work happens
 
-    loop {
+    'wss_task_loop: loop {
         let mut did_work = false;
 
         let loop_start = std::time::Instant::now();
@@ -64,14 +64,14 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
                                 let _ = evt_send
                                     .send(ConMgrEvent::Disconnect(uri.clone(), Some(e.into())));
                                 // end task
-                                return;
+                                break 'wss_task_loop;
                             }
                         }
                         ConMgrCommand::Disconnect(_uri) => {
                             debug!("disconnecting socket {}", uri);
                             let _ = evt_send.send(ConMgrEvent::Disconnect(uri.clone(), None));
                             // end task
-                            return;
+                            break 'wss_task_loop;
                         }
                         ConMgrCommand::Connect(_, _) => unreachable!(),
                     }
@@ -81,7 +81,7 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
                     debug!("socket cmd channel closed {}", uri);
                     let _ = evt_send.send(ConMgrEvent::Disconnect(uri.clone(), None));
                     // channel broken, end task
-                    return;
+                    break 'wss_task_loop;
                 }
             }
         }
@@ -100,7 +100,7 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
                     if let Err(_) = evt_send.send(ConMgrEvent::ReceiveData(uri.clone(), data)) {
                         debug!("socket evt channel closed {}", uri);
                         // end task
-                        return;
+                        break 'wss_task_loop;
                     }
                 }
                 Err(e) if e.would_block() => break,
@@ -108,7 +108,7 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
                     error!("socket read error {} {:?}", uri, e);
                     let _ = evt_send.send(ConMgrEvent::Disconnect(uri.clone(), Some(e.into())));
                     // end task
-                    return;
+                    break 'wss_task_loop;
                 }
             }
         }
@@ -129,6 +129,8 @@ async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_rec
             tokio::time::delay_for(std::time::Duration::from_millis(5)).await;
         }
     }
+
+    debug!("wss_task ENDING {}", uri);
 }
 
 /// internal actually spawn the above wss_task into the tokio runtime
@@ -149,18 +151,19 @@ use ConMgrResult::*;
 
 /// internal loop for processing the connection mgr
 async fn con_mgr_task(mut con_mgr: ConnectionMgr, weak_ref_dummy: Weak<()>) {
-    loop {
+    'con_mgr_task: loop {
         if let None = weak_ref_dummy.upgrade() {
             // no more references, let this task end
-            return;
+            break 'con_mgr_task;
         }
 
         match con_mgr.process() {
             DidWork => tokio::task::yield_now().await,
             NoWork => tokio::time::delay_for(std::time::Duration::from_millis(5)).await,
-            EndTask => return,
+            EndTask => break 'con_mgr_task,
         }
     }
+    warn!("sim2h connection manager task ENDING");
 }
 
 /// ConnectionMgr tracks a set of open websocket connections

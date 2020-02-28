@@ -299,12 +299,8 @@ impl Sim2hHandle {
                 data: ClientToLib3h::JoinSpace(data),
                 ..
             }) => {
-                let _ = tokio::task::spawn(spawn_handle_message_join_space(
-                    sim2h_handle,
-                    uri,
-                    signer,
-                    data,
-                ));
+                let _ =
+                    tokio::task::spawn(handle_message_join_space(sim2h_handle, uri, signer, data));
                 return;
             }
             message @ _ => message,
@@ -531,7 +527,7 @@ fn spawn_handle_message_hello(
     }
 }
 
-async fn spawn_handle_message_join_space(
+async fn handle_message_join_space(
     sim2h_handle: Sim2hHandle,
     uri: Lib3hUri,
     _signer: AgentId,
@@ -539,7 +535,7 @@ async fn spawn_handle_message_join_space(
 ) {
     sim2h_handle
         .state()
-        .spawn_new_connection(
+        .new_connection(
             data.space_address.clone(),
             data.agent_id.clone(),
             uri.clone(),

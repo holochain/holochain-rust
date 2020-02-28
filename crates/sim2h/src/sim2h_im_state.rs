@@ -882,16 +882,6 @@ impl StoreHandle {
         .boxed()
     }
 
-    pub async fn spawn_new_connection(
-        &self,
-        space_hash: SpaceHash,
-        agent_id: AgentId,
-        uri: Lib3hUri,
-    ) {
-        let f = self.new_connection(space_hash, agent_id, uri);
-        f.await
-    }
-
     /*
     #[must_use]
     pub fn drop_connection(&self, space_hash: SpaceHash, agent_id: AgentId) -> BoxFuture<'static, ()> {

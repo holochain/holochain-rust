@@ -79,6 +79,7 @@ impl InStreamListener<&mut [u8], &[u8]> for InStreamListenerTcp {
             SocketAddr::V4(_) => net2::TcpBuilder::new_v4()?,
             SocketAddr::V6(_) => net2::TcpBuilder::new_v6()?,
         }
+        .reuse_address(true)?
         .bind(addr)?
         .listen(config.backlog)?;
         listener.set_nonblocking(true)?;

@@ -16,7 +16,6 @@ use crate::{
 use entry::Entry;
 use holochain_persistence_api::cas::content::AddressableContent;
 use link::link_data::LinkData;
-use regex::Regex;
 
 type LinkType = String;
 type LinkTag = String;
@@ -77,26 +76,11 @@ pub enum LinkMatch<S: Into<String>> {
     Exactly(S),
 }
 
-impl<S: Into<String>> LinkMatch<S> {
-    #[allow(clippy::wrong_self_convention)]
-    pub fn to_regex_string(self) -> Result<String, String> {
-        let re_string: String = match self {
-            LinkMatch::Any => ".*".into(),
-            LinkMatch::Exactly(s) => "^".to_owned() + &regex::escape(&s.into()) + "$",
-        };
-        // check that it is a valid regex
-        match Regex::new(&re_string) {
-            Ok(_) => Ok(re_string),
-            Err(_) => Err("Invalid regex passed to get_links".into()),
-        }
-    }
-}
-
 impl<S: Into<String>> Into<Option<String>> for LinkMatch<S> {
     fn into(self) -> Option<String> {
         match self {
             LinkMatch::Exactly(s) => Some(s.into()),
-            _ => None,
+            LinkMatch::Any => None,
         }
     }
 }

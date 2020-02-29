@@ -14,7 +14,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Removed
 
 ### Fixed
+- Make Holochain (i.e. Sim2hWorker) work offline again (that is without being connected to Sim2h) [#2119](https://github.com/holochain/holochain-rust/pull/2119)
 
 - Fixing wire message TK-01102
+- Fixed `panic!("entry/aspect mismatch - corrupted data?")` [#2135](https://github.com/holochain/holochain-rust/pull/2135)
 
 ### Security

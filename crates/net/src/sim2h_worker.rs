@@ -392,7 +392,7 @@ impl Sim2hWorker {
             Lib3hClientProtocol::PublishEntry(provided_entry_data) => {
                 //let log_context = "ClientToLib3h::PublishEntry";
 
-                if self.is_full_sync_DHT {
+                if self.is_autonomous_node() {
                     // As with QueryEntry, if we are in full-sync DHT mode,
                     // this means that we can play back PublishEntry messages already locally
                     // as HandleStoreEntryAspects.
@@ -417,8 +417,8 @@ impl Sim2hWorker {
             }
             // Request some info / data from a Entry
             Lib3hClientProtocol::QueryEntry(query_entry_data) => {
-                if self.is_full_sync_DHT {
-                    // In a full-sync DHT queries should always be handled locally.
+                if self.is_autonomous_node() {
+                    // In a full-sync DHT or when offline queries should always be handled locally.
                     // Thus, we don't even need to ask the central sim2h instance
                     // to handle a query - we just send it back to core directly.
                     let msg = Lib3hServerProtocol::HandleQueryEntry(query_entry_data);
@@ -432,7 +432,7 @@ impl Sim2hWorker {
             }
             // Response to a `HandleQueryEntry` request
             Lib3hClientProtocol::HandleQueryEntryResult(query_entry_result_data) => {
-                if self.is_full_sync_DHT {
+                if self.is_autonomous_node() {
                     // See above QueryEntry implementation.
                     // All queries are handled locally - we just reflect them back to core:
                     let msg = Lib3hServerProtocol::QueryEntryResult(query_entry_result_data);
@@ -449,7 +449,7 @@ impl Sim2hWorker {
             Lib3hClientProtocol::HandleGetAuthoringEntryListResult(entry_list_data) => {
                 //let log_context = "ClientToLib3h::HandleGetAuthoringEntryListResult";
                 self.initial_authoring_list = Some(entry_list_data.clone());
-                if self.is_full_sync_DHT {
+                if self.is_autonomous_node() {
                     self.self_store_authored_aspects();
                 }
                 self.send_wire_message(WireMessage::Lib3hToClientResponse(span_wrap.swapped(
@@ -459,7 +459,7 @@ impl Sim2hWorker {
             Lib3hClientProtocol::HandleGetGossipingEntryListResult(entry_list_data) => {
                 //let log_context = "ClientToLib3h::HandleGetGossipingEntryListResult";
                 self.initial_gossiping_list = Some(entry_list_data.clone());
-                if self.is_full_sync_DHT {
+                if self.is_autonomous_node() {
                     self.self_store_authored_aspects();
                 }
                 self.send_wire_message(WireMessage::Lib3hToClientResponse(span_wrap.swapped(
@@ -582,6 +582,12 @@ impl Sim2hWorker {
 
     pub fn set_full_sync(&mut self, full_sync: bool) {
         self.is_full_sync_DHT = full_sync;
+    }
+
+    /// Tells us if Sim2hWorker should render the local core instance to be self-suficient,
+    /// i.e. storing everything locally and answering to queries locally.
+    fn is_autonomous_node(&mut self) -> bool {
+        self.is_full_sync_DHT || !self.connection_ready()
     }
 
     #[allow(dead_code)]

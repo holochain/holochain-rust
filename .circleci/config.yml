@@ -270,6 +270,7 @@ workflows:
         only:
          - develop
          - final-exam
+         - tokio-deadlock-panic
          - wire-message-receipts
    - docker-build-trycp-server:
       requires:
@@ -284,6 +285,7 @@ workflows:
         only:
          - develop
          - final-exam
+         - tokio-deadlock-panic
          - wire-message-receipts
    - docker-build-circle-build:
       requires:

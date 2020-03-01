@@ -2,20 +2,13 @@
 //! but not every developer should have to write them. A notable function defined here is
 //! __hdk_get_json_definition which allows Holochain to retrieve JSON defining the Zome.
 
+use crate::prelude::*;
 use crate::entry_definition::{AgentValidator, ValidatingEntryType};
 use holochain_core_types::{
     dna::{
-        entry_types::{deserialize_entry_types, serialize_entry_types},
-        zome::{ZomeEntryTypes, ZomeFnDeclarations, ZomeTraits},
+        zome::{ZomeFnDeclarations, ZomeTraits, PartialZome},
     },
     entry::entry_type::{AppEntryType, EntryType},
-};
-use holochain_json_derive::DefaultJson;
-use serde_derive::{Deserialize, Serialize};
-
-use holochain_json_api::{
-    error::JsonError,
-    json::{JsonString, RawString},
 };
 
 use holochain_wasm_types::validation::{
@@ -26,15 +19,6 @@ use std::{collections::BTreeMap, convert::TryFrom};
 
 trait Ribosome {
     fn define_entry_type(&mut self, name: String, entry_type: ValidatingEntryType);
-}
-
-#[derive(Debug, Serialize, Deserialize, DefaultJson, Default)]
-struct PartialZome {
-    #[serde(serialize_with = "serialize_entry_types")]
-    #[serde(deserialize_with = "deserialize_entry_types")]
-    entry_types: ZomeEntryTypes,
-    traits: ZomeTraits,
-    fn_declarations: ZomeFnDeclarations,
 }
 
 #[allow(improper_ctypes)]
@@ -175,9 +159,7 @@ pub extern "C" fn __hdk_validate_link(host_allocation_ptr: AllocationPtr) -> All
 
 #[no_mangle]
 pub extern "C" fn __hdk_hdk_version(_: AllocationPtr) -> AllocationPtr {
-    ret!(WasmResult::Ok(
-        RawString::from(holochain_core_types::hdk_version::HDK_VERSION.to_string()).into()
-    ))
+    ret!(WasmString::from(holochain_core_types::hdk_version::HDK_VERSION.to_string()))
 }
 
 #[no_mangle]
@@ -193,14 +175,11 @@ pub extern "C" fn __hdk_get_json_definition(_: AllocationPtr) -> AllocationPtr {
     let traits = unsafe { __list_traits() };
     let fn_declarations = unsafe { __list_functions() };
 
-    ret!(WasmResult::Ok(
-        PartialZome {
-            entry_types,
-            traits,
-            fn_declarations,
-        }
-        .into()
-    ));
+    ret!(PartialZome::new(
+            &entry_types,
+            &traits,
+            &fn_declarations,
+        ));
 }
 
 #[cfg(test)]
@@ -248,7 +227,7 @@ pub mod tests {
             },
 
             validation: |_validation_data: hdk::EntryValidationData<Post>| {
-                Ok(())
+                ValidationResult::Ok
             }
 
         );
@@ -257,10 +236,11 @@ pub mod tests {
             validating_entry_type.entry_type_definition,
         );
 
-        let partial_zome = PartialZome {
-            entry_types,
-            ..Default::default()
-        };
+        let partial_zome = PartialZome::new(
+            &entry_types,
+            &Default::default(),
+            &Default::default(),
+        );
 
         assert_eq!(
             JsonString::from(partial_zome),

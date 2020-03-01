@@ -92,12 +92,7 @@ impl WasmCallData {
         }
 
         let wasm_imports = imports! {
-                // move || {
-                //     let call_data: *mut WasmCallData = Arc::into_raw(Arc::clone(&self_arc)) as _;
-                //     (call_data as _, |_| {})
-                // },
                 "env" => {
-                    // "hc_debug" => zome_api_func!(context, invoke_debug),
                     "hc_debug" => func!(invoke_workflow!(debug_workflow)),
                     "hc_get_links_count" => func!(invoke_workflow!(get_link_result_count_workflow)),
                     // "hc_commit_entry" => zome_api_func!(context, invoke_commit_app_entry),

@@ -146,6 +146,21 @@ impl Zome {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, DefaultJson, Default)]
+pub struct PartialZome {
+    #[serde(serialize_with = "serialize_entry_types")]
+    #[serde(deserialize_with = "deserialize_entry_types")]
+    entry_types: ZomeEntryTypes,
+    traits: ZomeTraits,
+    fn_declarations: ZomeFnDeclarations,
+}
+
+impl PartialZome {
+    pub fn new(entry_types: &ZomeEntryTypes, traits: &ZomeTraits, fn_declarations: &ZomeFnDeclarations) -> Self {
+        Self { entry_types: entry_types.to_owned(), traits: traits.to_owned(), fn_declarations: fn_declarations.to_owned() }
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;

@@ -25,6 +25,7 @@ pub use pretty_assertions;
 pub use serde;
 pub use serde_derive;
 pub use serde_json;
+pub use holochain_wasmer_guest;
 
 pub mod api;
 pub mod utils;

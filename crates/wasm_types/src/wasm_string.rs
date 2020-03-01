@@ -8,3 +8,9 @@ impl ToString for WasmString {
         self.0.clone()
     }
 }
+
+impl From<String> for WasmString {
+    fn from(s: String) -> WasmString {
+        WasmString(s)
+    }
+}

@@ -161,7 +161,7 @@ pub mod tests {
     use self::wabt::Wat2Wasm;
     use crate::{
         instance::{tests::test_instance, Instance},
-        wasm_engine::{callback::Callback, Defn},
+        wasm_engine::{callback::Callback},
     };
     use test_utils;
     use wabt;

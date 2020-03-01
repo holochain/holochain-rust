@@ -1,7 +1,8 @@
 [workspace]
 
 members = [
-  "crates/cli",
+  # @TODO make cli work with wasmer
+  # "crates/cli",
   "crates/metrics",
   "crates/common",
   "crates/holochain",

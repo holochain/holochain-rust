@@ -332,7 +332,7 @@ mod tests {
     use holochain_json_api::json::RawString;
     use holochain_locksmith::Mutex;
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
-    use holochain_wasm_engine::wasm_target_dir;
+    use holochain_core::wasm_engine::io::wasm_target_dir;
     use std::{path::PathBuf, sync::Arc};
     use tempfile;
     use test_utils::{

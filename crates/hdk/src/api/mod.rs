@@ -156,11 +156,11 @@ macro_rules! def_api_fns {
         /// Hence the `#[cfg(test)]` which is really important!
         #[cfg(test)]
         mod tests {
-            use crate::holochain_core_types::error::{RibosomeReturnValue, AllocationPtr};
+            use $crate::prelude::*;
 
             $( #[no_mangle]
                  pub fn $function_name(_: AllocationPtr) -> AllocationPtr {
-                     RibosomeReturnValue::Success.into()
+                     $crate::holochain_wasmer_guest::ret!(());
                  }) *
         }
 

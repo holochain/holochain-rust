@@ -35,12 +35,16 @@ pub use crate::{
     holochain_json_api::{error::JsonError, json::JsonString, json::RawString},
     holochain_persistence_api::cas::content::{Address, AddressableContent},
     holochain_wasm_types::{
+        wasm_string::WasmString,
         commit_entry::CommitEntryOptions,
         get_entry::{
             EntryHistory, GetEntryOptions, GetEntryResult, GetEntryResultType, StatusRequestKind,
         },
         get_links::{GetLinksOptions, GetLinksResult, GetLinksResultCount, LinksStatusRequestKind},
         QueryArgsOptions, QueryResult, QueryArgsNames,
+    },
+    holochain_wasmer_guest::{
+        ret,
     },
     EntryValidationData, LinkValidationData, ValidationPackageDefinition,
 };

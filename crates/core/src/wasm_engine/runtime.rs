@@ -13,6 +13,7 @@ use crate::workflows::debug::debug_workflow;
 use holochain_wasm_types::ZomeApiResult;
 use std::convert::TryInto;
 use crate::workflows::get_links_count::get_link_result_count_workflow;
+use crate::workflows::commit::commit_app_entry_workflow;
 
 #[derive(Clone)]
 pub struct ZomeCallData {
@@ -75,12 +76,23 @@ impl WasmCallData {
 
     pub fn instance(&self) -> Result<Instance, HolochainError> {
         macro_rules! invoke_workflow {
-            ( $workflow:ident ) => {{
+            ( $trace_span:literal, $trace_tag:literal, $workflow:ident ) => {{
                 let closure_arc = std::sync::Arc::new(self.clone());
                 move |ctx: &mut Ctx, guest_allocation_ptr: holochain_wasmer_host::AllocationPtr| -> ZomeApiResult {
                     let guest_bytes = holochain_wasmer_host::guest::read_from_allocation_ptr(ctx, guest_allocation_ptr)?;
                     let guest_json = JsonString::from(guest_bytes);
                     let context = std::sync::Arc::clone(&closure_arc.context().map_err(|_| WasmError::Unspecified )?);
+
+                    let span = context
+                        .tracer
+                        .span(format!("hdk {}", $trace_span))
+                        .tag(ht::Tag::new(
+                            $trace_tag,
+                            format!("{:?}", guest_json),
+                        ))
+                        .start()
+                        .into();
+                    let _spanguard = $crate::ht::push_span(span);
 
                     Ok(holochain_wasmer_host::json::to_allocation_ptr(
                         context.block_on(
@@ -93,9 +105,9 @@ impl WasmCallData {
 
         let wasm_imports = imports! {
                 "env" => {
-                    "hc_debug" => func!(invoke_workflow!(debug_workflow)),
-                    "hc_get_links_count" => func!(invoke_workflow!(get_link_result_count_workflow)),
-                    // "hc_commit_entry" => zome_api_func!(context, invoke_commit_app_entry),
+                    "hc_debug" => func!(invoke_workflow!("debug_workflow", "WasmString", debug_workflow)),
+                    "hc_commit_entry" => func!(invoke_workflow!("commit_app_entry_workflow", "CommitEntryArgs", commit_app_entry_workflow)),
+                    "hc_get_links_count" => func!(invoke_workflow!("get_link_result_count_workflow", "GetLinksArgs", get_link_result_count_workflow)),
                 },
             };
 

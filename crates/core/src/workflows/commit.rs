@@ -4,33 +4,14 @@ use holochain_wasm_types::commit_entry::{CommitEntryArgs, CommitEntryResult};
 use crate::context::Context;
 use std::sync::Arc;
 
-/// ZomeApiFunction::CommitAppEntry function code
-/// args: [0] encoded MemoryAllocation as u64
-/// Expected complex argument: CommitEntryArg
-/// Returns an HcApiReturnCode as I64
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_commit_app_entry(
-    context: Arc<Context>,
-    commit_entry_arg: CommitEntryArgs,
-) -> Result<CommitEntryResult, HolochainError> {
-    let span = context
-        .tracer
-        .span("hdk invoke_commit_app_entry")
-        .tag(ht::Tag::new(
-            "CommitEntryArgs",
-            format!("{:?}", commit_entry_arg),
-        ))
-        .start()
-        .into();
-    let _spanguard = ht::push_span(span);
-
-    // Wait for future to be resolved
-    context.block_on(author_entry(
-        &commit_entry_arg.entry(),
+pub async fn commit_app_entry_workflow(context: Arc<Context>, commit_entry_args: CommitEntryArgs) -> Result<CommitEntryResult, HolochainError> {
+    author_entry(
+        &commit_entry_args.entry(),
         None,
         &context,
-        &commit_entry_arg.options().provenance(),
-    ))
+        &commit_entry_args.options().provenance(),
+    ).await
 }
 
 #[cfg(test)]

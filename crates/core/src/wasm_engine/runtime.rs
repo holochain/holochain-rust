@@ -1,7 +1,7 @@
 use crate::{
     context::Context,
     nucleus::{CallbackFnCall, ZomeFnCall},
-    
+
 };
 use holochain_json_api::json::JsonString;
 use holochain_core_types::error::HolochainError;
@@ -17,6 +17,7 @@ use crate::workflows::commit::commit_app_entry_workflow;
 use crate::workflows::get_entry_result::get_entry_result_workflow;
 use crate::workflows::update_entry::update_entry_workflow;
 use crate::workflows::remove_entry::remove_entry_workflow;
+use crate::workflows::init_globals::init_globals_workflow;
 
 #[derive(Clone)]
 pub struct ZomeCallData {
@@ -77,31 +78,85 @@ impl WasmCallData {
         }
     }
 
+    pub fn zome_call_data(&self) -> Result<ZomeCallData, RuntimeError> {
+        match &self {
+            WasmCallData::ZomeCall(ref data) => Ok(data.clone()),
+            _ => Err(RuntimeError::Trap {
+                msg: format!("zome_call_data: {:?}", &self).into_boxed_str(),
+            }),
+        }
+    }
+
+    pub fn callback_call_data(&self) -> Result<CallbackCallData, RuntimeError> {
+        match &self {
+            WasmCallData::CallbackCall(ref data) => Ok(data.clone()),
+            _ => Err(RuntimeError::Trap {
+                msg: format!("callback_call_data: {:?}", &self).into_boxed_str(),
+            }),
+        }
+    }
+
+    pub fn call_data(&self) -> Result<CallData, RuntimeError> {
+        match &self {
+            WasmCallData::ZomeCall(ref data) => Ok(CallData {
+                context: data.context.clone(),
+                zome_name: data.call.zome_name.clone(),
+                fn_name: data.call.fn_name.clone(),
+                parameters: data.call.parameters.clone(),
+            }),
+            WasmCallData::CallbackCall(ref data) => Ok(CallData {
+                context: data.context.clone(),
+                zome_name: data.call.zome_name.clone(),
+                fn_name: data.call.fn_name.clone(),
+                parameters: data.call.parameters.clone(),
+            }),
+            _ => Err(RuntimeError::Trap {
+                msg: format!("call_data: {:?}", &self).into_boxed_str(),
+            }),
+        }
+    }
+
     pub fn instance(&self) -> Result<Instance, HolochainError> {
+        let arc = std::sync::Arc::new(self.clone());
+
+        macro_rules! invoke_workflow_trace {
+            ( $context:ident, $trace_span:literal, $trace_tag:literal, $args:ident ) => {{
+                let span = $context
+                    .tracer
+                    .span(format!("hdk {}", $trace_span))
+                    .tag(ht::Tag::new(
+                        $trace_tag,
+                        format!("{:?}", $args),
+                    ))
+                    .start()
+                    .into();
+                let _spanguard = $crate::ht::push_span(span);
+            }}
+        }
+
+        macro_rules! invoke_workflow_block_and_allocate {
+            ( $workflow:ident, $context:ident, $args:ident ) => {{
+                Ok(holochain_wasmer_host::json::to_allocation_ptr(
+                    $context.block_on(
+                        $workflow(std::sync::Arc::clone(&$context), $args)
+                    ).map_err(|e| WasmError::Zome(e.to_string()))?.into()
+                ))
+            }}
+        }
+
         macro_rules! invoke_workflow {
             ( $trace_span:literal, $trace_tag:literal, $workflow:ident ) => {{
-                let closure_arc = std::sync::Arc::new(self.clone());
+                let closure_arc = std::sync::Arc::clone(&arc);
                 move |ctx: &mut Ctx, guest_allocation_ptr: holochain_wasmer_host::AllocationPtr| -> ZomeApiResult {
                     let guest_bytes = holochain_wasmer_host::guest::read_from_allocation_ptr(ctx, guest_allocation_ptr)?;
                     let guest_json = JsonString::from(guest_bytes);
                     let context = std::sync::Arc::clone(&closure_arc.context().map_err(|_| WasmError::Unspecified )?);
 
-                    let span = context
-                        .tracer
-                        .span(format!("hdk {}", $trace_span))
-                        .tag(ht::Tag::new(
-                            $trace_tag,
-                            format!("{:?}", guest_json),
-                        ))
-                        .start()
-                        .into();
-                    let _spanguard = $crate::ht::push_span(span);
+                    // in general we will have more luck tracing json than arbitrary structs
+                    invoke_workflow_trace!(context, $trace_span, $trace_tag, guest_json);
 
-                    Ok(holochain_wasmer_host::json::to_allocation_ptr(
-                        context.block_on(
-                            $workflow(context.clone(), guest_json.try_into()?)
-                        ).map_err(|e| WasmError::Zome(e.to_string()))?.into()
-                    ))
+                    let args = guest_json.try_into()?;
+                    invoke_workflow_block_and_allocate!($workflow, context, args)
                 }
             }}
         }
@@ -121,6 +176,20 @@ impl WasmCallData {
                     "hc_get_entry" => func!(invoke_workflow!("get_entry_result_workflow", "GetEntryArgs", get_entry_result_workflow)),
                     "hc_update_entry" => func!(invoke_workflow!("update_entry_workflow", "UpdateEntryArgs", update_entry_workflow)),
                     "hc_remove_entry" => func!(invoke_workflow!("remove_entry_workflow", "Address", remove_entry_workflow)),
+
+                    /// Init Zome API Globals
+                    /// hc_init_globals() -> InitGlobalsOutput
+                    // there is no input from the guest for input_globals_workflow
+                    // instead it needs direct access to the call data
+                    "hc_init_global" => func!({
+                        let closure_arc = std::sync::Arc::clone(&arc);
+                        move || -> ZomeApiResult {
+                            let context = Arc::clone(&closure_arc.context().map_err(|_| WasmError::Unspecified )?);
+                            let args = Arc::clone(&closure_arc);
+                            invoke_workflow_trace!(context, "init_globals_workflow", "WasmCallData", args);
+                            invoke_workflow_block_and_allocate!(init_globals_workflow, context, args)
+                        }
+                    }),
 
                     "hc_get_links_count" => func!(invoke_workflow!("get_link_result_count_workflow", "GetLinksArgs", get_link_result_count_workflow)),
                 },
@@ -195,41 +264,15 @@ pub struct Runtime {
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Runtime {
     pub fn zome_call_data(&self) -> Result<ZomeCallData, RuntimeError> {
-        match &self.data {
-            WasmCallData::ZomeCall(ref data) => Ok(data.clone()),
-            _ => Err(RuntimeError::Trap {
-                msg: format!("zome_call_data: {:?}", &self.data).into_boxed_str(),
-            }),
-        }
+        self.data.zome_call_data()
     }
 
     pub fn callback_call_data(&self) -> Result<CallbackCallData, RuntimeError> {
-        match &self.data {
-            WasmCallData::CallbackCall(ref data) => Ok(data.clone()),
-            _ => Err(RuntimeError::Trap {
-                msg: format!("callback_call_data: {:?}", &self.data).into_boxed_str(),
-            }),
-        }
+        self.data.callback_call_data()
     }
 
     pub fn call_data(&self) -> Result<CallData, RuntimeError> {
-        match &self.data {
-            WasmCallData::ZomeCall(ref data) => Ok(CallData {
-                context: data.context.clone(),
-                zome_name: data.call.zome_name.clone(),
-                fn_name: data.call.fn_name.clone(),
-                parameters: data.call.parameters.clone(),
-            }),
-            WasmCallData::CallbackCall(ref data) => Ok(CallData {
-                context: data.context.clone(),
-                zome_name: data.call.zome_name.clone(),
-                fn_name: data.call.fn_name.clone(),
-                parameters: data.call.parameters.clone(),
-            }),
-            _ => Err(RuntimeError::Trap {
-                msg: format!("call_data: {:?}", &self.data).into_boxed_str(),
-            }),
-        }
+        self.data.call_data()
     }
 
     pub fn context(&self) -> Result<Arc<Context>, HolochainError> {

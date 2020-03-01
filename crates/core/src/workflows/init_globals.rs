@@ -3,22 +3,20 @@ use holochain_persistence_api::{
     cas::content::{Address},
     hash::HashString,
 };
-use holochain_wasm_types::WasmError;
-use holochain_wasm_types::wasm_string::WasmString;
 use holochain_json_api::json::JsonString;
-use crate::wasm_engine::runtime::Runtime;
 use crate::holochain_wasm_types::holochain_persistence_api::cas::content::AddressableContent;
 use holochain_wasm_types::ZomeApiGlobals;
 use holochain_core_types::error::HolochainError;
+use std::sync::Arc;
+use crate::context::Context;
+use crate::wasm_engine::runtime::WasmCallData;
 
 /// ZomeApiFunction::InitGlobals secret function code
 /// args: [0] encoded MemoryAllocation as u64
 /// Not expecting any complex input
 /// Returns an HcApiReturnCode as I64
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_init_globals(runtime: &mut Runtime, _: WasmString) -> Result<ZomeApiGlobals, HolochainError> {
-    let context = runtime.context().map_err(|e| WasmError::Zome(e.to_string()))?;
-    let call_data = runtime.call_data().map_err(|e| WasmError::Zome(e.to_string()))?;
+pub async fn init_globals_workflow(context: Arc<Context>, call_data: Arc<WasmCallData>) -> Result<ZomeApiGlobals, HolochainError> {
     let dna = context
         .get_dna()
         .expect("No DNA found in invoke_init_globals");
@@ -27,12 +25,12 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _: WasmString) -> Result<ZomeA
     let mut globals = ZomeApiGlobals {
         dna_name,
         dna_address: Address::from(""),
-        agent_id_str: JsonString::from(call_data.context.agent_id.clone()).to_string(),
-        agent_address: call_data.context.agent_id.address(),
+        agent_id_str: JsonString::from(context.agent_id.clone()).to_string(),
+        agent_address: context.agent_id.address(),
         agent_initial_hash: HashString::from(""),
         agent_latest_hash: HashString::from(""),
         public_token: Address::from(""),
-        cap_request: runtime
+        cap_request: call_data
             .zome_call_data()
             .map(|zome_call_data| Some(zome_call_data.call.cap))
             .unwrap_or_else(|_| None),
@@ -40,7 +38,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _: WasmString) -> Result<ZomeA
     };
 
     // Update fields
-    if let Some(state) = call_data.context.state() {
+    if let Some(state) = context.state() {
         // Update dna_address
         if let Some(dna) = state.nucleus().dna() {
             globals.dna_address = dna.address()
@@ -65,7 +63,7 @@ pub fn invoke_init_globals(runtime: &mut Runtime, _: WasmString) -> Result<ZomeA
     };
 
     // Update public_token
-    let maybe_token = call_data.context.get_public_token();
+    let maybe_token = context.get_public_token();
     if let Ok(token) = maybe_token {
         globals.public_token = token;
     }

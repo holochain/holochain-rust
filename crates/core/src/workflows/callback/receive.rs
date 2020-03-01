@@ -5,7 +5,7 @@ use crate::{
         callback::{Callback, CallbackParams, CallbackResult},
         runtime::WasmCallData,
     },
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 use holochain_wasmer_host::WasmError;
 use holochain_json_api::{error::JsonError, json::JsonString};
@@ -16,7 +16,7 @@ struct ReceiveReturnValue(Result<String, String>);
 
 // @TODO fix this autotrace
 // #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn receive(
     context: Arc<Context>,
     zome: &str,

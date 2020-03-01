@@ -1,7 +1,7 @@
 use crate::{
     context::Context, dht::actions::hold_aspect::hold_aspect,
     network::entry_with_header::EntryWithHeader, nucleus::validation::validate_entry,
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 
 use crate::{
@@ -15,10 +15,10 @@ use holochain_core_types::{
 };
 use std::sync::Arc;
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn hold_link_workflow(
-    entry_with_header: &EntryWithHeader,
     context: Arc<Context>,
+    entry_with_header: &EntryWithHeader,
 ) -> Result<(), HolochainError> {
     let link_add = match &entry_with_header.entry {
         Entry::LinkAdd(link_add) => link_add,
@@ -55,10 +55,10 @@ pub async fn hold_link_workflow(
     // 3. Validate the entry
     log_debug!(context, "workflow/hold_link: validate...");
     match validate_entry(
+        Arc::clone(&context),
         entry_with_header.entry.clone(),
         None,
         validation_data,
-        &context
     ).await {
         ValidationResult::Ok => (),
         ValidationResult::UnresolvedDependencies(dependencies) => {
@@ -84,7 +84,7 @@ pub async fn hold_link_workflow(
     log_debug!(context, "workflow/hold_link: added! {:?}", link);
 
     //4. store link_add entry so we have all we need to respond to get links queries without any other network look-up
-    hold_entry_workflow(&entry_with_header, context.clone()).await?;
+    hold_entry_workflow(Arc::clone(&context), &entry_with_header).await?;
     log_debug!(
         context,
         "workflow/hold_entry: added! {:?}",

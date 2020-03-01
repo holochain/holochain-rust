@@ -1,7 +1,4 @@
 use holochain_wasm_types::holochain_persistence_api::cas::content::AddressableContent;
-use crate::{
-    NEW_RELIC_LICENSE_KEY,
-};
 use holochain_core_types::network::entry_aspect::EntryAspect;
 use im::{HashMap, HashSet};
 use lib3h_protocol::types::{AspectHash, EntryHash};
@@ -12,7 +9,7 @@ pub type AspectMapBare = HashMap<EntryHash, AspectSet>;
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct AspectMap(AspectMapBare);
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl AspectMap {
     pub fn new() -> Self {
         Self::default()

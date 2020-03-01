@@ -7,7 +7,7 @@ use crate::{
         validation::{entry_to_validation_data},
         CallbackFnCall,
     },
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 use holochain_core_types::validation::ValidationResult;
 use holochain_core_types::{entry::Entry, validation::ValidationData};
@@ -15,11 +15,11 @@ use holochain_persistence_api::cas::content::AddressableContent;
 use holochain_wasm_types::validation::EntryValidationArgs;
 use std::sync::Arc;
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn validate_remove_entry(
+    context: Arc<Context>,
     entry: Entry,
     validation_data: ValidationData,
-    context: &Arc<Context>,
 ) -> ValidationResult {
     let dna = context.get_dna().expect("Callback called without DNA set");
     let deletion_entry = unwrap_to!(entry=>Entry::Deletion);
@@ -49,5 +49,5 @@ pub async fn validate_remove_entry(
     };
 
     let call = CallbackFnCall::new(&zome_name, "__hdk_validate_app_entry", params);
-    run_validation_callback(entry.address(), call, context).await
+    run_validation_callback(Arc::clone(&context), entry.address(), call).await
 }

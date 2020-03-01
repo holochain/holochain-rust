@@ -1,6 +1,6 @@
 use crate::{
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 use holochain_core_types::{
     entry::{deletion_entry::DeletionEntry, Entry},
@@ -9,24 +9,24 @@ use holochain_core_types::{
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use holochain_wasm_types::get_entry::*;
 use holochain_wasmer_host::*;
-use crate::wasm_engine::runtime::Runtime;
+use std::sync::Arc;
+use crate::context::Context;
 
 /// ZomeApiFunction::RemoveEntry function code
 /// args: [0] encoded MemoryAllocation
 /// Expected Address argument
 /// Stores/returns a RibosomeReturnValue
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_remove_entry(
-    runtime: &mut Runtime,
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+pub async fn remove_entry_workflow(
+    context: Arc<Context>,
     deleted_entry_address: Address,
 ) -> Result<Address, HolochainError> {
-    let context = runtime.context()?;
     // Get Current entry's latest version
     let get_args = GetEntryArgs {
         address: deleted_entry_address,
         options: Default::default(),
     };
-    let maybe_entry_result = context.block_on(get_entry_result_workflow(&context, &get_args));
+    let maybe_entry_result = get_entry_result_workflow(Arc::clone(&context), get_args).await;
 
     if let Err(err) = maybe_entry_result {
         log_error!(context, "zome: get_entry_result_workflow failed: {:?}", err);
@@ -42,12 +42,11 @@ pub fn invoke_remove_entry(
     // Create deletion entry
     let deletion_entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address.clone()));
 
-    context
-        .block_on(author_entry(
+    author_entry(
             &deletion_entry.clone(),
             Some(deleted_entry_address),
             &context,
             &vec![],
-        ))
+        ).await
         .map(|_| deletion_entry.address())
 }

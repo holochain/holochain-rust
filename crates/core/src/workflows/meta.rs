@@ -1,4 +1,3 @@
-use crate::{NEW_RELIC_LICENSE_KEY};
 use holochain_core_types::{hdk_version::HDK_VERSION, HDK_HASH};
 use holochain_wasm_types::meta::{MetaArgs, MetaMethod, MetaResult};
 use std::sync::Arc;
@@ -8,7 +7,7 @@ use crate::context::Context;
 /// args: [0] encoded MemoryAllocation as u64
 /// Expecting a string as complex input argument
 /// Returns an HcApiReturnCode as I64
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn meta_workflow(_: Arc<Context>, meta_args: MetaArgs) -> Result<MetaResult, ()> {
     Ok(match meta_args.method {
         MetaMethod::Version => MetaResult::Version(HDK_VERSION.to_string()),

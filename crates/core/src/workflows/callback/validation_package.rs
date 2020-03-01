@@ -5,7 +5,7 @@ use crate::{
         runtime::WasmCallData,
         callback::CallbackResult,
     },
-    NEW_RELIC_LICENSE_KEY,
+
 };
 use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
@@ -19,10 +19,10 @@ use std::{sync::Arc};
 
 // @TODO fix line number mangling
 // #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn get_validation_package_definition(
-    entry: &Entry,
     context: Arc<Context>,
+    entry: &Entry,
 ) -> Result<CallbackResult, HolochainError> {
     let dna = context.get_dna().expect("Callback called without DNA set!");
     let result: ValidationPackageDefinition = match entry.entry_type() {
@@ -59,7 +59,7 @@ pub fn get_validation_package_definition(
             };
 
             let link_definition_path =
-                links_utils::find_link_definition_by_type(link_add.link().link_type(), &context)?;
+                links_utils::find_link_definition_by_type(Arc::clone(&context), link_add.link().link_type())?;
 
             let params = LinkValidationPackageArgs {
                 entry_type: link_definition_path.entry_type_name,
@@ -91,8 +91,8 @@ pub fn get_validation_package_definition(
             };
 
             let link_definition_path = links_utils::find_link_definition_by_type(
+                Arc::clone(&context),
                 link_remove.link().link_type(),
-                &context,
             )?;
 
             let params = LinkValidationPackageArgs {

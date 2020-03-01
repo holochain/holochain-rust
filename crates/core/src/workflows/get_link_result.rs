@@ -7,7 +7,7 @@ use crate::{
             NetworkQueryResult,
         },
     },
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 use holochain_core_types::error::HolochainError;
 use holochain_wasm_types::get_links::{
@@ -16,7 +16,7 @@ use holochain_wasm_types::get_links::{
 use std::sync::Arc;
 use crate::wasm_engine::runtime::Runtime;
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn get_link_result_workflow<'a>(
     context: &'a Arc<Context>,
     link_args: &'a GetLinksArgs,

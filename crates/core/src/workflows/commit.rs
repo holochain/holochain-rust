@@ -1,10 +1,10 @@
-use crate::{workflows::author_entry::author_entry, NEW_RELIC_LICENSE_KEY};
+use crate::{workflows::author_entry::author_entry};
 use holochain_core_types::error::HolochainError;
 use holochain_wasm_types::commit_entry::{CommitEntryArgs, CommitEntryResult};
 use crate::context::Context;
 use std::sync::Arc;
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn commit_app_entry_workflow(context: Arc<Context>, commit_entry_args: CommitEntryArgs) -> Result<CommitEntryResult, HolochainError> {
     author_entry(
         &commit_entry_args.entry(),

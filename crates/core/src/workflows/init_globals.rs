@@ -1,4 +1,3 @@
-use crate::{NEW_RELIC_LICENSE_KEY};
 use holochain_core_types::entry::entry_type::EntryType;
 use holochain_persistence_api::{
     cas::content::{Address},
@@ -16,7 +15,7 @@ use holochain_core_types::error::HolochainError;
 /// args: [0] encoded MemoryAllocation as u64
 /// Not expecting any complex input
 /// Returns an HcApiReturnCode as I64
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_init_globals(runtime: &mut Runtime, _: WasmString) -> Result<ZomeApiGlobals, HolochainError> {
     let context = runtime.context().map_err(|e| WasmError::Zome(e.to_string()))?;
     let call_data = runtime.call_data().map_err(|e| WasmError::Zome(e.to_string()))?;

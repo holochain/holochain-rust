@@ -1,7 +1,7 @@
 use crate::{
     context::Context, dht::actions::hold_aspect::hold_aspect,
     network::entry_with_header::EntryWithHeader, nucleus::validation::validate_entry,
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 
 use crate::{workflows::validation_package};
@@ -12,10 +12,10 @@ use holochain_core_types::{
 };
 use std::sync::Arc;
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn hold_remove_workflow(
-    entry_with_header: &EntryWithHeader,
     context: Arc<Context>,
+    entry_with_header: &EntryWithHeader,
 ) -> Result<(), HolochainError> {
     // 1. Get hold of validation package
     let maybe_validation_package = validation_package(entry_with_header, context.clone())
@@ -37,10 +37,10 @@ pub async fn hold_remove_workflow(
 
     // 3. Validate the entry
     match validate_entry(
+        Arc::clone(&context),
         entry_with_header.entry.clone(),
         None,
         validation_data,
-        &context
     ).await {
         ValidationResult::Ok => (),
         ValidationResult::UnresolvedDependencies(dependencies) => {

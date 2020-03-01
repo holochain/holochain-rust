@@ -1,4 +1,4 @@
-use crate::{context::Context, NEW_RELIC_LICENSE_KEY};
+use crate::{context::Context};
 use holochain_core_types::error::{HcResult, HolochainError};
 
 use holochain_json_api::json::JsonString;
@@ -13,7 +13,7 @@ use snowflake::ProcessUniqueId;
 use std::sync::Arc;
 use crate::wasm_engine::runtime::Runtime;
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn conductor_callback<S: Into<String>>(
     method: S,
     params: S,
@@ -50,7 +50,7 @@ fn conductor_callback<S: Into<String>>(
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_keystore_list(runtime: &mut Runtime, _: WasmString) -> Result<KeystoreListResult, HolochainError> {
     let context = runtime.context()?;
     let result = conductor_callback("agent/keystore/list", "{}", context.clone());
@@ -69,7 +69,7 @@ pub fn invoke_keystore_list(runtime: &mut Runtime, _: WasmString) -> Result<Keys
     Ok(KeystoreListResult { ids: string_list })
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_keystore_new_random(runtime: &mut Runtime, args_str: WasmString) -> Result<(), HolochainError> {
     let context = runtime.context()?;
     let result = conductor_callback(
@@ -91,7 +91,7 @@ pub fn invoke_keystore_new_random(runtime: &mut Runtime, args_str: WasmString) -
     Ok(())
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_keystore_derive_seed(runtime: &mut Runtime, args_str: WasmString) -> Result<(), HolochainError> {
     let context = runtime.context()?;
     let result = conductor_callback(
@@ -114,7 +114,7 @@ pub fn invoke_keystore_derive_seed(runtime: &mut Runtime, args_str: WasmString) 
     Ok(())
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_keystore_derive_key(runtime: &mut Runtime, args_str: WasmString) -> Result<JsonString, HolochainError> {
     let context = runtime.context()?;
     let result = conductor_callback(
@@ -151,7 +151,7 @@ pub fn invoke_keystore_derive_key(runtime: &mut Runtime, args_str: WasmString) -
     Ok(JsonString::from_json(&string))
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_keystore_sign(runtime: &mut Runtime, args_str: WasmString) -> Result<JsonString, HolochainError> {
     let context = runtime.context()?;
     let result = conductor_callback("agent/keystore/sign", &args_str.to_string(), context.clone());
@@ -182,7 +182,7 @@ pub fn invoke_keystore_sign(runtime: &mut Runtime, args_str: WasmString) -> Resu
     Ok(JsonString::from_json(&string))
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_keystore_get_public_key(
     runtime: &mut Runtime,
     args_str: WasmString,

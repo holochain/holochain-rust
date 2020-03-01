@@ -3,7 +3,7 @@ use crate::{
     context::Context,
     instance::dispatch_action,
     network::direct_message::{CustomDirectMessage, DirectMessage},
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::{error::HolochainError, time::Timeout};
@@ -16,7 +16,7 @@ use std::{pin::Pin, sync::Arc, time::SystemTime};
 /// This triggers the network module to open a synchronous node-to-node connection
 /// by sending the given CustomDirectMessage and preparing to receive a response.
 #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn custom_send(
     to_agent: Address,
     custom_direct_message: CustomDirectMessage,
@@ -51,7 +51,7 @@ pub struct SendResponseFuture {
     id: String,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Future for SendResponseFuture {
     type Output = Result<String, HolochainError>;
 

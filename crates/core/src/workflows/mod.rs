@@ -117,8 +117,8 @@ pub(crate) async fn try_make_local_validation_package(
             if overlapping_provenance.is_some() {
                 // We authored this entry, so lets build the validation package here and now:
                 build_validation_package(
+                    Arc::clone(&context),
                     &entry_with_header.entry,
-                    context,
                     entry_with_header.header.provenances(),
                 )
             } else {
@@ -139,7 +139,7 @@ async fn validation_package(
     // 0. Call into the DNA to get the validation package definition for this entry
     // e.g. what data is needed to validate it (chain, entry, headers, etc)
     let entry = &entry_with_header.entry;
-    let validation_package_definition = get_validation_package_definition(entry, context.clone())
+    let validation_package_definition = get_validation_package_definition(Arc::clone(&context), entry)
         .and_then(|callback_result| match callback_result {
         CallbackResult::Fail(error_string) => Err(HolochainError::ErrorGeneric(error_string)),
         CallbackResult::ValidationPackageDefinition(def) => Ok(def),
@@ -290,24 +290,24 @@ pub mod tests {
 /// Runs the given pending validation using the right holding workflow
 /// as specified by PendingValidationStruct::workflow.
 pub async fn run_holding_workflow(
-    pending: PendingValidation,
     context: Arc<Context>,
+    pending: PendingValidation,
 ) -> Result<(), HolochainError> {
     match pending.workflow {
         ValidatingWorkflow::HoldLink => {
-            hold_link_workflow(&pending.entry_with_header, context.clone()).await
+            hold_link_workflow(Arc::clone(&context), &pending.entry_with_header).await
         }
         ValidatingWorkflow::HoldEntry => {
-            hold_entry_workflow(&pending.entry_with_header, context.clone()).await
+            hold_entry_workflow(Arc::clone(&context), &pending.entry_with_header).await
         }
         ValidatingWorkflow::RemoveLink => {
-            remove_link_workflow(&pending.entry_with_header, context.clone()).await
+            remove_link_workflow(Arc::clone(&context), &pending.entry_with_header).await
         }
         ValidatingWorkflow::UpdateEntry => {
-            hold_update_workflow(&pending.entry_with_header, context.clone()).await
+            hold_update_workflow(Arc::clone(&context), &pending.entry_with_header).await
         }
         ValidatingWorkflow::RemoveEntry => {
-            hold_remove_workflow(&pending.entry_with_header, context.clone()).await
+            hold_remove_workflow(Arc::clone(&context), &pending.entry_with_header).await
         }
     }
 }

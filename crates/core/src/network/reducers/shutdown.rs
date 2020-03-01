@@ -2,7 +2,7 @@ use crate::{
     action::{Action, ActionWrapper},
     network::state::NetworkState,
     state::State,
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 
 use holochain_net::connection::net_connection::NetSend;
@@ -12,7 +12,7 @@ use log::error;
 use std::{thread::sleep, time::Duration};
 
 #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_shutdown(
     state: &mut NetworkState,
     _root_state: &State,

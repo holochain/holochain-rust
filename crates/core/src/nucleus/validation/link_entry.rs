@@ -5,7 +5,7 @@ use crate::{
         CallbackFnCall,
     },
     workflows::callback::links_utils,
-    NEW_RELIC_LICENSE_KEY,
+
 };
 use holochain_core_types::{
     entry::Entry,
@@ -18,11 +18,11 @@ use holochain_persistence_api::cas::content::AddressableContent;
 use holochain_wasm_types::validation::{LinkDirection, LinkValidationArgs};
 use std::sync::Arc;
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn validate_link_entry(
+    context: Arc<Context>,
     entry: Entry,
     validation_data: ValidationData,
-    context: &Arc<Context>,
 ) -> ValidationResult {
     let address = entry.address();
     let link = match entry.clone() {
@@ -35,7 +35,7 @@ pub async fn validate_link_entry(
         }
     };
     let link = link.link().clone();
-    let (base, target) = match links_utils::get_link_entries(&link, context) {
+    let (base, target) = match links_utils::get_link_entries(Arc::clone(&context), &link) {
         Ok(v) => v,
         Err(_) => {
             return ValidationResult::UnresolvedDependencies(
@@ -44,7 +44,7 @@ pub async fn validate_link_entry(
         },
     };
 
-    let link_definition_path = match links_utils::find_link_definition_by_type(link.link_type(), context) {
+    let link_definition_path = match links_utils::find_link_definition_by_type(Arc::clone(&context), link.link_type()) {
         Ok(v) => v,
         Err(_) => return ValidationResult::NotImplemented,
     };
@@ -124,5 +124,5 @@ pub async fn validate_link_entry(
         params,
     );
 
-    run_validation_callback(address, call, context).await
+    run_validation_callback(Arc::clone(&context), address, call).await
 }

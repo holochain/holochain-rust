@@ -1,5 +1,5 @@
 use crate::{
-    action::Action, context::Context, entry::CanPublish, nucleus::ZomeFnCall, NEW_RELIC_LICENSE_KEY,
+    action::Action, context::Context, entry::CanPublish, nucleus::ZomeFnCall, 
 };
 use holochain_core_types::{
     entry::Entry, link::link_data::LinkData, network::entry_aspect::EntryAspect,
@@ -97,7 +97,7 @@ pub struct ConsistencyModel {
     context: Arc<Context>,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl ConsistencyModel {
     pub fn new(context: Arc<Context>) -> Self {
         Self {

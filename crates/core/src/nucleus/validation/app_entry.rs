@@ -7,7 +7,7 @@ use crate::{
         validation::{entry_to_validation_data},
         CallbackFnCall,
     },
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 use holochain_core_types::{
     entry::{entry_type::AppEntryType, Entry},
@@ -19,11 +19,11 @@ use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use holochain_wasm_types::validation::EntryValidationArgs;
 use std::sync::Arc;
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn validate_app_entry(
+    context: Arc<Context>,
     entry: Entry,
     app_entry_type: AppEntryType,
-    context: &Arc<Context>,
     link: Option<Address>,
     validation_data: ValidationData,
 ) -> ValidationResult {
@@ -48,5 +48,5 @@ pub async fn validate_app_entry(
     };
     let call = CallbackFnCall::new(&zome_name, "__hdk_validate_app_entry", params);
 
-    run_validation_callback(entry.address(), call, &context).await
+    run_validation_callback(Arc::clone(&context), entry.address(), call).await
 }

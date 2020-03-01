@@ -1,4 +1,3 @@
-use crate::{NEW_RELIC_LICENSE_KEY};
 use holochain_json_api::json::*;
 use holochain_wasm_types::crypto::CryptoArgs;
 use holochain_core_types::error::HcResult;
@@ -9,7 +8,7 @@ use crate::wasm_engine::runtime::Runtime;
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected argument: u64
 /// Returns an HcApiReturnCode as I64
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_crypto(runtime: &mut Runtime, crypto_args: CryptoArgs) -> HcResult<JsonString> {
     let context = runtime.context().map_err(|e| WasmError::Zome(e.to_string()))?;
     let message = context

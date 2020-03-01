@@ -1,7 +1,7 @@
 use crate::{
     context::Context,
     nucleus::{CallbackFnCall, ZomeFnCall},
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 use holochain_json_api::json::JsonString;
 use holochain_core_types::error::HolochainError;
@@ -14,6 +14,9 @@ use holochain_wasm_types::ZomeApiResult;
 use std::convert::TryInto;
 use crate::workflows::get_links_count::get_link_result_count_workflow;
 use crate::workflows::commit::commit_app_entry_workflow;
+use crate::workflows::get_entry_result::get_entry_result_workflow;
+use crate::workflows::update_entry::update_entry_workflow;
+use crate::workflows::remove_entry::remove_entry_workflow;
 
 #[derive(Clone)]
 pub struct ZomeCallData {
@@ -48,7 +51,7 @@ impl fmt::Display for BadCallError {
 
 // impl HostError for BadCallError {}
 
-// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl WasmCallData {
     pub fn new_zome_call(context: Arc<Context>, call: ZomeFnCall) -> Self {
         WasmCallData::ZomeCall(ZomeCallData { context, call })
@@ -105,8 +108,20 @@ impl WasmCallData {
 
         let wasm_imports = imports! {
                 "env" => {
+                    /// send debug information to the log
+                    /// debug(s: String)
                     "hc_debug" => func!(invoke_workflow!("debug_workflow", "WasmString", debug_workflow)),
+
+                    /// Commit an app entry to source chain
+                    /// commit_entry(entry_type: String, entry_value: String) -> Address
                     "hc_commit_entry" => func!(invoke_workflow!("commit_app_entry_workflow", "CommitEntryArgs", commit_app_entry_workflow)),
+
+                    /// Get an app entry from source chain by key (header hash)
+                    /// get_entry(address: Address) -> Entry
+                    "hc_get_entry" => func!(invoke_workflow!("get_entry_result_workflow", "GetEntryArgs", get_entry_result_workflow)),
+                    "hc_update_entry" => func!(invoke_workflow!("update_entry_workflow", "UpdateEntryArgs", update_entry_workflow)),
+                    "hc_remove_entry" => func!(invoke_workflow!("remove_entry_workflow", "Address", remove_entry_workflow)),
+
                     "hc_get_links_count" => func!(invoke_workflow!("get_link_result_count_workflow", "GetLinksArgs", get_link_result_count_workflow)),
                 },
             };
@@ -177,7 +192,7 @@ pub struct Runtime {
     pub data: WasmCallData,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Runtime {
     pub fn zome_call_data(&self) -> Result<ZomeCallData, RuntimeError> {
         match &self.data {

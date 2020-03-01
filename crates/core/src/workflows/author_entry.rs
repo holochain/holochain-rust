@@ -6,7 +6,7 @@ use crate::{
     nucleus::{
         actions::build_validation_package::build_validation_package, validation::validate_entry,
     },
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 use holochain_core_types::{
     entry::Entry,
@@ -22,7 +22,7 @@ use holochain_wasm_types::commit_entry::CommitEntryResult;
 use crate::workflows::callback::links_utils::get_link_entries;
 use std::{sync::Arc, vec::Vec};
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn author_entry<'a>(
     entry: &'a Entry,
     maybe_link_update_delete: Option<Address>,
@@ -39,14 +39,14 @@ pub async fn author_entry<'a>(
 
     // 0. If we are trying to author a link or link removal, make sure the linked entries exist:
     if let Entry::LinkAdd(link_data) = entry {
-        get_link_entries(&link_data.link, context)?;
+        get_link_entries(Arc::clone(&context), &link_data.link)?;
     }
     if let Entry::LinkRemove((link_data, _)) = entry {
-        get_link_entries(&link_data.link, context)?;
+        get_link_entries(Arc::clone(&context), &link_data.link)?;
     }
 
     // 1. Build the context needed for validation of the entry
-    let validation_package = build_validation_package(&entry, context.clone(), provenances)?;
+    let validation_package = build_validation_package(Arc::clone(&context), &entry, provenances)?;
     let validation_data = ValidationData {
         package: validation_package,
         lifecycle: EntryLifecycle::Chain,
@@ -59,10 +59,10 @@ pub async fn author_entry<'a>(
         address
     );
     match validate_entry(
+        Arc::clone(&context),
         entry.clone(),
         maybe_link_update_delete.clone(),
         validation_data,
-        &context,
     )
     .await {
         ValidationResult::Ok => (),

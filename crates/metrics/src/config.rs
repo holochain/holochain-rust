@@ -1,6 +1,6 @@
 use crate::{
-    cloudwatch::CloudWatchLogger, logger::LoggerMetricPublisher, MetricPublisher,
-    NEW_RELIC_LICENSE_KEY,
+    cloudwatch::CloudWatchLogger, logger::LoggerMetricPublisher, MetricPublisher, NEW_RELIC_LICENSE_KEY,
+
 };
 use holochain_locksmith::RwLock;
 use std::sync::Arc;

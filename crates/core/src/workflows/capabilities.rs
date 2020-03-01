@@ -1,4 +1,4 @@
-use crate::{agent::actions::commit::commit_entry, NEW_RELIC_LICENSE_KEY};
+use crate::{agent::actions::commit::commit_entry};
 use holochain_core_types::{
     entry::{
         cap_entries::{CapTokenClaim, CapTokenGrant},
@@ -12,7 +12,7 @@ use holochain_wasm_types::capabilities::{
     CommitCapabilityClaimArgs, CommitCapabilityGrantArgs,
 };
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_commit_capability_grant(
     runtime: &mut Runtime,
     args: CommitCapabilityGrantArgs,
@@ -27,7 +27,7 @@ pub fn invoke_commit_capability_grant(
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_commit_capability_claim(
     runtime: &mut Runtime,
     args: CommitCapabilityClaimArgs,

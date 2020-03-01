@@ -1,4 +1,3 @@
-use crate::{NEW_RELIC_LICENSE_KEY};
 use holochain_core_types::{error::HcResult, signature::Signature};
 use holochain_dpki::keypair::generate_random_sign_keypair;
 use holochain_wasm_types::sign::{OneTimeSignArgs, SignOneTimeResult};
@@ -9,13 +8,13 @@ use crate::wasm_engine::runtime::Runtime;
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected argument: u64
 /// Returns an HcApiReturnCode as I64
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_sign_one_time(_: &mut Runtime, sign_args: OneTimeSignArgs) -> HcResult<SignOneTimeResult> {
     sign_one_time(sign_args.payloads)
 }
 
 /// creates a one-time private key and sign data returning the signature and the public key
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn sign_one_time(payloads: Vec<String>) -> HcResult<SignOneTimeResult> {
     let mut sign_keys = generate_random_sign_keypair()?;
     let mut signatures = Vec::new();

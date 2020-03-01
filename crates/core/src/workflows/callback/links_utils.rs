@@ -1,5 +1,5 @@
 use crate::{
-    context::Context, workflows::get_entry_result::get_entry_result_workflow, NEW_RELIC_LICENSE_KEY,
+    context::Context, workflows::get_entry_result::get_entry_result_workflow,
 };
 use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
@@ -11,31 +11,32 @@ use std::sync::Arc;
 
 /// Retrieves the base and target entries of the link and returns both.
 #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// @TODO fix this swallowing line numbers
+// // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn get_link_entries(
+    context: Arc<Context>,
     link: &Link,
-    context: &Arc<Context>,
 ) -> Result<(Entry, Entry), HolochainError> {
     let base_address = link.base();
     let target_address = link.target();
-    let entry_args = &GetEntryArgs {
+    let entry_args = GetEntryArgs {
         address: base_address.clone(),
         options: Default::default(),
     };
     let base_entry_get_result =
-        context.block_on(get_entry_result_workflow(&context, entry_args))?;
+        context.block_on(get_entry_result_workflow(Arc::clone(&context), entry_args))?;
     if !base_entry_get_result.found() {
         return Err(HolochainError::ErrorGeneric(String::from(
             "Base for link not found",
         )));
     }
     let base_entry = base_entry_get_result.latest().unwrap();
-    let entry_args = &GetEntryArgs {
+    let entry_args = GetEntryArgs {
         address: target_address.clone(),
         options: Default::default(),
     };
     let target_entry_get_result =
-        context.block_on(get_entry_result_workflow(&context, entry_args))?;
+        context.block_on(get_entry_result_workflow(Arc::clone(&context), entry_args))?;
     if !target_entry_get_result.found() {
         return Err(HolochainError::ErrorGeneric(String::from(
             "Target for link not found",
@@ -66,10 +67,10 @@ pub struct LinkDefinitionPath {
 /// zomes, entry types and their links and returns the first match.
 ///
 /// Returns a LinkDefinitionPath to uniquely reference the link definition in the DNA.
-// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn find_link_definition_by_type(
+    context: Arc<Context>,
     link_type: &String,
-    context: &Arc<Context>,
 ) -> Result<LinkDefinitionPath, HolochainError> {
     let dna = context.get_dna().expect("No DNA found?!");
     for (zome_name, zome) in dna.zomes.iter() {

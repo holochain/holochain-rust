@@ -2,7 +2,7 @@ use crate::{
     action::{Action, ActionWrapper},
     network::state::NetworkState,
     state::State,
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 use holochain_net::{
     connection::net_connection::NetSend, p2p_config::BackendConfig, p2p_network::P2pNetwork,
@@ -12,7 +12,7 @@ use lib3h_protocol::{data_types::SpaceData, protocol_client::Lib3hClientProtocol
 use log::{debug, error, info};
 
 #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_init(state: &mut NetworkState, root_state: &State, action_wrapper: &ActionWrapper) {
     let action = action_wrapper.action();
     let network_settings = unwrap_to!(action => Action::InitNetwork);

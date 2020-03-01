@@ -5,7 +5,7 @@ use crate::{
     network::direct_message::{CustomDirectMessage, DirectMessage},
     workflows::callback::receive::receive,
     wasm_engine::callback::{CallbackParams, CallbackResult},
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 
 use holochain_core_types::error::HolochainError;
@@ -16,7 +16,7 @@ use std::sync::Arc;
 /// handles receiving a message from an api send call
 /// call the receive call back, and sends the result back to the
 /// source of the send message which is in the from_agent_id param
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn handle_custom_direct_message(
     from_agent_id: Address,
     msg_id: String,

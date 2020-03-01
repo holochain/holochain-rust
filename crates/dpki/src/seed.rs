@@ -2,7 +2,7 @@ use crate::{
     key_bundle::KeyBundle,
     password_encryption::*,
     utils::{generate_derived_seed_buf, SeedContext},
-    AGENT_ID_CTX, NEW_RELIC_LICENSE_KEY, SEED_SIZE,
+    AGENT_ID_CTX,  SEED_SIZE, NEW_RELIC_LICENSE_KEY,
 };
 use bip39::{Language, Mnemonic, MnemonicType};
 use holochain_core_types::error::{HcResult, HolochainError};

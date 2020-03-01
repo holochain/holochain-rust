@@ -145,7 +145,7 @@ pub mod tests {
                 ..Default::default()
             },
         };
-        let result = context1.block_on(get_entry_result_workflow(&context1, &args));
+        let result = context1.block_on(get_entry_result_workflow(Arc::clone(&context1), &args));
         if let GetEntryResultType::Single(item) = result.unwrap().result {
             let headers = item.headers;
             assert_eq!(headers, vec![header1, header2]);

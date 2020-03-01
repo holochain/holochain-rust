@@ -1,6 +1,6 @@
 use crate::{
     context::Context, workflows::get_entry_result::get_entry_with_meta_workflow,
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
@@ -33,12 +33,12 @@ mod remove_entry;
 ///
 /// All of this actually happens in the functions of the sub modules. This function is the
 /// main validation entry point and, like a workflow, stays high-level.
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn validate_entry(
+    context: Arc<Context>,
     entry: Entry,
     link: Option<Address>,
     validation_data: ValidationData,
-    context: &Arc<Context>,
 ) -> ValidationResult {
     log_debug!(context, "workflow/validate_entry: {:?}", entry);
     //check_entry_type(entry.entry_type(), context)?;
@@ -53,9 +53,9 @@ pub async fn validate_entry(
 
                         EntryType::App(app_entry_type) => {
                             app_entry::validate_app_entry(
+                                Arc::clone(&context),
                                 entry.clone(),
                                 app_entry_type.clone(),
-                                context,
                                 link,
                                 validation_data,
                             )
@@ -63,24 +63,24 @@ pub async fn validate_entry(
                         }
 
                         EntryType::LinkAdd => {
-                            link_entry::validate_link_entry(entry.clone(), validation_data, context).await
+                            link_entry::validate_link_entry(Arc::clone(&context), entry.clone(), validation_data).await
                         }
 
                         EntryType::LinkRemove => {
-                            link_entry::validate_link_entry(entry.clone(), validation_data, context).await
+                            link_entry::validate_link_entry(Arc::clone(&context), entry.clone(), validation_data).await
                         }
 
                         // Deletion entries are not validated currently and always valid
                         // TODO: Specify how Deletion can be commited to chain.
                         EntryType::Deletion => {
-                            remove_entry::validate_remove_entry(entry.clone(), validation_data, context).await
+                            remove_entry::validate_remove_entry(Arc::clone(&context), entry.clone(), validation_data).await
                         }
 
                         // a grant should always be private, so it should always pass
                         EntryType::CapTokenGrant => ValidationResult::Ok,
 
                         EntryType::AgentId => {
-                            agent_entry::validate_agent_entry(entry.clone(), validation_data, context).await
+                            agent_entry::validate_agent_entry(Arc::clone(&context), entry.clone(), validation_data).await
                         }
 
                         // chain headers always pass for now. In future this should check that the entry is valid
@@ -97,7 +97,7 @@ pub async fn validate_entry(
 
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn entry_to_validation_data(
     context: Arc<Context>,
     entry: &Entry,
@@ -154,7 +154,7 @@ pub fn entry_to_validation_data(
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn get_entry_with_header(
     context: Arc<Context>,
     address: &Address,

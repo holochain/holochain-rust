@@ -7,7 +7,7 @@ use crate::{
         },
     },
     workflows::author_entry::author_entry,
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 use holochain_core_types::{
     entry::Entry,
@@ -26,7 +26,7 @@ use crate::wasm_engine::runtime::Runtime;
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: GetLinksArgs
 /// Returns an HcApiReturnCode as I64
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_remove_link(
     runtime: &mut Runtime,
     input: LinkEntriesArgs,

@@ -4,13 +4,13 @@ use crate::{
         actions::query::{query, QueryMethod},
         query::{GetLinksNetworkQuery, GetLinksNetworkResult, NetworkQueryResult},
     },
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 use holochain_core_types::error::HolochainError;
 use holochain_wasm_types::get_links::{GetLinksArgs, GetLinksResultCount};
 use std::sync::Arc;
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn get_link_result_count_workflow(
     context: Arc<Context>,
     link_args: GetLinksArgs,

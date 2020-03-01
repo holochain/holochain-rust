@@ -10,7 +10,7 @@ use crate::{
     key_loaders::test_keystore,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
     port_utils::{try_with_port, INTERFACE_CONNECT_ATTEMPTS_MAX},
-    Holochain, NEW_RELIC_LICENSE_KEY,
+    Holochain,
 };
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_common::paths::DNA_EXTENSION;
@@ -53,6 +53,7 @@ use crate::{
     signal_wrapper::SignalWrapper,
     static_file_server::ConductorStaticFileServer,
     static_server_impls::NickelStaticServer as StaticServer,
+    NEW_RELIC_LICENSE_KEY,
 };
 use boolinator::Boolinator;
 use holochain_core::context::InstanceStats;

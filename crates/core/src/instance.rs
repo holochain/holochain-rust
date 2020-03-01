@@ -12,7 +12,7 @@ use crate::{
     signal::Signal,
     state::{State, StateWrapper},
     workflows::{application, run_holding_workflow},
-    NEW_RELIC_LICENSE_KEY,
+    // 
 };
 #[cfg(test)]
 use crate::{
@@ -66,7 +66,8 @@ pub struct Observer {
 pub static DISPATCH_WITHOUT_CHANNELS: &str = "dispatch called without channels open";
 
 #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// @TODO fix swallowed line numbers
+// // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Instance {
     /// This is initializing and starting the redux action loop and adding channels to dispatch
     /// actions and observers to the context
@@ -331,15 +332,15 @@ impl Instance {
                             // NB: If for whatever reason we pop_next_holding_workflow anywhere else other than here,
                             // we can run into a race condition.
                             context.block_on(remove_queued_holding_workflow(
-                                pending.clone(),
-                                context.clone(),
+                                Arc::clone(&context),
+                                Arc::clone(&pending),
                             ));
 
-                            let c = context.clone();
-                            let pending = pending.clone();
+                            let closure_context = Arc::clone(&context);
+                            let closure_pending = Arc::clone(&pending);
 
                             let closure = async move || {
-                                match run_holding_workflow(pending.clone(), c.clone()).await {
+                                match run_holding_workflow(Arc::clone(&closure_context), Arc::clone(&closure_pending)).await {
                                     // If we couldn't run the validation due to unresolved dependencies,
                                     // we have to re-add this entry at the end of the queue:
                                     Err(HolochainError::ValidationPending) => {
@@ -358,19 +359,19 @@ impl Instance {
                                         }
 
                                         queue_holding_workflow(
-                                            Arc::new(pending.same()),
+                                            Arc::clone(&closure_context),
+                                            Arc::new(closure_pending.same()),
                                             Some(delay),
-                                            c.clone(),
                                         )
                                         .await
                                     }
                                     Err(e) => log_error!(
-                                        c,
+                                        closure_context,
                                         "Error running holding workflow for {:?}: {:?}",
                                         pending,
                                         e,
                                     ),
-                                    Ok(()) => log_info!(c, "Successfully processed: {:?}", pending),
+                                    Ok(()) => log_info!(closure_context, "Successfully processed: {:?}", pending),
                                 }
                             };
                             let future = closure();

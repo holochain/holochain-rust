@@ -5,7 +5,7 @@ use crate::{
     network::handler::{
         get_content_aspect, get_meta_aspects_from_chain, get_meta_aspects_from_dht_eav,
     },
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 use holochain_core_types::network::entry_aspect::EntryAspect;
 use lib3h_protocol::data_types::FetchEntryData;
@@ -14,7 +14,7 @@ use std::{collections::HashSet, sync::Arc};
 /// The network has requested a DHT entry from us.
 /// Lets try to get it and trigger a response.
 #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
     let address = get_dht_data.entry_address.clone();
     let mut aspects: HashSet<EntryAspect> = HashSet::new();

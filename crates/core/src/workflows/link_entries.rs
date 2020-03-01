@@ -1,4 +1,4 @@
-use crate::{workflows::author_entry::author_entry, NEW_RELIC_LICENSE_KEY};
+use crate::{workflows::author_entry::author_entry};
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
@@ -12,7 +12,7 @@ use crate::wasm_engine::runtime::Runtime;
 /// ZomeApiFunction::LinkEntries function code
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: LinkEntriesArgs
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_link_entries(
     runtime: &mut Runtime,
     input: LinkEntriesArgs,

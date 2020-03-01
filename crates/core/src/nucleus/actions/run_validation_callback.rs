@@ -4,7 +4,7 @@ use crate::{
         CallbackFnCall,
     },
     wasm_engine::{runtime::WasmCallData},
-    // NEW_RELIC_LICENSE_KEY,
+    // 
 };
 use holochain_core_types::validation::ValidationResult;
 use holochain_persistence_api::cas::content::Address;
@@ -19,11 +19,11 @@ use holochain_metrics::with_latency_publishing;
 /// Returns a future that waits for the result to appear in the nucleus state.
 #[no_autotrace] // TODO: get autotrace working for this future
 // TODO: uncommenting this causes line numbers to disappear in this file for compiler errors
-// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn run_validation_callback(
+    context: Arc<Context>,
     _address: Address,
     call: CallbackFnCall,
-    context: &Arc<Context>,
 ) -> ValidationResult {
     let metric_name_prefix = format!(
         "run_validation_callback.{}.{}",

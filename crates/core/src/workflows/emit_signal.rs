@@ -1,6 +1,6 @@
 use crate::{
     signal::{Signal, UserSignal},
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 use holochain_core_types::error::HolochainError;
 use holochain_wasm_types::emit_signal::EmitSignalArgs;
@@ -10,7 +10,7 @@ use crate::wasm_engine::runtime::Runtime;
 /// args: [0] encoded MemoryAllocation as u64
 /// Expecting a string as complex input argument
 /// Returns an HcApiReturnCode as I64
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_emit_signal(runtime: &mut Runtime, input: EmitSignalArgs) -> Result<(), HolochainError> {
     let context = runtime.context()?;
     if let Some(sender) = context.signal_tx() {

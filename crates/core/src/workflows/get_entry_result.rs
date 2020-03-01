@@ -1,7 +1,7 @@
 use crate::{
     context::Context,
     network::{self, actions::query::QueryMethod, query::NetworkQueryResult},
-    nucleus, NEW_RELIC_LICENSE_KEY,
+    nucleus, 
 };
 use holochain_core_types::{chain_header::ChainHeader, time::Timeout};
 
@@ -12,11 +12,10 @@ use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_types::get_entry::{
     GetEntryArgs, GetEntryResult, StatusRequestKind,
 };
-use crate::wasm_engine::runtime::Runtime;
 use std::sync::Arc;
 
 /// Get Entry workflow
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn get_entry_with_meta_workflow<'a>(
     context: &'a Arc<Context>,
     address: &'a Address,
@@ -69,10 +68,10 @@ pub async fn get_entry_with_meta_workflow<'a>(
 }
 
 /// Get GetEntryResult workflow
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub async fn get_entry_result_workflow<'a>(
-    context: &'a Arc<Context>,
-    args: &'a GetEntryArgs,
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+pub async fn get_entry_result_workflow(
+    context: Arc<Context>,
+    args: GetEntryArgs,
 ) -> Result<GetEntryResult, HolochainError> {
     // Setup
     let mut entry_result = GetEntryResult::new(args.options.status_request.clone(), None);
@@ -84,7 +83,7 @@ pub async fn get_entry_result_workflow<'a>(
         maybe_address = None;
         // Try to get entry
         let maybe_entry_with_meta_and_headers =
-            get_entry_with_meta_workflow(context, &address, &args.options.timeout).await?;
+            get_entry_with_meta_workflow(&context, &address, &args.options.timeout).await?;
 
         // Entry found
         if let Some(entry_with_meta_and_headers) = maybe_entry_with_meta_and_headers {
@@ -127,11 +126,6 @@ pub async fn get_entry_result_workflow<'a>(
     }
 
     Ok(entry_result)
-}
-
-pub fn invoke_get_entry(runtime: &mut Runtime, args: GetEntryArgs) -> Result<GetEntryResult, HolochainError> {
-    let context = runtime.context()?;
-    context.block_on(get_entry_result_workflow(&context, &args))
 }
 
 //#[cfg(test)]

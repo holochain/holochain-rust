@@ -1,6 +1,6 @@
 use crate::{
     wasm_engine::{Runtime},
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 use holochain_core_types::{
     self,
@@ -13,7 +13,7 @@ use holochain_persistence_api::cas::content::AddressableContent;
 use holochain_wasmer_host::*;
 use std::str::FromStr;
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, HolochainError> {
     let entry_type = EntryType::from_str(&entry_type_name.to_string())
         .map_err(|_| WasmError::UnknownEntryType)?;

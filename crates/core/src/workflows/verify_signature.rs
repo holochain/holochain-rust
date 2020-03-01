@@ -1,4 +1,3 @@
-use crate::{ NEW_RELIC_LICENSE_KEY};
 use holochain_core_types::error::HcResult;
 use holochain_dpki::utils::Verify;
 use holochain_wasm_types::verify_signature::VerifySignatureArgs;
@@ -8,7 +7,7 @@ use crate::wasm_engine::runtime::Runtime;
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected argument: u64
 /// Returns an HcApiReturnCode as I64
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_verify_signature(
     runtime: &mut Runtime,
     verification_args: VerifySignatureArgs,

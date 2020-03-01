@@ -1,11 +1,9 @@
-use crate::{
-    NEW_RELIC_LICENSE_KEY,
-};
+
 use holochain_core_types::validation::{ValidationResult};
 use holochain_core_types::validation::ValidationData;
 use holochain_dpki::utils::Verify;
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn validate_provenances(validation_data: &ValidationData) -> ValidationResult {
     let header = &validation_data.package.chain_header;
     match header

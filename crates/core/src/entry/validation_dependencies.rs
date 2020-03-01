@@ -1,4 +1,4 @@
-use crate::{network::entry_with_header::EntryWithHeader, NEW_RELIC_LICENSE_KEY};
+use crate::{network::entry_with_header::EntryWithHeader};
 use holochain_core_types::entry::Entry;
 use holochain_persistence_api::cas::content::Address;
 
@@ -6,7 +6,7 @@ pub trait ValidationDependencies {
     fn get_validation_dependencies(&self) -> Vec<Address>;
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl ValidationDependencies for EntryWithHeader {
     fn get_validation_dependencies(&self) -> Vec<Address> {
         match &self.entry {

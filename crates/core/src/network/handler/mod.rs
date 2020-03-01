@@ -1,6 +1,6 @@
 use crate::{
     agent::state::create_entry_with_header_for_header, content_store::GetContent,
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 use holochain_logging::prelude::*;
 #[autotrace]
@@ -131,7 +131,7 @@ fn handle_failure_result(
 /// Creates the network handler.
 /// The returned closure is called by the network thread for every network event that core
 /// has to handle.
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
     let context = c.clone();
     NetHandler::new(Box::new(move |message| {
@@ -303,7 +303,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
 /// NB: this can be optimized by starting with a CAS lookup for the entry directly,
 /// to avoid traversing the chain unnecessarily in the case of a miss
 /// (https://github.com/holochain/holochain-rust/pull/1727#discussion_r330258624)
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn get_content_aspect(
     entry_address: &Address,
     context: Arc<Context>,
@@ -394,7 +394,7 @@ fn get_content_aspect(
 /// base address to which it is meta, if the entry is the source entry of a meta aspect,
 /// i.e. a CRUD or link entry.
 /// If the entry is not that it returns None.
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn entry_to_meta_aspect(entry: Entry, header: ChainHeader) -> Option<(Address, EntryAspect)> {
     match entry {
         Entry::App(app_type, app_value) => header.link_update_delete().map(|updated_entry| {
@@ -419,7 +419,7 @@ fn entry_to_meta_aspect(entry: Entry, header: ChainHeader) -> Option<(Address, E
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn get_meta_aspects_from_chain(
     entry_address: &Address,
     context: Arc<Context>,
@@ -454,7 +454,7 @@ fn get_meta_aspects_from_chain(
         .collect::<Vec<EntryAspect>>())
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn get_meta_aspects_from_dht_eav(
     entry_address: &Address,
     context: Arc<Context>,

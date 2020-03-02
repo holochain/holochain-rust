@@ -18,6 +18,7 @@ use crate::workflows::get_entry_result::get_entry_result_workflow;
 use crate::workflows::update_entry::update_entry_workflow;
 use crate::workflows::remove_entry::remove_entry_workflow;
 use crate::workflows::init_globals::init_globals_workflow;
+use crate::workflows::get_link_result::get_link_result_workflow;
 
 #[derive(Clone)]
 pub struct ZomeCallData {
@@ -162,38 +163,104 @@ impl WasmCallData {
         }
 
         let wasm_imports = imports! {
-                "env" => {
-                    /// send debug information to the log
-                    /// debug(s: String)
-                    "hc_debug" => func!(invoke_workflow!("debug_workflow", "WasmString", debug_workflow)),
+            "env" => {
+                // send debug information to the log
+                // debug(s: String)
+                "hc_debug" => func!(invoke_workflow!("debug_workflow", "WasmString", debug_workflow)),
 
-                    /// Commit an app entry to source chain
-                    /// commit_entry(entry_type: String, entry_value: String) -> Address
-                    "hc_commit_entry" => func!(invoke_workflow!("commit_app_entry_workflow", "CommitEntryArgs", commit_app_entry_workflow)),
+                // Commit an app entry to source chain
+                // commit_entry(entry_type: String, entry_value: String) -> Address
+                "hc_commit_entry" => func!(invoke_workflow!("commit_app_entry_workflow", "CommitEntryArgs", commit_app_entry_workflow)),
 
-                    /// Get an app entry from source chain by key (header hash)
-                    /// get_entry(address: Address) -> Entry
-                    "hc_get_entry" => func!(invoke_workflow!("get_entry_result_workflow", "GetEntryArgs", get_entry_result_workflow)),
-                    "hc_update_entry" => func!(invoke_workflow!("update_entry_workflow", "UpdateEntryArgs", update_entry_workflow)),
-                    "hc_remove_entry" => func!(invoke_workflow!("remove_entry_workflow", "Address", remove_entry_workflow)),
+                // Get an app entry from source chain by key (header hash)
+                // get_entry(address: Address) -> Entry
+                "hc_get_entry" => func!(invoke_workflow!("get_entry_result_workflow", "GetEntryArgs", get_entry_result_workflow)),
+                "hc_update_entry" => func!(invoke_workflow!("update_entry_workflow", "UpdateEntryArgs", update_entry_workflow)),
+                "hc_remove_entry" => func!(invoke_workflow!("remove_entry_workflow", "Address", remove_entry_workflow)),
 
-                    /// Init Zome API Globals
-                    /// hc_init_globals() -> InitGlobalsOutput
-                    // there is no input from the guest for input_globals_workflow
-                    // instead it needs direct access to the call data
-                    "hc_init_global" => func!({
-                        let closure_arc = std::sync::Arc::clone(&arc);
-                        move || -> ZomeApiResult {
-                            let context = Arc::clone(&closure_arc.context().map_err(|_| WasmError::Unspecified )?);
-                            let args = Arc::clone(&closure_arc);
-                            invoke_workflow_trace!(context, "init_globals_workflow", "WasmCallData", args);
-                            invoke_workflow_block_and_allocate!(init_globals_workflow, context, args)
-                        }
-                    }),
+                // Init Zome API Globals
+                // hc_init_globals() -> InitGlobalsOutput
+                // there is no input from the guest for input_globals_workflow
+                // instead it needs direct access to the call data
+                "hc_init_global" => func!({
+                    let closure_arc = std::sync::Arc::clone(&arc);
+                    move || -> ZomeApiResult {
+                        let context = Arc::clone(&closure_arc.context().map_err(|_| WasmError::Unspecified )?);
+                        let args = Arc::clone(&closure_arc);
+                        invoke_workflow_trace!(context, "init_globals_workflow", "WasmCallData", args);
+                        invoke_workflow_block_and_allocate!(init_globals_workflow, context, args)
+                    }
+                }),
 
-                    "hc_get_links_count" => func!(invoke_workflow!("get_link_result_count_workflow", "GetLinksArgs", get_link_result_count_workflow)),
-                },
-            };
+                // Call a zome function in a different zome or dna via a bridge
+                // hc_call(zome_name: String, cap_token: Address, fn_name: String, args: String);
+                // "hc_call", Call, invoke_call;
+
+                // Create a link entry
+                // "hc_link_entries", LinkEntries, invoke_link_entries;
+
+                /// Retrieve links from the DHT
+                // "hc_get_links", GetLinks, invoke_get_links;
+                "hc_get_links" => func!(invoke_workflow!("get_link_result_workflow", "GetLinksArgs", get_link_result_workflow)),
+
+                //Retrieve link count from DHT
+                "hc_get_links_count" => func!(invoke_workflow!("get_link_result_count_workflow", "GetLinksArgs", get_link_result_count_workflow)),
+
+                // Query the local chain for entries
+                // "hc_query", Query, invoke_query;
+
+                // Pass an entry to retrieve its address
+                // the address algorithm is specific to the entry, typically sha256 but can differ
+                // entry_address(entry: Entry) -> Address
+                // "hc_entry_address", EntryAddress, invoke_entry_address;
+
+                // Send a message directly to another node
+                // "hc_send", Send, invoke_send;
+
+                // Allow a specified amount of time to pass
+                // "hc_sleep", Sleep, invoke_sleep;
+
+                // Commit link deletion entry
+                // "hc_remove_link", RemoveLink, invoke_remove_link;
+                //execute cryptographic function
+                // "hc_crypto",Crypto,invoke_crypto;
+                // Sign a block of data with a one-time key that is then shredded
+                // "hc_sign_one_time", SignOneTime, invoke_sign_one_time;
+
+                // Verify that a block of data was signed by a given public key
+                // "hc_verify_signature", VerifySignature, invoke_verify_signature;
+
+                // Retrieve a list of identifiers of the secrets in the keystore
+                // "hc_keystore_list", KeystoreList, invoke_keystore_list;
+
+                // Create a new random seed Secret in the keystore
+                // "hc_keystore_new_random", KeystoreNewRandom, invoke_keystore_new_random;
+
+                // Derive a new seed from an existing seed in the keystore
+                // "hc_keystore_derive_seed", KeystoreDeriveSeed, invoke_keystore_derive_seed;
+
+                // Create a new key (signing or encrypting) as derived from an existing seed in the keystore
+                // "hc_keystore_derive_key", KeystoreDeriveKey, invoke_keystore_derive_key;
+
+                // Sign a block of data using a key in the keystore
+                // "hc_keystore_sign", KeystoreSign, invoke_keystore_sign;
+
+                // Get the public key for a given secret
+                // "hc_keystore_get_public_key", KeystoreGetPublicKey, invoke_keystore_get_public_key;
+
+                // Commit a capability grant to the source chain
+                // "hc_commit_capability_grant", CommitCapabilityGrant, invoke_commit_capability_grant;
+
+                // Commit a capability grant to the source chain
+                // "hc_commit_capability_claim", CommitCapabilityClaim, invoke_commit_capability_claim;
+
+                // Send a DNA defined signal to UIs and other listeners
+                // "hc_emit_signal", EmitSignal, invoke_emit_signal;
+
+                // send a meta
+                // "hc_meta",Meta,invoke_meta;
+            },
+        };
 
         let new_instance = |wasm: &Vec<u8>| {
             Ok(instantiate(wasm, &wasm_imports).map_err(|e| HolochainError::from(e.to_string()))?)

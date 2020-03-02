@@ -7,19 +7,18 @@ use crate::{
             NetworkQueryResult,
         },
     },
-    
+
 };
 use holochain_core_types::error::HolochainError;
 use holochain_wasm_types::get_links::{
     GetLinksArgs, GetLinksResult, LinksResult,
 };
 use std::sync::Arc;
-use crate::wasm_engine::runtime::Runtime;
 
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub async fn get_link_result_workflow<'a>(
-    context: &'a Arc<Context>,
-    link_args: &'a GetLinksArgs,
+pub async fn get_link_result_workflow(
+    context: Arc<Context>,
+    link_args: GetLinksArgs,
 ) -> Result<GetLinksResult, HolochainError> {
     let config = GetLinksQueryConfiguration {
         headers: link_args.options.headers,
@@ -54,9 +53,4 @@ pub async fn get_link_result_workflow<'a>(
             "Could not get links".to_string(),
         )),
     }
-}
-
-pub fn invoke_get_links(runtime: &mut Runtime, link_args: GetLinksArgs) -> Result<GetLinksResult, HolochainError> {
-    let context = runtime.context()?;
-    context.block_on(get_link_result_workflow(&context, &link_args))
 }

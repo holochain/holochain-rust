@@ -41,18 +41,13 @@ pub fn reduce_init(state: &mut NetworkState, root_state: &State, action_wrapper:
     if let Some(sim2h_url) = maybe_sim2h_url_override {
         // ..and we're configured to use sim2h...
         if let BackendConfig::Sim2h(sim2h_config) = &mut p2p_config.backend_config {
-            if (std::env::var("HC_IGNORE_SIM2H_URL_PROPERTY").is_err()) {
-                info!(
-                    "Found property 'sim2h_url' in DNA {} - overriding conductor wide sim2h URL with: {}",
-                    dna.address(),
-                    sim2h_url,
-                );
-                // ..override the conductor wide setting.
-                sim2h_config.sim2h_url = sim2h_url;
-            } else {
-                debug!(
-                    "DNA has 'sim2h_url' override property set, but it's ignored because HC_INGORE_SIM@H_RUL_PROPERTY is set");
-            }
+            info!(
+                "Found property 'sim2h_url' in DNA {} - overriding conductor wide sim2h URL with: {}",
+                dna.address(),
+                sim2h_url,
+            );
+            // ..override the conductor wide setting.
+            sim2h_config.sim2h_url = sim2h_url;
         } else {
             debug!("DNA has 'sim2h_url' override property set, but it's ignored as we are not running a sim2h network backend");
         }

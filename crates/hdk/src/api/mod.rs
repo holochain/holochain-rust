@@ -1,17 +1,15 @@
 //! developers! Detailed references and examples can be found here for how to use the
 //! HDK exposed functions to access powerful Holochain functions.
-use crate::error::{ZomeApiError, ZomeApiResult};
 use bitflags::bitflags;
 use holochain_json_api::json::{default_to_json, JsonString, RawString};
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use lazy_static::lazy_static;
 
-use holochain_core_types::{dna::capabilities::CapabilityRequest, error::ZomeApiInternalResult};
+use holochain_core_types::{dna::capabilities::CapabilityRequest};
 pub use holochain_wasm_types::validation::*;
 use holochain_wasm_types::ZomeApiGlobals;
 
 use crate::init_globals::init_globals;
-use std::convert::{TryFrom, TryInto};
 
 mod bundle;
 mod call;
@@ -66,171 +64,39 @@ pub use self::{
     update_remove::{remove_entry, update_agent, update_entry},
     version::{version, version_hash},
 };
-use holochain_wasmer_guest::{allocation, json, *};
-
-macro_rules! def_api_fns {
-    (
-        $(
-            $function_name:ident, $enum_variant:ident ;
-        )*
-    ) => {
-
-        pub enum Dispatch {
-            $( $enum_variant ),*
-        }
-
-        impl Dispatch {
-
-            pub fn without_input<O: TryFrom<JsonString> + Into<JsonString>>(
-                &self,
-            ) -> ZomeApiResult<O> {
-                self.with_input(JsonString::empty_object())
-            }
-
-            pub fn with_input<I: TryInto<JsonString>, O: TryFrom<JsonString>>(
-                &self,
-                input: I,
-            ) -> ZomeApiResult<O> {
-                println!("dispatch!");
-                let json: JsonString = input.try_into().map_err(|_| ZomeApiError::Internal("failed to create JSON".into()))?;
-                let guest_allocation_ptr: AllocationPtr = json::to_allocation_ptr(json);
-
-                // Call Ribosome's function
-                let host_allocation_ptr: AllocationPtr = unsafe {
-                    (match self {
-                        $(Dispatch::$enum_variant => $function_name),*
-                    })(guest_allocation_ptr)
-                };
-
-                // deallocate the input to the already-dispatched call
-                allocation::deallocate_from_allocation_ptr(guest_allocation_ptr);
-
-                // this is very similar to args! but produces a result rather than returning
-                // immediately with a pointer
-                let result: ZomeApiInternalResult = match json::from_allocation_ptr(
-                            map_bytes(host_allocation_ptr),
-                        )
-                        .try_into()
-                        {
-                            Ok(v) => v,
-                            Err(e) => {
-                                ZomeApiInternalResult::failure(e)
-                            }
-                        };
-
-                // deallocate the host allocation for the json we (hopefully) just parsed
-                allocation::deallocate_from_allocation_ptr(host_allocation_ptr);
-
-                // Done
-                if result.ok {
-                    JsonString::from_json(&result.value)
-                        .try_into()
-                        .map_err(|_| ZomeApiError::from(format!("Failed to deserialize return value: {}", result.value)))
-                } else {
-                    Err(ZomeApiError::from(result.error))
-                }
-            }
-        }
-
-        // Invokable functions in the Ribosome
-        // WARNING Names must be in sync with ZomeAPIFunction in holochain-rust
-        // WARNING All these fns need to be defined in wasms too @see the hdk integration_test.rs
-        #[allow(dead_code)]
-        extern "C" {
-            pub(crate) fn hc_property(_: AllocationPtr) -> AllocationPtr;
-            pub(crate) fn hc_start_bundle(_: AllocationPtr) -> AllocationPtr;
-            pub(crate) fn hc_close_bundle(_: AllocationPtr) -> AllocationPtr;
-            $( pub(crate) fn $function_name (_: AllocationPtr) -> AllocationPtr; ) *
-        }
-
-        /// Add stubs for all core API functions when compiled in test mode.
-        /// This makes it possible to actually build test executable from zome projects to run unit tests
-        /// on zome functions (though: without being able to actually test integration with core - that is
-        /// what we need holochain-nodejs for).
-        ///
-        /// Without these stubs we would have unresolved references since the API functions are
-        /// provided by the Ribosome runtime.
-        ///
-        /// Attention:
-        /// We need to make sure to only add these function stubs when compiling tests
-        /// BUT NOT when building to a WASM binary to be run in a Holochain instance.
-        /// Hence the `#[cfg(test)]` which is really important!
-        #[cfg(test)]
-        mod tests {
-            use $crate::prelude::*;
-
-            $( #[no_mangle]
-                 pub fn $function_name(_: AllocationPtr) -> AllocationPtr {
-                     $crate::holochain_wasmer_guest::ret!(());
-                 }) *
-        }
-
-    };
-
-}
-
-def_api_fns! {
-    hc_init_globals, InitGlobals;
-    hc_commit_entry, CommitEntry;
-    hc_get_entry, GetEntry;
-    hc_entry_address, EntryAddress;
-    hc_query, Query;
-    hc_update_entry, UpdateEntry;
-    hc_remove_entry, RemoveEntry;
-    hc_send, Send;
-    // hc_debug, Debug;
-    hc_call, Call;
-    hc_crypto,Crypto;
-    hc_sign_one_time, SignOneTime;
-    hc_verify_signature, VerifySignature;
-    hc_link_entries, LinkEntries;
-    hc_remove_link, RemoveLink;
-    hc_get_links, GetLinks;
-    hc_get_links_count,GetLinksCount;
-    hc_sleep, Sleep;
-    hc_meta,Meta;
-    hc_keystore_list, KeystoreList;
-    hc_keystore_new_random, KeystoreNewRandom;
-    hc_keystore_derive_seed, KeystoreDeriveSeed;
-    hc_keystore_derive_key, KeystoreDeriveKey;
-    hc_keystore_sign, KeystoreSign;
-    hc_keystore_get_public_key, KeystoreGetPublicKey;
-    hc_commit_capability_grant, CommitCapabilityGrant;
-    hc_commit_capability_claim, CommitCapabilityClaim;
-    hc_emit_signal, EmitSignal;
-}
+use holochain_wasmer_guest::*;
 
 holochain_wasmer_guest::memory_externs!();
 
 holochain_wasmer_guest::host_externs!(
-    hc_debug
-    // hc_commit_entry,
-    // hc_get_entry,
-    // hc_update_entry,
-    // hc_remove_entry,
-    // hc_init_globals,
-    // hc_call,
-    // hc_link_entries,
-    // hc_get_links,
-    // hc_get_links_count,
-    // hc_query,
-    // hc_entry_address,
-    // hc_send,
-    // hc_sleep,
-    // hc_remove_link,
-    // hc_crypto,
-    // hc_sign_one_time,
-    // hc_verify_signature,
-    // hc_keystore_list,
-    // hc_keystore_new_random,
-    // hc_keystore_derive_seed,
-    // hc_keystore_derive_key,
-    // hc_keystore_sign,
-    // hc_keystore_get_public_key,
-    // hc_commit_capability_grant,
-    // hc_commit_capability_claim,
-    // hc_emit_signal,
-    // hc_meta
+    hc_debug,
+    hc_commit_entry,
+    hc_get_entry,
+    hc_update_entry,
+    hc_remove_entry,
+    hc_init_globals,
+    hc_call,
+    hc_link_entries,
+    hc_get_links,
+    hc_get_links_count,
+    hc_query,
+    hc_entry_address,
+    hc_send,
+    hc_sleep,
+    hc_remove_link,
+    hc_crypto,
+    hc_sign_one_time,
+    hc_verify_signature,
+    hc_keystore_list,
+    hc_keystore_new_random,
+    hc_keystore_derive_seed,
+    hc_keystore_derive_key,
+    hc_keystore_sign,
+    hc_keystore_get_public_key,
+    hc_commit_capability_grant,
+    hc_commit_capability_claim,
+    hc_emit_signal,
+    hc_meta
 );
 
 //--------------------------------------------------------------------------------------------------

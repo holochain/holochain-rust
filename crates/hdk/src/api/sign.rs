@@ -5,8 +5,10 @@ use holochain_wasm_types::{
     sign::{OneTimeSignArgs, SignOneTimeResult},
     verify_signature::VerifySignatureArgs,
 };
-
-use super::Dispatch;
+use holochain_wasmer_guest::host_call;
+use crate::api::hc_verify_signature;
+use crate::api::hc_sign_one_time;
+use crate::api::hc_crypto;
 
 /// Signs a string payload using the agent's private key.
 /// Returns the signature as a string.
@@ -32,10 +34,10 @@ use super::Dispatch;
 /// # }
 /// ```
 pub fn sign<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
-    Dispatch::Crypto.with_input(CryptoArgs {
+    host_call!(hc_crypto, CryptoArgs {
         payload: payload.into(),
         method: CryptoMethod::Sign,
-    })
+    })?
 }
 
 /// Signs a vector of payloads with a private key that is generated and shredded.
@@ -67,9 +69,9 @@ pub fn sign_one_time<S: Into<String>>(payloads: Vec<S>) -> ZomeApiResult<SignOne
     for p in payloads {
         converted_payloads.push(p.into());
     }
-    Dispatch::SignOneTime.with_input(OneTimeSignArgs {
+    host_call!(hc_sign_one_time, OneTimeSignArgs {
         payloads: converted_payloads,
-    })
+    })?
 }
 
 /// Verifies a provenance (public key, signature) against a payload
@@ -98,8 +100,8 @@ pub fn verify_signature<S: Into<String>>(
     provenance: Provenance,
     payload: S,
 ) -> ZomeApiResult<bool> {
-    Dispatch::VerifySignature.with_input(VerifySignatureArgs {
+    host_call!(hc_verify_signature, VerifySignatureArgs {
         provenance,
         payload: payload.into(),
-    })
+    })?
 }

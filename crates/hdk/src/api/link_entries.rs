@@ -1,6 +1,8 @@
-use crate::{error::ZomeApiError, Dispatch};
+use crate::{error::ZomeApiError};
 use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_types::link_entries::LinkEntriesArgs;
+use holochain_wasmer_guest::host_call;
+use crate::api::hc_link_entries;
 
 /// Adds a named, tagged, directed link between two entries on the DHT.
 /// Consumes four values, two of which are the addresses of entries, and two of which are strings used to describe the link.
@@ -76,10 +78,10 @@ pub fn link_entries<S: Into<String>>(
     link_type: S,
     tag: S,
 ) -> Result<Address, ZomeApiError> {
-    Dispatch::LinkEntries.with_input(LinkEntriesArgs {
+    host_call!(hc_link_entries, LinkEntriesArgs {
         base: base.clone(),
         target: target.clone(),
         link_type: link_type.into(),
         tag: tag.into(),
-    })
+    })?
 }

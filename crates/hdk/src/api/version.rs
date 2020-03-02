@@ -1,8 +1,9 @@
 use crate::{
     error::{ZomeApiError, ZomeApiResult},
-    Dispatch,
 };
 use holochain_wasm_types::meta::{MetaArgs, MetaMethod, MetaResult};
+use holochain_wasmer_guest::host_call;
+use crate::api::hc_meta;
 
 /// Returns the current `version` of the HDK as "semver" value (eg. "1.2.3-alpha4"), or
 /// `version_hash`, a 32-byte MD5 of the holochain-rust source, dependencies and build environment,
@@ -10,7 +11,7 @@ use holochain_wasm_types::meta::{MetaArgs, MetaMethod, MetaResult};
 /// `out` or `HDK_HASH` environment variable is not supplied during build), a hash consisting of all
 /// "0" is returned.
 pub fn version() -> ZomeApiResult<String> {
-    let meta = Dispatch::Meta.with_input(MetaArgs {
+    let meta = host_call!(hc_meta, MetaArgs {
         method: MetaMethod::Version,
     })?;
     let version = match meta {
@@ -23,7 +24,7 @@ pub fn version() -> ZomeApiResult<String> {
 }
 
 pub fn version_hash() -> ZomeApiResult<String> {
-    let meta = Dispatch::Meta.with_input(MetaArgs {
+    let meta = host_call!(hc_meta, MetaArgs {
         method: MetaMethod::Hash,
     })?;
     let hash = match meta {

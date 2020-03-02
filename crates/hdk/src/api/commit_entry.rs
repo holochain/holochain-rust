@@ -1,9 +1,11 @@
-use crate::{error::ZomeApiResult, Dispatch};
+use crate::{error::ZomeApiResult};
 use holochain_core_types::entry::Entry;
 use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_types::commit_entry::{
     CommitEntryArgs, CommitEntryOptions, CommitEntryResult,
 };
+use holochain_wasmer_guest::host_call;
+use crate::api::hc_commit_entry;
 
 /// Attempts to commit an entry to the local source chain. The entry
 /// will also be checked against the defined validation rules for that entry type.
@@ -69,8 +71,8 @@ pub fn commit_entry_result(
     entry: &Entry,
     options: CommitEntryOptions,
 ) -> ZomeApiResult<CommitEntryResult> {
-    Dispatch::CommitEntry.with_input(CommitEntryArgs {
+    host_call!(hc_commit_entry, CommitEntryArgs {
         entry: entry.clone(),
         options,
-    })
+    })?
 }

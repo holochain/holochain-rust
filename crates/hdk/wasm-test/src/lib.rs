@@ -825,23 +825,21 @@ define_zome! {
     ]
 
     init: || {{
-        // hdk::debug("fooo init").ok();
 
+        // should be able to commit an entry
+        let entry = Entry::App(
+            "testEntryType".into(),
+            EntryStruct {
+                stuff: "called from init".into(),
+            }
+            .into(),
+        );
+        let _addr = match hdk::commit_entry(&entry) {
+            Ok(v) => v,
+            Err(e) => return CallbackResult::Fail(e.into()),
+        };
         CallbackResult::Pass
 
-//         // should be able to commit an entry
-//         let entry = Entry::App(
-//             "testEntryType".into(),
-//             EntryStruct {
-//                 stuff: "called from init".into(),
-//             }
-//             .into(),
-//         );
-//         let addr = match hdk::commit_entry(&entry) {
-//             Ok(v) => v,
-//             Err(e) => return CallbackResult::Fail(e.into()),
-//         };
-//
 //         // should be able to get the entry
 //         let get_result = match hdk::get_entry(&addr){
 //             Ok(Some(result)) => result,

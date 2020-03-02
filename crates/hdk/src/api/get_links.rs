@@ -1,7 +1,6 @@
 use crate::{
     api::get_entry::get_entry_result,
     error::{ZomeApiError, ZomeApiResult},
-    Dispatch,
 };
 use holochain_core_types::{entry::Entry, link::LinkMatch};
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
@@ -9,6 +8,9 @@ use holochain_wasm_types::{
     get_entry::{GetEntryOptions, GetEntryResult, GetEntryResultItem, GetEntryResultType},
     get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult, GetLinksResultCount},
 };
+use holochain_wasmer_guest::host_call;
+use crate::api::hc_get_links_count;
+use crate::api::hc_get_links;
 
 /// Consumes four values; the address of an entry get get links from (the base), the type of the links
 /// to be retrieved, an optional tag to match, and an options struct for selecting what meta data and crud status links to retrieve.
@@ -47,12 +49,12 @@ pub fn get_links_with_options(
     let type_re = link_type.to_regex_string()?;
     let tag_re = tag.to_regex_string()?;
 
-    Dispatch::GetLinks.with_input(GetLinksArgs {
+    host_call!(hc_get_links, GetLinksArgs {
         entry_address: base.clone(),
         link_type: type_re,
         tag: tag_re,
         options,
-    })
+    })?
 }
 
 /// Similar to the get_links_with_options but it allows the user to get the number of links in the dht
@@ -83,12 +85,12 @@ pub fn get_links_count_with_options(
 ) -> ZomeApiResult<GetLinksResultCount> {
     let type_re = link_type.to_regex_string()?;
     let tag_re = tag.to_regex_string()?;
-    Dispatch::GetLinksCount.with_input(GetLinksArgs {
+    host_call!(hc_get_links_count, GetLinksArgs {
         entry_address: base.clone(),
         link_type: type_re,
         tag: tag_re,
         options,
-    })
+    })?
 }
 
 pub fn get_links_count(
@@ -152,7 +154,6 @@ pub fn get_links_and_load(
     link_type: LinkMatch<&str>,
     tag: LinkMatch<&str>,
 ) -> ZomeApiResult<Vec<ZomeApiResult<Entry>>> {
-    println!("get_links_and_load");
     let get_links_result = get_links_result(
         base,
         link_type,

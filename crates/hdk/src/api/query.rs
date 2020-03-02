@@ -1,11 +1,12 @@
 use crate::{
     error::{ZomeApiError, ZomeApiResult},
-    Dispatch,
 };
 use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_types::{
     QueryArgs, QueryArgsNames, QueryArgsOptions, QueryResult,
 };
+use holochain_wasmer_guest::host_call;
+use crate::api::hc_query;
 
 /// Returns a list of entries from your local source chain that match a given entry type name or names.
 ///
@@ -94,8 +95,8 @@ pub fn query_result(
     entry_type_names: QueryArgsNames,
     options: QueryArgsOptions,
 ) -> ZomeApiResult<QueryResult> {
-    Dispatch::Query.with_input(QueryArgs {
+    host_call!(hc_query, QueryArgs {
         entry_type_names,
         options,
-    })
+    })?
 }

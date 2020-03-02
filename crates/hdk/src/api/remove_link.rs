@@ -1,6 +1,8 @@
-use crate::{error::ZomeApiError, Dispatch};
+use crate::{error::ZomeApiError};
 use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_types::link_entries::LinkEntriesArgs;
+use holochain_wasmer_guest::host_call;
+use crate::api::hc_remove_link;
 
 /// Commits a LinkRemove entry to your local source chain that marks a link as 'deleted' by setting
 /// its status metadata to `Deleted` which gets published to the DHT.
@@ -64,10 +66,10 @@ pub fn remove_link<S: Into<String>>(
     link_type: S,
     tag: S,
 ) -> Result<(), ZomeApiError> {
-    Dispatch::RemoveLink.with_input(LinkEntriesArgs {
+    host_call!(hc_remove_link, LinkEntriesArgs {
         base: base.clone(),
         target: target.clone(),
         link_type: link_type.into(),
         tag: tag.into(),
-    })
+    })?
 }

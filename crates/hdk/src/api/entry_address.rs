@@ -1,7 +1,9 @@
-use super::Dispatch;
 use crate::error::ZomeApiResult;
 use holochain_core_types::entry::Entry;
 use holochain_persistence_api::cas::content::Address;
+use holochain_wasmer_guest::host_call;
+use crate::api::hc_entry_address;
+
 /// Reconstructs an address of the given entry data.
 /// This is the same value that would be returned if `entry_type_name` and `entry_value` were passed
 /// to the [commit_entry](fn.commit_entry.html) function and by which it would be retrievable from the DHT using [get_entry](fn.get_entry.html).
@@ -45,5 +47,5 @@ use holochain_persistence_api::cas::content::Address;
 /// # }
 /// ```
 pub fn entry_address(entry: &Entry) -> ZomeApiResult<Address> {
-    Dispatch::EntryAddress.with_input(entry)
+    host_call!(hc_entry_address, entry)?
 }

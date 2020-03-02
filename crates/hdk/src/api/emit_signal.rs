@@ -1,6 +1,8 @@
-use crate::{error::ZomeApiResult, Dispatch};
+use crate::{error::ZomeApiResult};
 use holochain_json_api::json::JsonString;
 use holochain_wasm_types::emit_signal::EmitSignalArgs;
+use holochain_wasmer_guest::host_call;
+use crate::api::hc_emit_signal;
 
 /// Emits a signal that listeners can receive.
 /// (Status: MVP)
@@ -50,11 +52,8 @@ pub fn emit_signal<S: Into<String>, J: Into<JsonString>>(
     name: S,
     arguments: J,
 ) -> ZomeApiResult<()> {
-    let _: ZomeApiResult<()> = Dispatch::EmitSignal.with_input(EmitSignalArgs {
+    host_call!(hc_emit_signal, EmitSignalArgs {
         name: name.into(),
         arguments: arguments.into(),
-    });
-    // internally returns RibosomeReturnValue::Success which is a zero length allocation
-    // return Ok(()) unconditionally instead of the "error" from success
-    Ok(())
+    })?
 }

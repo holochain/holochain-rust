@@ -1,6 +1,8 @@
-use crate::{error::ZomeApiResult, Dispatch};
-use holochain_json_api::json::JsonString;
+use crate::{error::ZomeApiResult};
 use std::time::Duration;
+use holochain_wasmer_guest::host_call;
+use crate::api::hc_sleep;
+
 /// Lets the DNA runtime sleep for the given duration.
 /// # Examples
 /// ```rust
@@ -20,8 +22,5 @@ use std::time::Duration;
 /// # }
 /// ```
 pub fn sleep(duration: Duration) -> ZomeApiResult<()> {
-    let _: ZomeApiResult<()> = Dispatch::Sleep.with_input(JsonString::from(duration.as_nanos()));
-    // internally returns RibosomeReturnValue::Success which is a zero length allocation
-    // return Ok(()) unconditionally instead of the "error" from success
-    Ok(())
+    host_call!(hc_sleep, duration.as_nanos())?
 }

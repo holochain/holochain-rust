@@ -1,6 +1,5 @@
 use crate::{
     error::{ZomeApiError, ZomeApiResult},
-    Dispatch,
 };
 use holochain_core_types::entry::Entry;
 use holochain_persistence_api::cas::content::Address;
@@ -8,6 +7,8 @@ use holochain_wasm_types::get_entry::{
     EntryHistory, GetEntryArgs, GetEntryOptions, GetEntryResult, GetEntryResultType,
     StatusRequestKind,
 };
+use holochain_wasmer_guest::host_call;
+use crate::api::hc_get_entry;
 
 /// Retrieves latest version of an entry from the local chain or the DHT, by looking it up using
 /// the specified address.
@@ -82,8 +83,8 @@ pub fn get_entry_result(
     address: &Address,
     options: GetEntryOptions,
 ) -> ZomeApiResult<GetEntryResult> {
-    Dispatch::GetEntry.with_input(GetEntryArgs {
+    host_call!(hc_get_entry, GetEntryArgs {
         address: address.clone(),
         options,
-    })
+    })?
 }

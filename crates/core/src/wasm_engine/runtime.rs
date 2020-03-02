@@ -170,7 +170,7 @@ impl WasmCallData {
                 let closure_arc = std::sync::Arc::clone(&arc);
                 move |ctx: &mut Ctx, guest_allocation_ptr: holochain_wasmer_host::AllocationPtr| -> ZomeApiResult {
                     let guest_bytes = holochain_wasmer_host::guest::read_from_allocation_ptr(ctx, guest_allocation_ptr)?;
-                    let guest_json = JsonString::from(guest_bytes);
+                    let guest_json = JsonString::from_bytes(guest_bytes);
                     let context = std::sync::Arc::clone(&closure_arc.context().map_err(|_| WasmError::Unspecified )?);
 
                     // in general we will have more luck tracing json than arbitrary structs

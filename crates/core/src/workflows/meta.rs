@@ -2,13 +2,14 @@ use holochain_core_types::{hdk_version::HDK_VERSION, HDK_HASH};
 use holochain_wasm_types::meta::{MetaArgs, MetaMethod, MetaResult};
 use std::sync::Arc;
 use crate::context::Context;
+use holochain_core_types::error::HolochainError;
 
 /// ZomeApiFunction::Meta function code
 /// args: [0] encoded MemoryAllocation as u64
 /// Expecting a string as complex input argument
 /// Returns an HcApiReturnCode as I64
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn meta_workflow(_: Arc<Context>, meta_args: MetaArgs) -> Result<MetaResult, ()> {
+pub async fn meta_workflow(_: Arc<Context>, meta_args: MetaArgs) -> Result<MetaResult, HolochainError> {
     Ok(match meta_args.method {
         MetaMethod::Version => MetaResult::Version(HDK_VERSION.to_string()),
         MetaMethod::Hash => MetaResult::Hash(HDK_HASH.to_string()),

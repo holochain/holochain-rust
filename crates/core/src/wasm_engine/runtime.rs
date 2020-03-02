@@ -19,6 +19,7 @@ use crate::workflows::update_entry::update_entry_workflow;
 use crate::workflows::remove_entry::remove_entry_workflow;
 use crate::workflows::init_globals::init_globals_workflow;
 use crate::workflows::get_link_result::get_link_result_workflow;
+use crate::workflows::meta::meta_workflow;
 
 #[derive(Clone)]
 pub struct ZomeCallData {
@@ -200,7 +201,6 @@ impl WasmCallData {
                 // "hc_link_entries", LinkEntries, invoke_link_entries;
 
                 /// Retrieve links from the DHT
-                // "hc_get_links", GetLinks, invoke_get_links;
                 "hc_get_links" => func!(invoke_workflow!("get_link_result_workflow", "GetLinksArgs", get_link_result_workflow)),
 
                 //Retrieve link count from DHT
@@ -259,6 +259,7 @@ impl WasmCallData {
 
                 // send a meta
                 // "hc_meta",Meta,invoke_meta;
+                "hc_meta" => func!(invoke_workflow!("meta_workflow", "MetaArgs", meta_workflow)),
             },
         };
 

@@ -1,4 +1,3 @@
-use crate::NEW_RELIC_LICENSE_KEY;
 use dns_lookup::lookup_host;
 use in_stream::*;
 use lib3h_crypto_api::CryptoSystem;

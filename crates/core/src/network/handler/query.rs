@@ -8,7 +8,6 @@ use crate::{
     },
     nucleus,
     workflows::get_entry_result::get_entry_result_workflow,
-    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     crud_status::CrudStatus,

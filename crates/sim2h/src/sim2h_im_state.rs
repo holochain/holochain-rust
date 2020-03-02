@@ -886,7 +886,12 @@ impl StoreHandle {
         .boxed()
     }
 
-    pub async fn spawn_new_connection(&self, space_hash: SpaceHash, agent_id: AgentId, uri: Lib3hUri) {
+    pub async fn spawn_new_connection(
+        &self,
+        space_hash: SpaceHash,
+        agent_id: AgentId,
+        uri: Lib3hUri,
+    ) {
         let f = self.new_connection(space_hash, agent_id, uri);
         //tokio::task::spawn(f.instrument(tracing::info!("join_space_future")))
         f.await

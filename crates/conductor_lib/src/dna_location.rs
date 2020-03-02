@@ -1,4 +1,3 @@
-use crate::NEW_RELIC_LICENSE_KEY;
 use holochain_core_types::error::HolochainError;
 use reqwest::{self, Url};
 use serde::{

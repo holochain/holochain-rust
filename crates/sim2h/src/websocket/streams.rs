@@ -1,12 +1,10 @@
-use crate::{
-    websocket::{
-        tls::TlsConfig, wss_info::WssInfo, BaseStream, SocketMap, TlsConnectResult,
-        TlsMidHandshake, TlsSrvMidHandshake, TlsStream, WsConnectResult, WsMidHandshake,
-        WsSrvAcceptResult, WsSrvMidHandshake, WsStream, WssConnectResult, WssMidHandshake,
-        WssSrvAcceptResult, WssSrvMidHandshake, WssStream,
-    },
-    NEW_RELIC_LICENSE_KEY,
+use crate::websocket::{
+    tls::TlsConfig, wss_info::WssInfo, BaseStream, SocketMap, TlsConnectResult, TlsMidHandshake,
+    TlsSrvMidHandshake, TlsStream, WsConnectResult, WsMidHandshake, WsSrvAcceptResult,
+    WsSrvMidHandshake, WsStream, WssConnectResult, WssMidHandshake, WssSrvAcceptResult,
+    WssSrvMidHandshake, WssStream,
 };
+use holochain_tracing_macros::newrelic_autotrace;
 use log::*;
 
 use lib3h::transport::error::{TransportError, TransportResult};
@@ -93,7 +91,7 @@ pub struct StreamManager<T: Read + Write + std::fmt::Debug> {
     acceptor: TransportResult<Acceptor<T>>,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+#[newrelic_autotrace(SIM2H)]
 impl<T: Read + Write + std::fmt::Debug> StreamManager<T> {
     pub fn new(stream_factory: StreamFactory<T>, bind: Bind<T>, tls_config: TlsConfig) -> Self {
         StreamManager {

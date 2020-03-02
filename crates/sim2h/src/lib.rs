@@ -13,10 +13,6 @@ extern crate num_cpus;
 extern crate serde;
 #[macro_use]
 extern crate lazy_static;
-extern crate holochain_tracing as ht;
-#[macro_use]
-extern crate holochain_tracing_macros;
-extern crate newrelic;
 
 #[macro_use]
 extern crate holochain_common;
@@ -59,6 +55,8 @@ use std::{
 
 use holochain_locksmith::Mutex;
 use holochain_metrics::{config::MetricPublisherConfig, Metric};
+use holochain_tracing as ht;
+use holochain_tracing_macros::{autotrace, newrelic_autotrace};
 use tracing_futures::Instrument;
 
 lazy_static! {
@@ -587,12 +585,13 @@ async fn spawn_handle_message_join_space(
         data.agent_id.clone(),
         uri,
         &WireMessage::Lib3hToClient(
-            span_wrap.swapped(Lib3hToClient::HandleGetAuthoringEntryList(GetListData {
-                request_id: "".into(),
-                space_address: data.space_address.clone(),
-                provider_agent_id: data.agent_id,
-            }))
-            .into(),
+            span_wrap
+                .swapped(Lib3hToClient::HandleGetAuthoringEntryList(GetListData {
+                    request_id: "".into(),
+                    space_address: data.space_address.clone(),
+                    provider_agent_id: data.agent_id,
+                }))
+                .into(),
         ),
     );
 }
@@ -1089,7 +1088,7 @@ pub struct Sim2h {
 }
 
 #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+#[newrelic_autotrace(SIM2H)]
 impl Sim2h {
     /// create a new Sim2h server instance
     pub fn new(

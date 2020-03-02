@@ -51,7 +51,7 @@ fn conductor_callback<S: Into<String>>(
 }
 
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub async fn keystore_list_workflow(context: Arc<Context>, _: ()) -> WorkflowResult<KeystoreListResult> {
+pub async fn keystore_list_workflow(context: Arc<Context>, _: &()) -> WorkflowResult<KeystoreListResult> {
     let result = conductor_callback("agent/keystore/list", "{}", Arc::clone(&context));
     let string_list: Vec<String> = match result {
         Ok(json_array) => serde_json::from_str(&json_array.to_string()).unwrap(),
@@ -69,7 +69,7 @@ pub async fn keystore_list_workflow(context: Arc<Context>, _: ()) -> WorkflowRes
 }
 
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub async fn keystore_new_random_workflow(context: Arc<Context>, args_str: WasmString) -> WorkflowResult<()> {
+pub async fn keystore_new_random_workflow(context: Arc<Context>, args_str: &WasmString) -> WorkflowResult<()> {
     let result = conductor_callback(
         "agent/keystore/add_random_seed",
         &args_str.to_string(),
@@ -90,7 +90,7 @@ pub async fn keystore_new_random_workflow(context: Arc<Context>, args_str: WasmS
 }
 
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub async fn keystore_derive_seed_workflow(context: Arc<Context>, args_str: WasmString) -> WorkflowResult<()> {
+pub async fn keystore_derive_seed_workflow(context: Arc<Context>, args_str: &WasmString) -> WorkflowResult<()> {
     let result = conductor_callback(
         "agent/keystore/add_seed_from_seed",
         &args_str.to_string(),
@@ -112,7 +112,7 @@ pub async fn keystore_derive_seed_workflow(context: Arc<Context>, args_str: Wasm
 }
 
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub async fn keystore_derive_key_workflow(context: Arc<Context>, args_str: WasmString) -> WorkflowResult<JsonString> {
+pub async fn keystore_derive_key_workflow(context: Arc<Context>, args_str: &WasmString) -> WorkflowResult<JsonString> {
     let result = conductor_callback(
         "agent/keystore/add_key_from_seed",
         &args_str.to_string(),
@@ -148,7 +148,7 @@ pub async fn keystore_derive_key_workflow(context: Arc<Context>, args_str: WasmS
 }
 
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub async fn keystore_sign_workflow(context: Arc<Context>, args_str: WasmString) -> WorkflowResult<JsonString> {
+pub async fn keystore_sign_workflow(context: Arc<Context>, args_str: &WasmString) -> WorkflowResult<JsonString> {
     let result = conductor_callback("agent/keystore/sign", &args_str.to_string(), Arc::clone(&context));
     let string: String = match result {
         Ok(json_string) => {
@@ -180,7 +180,7 @@ pub async fn keystore_sign_workflow(context: Arc<Context>, args_str: WasmString)
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn keystore_get_public_key_workflow(
     context: Arc<Context>,
-    args_str: WasmString,
+    args_str: &WasmString,
 ) -> Result<JsonString, HolochainError> {
     let result = conductor_callback(
         "agent/keystore/get_public_key",

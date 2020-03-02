@@ -5,7 +5,7 @@ use crate::{
     network::handler::{
         get_content_aspect, get_meta_aspects_from_chain, get_meta_aspects_from_dht_eav,
     },
-    
+
 };
 use holochain_core_types::network::entry_aspect::EntryAspect;
 use lib3h_protocol::data_types::FetchEntryData;
@@ -15,7 +15,7 @@ use std::{collections::HashSet, sync::Arc};
 /// Lets try to get it and trigger a response.
 #[autotrace]
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
+pub fn handle_fetch_entry(context: Arc<Context>, get_dht_data: FetchEntryData) {
     let address = get_dht_data.entry_address.clone();
     let mut aspects: HashSet<EntryAspect> = HashSet::new();
 
@@ -27,7 +27,7 @@ pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
             aspects.insert(content_aspect);
             for result in &[
                 get_meta_aspects_from_chain(&address, context.clone()),
-                get_meta_aspects_from_dht_eav(&address, context.clone()),
+                get_meta_aspects_from_dht_eav(Arc::clone(&context), &address),
             ] {
                 match result {
                     Ok(meta_aspects) => meta_aspects.into_iter().for_each(|a| {

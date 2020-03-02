@@ -8,7 +8,7 @@ use crate::workflows::InfallibleWorkflowResult;
 /// Expected argument: u64
 /// Returns an HcApiReturnCode as I64
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub async fn sleep_workflow(_: Arc<Context>, nanos: u64) -> InfallibleWorkflowResult {
-    thread::sleep(Duration::from_nanos(nanos));
+pub async fn sleep_workflow(_: Arc<Context>, nanos: &u64) -> InfallibleWorkflowResult {
+    thread::sleep(Duration::from_nanos(*nanos));
     Ok(())
 }

@@ -11,7 +11,7 @@ use crate::context::Context;
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn verify_signature_workflow(
     context: Arc<Context>,
-    verification_args: VerifySignatureArgs,
+    verification_args: &VerifySignatureArgs,
 ) -> WorkflowResult<bool> {
     log_debug!(
         context,

@@ -17,9 +17,9 @@ use crate::workflows::WorkflowResult;
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn commit_capability_grant_workflow(
     context: Arc<Context>,
-    args: CommitCapabilityGrantArgs,
+    args: &CommitCapabilityGrantArgs,
 ) -> WorkflowResult<Address> {
-    match CapTokenGrant::create(&args.id, args.cap_type, args.assignees, args.functions) {
+    match CapTokenGrant::create(&args.id, args.cap_type.clone(), args.assignees.clone(), args.functions.clone()) {
         Ok(grant) => commit_entry(Entry::CapTokenGrant(grant), None, &context).await,
         Err(err) => Err(HolochainError::ErrorGeneric(format!(
             "Unable to commit capability grant: {}",
@@ -31,9 +31,9 @@ pub async fn commit_capability_grant_workflow(
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn commit_capability_claim_workflow(
     context: Arc<Context>,
-    args: CommitCapabilityClaimArgs,
+    args: &CommitCapabilityClaimArgs,
 ) -> WorkflowResult<Address> {
-    let claim = CapTokenClaim::new(args.id, args.grantor, args.token);
+    let claim = CapTokenClaim::new(args.id.clone(), args.grantor.clone(), args.token.clone());
     commit_entry(Entry::CapTokenClaim(claim), None, &context).await
 }
 

@@ -16,7 +16,7 @@ use crate::wasm_engine::runtime::WasmCallData;
 /// Not expecting any complex input
 /// Returns an HcApiReturnCode as I64
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub async fn init_globals_workflow(context: Arc<Context>, call_data: Arc<WasmCallData>) -> Result<ZomeApiGlobals, HolochainError> {
+pub async fn init_globals_workflow(context: Arc<Context>, call_data: &Arc<WasmCallData>) -> Result<ZomeApiGlobals, HolochainError> {
     let dna = context
         .get_dna()
         .expect("No DNA found in invoke_init_globals");

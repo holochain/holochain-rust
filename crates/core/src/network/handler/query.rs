@@ -8,7 +8,7 @@ use crate::{
     },
     nucleus,
     workflows::get_entry_result::get_entry_result_workflow,
-    
+
 };
 use holochain_core_types::{
     crud_status::CrudStatus,
@@ -28,7 +28,7 @@ use std::{convert::TryInto, sync::Arc};
 pub type LinkTag = String;
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn get_links(
-    context: &Arc<Context>,
+    context: Arc<Context>,
     base: Address,
     link_type: String,
     tag: String,
@@ -77,8 +77,8 @@ fn get_links(
 
             context
                 .block_on(get_entry_result_workflow(
-                    context.clone(),
-                    link_add_entry_args,
+                    Arc::clone(&context),
+                    &link_add_entry_args,
                 ))
                 .map(|get_entry_result| match get_entry_result.result {
                     GetEntryResultType::Single(entry_with_meta_and_headers) => {
@@ -140,8 +140,8 @@ fn get_links(
 }
 
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAndHeader> {
-    nucleus::actions::get_entry::get_entry_with_meta(&context, address.clone())
+fn get_entry(context: Arc<Context>, address: Address) -> Option<EntryWithMetaAndHeader> {
+    nucleus::actions::get_entry::get_entry_with_meta(Arc::clone(&context), address.clone())
         .map(|entry_with_meta_opt| {
             let state = context
                 .state()
@@ -185,7 +185,7 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
     let action_wrapper = match query_json.clone().try_into() {
         Ok(NetworkQuery::GetLinks(link_type, tag, options, query)) => {
             match get_links(
-                &context,
+                Arc::clone(&context),
                 query_data.entry_address.clone().into(),
                 link_type.clone(),
                 tag.clone(),
@@ -214,7 +214,7 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
             }
         }
         Ok(NetworkQuery::GetEntry) => {
-            let maybe_entry = get_entry(&context, query_data.entry_address.clone().into());
+            let maybe_entry = get_entry(Arc::clone(&context), query_data.entry_address.clone().into());
             let respond_get = NetworkQueryResult::Entry(maybe_entry);
             ActionWrapper::new(Action::RespondQuery((query_data, respond_get)))
         }

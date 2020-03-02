@@ -1,7 +1,7 @@
 use crate::{
     context::Context,
     network::{self, actions::query::QueryMethod, query::NetworkQueryResult},
-    nucleus, 
+    nucleus,
 };
 use holochain_core_types::{chain_header::ChainHeader, time::Timeout};
 
@@ -13,17 +13,18 @@ use holochain_wasm_types::get_entry::{
     GetEntryArgs, GetEntryResult, StatusRequestKind,
 };
 use std::sync::Arc;
+use crate::workflows::WorkflowResult;
 
 /// Get Entry workflow
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub async fn get_entry_with_meta_workflow<'a>(
-    context: &'a Arc<Context>,
-    address: &'a Address,
-    timeout: &'a Timeout,
-) -> Result<Option<EntryWithMetaAndHeader>, HolochainError> {
+pub async fn get_entry_with_meta_workflow(
+    context: Arc<Context>,
+    address: &Address,
+    timeout: &Timeout,
+) -> WorkflowResult<Option<EntryWithMetaAndHeader>> {
     // 1. Try to get the entry locally (i.e. local DHT shard)
     let maybe_entry_with_meta =
-        nucleus::actions::get_entry::get_entry_with_meta(context, address.clone())?;
+        nucleus::actions::get_entry::get_entry_with_meta(Arc::clone(&context), address.clone())?;
     // 2. No result, so try on the network
     let method = QueryMethod::Entry(address.clone());
     if let None = maybe_entry_with_meta {
@@ -71,7 +72,7 @@ pub async fn get_entry_with_meta_workflow<'a>(
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn get_entry_result_workflow(
     context: Arc<Context>,
-    args: GetEntryArgs,
+    args: &GetEntryArgs,
 ) -> Result<GetEntryResult, HolochainError> {
     // Setup
     let mut entry_result = GetEntryResult::new(args.options.status_request.clone(), None);
@@ -83,7 +84,7 @@ pub async fn get_entry_result_workflow(
         maybe_address = None;
         // Try to get entry
         let maybe_entry_with_meta_and_headers =
-            get_entry_with_meta_workflow(&context, &address, &args.options.timeout).await?;
+            get_entry_with_meta_workflow(Arc::clone(&context), &address, &args.options.timeout).await?;
 
         // Entry found
         if let Some(entry_with_meta_and_headers) = maybe_entry_with_meta_and_headers {

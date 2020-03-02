@@ -7,7 +7,7 @@ use crate::{
         validation::{entry_to_validation_data},
         CallbackFnCall,
     },
-    
+
 };
 use holochain_core_types::validation::ValidationResult;
 use holochain_core_types::{entry::Entry, validation::ValidationData};
@@ -25,7 +25,7 @@ pub async fn validate_remove_entry(
     let deletion_entry = unwrap_to!(entry=>Entry::Deletion);
     let deletion_address = deletion_entry.deleted_entry_address().clone();
 
-    let entry_to_delete = match get_entry_from_dht(&context.clone(), &deletion_address) {
+    let entry_to_delete = match get_entry_from_dht(Arc::clone(&context), &deletion_address) {
         Err(_) => return ValidationResult::UnresolvedDependencies(vec![deletion_address.clone()]),
         Ok(None) => return ValidationResult::Fail("Could not obtain entry for link_update_delte".to_string()),
         Ok(Some(v)) => v,

@@ -9,7 +9,7 @@ use holochain_core_types::error::HolochainError;
 /// Expecting a string as complex input argument
 /// Returns an HcApiReturnCode as I64
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub async fn meta_workflow(_: Arc<Context>, meta_args: MetaArgs) -> Result<MetaResult, HolochainError> {
+pub async fn meta_workflow(_: Arc<Context>, meta_args: &MetaArgs) -> Result<MetaResult, HolochainError> {
     Ok(match meta_args.method {
         MetaMethod::Version => MetaResult::Version(HDK_VERSION.to_string()),
         MetaMethod::Hash => MetaResult::Hash(HDK_HASH.to_string()),

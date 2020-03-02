@@ -1,9 +1,9 @@
 use crate::{
     context::Context, dht::actions::hold_aspect::hold_aspect,
     network::entry_with_header::EntryWithHeader, nucleus::validation::validate_entry,
-    workflows::hold_entry::hold_entry_workflow, 
+    workflows::hold_entry::hold_entry_workflow,
 };
-
+use crate::workflows::WorkflowResult;
 use crate::{workflows::validation_package};
 use holochain_core_types::{
     entry::Entry,
@@ -17,7 +17,7 @@ use std::sync::Arc;
 pub async fn remove_link_workflow(
     context: Arc<Context>,
     entry_with_header: &EntryWithHeader,
-) -> Result<(), HolochainError> {
+) -> WorkflowResult<()> {
     let (link_data, links_to_remove) = match &entry_with_header.entry {
         Entry::LinkRemove(data) => data,
         _ => Err(HolochainError::ErrorGeneric(
@@ -32,7 +32,7 @@ pub async fn remove_link_workflow(
         context,
         "workflow/remove_link: getting validation package..."
     );
-    let maybe_validation_package = validation_package(&entry_with_header, context.clone())
+    let maybe_validation_package = validation_package(Arc::clone(&context), &entry_with_header)
         .await
         .map_err(|err| {
             let message = "Could not get validation package from source! -> Add to pending...";
@@ -85,7 +85,7 @@ pub async fn remove_link_workflow(
     log_debug!(context, "workflow/remove_link: added! {:?}", link);
 
     //4. store link_remove entry so we have all we need to respond to get links queries without any other network look-up```
-    hold_entry_workflow(Arc::clone(&context), &entry_with_header).await?;
+    hold_entry_workflow(Arc::clone(&context), entry_with_header).await?;
     log_debug!(
         context,
         "workflow/hold_entry: added! {:?}",

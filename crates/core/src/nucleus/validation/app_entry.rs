@@ -7,7 +7,7 @@ use crate::{
         validation::{entry_to_validation_data},
         CallbackFnCall,
     },
-    
+
 };
 use holochain_core_types::{
     entry::{entry_type::AppEntryType, Entry},
@@ -35,7 +35,7 @@ pub async fn validate_app_entry(
     };
 
     if let Some(expected_link_update) = link.clone() {
-        if let Err(_) = get_entry_from_dht(&context.clone(), &expected_link_update) {
+        if let Err(_) = get_entry_from_dht(Arc::clone(&context), &expected_link_update) {
             return ValidationResult::UnresolvedDependencies(vec![expected_link_update.clone()]);
         };
     };

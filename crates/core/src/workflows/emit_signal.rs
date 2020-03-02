@@ -12,9 +12,9 @@ use std::sync::Arc;
 /// Expecting a string as complex input argument
 /// Returns an HcApiReturnCode as I64
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub async fn emit_signal_workflow(context: Arc<Context>, input: EmitSignalArgs) -> Result<(), HolochainError> {
+pub async fn emit_signal_workflow(context: Arc<Context>, input: &EmitSignalArgs) -> Result<(), HolochainError> {
     if let Some(sender) = context.signal_tx() {
-        let signal = Signal::User(UserSignal::from(input));
+        let signal = Signal::User(UserSignal::from(input.to_owned()));
         let _ = sender.send(signal).map_err(|err| {
             log_error!(
                 context,

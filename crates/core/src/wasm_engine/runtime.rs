@@ -31,6 +31,9 @@ use crate::workflows::keystore::keystore_sign_workflow;
 use crate::workflows::keystore::keystore_derive_key_workflow;
 use crate::workflows::keystore::keystore_derive_seed_workflow;
 use crate::workflows::keystore::keystore_new_random_workflow;
+use crate::workflows::sign::sign_one_time_workflow;
+use crate::workflows::crypto::crypto_workflow;
+use crate::workflows::remove_link::remove_link_workflow;
 
 #[derive(Clone)]
 pub struct ZomeCallData {
@@ -151,7 +154,7 @@ impl WasmCallData {
             ( $workflow:ident, $context:ident, $args:ident ) => {{
                 Ok(holochain_wasmer_host::json::to_allocation_ptr(
                     $context.block_on(
-                        $workflow(std::sync::Arc::clone(&$context), $args)
+                        $workflow(std::sync::Arc::clone(&$context), &$args)
                     ).map_err(|e| WasmError::Zome(e.to_string()))?.into()
                 ))
             }}
@@ -232,10 +235,13 @@ impl WasmCallData {
 
                 // Commit link deletion entry
                 // "hc_remove_link", RemoveLink, invoke_remove_link;
+                "hc_remove_link" => func!(invoke_workflow!("remove_link_workflow", "EntryWithHeader", remove_link_workflow)),
+
                 //execute cryptographic function
-                // "hc_crypto",Crypto,invoke_crypto;
+                "hc_crypto" => func!(invoke_workflow!("crypto_workflow", "CryptoArgs", crypto_workflow)),
+
                 // Sign a block of data with a one-time key that is then shredded
-                // "hc_sign_one_time", SignOneTime, invoke_sign_one_time;
+                "hc_sign_one_time" => func!(invoke_workflow!("sign_one_time_workflow", "OneTimeSignArgs", sign_one_time_workflow)),
 
                 // Verify that a block of data was signed by a given public key
                 "hc_verify_signature" => func!(invoke_workflow!("verify_signature_workflow", "VerifySignatureArgs", verify_signature_workflow)),

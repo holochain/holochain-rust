@@ -1,7 +1,7 @@
 use crate::{
     context::Context, dht::actions::hold_aspect::hold_aspect,
     network::entry_with_header::EntryWithHeader, nucleus::validation::validate_entry,
-    
+
 };
 
 use crate::{workflows::validation_package};
@@ -18,7 +18,7 @@ pub async fn hold_remove_workflow(
     entry_with_header: &EntryWithHeader,
 ) -> Result<(), HolochainError> {
     // 1. Get hold of validation package
-    let maybe_validation_package = validation_package(entry_with_header, context.clone())
+    let maybe_validation_package = validation_package(Arc::clone(&context), entry_with_header)
         .await
         .map_err(|err| {
             let message = "Could not get validation package from source! -> Add to pending...";

@@ -136,8 +136,8 @@ pub(crate) async fn try_make_local_validation_package(
 /// Gets hold of the validation package for the given entry by trying several different methods.
 #[autotrace]
 async fn validation_package(
-    entry_with_header: &EntryWithHeader,
     context: Arc<Context>,
+    entry_with_header: &EntryWithHeader,
 ) -> Result<Option<ValidationPackage>, HolochainError> {
     // 0. Call into the DNA to get the validation package definition for this entry
     // e.g. what data is needed to validate it (chain, entry, headers, etc)
@@ -276,7 +276,7 @@ pub mod tests {
         let entry_with_header = EntryWithHeader { entry, header }.clone();
 
         let validation_package = context1
-            .block_on(validation_package(&entry_with_header, context1.clone()))
+            .block_on(validation_package(Arc::clone(&context1), &entry_with_header))
             .expect("Could not recover a validation package as the non-author");
 
         assert_eq!(

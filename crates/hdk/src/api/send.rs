@@ -2,6 +2,7 @@ use crate::{error::ZomeApiResult, Dispatch};
 use holochain_core_types::time::Timeout;
 use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_types::send::{SendArgs, SendOptions};
+use crate::api::DNA_NAME;
 
 /// Sends a node-to-node message to the given agent, specified by their address.
 /// Addresses of agents can be accessed using [hdk::AGENT_ADDRESS](struct.AGENT_ADDRESS.html).
@@ -101,7 +102,7 @@ use holochain_wasm_types::send::{SendArgs, SendOptions};
 ///    entries: []
 ///
 ///    init: || { Ok(()) }
-///    
+///
 ///    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
 ///        Ok(())
 ///    }
@@ -132,5 +133,6 @@ pub fn send(to_agent: Address, payload: String, timeout: Timeout) -> ZomeApiResu
         to_agent,
         payload,
         options: SendOptions(timeout),
+        zome: DNA_NAME.to_string(),
     })
 }

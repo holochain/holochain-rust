@@ -18,14 +18,14 @@ use crate::workflows::WorkflowResult;
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn update_entry_workflow(
     context: Arc<Context>,
-    entry_args: UpdateEntryArgs,
+    entry_args: &UpdateEntryArgs,
 ) -> WorkflowResult<Address> {
     // Get Current entry's latest version
     let get_args = GetEntryArgs {
-        address: entry_args.address,
+        address: entry_args.address.to_owned(),
         options: Default::default(),
     };
-    let maybe_entry_result = get_entry_result_workflow(Arc::clone(&context), get_args).await;
+    let maybe_entry_result = get_entry_result_workflow(Arc::clone(&context), &get_args).await;
     if let Err(err) = maybe_entry_result {
         log_error!(context, "zome: get_entry_result_workflow failed: {:?}", err);
         return Err(HolochainError::Wasm(WasmError::WorkflowFailed));

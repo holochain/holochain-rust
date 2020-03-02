@@ -1,6 +1,6 @@
 use crate::{
     agent::state::create_entry_with_header_for_header, content_store::GetContent,
-    
+
 };
 use holochain_logging::prelude::*;
 #[autotrace]
@@ -185,7 +185,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     "net/handle: HandleFetchEntry: {:?}",
                     fetch_entry_data
                 );
-                handle_fetch_entry(fetch_entry_data, context.clone())
+                handle_fetch_entry(Arc::clone(&context), fetch_entry_data)
             }
             Lib3hServerProtocol::FetchEntryResult(fetch_result_data) => {
                 if !is_my_dna(
@@ -456,8 +456,8 @@ fn get_meta_aspects_from_chain(
 
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn get_meta_aspects_from_dht_eav(
-    entry_address: &Address,
     context: Arc<Context>,
+    entry_address: &Address,
 ) -> Result<Vec<EntryAspect>, HolochainError> {
     let eavis = context
         .state()
@@ -476,7 +476,7 @@ fn get_meta_aspects_from_dht_eav(
         .map(|eavi| {
             let value_entry = context
                 .block_on(get_entry_with_meta_workflow(
-                    &context,
+                    Arc::clone(&context),
                     &eavi.value(),
                     &Timeout::default(),
                 ))?

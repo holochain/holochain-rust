@@ -8,6 +8,7 @@ pub struct SendArgs {
     pub to_agent: Address,
     pub payload: String,
     pub options: SendOptions,
+    pub zome: String,
 }
 
 #[derive(Deserialize, Clone, PartialEq, Debug, Serialize, DefaultJson)]

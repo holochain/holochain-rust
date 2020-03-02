@@ -1,6 +1,6 @@
 use crate::{
     context::Context, workflows::get_entry_result::get_entry_with_meta_workflow,
-    
+
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
@@ -160,7 +160,7 @@ fn get_entry_with_header(
     address: &Address,
 ) -> Result<(EntryWithMeta, ChainHeader), HolochainError> {
     let pair = context.block_on(get_entry_with_meta_workflow(
-        &context,
+        Arc::clone(&context),
         address,
         &Timeout::default(),
     ))?;

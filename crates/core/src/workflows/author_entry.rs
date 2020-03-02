@@ -169,7 +169,7 @@ pub mod tests {
         while entry.is_none() && tries < 10 {
             tries = tries + 1;
             {
-                entry = get_entry_from_dht(&context2, &entry_address)
+                entry = get_entry_from_dht(Arc::clone(&context2), &entry_address)
                     .expect("Could not retrieve entry from DHT");
             }
             println!("Try {}: {:?}", tries, entry);
@@ -221,7 +221,7 @@ pub mod tests {
         while entry.is_none() && tries < 10 {
             tries = tries + 1;
             {
-                entry = get_entry_from_dht(&context2, &header_entry.address())
+                entry = get_entry_from_dht(Arc::clone(&context2), &header_entry.address())
                     .expect("Could not retrieve entry from DHT");
             }
             println!("Try {}: {:?}", tries, entry);
@@ -282,7 +282,7 @@ pub mod tests {
             while entry.is_none() && tries < 10 {
                 tries = tries + 1;
                 {
-                    entry = get_entry_from_dht(&context2, &next_header_addr)
+                    entry = get_entry_from_dht(Arc::clone(&context2), &next_header_addr)
                         .expect("Could not retrieve entry from DHT");
                 }
                 println!("Try {}: {:?}", tries, entry);

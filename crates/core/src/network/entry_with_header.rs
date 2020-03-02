@@ -2,12 +2,14 @@ use crate::{
     agent::find_chain_header,
     content_store::GetContent,
     state::{State, StateWrapper},
-    
+
 };
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError, validation::ValidationResult};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
+use holochain_json_api::json::JsonString;
+use holochain_json_api::error::JsonError;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
 pub struct EntryWithHeader {
     pub entry: Entry,
     pub header: ChainHeader,

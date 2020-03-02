@@ -1,6 +1,6 @@
 use crate::{
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
-    
+
 };
 use holochain_core_types::{
     entry::{deletion_entry::DeletionEntry, Entry},
@@ -19,14 +19,14 @@ use crate::context::Context;
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn remove_entry_workflow(
     context: Arc<Context>,
-    deleted_entry_address: Address,
+    deleted_entry_address: &Address,
 ) -> Result<Address, HolochainError> {
     // Get Current entry's latest version
     let get_args = GetEntryArgs {
-        address: deleted_entry_address,
+        address: deleted_entry_address.to_owned(),
         options: Default::default(),
     };
-    let maybe_entry_result = get_entry_result_workflow(Arc::clone(&context), get_args).await;
+    let maybe_entry_result = get_entry_result_workflow(Arc::clone(&context), &get_args).await;
 
     if let Err(err) = maybe_entry_result {
         log_error!(context, "zome: get_entry_result_workflow failed: {:?}", err);

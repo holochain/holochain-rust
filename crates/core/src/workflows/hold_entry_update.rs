@@ -4,7 +4,7 @@ use crate::{
     network::entry_with_header::EntryWithHeader,
     nucleus::validation::{validate_entry},
     workflows::validation_package,
-    
+
 };
 use holochain_core_types::{
     error::HolochainError,
@@ -12,16 +12,17 @@ use holochain_core_types::{
     validation::{EntryLifecycle, ValidationData, ValidationResult},
 };
 use std::sync::Arc;
+use crate::workflows::WorkflowResult;
 
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn hold_update_workflow(
     context: Arc<Context>,
     entry_with_header: &EntryWithHeader,
-) -> Result<(), HolochainError> {
+) -> WorkflowResult<()> {
     let EntryWithHeader { entry, header } = entry_with_header;
 
     // 1. Get hold of validation package
-    let maybe_validation_package = validation_package(&entry_with_header, context.clone())
+    let maybe_validation_package = validation_package(Arc::clone(&context), &entry_with_header)
         .await
         .map_err(|err| {
             let message = "Could not get validation package from source! -> Add to pending...";

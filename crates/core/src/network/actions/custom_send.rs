@@ -3,7 +3,7 @@ use crate::{
     context::Context,
     instance::dispatch_action,
     network::direct_message::{CustomDirectMessage, DirectMessage},
-    
+
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::{error::HolochainError, time::Timeout};
@@ -18,10 +18,10 @@ use std::{pin::Pin, sync::Arc, time::SystemTime};
 #[autotrace]
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn custom_send(
+    context: Arc<Context>,
     to_agent: Address,
     custom_direct_message: CustomDirectMessage,
     timeout: Timeout,
-    context: Arc<Context>,
 ) -> Result<String, HolochainError> {
     let rand_string: String = thread_rng().sample_iter(&Alphanumeric).take(10).collect();
     let id = format!("{}-{}", ProcessUniqueId::new().to_string(), rand_string);

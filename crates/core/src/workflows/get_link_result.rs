@@ -18,7 +18,7 @@ use std::sync::Arc;
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn get_link_result_workflow(
     context: Arc<Context>,
-    link_args: GetLinksArgs,
+    link_args: &GetLinksArgs,
 ) -> Result<GetLinksResult, HolochainError> {
     let config = GetLinksQueryConfiguration {
         headers: link_args.options.headers,

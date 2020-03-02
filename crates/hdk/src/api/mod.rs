@@ -91,6 +91,7 @@ macro_rules! def_api_fns {
                 &self,
                 input: I,
             ) -> ZomeApiResult<O> {
+                println!("dispatch!");
                 let json: JsonString = input.try_into().map_err(|_| ZomeApiError::Internal("failed to create JSON".into()))?;
                 let guest_allocation_ptr: AllocationPtr = json::to_allocation_ptr(json);
 
@@ -177,7 +178,7 @@ def_api_fns! {
     hc_update_entry, UpdateEntry;
     hc_remove_entry, RemoveEntry;
     hc_send, Send;
-    hc_debug, Debug;
+    // hc_debug, Debug;
     hc_call, Call;
     hc_crypto,Crypto;
     hc_sign_one_time, SignOneTime;
@@ -198,6 +199,39 @@ def_api_fns! {
     hc_commit_capability_claim, CommitCapabilityClaim;
     hc_emit_signal, EmitSignal;
 }
+
+holochain_wasmer_guest::memory_externs!();
+
+holochain_wasmer_guest::host_externs!(
+    hc_debug
+    // hc_commit_entry,
+    // hc_get_entry,
+    // hc_update_entry,
+    // hc_remove_entry,
+    // hc_init_globals,
+    // hc_call,
+    // hc_link_entries,
+    // hc_get_links,
+    // hc_get_links_count,
+    // hc_query,
+    // hc_entry_address,
+    // hc_send,
+    // hc_sleep,
+    // hc_remove_link,
+    // hc_crypto,
+    // hc_sign_one_time,
+    // hc_verify_signature,
+    // hc_keystore_list,
+    // hc_keystore_new_random,
+    // hc_keystore_derive_seed,
+    // hc_keystore_derive_key,
+    // hc_keystore_sign,
+    // hc_keystore_get_public_key,
+    // hc_commit_capability_grant,
+    // hc_commit_capability_claim,
+    // hc_emit_signal,
+    // hc_meta
+);
 
 //--------------------------------------------------------------------------------------------------
 // ZOME API GLOBAL VARIABLES

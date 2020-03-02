@@ -1,12 +1,13 @@
 use crate::{
     context::Context,
-    wasm_engine::callback::{CallbackParams, CallbackResult},
+    wasm_engine::callback::{CallbackParams},
     workflows::{callback::init::init},
-    
+
 };
 use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},
+    callback::CallbackResult
 };
 use std::sync::Arc;
 

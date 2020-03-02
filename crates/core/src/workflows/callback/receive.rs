@@ -2,11 +2,12 @@ use crate::{
     context::Context,
     nucleus::CallbackFnCall,
     wasm_engine::{
-        callback::{Callback, CallbackParams, CallbackResult},
+        callback::{Callback, CallbackParams},
         runtime::WasmCallData,
     },
-    
+
 };
+use holochain_core_types::callback::CallbackResult;
 use holochain_wasmer_host::WasmError;
 use holochain_json_api::{error::JsonError, json::JsonString};
 use std::sync::Arc;
@@ -54,15 +55,14 @@ pub fn receive(
 
 #[cfg(test)]
 pub mod tests {
-
     use super::receive;
     use crate::{
         instance::tests::test_context,
         wasm_engine::{
-            callback::{tests::test_callback_instance, Callback, CallbackParams, CallbackResult},
-            Defn,
+            callback::{tests::test_callback_instance, Callback, CallbackParams},
         },
     };
+    use holochain_core_types::callback::CallbackResult;
     use holochain_persistence_api::cas::content::Address;
     use holochain_wasm_types::receive::ReceiveParams;
 

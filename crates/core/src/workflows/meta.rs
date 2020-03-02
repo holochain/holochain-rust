@@ -16,26 +16,26 @@ pub async fn meta_workflow(_: Arc<Context>, meta_args: &MetaArgs) -> Result<Meta
     })
 }
 
-#[cfg(test)]
-#[cfg(not(windows))]
-mod test_super {
-    use crate::wasm_engine::{
-        api::{tests::test_zome_api_function, ZomeApiFunction},
-        Defn,
-    };
-    use holochain_core_types::hdk_version::HDK_VERSION;
-    use holochain_json_api::json::*;
-    /// test that bytes passed to debug end up in the log
-    #[test]
-    fn test_zome_api_meta_functions() {
-        let (call_result, _) = test_zome_api_function(
-            ZomeApiFunction::Meta.as_str(),
-            format!(r#"{{ "method" : "Version" }}"#).as_bytes().to_vec(),
-        );
-        let call_result_json = format!(
-            r#"{{"ok":true,"value":"{{\"Version\":\"{}\"}}","error":"null"}}"#,
-            HDK_VERSION.to_string()
-        );
-        assert_eq!(JsonString::from_json(&*call_result_json), call_result,);
-    }
-}
+// #[cfg(test)]
+// #[cfg(not(windows))]
+// mod test_super {
+//     use crate::wasm_engine::{
+//         api::{tests::test_zome_api_function, ZomeApiFunction},
+//         Defn,
+//     };
+//     use holochain_core_types::hdk_version::HDK_VERSION;
+//     use holochain_json_api::json::*;
+//     /// test that bytes passed to debug end up in the log
+//     #[test]
+//     fn test_zome_api_meta_functions() {
+//         let (call_result, _) = test_zome_api_function(
+//             ZomeApiFunction::Meta.as_str(),
+//             format!(r#"{{ "method" : "Version" }}"#).as_bytes().to_vec(),
+//         );
+//         let call_result_json = format!(
+//             r#"{{"ok":true,"value":"{{\"Version\":\"{}\"}}","error":"null"}}"#,
+//             HDK_VERSION.to_string()
+//         );
+//         assert_eq!(JsonString::from_json(&*call_result_json), call_result,);
+//     }
+// }

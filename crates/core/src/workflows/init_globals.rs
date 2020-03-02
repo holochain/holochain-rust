@@ -71,59 +71,59 @@ pub async fn init_globals_workflow(context: Arc<Context>, call_data: &Arc<WasmCa
     Ok(globals)
 }
 
-#[cfg(test)]
-pub mod tests {
-    use crate::wasm_engine::{
-        api::{tests::test_zome_api_function, ZomeApiFunction},
-        Defn,
-    };
-    use holochain_core_types::{
-        dna::capabilities::CapabilityRequest, error::ZomeApiInternalResult, signature::Signature,
-    };
-    use holochain_json_api::json::JsonString;
-    use holochain_persistence_api::cas::content::Address;
-    use holochain_wasm_types::ZomeApiGlobals;
-    use std::convert::TryFrom;
-    use test_utils::mock_signing::registered_test_agent;
-
-    #[test]
-    /// test that the correct globals values are created for zome calls
-    fn test_init_globals() {
-        let input: Vec<u8> = vec![];
-        let (call_result, _) = test_zome_api_function(ZomeApiFunction::InitGlobals.as_str(), input);
-
-        let zome_api_internal_result = ZomeApiInternalResult::try_from(call_result).unwrap();
-        let globals =
-            ZomeApiGlobals::try_from(JsonString::from_json(&zome_api_internal_result.value))
-                .unwrap();
-
-        assert_eq!(globals.dna_name, "TestApp");
-        let expected_agent = registered_test_agent("jane");
-        assert_eq!(
-            globals.agent_address.to_string(),
-            expected_agent.pub_sign_key
-        );
-        // TODO (david.b) this should work:
-        //assert_eq!(globals.agent_id_str, String::from(AgentId::generate_fake("jane")));
-        // assert_eq!(
-        //     globals.agent_initial_hash,
-        //     AgentId::generate_fake("jane").address()
-        // );
-        assert_eq!(globals.agent_initial_hash, globals.agent_latest_hash);
-
-        // this hash should stay the same as long as the public functions in the test zome
-        // don't change.
-        assert_eq!(
-            globals.public_token,
-            Address::from("QmdZiJWdVCh8s38tCcAAq8f7HpHkd9KLFnHh9vLTddt8D2"),
-        );
-
-        assert_eq!(
-            globals.cap_request,
-            Some(CapabilityRequest::new( Address::from("dummy_token"),
-                                    Address::from("HcSCimiBHJ8y3zejkjtHsu9Q8MZx96ztvfYRJ9fJH3Pbxodac5s8rqmShYqaamz"),
-                                    Signature::from("nI/AFdqZPYw1yoCeV92pKWwugdkB54JJDhLLf3JgMFl9sm3aFIWKpiRo+4t8L+wn+S0Pg1Vh0Bzbmq3DSfJwDw=="),
-                                    )),
-        );
-    }
-}
+// #[cfg(test)]
+// pub mod tests {
+//     use crate::wasm_engine::{
+//         api::{tests::test_zome_api_function, ZomeApiFunction},
+//         Defn,
+//     };
+//     use holochain_core_types::{
+//         dna::capabilities::CapabilityRequest, error::ZomeApiInternalResult, signature::Signature,
+//     };
+//     use holochain_json_api::json::JsonString;
+//     use holochain_persistence_api::cas::content::Address;
+//     use holochain_wasm_types::ZomeApiGlobals;
+//     use std::convert::TryFrom;
+//     use test_utils::mock_signing::registered_test_agent;
+//
+//     #[test]
+//     /// test that the correct globals values are created for zome calls
+//     fn test_init_globals() {
+//         let input: Vec<u8> = vec![];
+//         let (call_result, _) = test_zome_api_function(ZomeApiFunction::InitGlobals.as_str(), input);
+//
+//         let zome_api_internal_result = ZomeApiInternalResult::try_from(call_result).unwrap();
+//         let globals =
+//             ZomeApiGlobals::try_from(JsonString::from_json(&zome_api_internal_result.value))
+//                 .unwrap();
+//
+//         assert_eq!(globals.dna_name, "TestApp");
+//         let expected_agent = registered_test_agent("jane");
+//         assert_eq!(
+//             globals.agent_address.to_string(),
+//             expected_agent.pub_sign_key
+//         );
+//         // TODO (david.b) this should work:
+//         //assert_eq!(globals.agent_id_str, String::from(AgentId::generate_fake("jane")));
+//         // assert_eq!(
+//         //     globals.agent_initial_hash,
+//         //     AgentId::generate_fake("jane").address()
+//         // );
+//         assert_eq!(globals.agent_initial_hash, globals.agent_latest_hash);
+//
+//         // this hash should stay the same as long as the public functions in the test zome
+//         // don't change.
+//         assert_eq!(
+//             globals.public_token,
+//             Address::from("QmdZiJWdVCh8s38tCcAAq8f7HpHkd9KLFnHh9vLTddt8D2"),
+//         );
+//
+//         assert_eq!(
+//             globals.cap_request,
+//             Some(CapabilityRequest::new( Address::from("dummy_token"),
+//                                     Address::from("HcSCimiBHJ8y3zejkjtHsu9Q8MZx96ztvfYRJ9fJH3Pbxodac5s8rqmShYqaamz"),
+//                                     Signature::from("nI/AFdqZPYw1yoCeV92pKWwugdkB54JJDhLLf3JgMFl9sm3aFIWKpiRo+4t8L+wn+S0Pg1Vh0Bzbmq3DSfJwDw=="),
+//                                     )),
+//         );
+//     }
+// }

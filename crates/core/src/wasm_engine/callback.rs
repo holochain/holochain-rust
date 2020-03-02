@@ -1,6 +1,6 @@
 //! Module for ZomeCallbacks
 //! ZomeCallbacks are functions in a Zome that are callable by the ribosome.
-use holochain_core_types::{entry::Entry, validation::ValidationPackageDefinition};
+use holochain_core_types::{entry::Entry};
 
 use holochain_json_api::{
     error::JsonError,
@@ -13,6 +13,7 @@ use holochain_wasm_types::receive::ReceiveParams;
 use std::{str::FromStr, sync::Arc};
 use crate::context::Context;
 use crate::workflows::callback::receive::receive;
+use holochain_core_types::callback::CallbackResult;
 
 /// Enumeration of all Zome Callbacks known and used by Holochain
 /// Enumeration can convert to str
@@ -92,17 +93,10 @@ impl ToString for CallbackParams {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, DefaultJson)]
-pub enum CallbackResult {
-    Pass,
-    Fail(String),
-    NotImplemented(String),
-    ValidationPackageDefinition(ValidationPackageDefinition),
-    ReceiveResult(String),
-}
-
 // // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn run_callback(context: Arc<Context>, call: CallbackFnCall) -> CallbackResult {
+    println!("{:?}", &call);
+    println!("{:?}", &call.parameters);
     let call_data = WasmCallData::new_callback_call(context, call.clone());
     match holochain_wasmer_host::guest::call(
         &mut match call_data.instance() {

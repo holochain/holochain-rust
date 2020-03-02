@@ -4,11 +4,11 @@ use crate::{
     instance::dispatch_action,
     network::direct_message::{CustomDirectMessage, DirectMessage},
     workflows::callback::receive::receive,
-    wasm_engine::callback::{CallbackParams, CallbackResult},
-    
+    wasm_engine::callback::{CallbackParams},
 };
 
 use holochain_core_types::error::HolochainError;
+use holochain_core_types::callback::CallbackResult;
 use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_types::receive::ReceiveParams;
 use std::sync::Arc;

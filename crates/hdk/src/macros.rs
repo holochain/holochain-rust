@@ -239,14 +239,11 @@ macro_rules! define_zome {
         #[no_mangle]
         pub extern "C" fn init(host_allocation_ptr: holochain_wasmer_guest::AllocationPtr) -> holochain_wasmer_guest::AllocationPtr {
 
-            fn execute() -> Result<(), String> {
+            fn execute() -> $crate::holochain_core_types::callback::CallbackResult {
                 $init_expr
             }
 
-            ret!(match execute() {
-                Ok(_) => WasmResult::Ok(().into()),
-                Err(e) => WasmResult::Err(WasmError::Zome(e)),
-            });
+            ret!(execute());
         }
 
         $(

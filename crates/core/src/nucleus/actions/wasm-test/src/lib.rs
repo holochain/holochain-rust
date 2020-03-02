@@ -159,7 +159,7 @@ define_zome! {
     ]
 
     init: || {
-        Ok(())
+        CallbackResult::Pass
     }
 
     validate_agent: |validation_data : EntryValidationData::<AgentId>| {

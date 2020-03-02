@@ -1,7 +1,7 @@
 use crate::{
     dht::pending_validations::ValidatingWorkflow,
     nucleus::{actions::initialize::Initialization, ZomeFnCall},
-    
+
 };
 use holochain_core_types::{dna::Dna, error::HolochainError};
 
@@ -242,7 +242,6 @@ impl ZomeFnCallState {
 pub mod tests {
 
     use super::{NucleusState, WasmApiFnCall, ZomeFnCallState};
-    use crate::wasm_engine::api::ZomeApiFunction;
 
     /// dummy nucleus state
     pub fn test_nucleus_state() -> NucleusState {
@@ -253,11 +252,11 @@ pub mod tests {
     fn test_zome_fn_call_state() {
         let mut state = ZomeFnCallState::default();
         let call1 = WasmApiFnCall {
-            function: ZomeApiFunction::Call,
+            function: "hc_call".into(),
             parameters: "params1".into(),
         };
         let call2 = WasmApiFnCall {
-            function: ZomeApiFunction::Call,
+            function: "hc_call".into(),
             parameters: "params2".into(),
         };
 

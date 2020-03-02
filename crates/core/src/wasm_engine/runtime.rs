@@ -183,6 +183,9 @@ impl WasmCallData {
 
         let wasm_imports = imports! {
             "env" => {
+                "__import_allocation" => wasmer_runtime::func!(holochain_wasmer_host::import::__import_allocation),
+                "__import_bytes" => wasmer_runtime::func!(holochain_wasmer_host::import::__import_bytes),
+
                 // send debug information to the log
                 // debug(s: String)
                 "hc_debug" => func!(invoke_workflow!("debug_workflow", "WasmString", debug_workflow)),
@@ -201,9 +204,9 @@ impl WasmCallData {
                 // hc_init_globals() -> InitGlobalsOutput
                 // there is no input from the guest for input_globals_workflow
                 // instead it needs direct access to the wasm call data
-                "hc_init_global" => func!({
+                "hc_init_globals" => func!({
                     let closure_arc = std::sync::Arc::clone(&arc);
-                    move || -> ZomeApiResult {
+                    move |_: &mut Ctx, _: holochain_wasmer_host::AllocationPtr| -> ZomeApiResult {
                         let context = Arc::clone(&closure_arc.context().map_err(|_| WasmError::Unspecified )?);
                         let args = Arc::clone(&closure_arc);
                         invoke_workflow_trace!(context, "init_globals_workflow", "WasmCallData", args);

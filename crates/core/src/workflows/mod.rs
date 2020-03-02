@@ -73,7 +73,6 @@ use crate::{
         actions::build_validation_package::build_validation_package,
         validation::build_from_dht::try_make_validation_package_dht,
     },
-    wasm_engine::callback::CallbackResult,
     workflows::{
         callback::validation_package::get_validation_package_definition,
         hold_entry::hold_entry_workflow, hold_entry_remove::hold_remove_workflow,
@@ -82,6 +81,7 @@ use crate::{
     },
 };
 use holochain_core_types::{
+    callback::CallbackResult,
     error::HolochainError,
     validation::{ValidationPackage, ValidationPackageDefinition},
 };
@@ -243,6 +243,7 @@ pub mod tests {
     use holochain_core_types::entry::Entry;
     use holochain_json_api::json::JsonString;
     use std::{thread, time};
+    use std::sync::Arc;
 
     #[test]
     fn test_simulate_packge_direct_from_author() {

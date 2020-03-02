@@ -129,6 +129,7 @@ pub mod tests {
         entry::{test_entry_with_value, Entry},
     };
     use std::{thread, time};
+    use std::sync::Arc;
 
     // TODO do this for all crate tests somehow
     #[allow(dead_code)]

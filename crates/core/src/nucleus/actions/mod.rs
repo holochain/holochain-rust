@@ -28,7 +28,7 @@ pub mod tests {
     use holochain_json_api::json::RawString;
     use holochain_persistence_api::cas::content::AddressableContent;
 
-    use holochain_wasm_engine::wasm_target_dir;
+    use crate::wasm_engine::io::wasm_target_dir;
     use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
     use test_utils::*;
 

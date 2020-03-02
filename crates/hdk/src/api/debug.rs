@@ -1,5 +1,7 @@
-use crate::{error::ZomeApiResult, Dispatch};
-use holochain_json_api::json::JsonString;
+use crate::{error::ZomeApiResult};
+use holochain_wasmer_guest::*;
+use holochain_wasm_types::wasm_string::WasmString;
+use crate::api::hc_debug;
 
 /// Prints a string through the stdout of the running Conductor, and also
 /// writes that string to the logger in the execution context
@@ -20,8 +22,8 @@ use holochain_json_api::json::JsonString;
 /// # }
 /// ```
 pub fn debug<J: Into<String>>(msg: J) -> ZomeApiResult<()> {
-    let _: ZomeApiResult<()> = Dispatch::Debug.with_input(JsonString::from_json(&msg.into()));
-    // internally returns RibosomeReturnValue::Success which is a zero length allocation
-    // return Ok(()) unconditionally instead of the "error" from success
-    Ok(())
+    let s: String = msg.into();
+    let ws = WasmString::from(s);
+
+    Ok(host_call!(hc_debug, ws)?)
 }

@@ -38,30 +38,26 @@ pub fn sign_one_time(payloads: Vec<String>) -> HcResult<SignOneTimeResult> {
 #[cfg(test)]
 mod test_super {
     use super::sign_one_time;
-    use crate::wasm_engine::{
-        api::{tests::test_zome_api_function, ZomeApiFunction},
-        Defn,
-    };
     use holochain_dpki::utils::verify;
-    use holochain_json_api::json::JsonString;
+    // use holochain_json_api::json::JsonString;
     use holochain_persistence_api::cas::content::Address;
 
-    /// test that bytes passed to debug end up in the log
-    #[test]
-    fn test_zome_api_function_sign() {
-        let (call_result, _) = test_zome_api_function(
-            ZomeApiFunction::Crypto.as_str(),
-            r#"{ "payload": "this is data", "method" : "Sign" }"#
-                .as_bytes()
-                .to_vec(),
-        );
-        assert_eq!(
-            JsonString::from_json(
-                r#"{"ok":true,"value":"xoEEoLF1yWM4VBNtjEwrfM/iVzjuAxxbkOyBWi0LV0+1CAH/PCs9MErnbmFeZRtQNtw7+SmVrm7Irac4lZsaDA==","error":"null"}"#
-            ),
-            call_result,
-        );
-    }
+    // /// test that bytes passed to debug end up in the log
+    // #[test]
+    // fn test_zome_api_function_sign() {
+    //     let (call_result, _) = test_zome_api_function(
+    //         ZomeApiFunction::Crypto.as_str(),
+    //         r#"{ "payload": "this is data", "method" : "Sign" }"#
+    //             .as_bytes()
+    //             .to_vec(),
+    //     );
+    //     assert_eq!(
+    //         JsonString::from_json(
+    //             r#"{"ok":true,"value":"xoEEoLF1yWM4VBNtjEwrfM/iVzjuAxxbkOyBWi0LV0+1CAH/PCs9MErnbmFeZRtQNtw7+SmVrm7Irac4lZsaDA==","error":"null"}"#
+    //         ),
+    //         call_result,
+    //     );
+    // }
 
     #[test]
     fn test_sign_one_time() {

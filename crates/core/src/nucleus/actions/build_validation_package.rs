@@ -4,13 +4,13 @@ use crate::{
     workflows::{
         callback::validation_package::get_validation_package_definition,
     },
-    wasm_engine::callback::CallbackResult,
     context::Context,
     entry::CanPublish,
     state::{State, StateWrapper},
 
 };
 use holochain_core_types::{
+    callback::CallbackResult,
     chain_header::ChainHeader,
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,

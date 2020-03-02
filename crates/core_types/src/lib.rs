@@ -55,6 +55,7 @@ pub mod signature;
 pub mod time;
 pub mod ugly;
 pub mod validation;
+pub mod callback;
 #[macro_use]
 extern crate holochain_logging;
 

@@ -1,8 +1,8 @@
 use crate::{
     context::Context,
-    wasm_engine::callback::{call, Callback, CallbackParams, CallbackResult},
-    
+    wasm_engine::callback::{call, Callback, CallbackParams},
 };
+use holochain_core_types::callback::CallbackResult;
 use std::sync::Arc;
 
 #[autotrace]
@@ -23,10 +23,10 @@ pub mod tests {
     use crate::{
         instance::tests::test_context,
         wasm_engine::{
-            callback::{tests::test_callback_instance, Callback, CallbackParams, CallbackResult},
-            Defn,
+            callback::{tests::test_callback_instance, Callback, CallbackParams},
         },
     };
+    use holochain_core_types::callback::CallbackResult;
 
     #[test]
     fn pass() {

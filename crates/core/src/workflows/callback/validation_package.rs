@@ -3,11 +3,10 @@ use crate::{
     nucleus::CallbackFnCall,
     wasm_engine::{
         runtime::WasmCallData,
-        callback::CallbackResult,
     },
-
 };
 use holochain_core_types::{
+    callback::CallbackResult,
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
     validation::ValidationPackageDefinition,

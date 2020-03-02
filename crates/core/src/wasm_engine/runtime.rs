@@ -223,7 +223,6 @@ impl WasmCallData {
                 "hc_get_links_count" => func!(invoke_workflow!("get_link_result_count_workflow", "GetLinksArgs", get_link_result_count_workflow)),
 
                 // Query the local chain for entries
-                // "hc_query", Query, invoke_query;
                 "hc_query" => func!(invoke_workflow!("query_workflow", "QueryArgs", query_workflow)),
 
                 // Pass an entry to retrieve its address

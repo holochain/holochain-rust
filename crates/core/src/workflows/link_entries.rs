@@ -1,23 +1,23 @@
 use crate::{workflows::author_entry::author_entry};
 use holochain_core_types::{
     entry::Entry,
-    error::HolochainError,
     link::{link_data::LinkData, LinkActionKind},
 };
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use holochain_wasm_types::link_entries::LinkEntriesArgs;
 use holochain_wasmer_host::*;
-use crate::wasm_engine::runtime::Runtime;
+use crate::workflows::WorkflowResult;
+use crate::context::Context;
+use std::sync::Arc;
 
 /// ZomeApiFunction::LinkEntries function code
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: LinkEntriesArgs
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_link_entries(
-    runtime: &mut Runtime,
-    input: LinkEntriesArgs,
-) -> Result<Address, HolochainError> {
-    let context = runtime.context().map_err(|e| WasmError::Zome(e.to_string()))?;
+pub async fn link_entries_workflow(
+    context: Arc<Context>,
+    input: &LinkEntriesArgs,
+) -> WorkflowResult<Address> {
     let top_chain_header_option = context
         .state()
         .expect("Couldn't get state in invoke_linke_entries")
@@ -47,8 +47,7 @@ pub fn invoke_link_entries(
 
     // Wait for future to be resolved
     // This is where the link entry actually gets created.
-    context
-        .block_on(author_entry(&entry, None, &context, &vec![]))
+    author_entry(&entry, None, &context, &vec![]).await
         .map(|_| entry.address())
 }
 

@@ -4,7 +4,7 @@ use crate::{
         actions::call_zome_function::{call_zome_function, make_cap_request_for_call},
         ZomeFnCall,
     },
-    
+
 };
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
@@ -284,9 +284,7 @@ pub mod tests {
     // ZomeFnCallArgs struct which the test "{}" is not!
     // TODO: fix this bit of crazyness
     fn success_expected() -> Result<Result<JsonString, HolochainError>, RecvTimeoutError> {
-        Ok(Err(HolochainError::Wasm(
-            "Zome function failure: Argument deserialization failed".to_string(),
-        )))
+        Ok(Err(HolochainError::Wasm(WasmError::ArgumentDeserializationFailed)))
     }
 
     #[test]

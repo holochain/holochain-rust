@@ -101,23 +101,6 @@ pub enum CallbackResult {
     ReceiveResult(String),
 }
 
-// impl From<CallbackResult> for JsonString {
-//     fn from(v: CallbackResult) -> Self {
-//         default_to_json(v)
-//     }
-// }
-//
-// impl From<JsonString> for CallbackResult {
-//     fn from(json_string: JsonString) -> CallbackResult {
-//         let r#try: Result<CallbackResult, serde_json::Error> =
-//             serde_json::from_str(&String::from(json_string.clone()));
-//         match r#try {
-//             Ok(callback_result) => callback_result,
-//             Err(_) => CallbackResult::Fail(String::from(json_string)),
-//         }
-//     }
-// }
-
 // // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn run_callback(context: Arc<Context>, call: CallbackFnCall) -> CallbackResult {
     let call_data = WasmCallData::new_callback_call(context, call.clone());
@@ -165,6 +148,7 @@ pub mod tests {
     };
     use test_utils;
     use wabt;
+    use std::str::FromStr;
 
     /// generates the wasm to dispatch any zome API function with a single memomry managed runtime
     /// and bytes argument

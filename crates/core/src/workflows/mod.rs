@@ -88,6 +88,9 @@ use holochain_core_types::{
 use holochain_persistence_api::cas::content::AddressableContent;
 use std::sync::Arc;
 
+pub(crate) type WorkflowResult<T> = Result<T, HolochainError>;
+pub(crate) type InfallibleWorkflowResult = WorkflowResult<()>;
+
 /// Try to create a ValidationPackage for the given entry without calling out to some other node.
 /// I.e. either create it just from/with the header if `ValidationPackageDefinition` is `Entry`,
 /// or build it locally if we are the source (one of the sources).

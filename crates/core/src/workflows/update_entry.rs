@@ -1,7 +1,7 @@
 use crate::{
     holochain_wasm_types::holochain_persistence_api::cas::content::AddressableContent,
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
-    
+
 };
 use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_types::{get_entry::*, UpdateEntryArgs};
@@ -9,6 +9,7 @@ use holochain_wasmer_host::*;
 use holochain_core_types::error::HolochainError;
 use std::sync::Arc;
 use crate::context::Context;
+use crate::workflows::WorkflowResult;
 
 /// ZomeApiFunction::UpdateEntry function code
 /// args: [0] encoded MemoryAllocation as u64
@@ -18,7 +19,7 @@ use crate::context::Context;
 pub async fn update_entry_workflow(
     context: Arc<Context>,
     entry_args: UpdateEntryArgs,
-) -> Result<Address, HolochainError> {
+) -> WorkflowResult<Address> {
     // Get Current entry's latest version
     let get_args = GetEntryArgs {
         address: entry_args.address,

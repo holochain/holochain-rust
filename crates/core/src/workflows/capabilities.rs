@@ -7,19 +7,20 @@ use holochain_core_types::{
     error::HolochainError,
 };
 use holochain_persistence_api::cas::content::Address;
-use crate::wasm_engine::runtime::Runtime;
 use holochain_wasm_types::capabilities::{
     CommitCapabilityClaimArgs, CommitCapabilityGrantArgs,
 };
+use std::sync::Arc;
+use crate::context::Context;
+use crate::workflows::WorkflowResult;
 
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_commit_capability_grant(
-    runtime: &mut Runtime,
+pub async fn commit_capability_grant_workflow(
+    context: Arc<Context>,
     args: CommitCapabilityGrantArgs,
-) -> Result<Address, HolochainError> {
-    let context = runtime.context()?;
+) -> WorkflowResult<Address> {
     match CapTokenGrant::create(&args.id, args.cap_type, args.assignees, args.functions) {
-        Ok(grant) => context.block_on(commit_entry(Entry::CapTokenGrant(grant), None, &context)),
+        Ok(grant) => commit_entry(Entry::CapTokenGrant(grant), None, &context).await,
         Err(err) => Err(HolochainError::ErrorGeneric(format!(
             "Unable to commit capability grant: {}",
             err
@@ -28,13 +29,12 @@ pub fn invoke_commit_capability_grant(
 }
 
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_commit_capability_claim(
-    runtime: &mut Runtime,
+pub async fn commit_capability_claim_workflow(
+    context: Arc<Context>,
     args: CommitCapabilityClaimArgs,
-) -> Result<Address, HolochainError> {
-    let context = runtime.context()?;
+) -> WorkflowResult<Address> {
     let claim = CapTokenClaim::new(args.id, args.grantor, args.token);
-    context.block_on(commit_entry(Entry::CapTokenClaim(claim), None, &context))
+    commit_entry(Entry::CapTokenClaim(claim), None, &context).await
 }
 
 #[cfg(test)]

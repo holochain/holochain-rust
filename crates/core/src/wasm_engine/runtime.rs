@@ -21,6 +21,16 @@ use crate::workflows::init_globals::init_globals_workflow;
 use crate::workflows::get_link_result::get_link_result_workflow;
 use crate::workflows::meta::meta_workflow;
 use crate::workflows::emit_signal::emit_signal_workflow;
+use crate::workflows::sleep::sleep_workflow;
+use crate::workflows::verify_signature::verify_signature_workflow;
+use crate::workflows::capabilities::commit_capability_grant_workflow;
+use crate::workflows::capabilities::commit_capability_claim_workflow;
+use crate::workflows::keystore::keystore_list_workflow;
+use crate::workflows::keystore::keystore_get_public_key_workflow;
+use crate::workflows::keystore::keystore_sign_workflow;
+use crate::workflows::keystore::keystore_derive_key_workflow;
+use crate::workflows::keystore::keystore_derive_seed_workflow;
+use crate::workflows::keystore::keystore_new_random_workflow;
 
 #[derive(Clone)]
 pub struct ZomeCallData {
@@ -157,7 +167,6 @@ impl WasmCallData {
 
                     // in general we will have more luck tracing json than arbitrary structs
                     invoke_workflow_trace!(context, $trace_span, $trace_tag, guest_json);
-
                     let args = guest_json.try_into()?;
                     invoke_workflow_block_and_allocate!($workflow, context, args)
                 }
@@ -219,7 +228,7 @@ impl WasmCallData {
                 // "hc_send", Send, invoke_send;
 
                 // Allow a specified amount of time to pass
-                // "hc_sleep", Sleep, invoke_sleep;
+                "hc_sleep" => func!(invoke_workflow!("sleep_workflow", "nanos", sleep_workflow)),
 
                 // Commit link deletion entry
                 // "hc_remove_link", RemoveLink, invoke_remove_link;
@@ -229,38 +238,36 @@ impl WasmCallData {
                 // "hc_sign_one_time", SignOneTime, invoke_sign_one_time;
 
                 // Verify that a block of data was signed by a given public key
-                // "hc_verify_signature", VerifySignature, invoke_verify_signature;
+                "hc_verify_signature" => func!(invoke_workflow!("verify_signature_workflow", "VerifySignatureArgs", verify_signature_workflow)),
 
                 // Retrieve a list of identifiers of the secrets in the keystore
-                // "hc_keystore_list", KeystoreList, invoke_keystore_list;
+                "hc_keystore_list" => func!(invoke_workflow!("keystore_list_workflow", "()", keystore_list_workflow)),
 
                 // Create a new random seed Secret in the keystore
-                // "hc_keystore_new_random", KeystoreNewRandom, invoke_keystore_new_random;
+                "hc_keystore_new_random" => func!(invoke_workflow!("keystore_new_random_workflow", "WasmString", keystore_new_random_workflow)),
 
                 // Derive a new seed from an existing seed in the keystore
-                // "hc_keystore_derive_seed", KeystoreDeriveSeed, invoke_keystore_derive_seed;
+                "hc_keystore_derive_seed" => func!(invoke_workflow!("keystore_derive_seed_workflow", "WasmString", keystore_derive_seed_workflow)),
 
                 // Create a new key (signing or encrypting) as derived from an existing seed in the keystore
-                // "hc_keystore_derive_key", KeystoreDeriveKey, invoke_keystore_derive_key;
+                "hc_keystore_derive_key" => func!(invoke_workflow!("keystore_derive_key_workflow", "WasmString", keystore_derive_key_workflow)),
 
                 // Sign a block of data using a key in the keystore
-                // "hc_keystore_sign", KeystoreSign, invoke_keystore_sign;
+                "hc_keystore_sign" => func!(invoke_workflow!("keystore_sign_workflow", "WasmString", keystore_sign_workflow)),
 
                 // Get the public key for a given secret
-                // "hc_keystore_get_public_key", KeystoreGetPublicKey, invoke_keystore_get_public_key;
+                "hc_keystore_get_public_key" => func!(invoke_workflow!("keystore_get_public_key_workflow", "WasmString", keystore_get_public_key_workflow)),
 
                 // Commit a capability grant to the source chain
-                // "hc_commit_capability_grant", CommitCapabilityGrant, invoke_commit_capability_grant;
+                "hc_commit_capability_grant" => func!(invoke_workflow!("commit_capability_grant_workflow", "CommitCapabilityGrantArgs", commit_capability_grant_workflow)),
 
                 // Commit a capability grant to the source chain
-                // "hc_commit_capability_claim", CommitCapabilityClaim, invoke_commit_capability_claim;
+                "hc_commit_capability_claim" => func!(invoke_workflow!("commit_capability_claim_workflow", "CommitCapabilityClaimArgs", commit_capability_claim_workflow)),
 
                 // Send a DNA defined signal to UIs and other listeners
-                // "hc_emit_signal", EmitSignal, invoke_emit_signal;
                 "hc_emit_signal" => func!(invoke_workflow!("emit_signal_workflow", "EmitSignalArgs", emit_signal_workflow)),
 
                 // send a meta
-                // "hc_meta",Meta,invoke_meta;
                 "hc_meta" => func!(invoke_workflow!("meta_workflow", "MetaArgs", meta_workflow)),
             },
         };

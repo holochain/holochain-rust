@@ -6,7 +6,7 @@ use crate::{
     nucleus::{
         actions::build_validation_package::build_validation_package, validation::validate_entry,
     },
-    
+
 };
 use holochain_core_types::{
     entry::Entry,
@@ -117,7 +117,7 @@ pub async fn author_entry<'a>(
 pub mod tests {
 
     use crate::{
-        holochain_wasm_engine::holochain_persistence_api::cas::content::AddressableContent,
+        holochain_wasm_types::holochain_persistence_api::cas::content::AddressableContent,
         nucleus::actions::{
             get_entry::get_entry_from_dht,
             tests::{instance_by_name, test_dna},

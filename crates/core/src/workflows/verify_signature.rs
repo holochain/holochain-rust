@@ -1,18 +1,18 @@
-use holochain_core_types::error::HcResult;
 use holochain_dpki::utils::Verify;
 use holochain_wasm_types::verify_signature::VerifySignatureArgs;
-use crate::wasm_engine::runtime::Runtime;
+use crate::workflows::WorkflowResult;
+use std::sync::Arc;
+use crate::context::Context;
 
 /// ZomeApiFunction::VerifySignature function code
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected argument: u64
 /// Returns an HcApiReturnCode as I64
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_verify_signature(
-    runtime: &mut Runtime,
+pub async fn verify_signature_workflow(
+    context: Arc<Context>,
     verification_args: VerifySignatureArgs,
-) -> HcResult<bool> {
-    let context = runtime.context()?;
+) -> WorkflowResult<bool> {
     log_debug!(
         context,
         "zome: using provenance:{:?} to verify data:{:?}",

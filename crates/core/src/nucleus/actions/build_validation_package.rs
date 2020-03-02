@@ -206,7 +206,7 @@ mod tests {
         let chain_header = commit(test_entry_package_entry(), &context);
 
         let maybe_validation_package =
-            build_validation_package(&test_entry_package_entry(), context.clone(), &vec![]);
+            build_validation_package(Arc::clone(&context), &test_entry_package_entry(), &vec![]);
         println!("{:?}", maybe_validation_package);
         assert!(maybe_validation_package.is_ok());
 
@@ -232,8 +232,8 @@ mod tests {
         let chain_header = commit(test_entry_package_chain_entries(), &context);
 
         let maybe_validation_package = build_validation_package(
+            Arc::clone(&context),
             &test_entry_package_chain_entries(),
-            context.clone(),
             &vec![],
         );
         println!("{:?}", maybe_validation_package);
@@ -264,8 +264,8 @@ mod tests {
         let chain_header = commit(test_entry_package_chain_headers(), &context);
 
         let maybe_validation_package = build_validation_package(
+            Arc::clone(&context),
             &test_entry_package_chain_headers(),
-            context.clone(),
             &vec![],
         );
         assert!(maybe_validation_package.is_ok());
@@ -292,7 +292,7 @@ mod tests {
         let chain_header = commit(test_entry_package_chain_full(), &context);
 
         let maybe_validation_package =
-            build_validation_package(&test_entry_package_chain_full(), context.clone(), &vec![]);
+            build_validation_package(Arc::clone(&context), &test_entry_package_chain_full(), &vec![]);
         assert!(maybe_validation_package.is_ok());
 
         let headers = all_chain_headers_before_header(&context, &chain_header);

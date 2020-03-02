@@ -36,6 +36,7 @@ use crate::workflows::crypto::crypto_workflow;
 use crate::workflows::remove_link::remove_link_workflow;
 use crate::workflows::send::send_workflow;
 use crate::workflows::entry_address::entry_address_workflow;
+use crate::workflows::query::query_workflow;
 
 #[derive(Clone)]
 pub struct ZomeCallData {
@@ -223,6 +224,7 @@ impl WasmCallData {
 
                 // Query the local chain for entries
                 // "hc_query", Query, invoke_query;
+                "hc_query" => func!(invoke_workflow!("query_workflow", "QueryArgs", query_workflow)),
 
                 // Pass an entry to retrieve its address
                 // the address algorithm is specific to the entry, typically sha256 but can differ

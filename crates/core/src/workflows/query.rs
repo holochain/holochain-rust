@@ -2,7 +2,6 @@ use crate::{
     agent::chain_store::{ChainStoreQueryOptions, ChainStoreQueryResult},
     context::Context,
     nucleus::actions::get_entry::get_entry_from_agent_chain,
-    wasm_engine::{Runtime},
 };
 
 use holochain_persistence_api::cas::content::Address;
@@ -14,6 +13,7 @@ use holochain_core_types::{
 use holochain_wasm_types::{QueryArgs, QueryArgsNames, QueryResult};
 use holochain_wasmer_host::*;
 use std::sync::Arc;
+use crate::workflows::WorkflowResult;
 
 /// ZomeApiFunction::query function code
 /// args: [0] encoded MemoryAllocation as u64
@@ -58,15 +58,14 @@ use std::sync::Arc;
 /// `*`         Zero or more of any character
 /// `**/`       Zero or more of any namespace component
 ///
-pub fn invoke_query(runtime: &mut Runtime, query: QueryArgs) -> Result<QueryResult, HolochainError> {
-    let context = runtime.context().map_err(|e| WasmError::Zome(e.to_string()))?;
+pub async fn query_workflow(context: Arc<Context>, query: &QueryArgs) -> WorkflowResult<QueryResult> {
     // Perform query
     let agent = context
         .state()
         .expect("Couldn't get state in invoke_query")
         .agent();
     let top = agent.top_chain_header().expect("Should have init entries.");
-    let maybe_result = match query.entry_type_names {
+    let maybe_result = match &query.entry_type_names {
         // Result<ChainStoreQueryResult,...>
         QueryArgsNames::QueryList(pats) => {
             let refs: Vec<&str> = pats.iter().map(AsRef::as_ref).collect(); // Vec<String> -> Vec<&str>

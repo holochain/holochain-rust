@@ -1,18 +1,18 @@
 use crate::{
     signal::{Signal, UserSignal},
-    
+
 };
 use holochain_core_types::error::HolochainError;
 use holochain_wasm_types::emit_signal::EmitSignalArgs;
-use crate::wasm_engine::runtime::Runtime;
+use crate::context::Context;
+use std::sync::Arc;
 
 /// ZomeApiFunction::EmitSignal function code
 /// args: [0] encoded MemoryAllocation as u64
 /// Expecting a string as complex input argument
 /// Returns an HcApiReturnCode as I64
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_emit_signal(runtime: &mut Runtime, input: EmitSignalArgs) -> Result<(), HolochainError> {
-    let context = runtime.context()?;
+pub async fn emit_signal_workflow(context: Arc<Context>, input: EmitSignalArgs) -> Result<(), HolochainError> {
     if let Some(sender) = context.signal_tx() {
         let signal = Signal::User(UserSignal::from(input));
         let _ = sender.send(signal).map_err(|err| {

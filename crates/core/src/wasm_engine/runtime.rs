@@ -20,6 +20,7 @@ use crate::workflows::remove_entry::remove_entry_workflow;
 use crate::workflows::init_globals::init_globals_workflow;
 use crate::workflows::get_link_result::get_link_result_workflow;
 use crate::workflows::meta::meta_workflow;
+use crate::workflows::emit_signal::emit_signal_workflow;
 
 #[derive(Clone)]
 pub struct ZomeCallData {
@@ -256,6 +257,7 @@ impl WasmCallData {
 
                 // Send a DNA defined signal to UIs and other listeners
                 // "hc_emit_signal", EmitSignal, invoke_emit_signal;
+                "hc_emit_signal" => func!(invoke_workflow!("emit_signal_workflow", "EmitSignalArgs", emit_signal_workflow)),
 
                 // send a meta
                 // "hc_meta",Meta,invoke_meta;

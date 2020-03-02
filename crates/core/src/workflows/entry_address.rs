@@ -1,17 +1,17 @@
-use crate::{
-    wasm_engine::{Runtime},
-    
-};
+
 use holochain_core_types::{
     self,
     dna::Dna,
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
 };
+use crate::context::Context;
+use crate::workflows::WorkflowResult;
 use holochain_persistence_api::cas::content::Address;
 use holochain_persistence_api::cas::content::AddressableContent;
 use holochain_wasmer_host::*;
 use std::str::FromStr;
+use std::sync::Arc;
 
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, HolochainError> {
@@ -33,10 +33,9 @@ pub fn get_entry_type(dna: &Dna, entry_type_name: &str) -> Result<EntryType, Hol
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: entry_type_name and entry_value as JsonString
 /// Returns an HcApiReturnCode as I64
-pub fn invoke_entry_address(runtime: &mut Runtime, entry: Entry) -> Result<Address, HolochainError> {
+pub async fn entry_address_workflow(context: Arc<Context>, entry: &Entry) -> WorkflowResult<Address> {
     // Check if entry_type is valid
-    let dna = runtime
-        .context().map_err(|e| WasmError::Zome(e.to_string()))?
+    let dna = context
         .state()
         .unwrap()
         .nucleus()

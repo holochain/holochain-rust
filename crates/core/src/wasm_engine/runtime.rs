@@ -34,6 +34,8 @@ use crate::workflows::keystore::keystore_new_random_workflow;
 use crate::workflows::sign::sign_one_time_workflow;
 use crate::workflows::crypto::crypto_workflow;
 use crate::workflows::remove_link::remove_link_workflow;
+use crate::workflows::send::send_workflow;
+use crate::workflows::entry_address::entry_address_workflow;
 
 #[derive(Clone)]
 pub struct ZomeCallData {
@@ -225,10 +227,10 @@ impl WasmCallData {
                 // Pass an entry to retrieve its address
                 // the address algorithm is specific to the entry, typically sha256 but can differ
                 // entry_address(entry: Entry) -> Address
-                // "hc_entry_address", EntryAddress, invoke_entry_address;
+                "hc_entry_address" => func!(invoke_workflow!("entry_address_workflow", "Entry", entry_address_workflow)),
 
                 // Send a message directly to another node
-                // "hc_send", Send, invoke_send;
+                "hc_send" => func!(invoke_workflow!("send_workflow", "SendArgs", send_workflow)),
 
                 // Allow a specified amount of time to pass
                 "hc_sleep" => func!(invoke_workflow!("sleep_workflow", "nanos", sleep_workflow)),

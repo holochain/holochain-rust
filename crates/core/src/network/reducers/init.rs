@@ -199,11 +199,11 @@ pub mod test {
 
         root_state = root_state.reduce(ActionWrapper::new(Action::InitializeChain(dna)));
 
+        std::env::remove_var("HC_IGNORE_SIM2H_URL_PROPERTY");
         let result = reduce_init(&mut network_state, &root_state, &action_wrapper);
 
         assert_eq!(result, ());
 
-        std::env::remove_var("HC_IGNORE_SIM2H_URL_PROPERTY");
         let network = network_state.network.expect("No network connection set");
         assert_eq!(network.p2p_endpoint().as_str(), "wss://localhost:9000/");
     }

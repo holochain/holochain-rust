@@ -7,6 +7,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Added
 
 - Added command to sim2h wire protocol for getting live debug info [#2128](https://github.com/holochain/holochain-rust/pull/2128)
+- Added an environment variable (HC_IGNORE_SIM2H_URL_PROPERTY) which overrides DNA sim2h_url value for running conductors in test modes
 
 ### Changed
 

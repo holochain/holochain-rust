@@ -3,7 +3,7 @@ use crate::{
     context::Context,
     nucleus::{actions::get_entry::get_entry_from_agent_chain, ZomeFnCall, ZomeFnResult},
     wasm_engine::{WasmCallData},
-    
+
 };
 use holochain_core_types::{
     dna::{capabilities::CapabilityRequest, wasm::DnaWasm},
@@ -70,8 +70,8 @@ impl ExecuteZomeFnResponse {
 #[autotrace]
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn call_zome_function(
-    zome_call: ZomeFnCall,
     context: Arc<Context>,
+    zome_call: ZomeFnCall,
 ) -> Result<JsonString, HolochainError> {
     log_debug!(
         context,

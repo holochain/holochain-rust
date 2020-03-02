@@ -9,12 +9,12 @@ use crate::{
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
 use holochain_logging::prelude::*;
-
-use holochain_wasm_types::{ZomeFnCallArgs, THIS_INSTANCE};
+use holochain_wasm_types::{ZomeFnCallArgs, THIS_INSTANCE, WasmError};
 use jsonrpc_lite::JsonRpc;
 use snowflake::ProcessUniqueId;
-use crate::wasm_engine::runtime::Runtime;
 use std::sync::Arc;
+use crate::wasm_engine::runtime::WasmCallData;
+use crate::workflows::WorkflowResult;
 
 // ZomeFnCallArgs to ZomeFnCall
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
@@ -45,31 +45,23 @@ impl ZomeFnCall {
 /// Waits for a ZomeFnResult
 /// Returns an HcApiReturnCode as I64
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
-    let context = runtime.context()?;
-    let span = context
-        .tracer
-        .span("hdk invoke_call")
-        .tag(ht::Tag::new("ZomeFnCallArgs", format!("{:?}", input)))
-        .start()
-        .into();
-    let _spanguard = ht::push_span(span);
-
+pub async fn call_workflow(context: Arc<Context>, call_data: Arc<WasmCallData>, input: &ZomeFnCallArgs) -> WorkflowResult<JsonString> {
     if input.instance_handle == THIS_INSTANCE {
-
         // ZomeFnCallArgs to ZomeFnCall
-        // Don't allow recursive calls
-        // @TODO is this important? it relies on data that is hard to get at from the args
-        // let zome_call = ZomeFnCall::from_args(context.clone(), input.clone());
-        // if zome_call.same_fn_as(&input.zome_call_data.call) {
-        //     return Err(WasmError::RecursiveCallForbidden);
-        // }
-        local_call(context.clone(), input.clone()).map_err(|error| {
+        let zome_call = ZomeFnCall::from_args(Arc::clone(&context), input.clone());
+
+        if let Ok(zome_call_data) = call_data.zome_call_data() {
+            // Don't allow recursive calls
+            if zome_call.same_fn_as(&zome_call_data.call) {
+                return Err(HolochainError::Wasm(WasmError::RecursiveCallForbidden));
+            }
+        }
+        local_call_workflow(Arc::clone(&context), input.clone()).await.map_err(|error| {
             log_error!(context, "zome-to-zome-call/[{:?}]: {:?}", input, error);
             error
         })
     } else {
-        bridge_call(context.clone(), input.clone()).map_err(|error| {
+        bridge_call_workflow(Arc::clone(&context), input.clone()).await.map_err(|error| {
             log_error!(context, "bridge-call/[{:?}]: {:?}", input, error);
             error
         })
@@ -78,11 +70,11 @@ pub fn invoke_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonS
 
 #[autotrace]
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-fn local_call(context: Arc<Context>, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
+async fn local_call_workflow(context: Arc<Context>, input: ZomeFnCallArgs) -> WorkflowResult<JsonString> {
     // ZomeFnCallArgs to ZomeFnCall
-    let zome_call = ZomeFnCall::from_args(context.clone(), input.clone());
+    let zome_call = ZomeFnCall::from_args(Arc::clone(&context), input.clone());
     log_debug!(context, "blocking on zome call: {:?}", input.clone());
-    let result = context.block_on(call_zome_function(zome_call, context.clone()));
+    let result = call_zome_function(Arc::clone(&context), zome_call).await;
     log_debug!(
         context,
         "blocked on zome call: {:?} with result {:?}",
@@ -94,7 +86,7 @@ fn local_call(context: Arc<Context>, input: ZomeFnCallArgs) -> Result<JsonString
 
 #[autotrace]
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-fn bridge_call(context: Arc<Context>, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
+async fn bridge_call_workflow(context: Arc<Context>, input: ZomeFnCallArgs) -> WorkflowResult<JsonString> {
     let conductor_api = context.conductor_api.clone();
 
     let params = format!(
@@ -242,7 +234,7 @@ pub mod tests {
         let zome_call = ZomeFnCall::new("test_zome", cap_request, "test", "{}");
         let result = test_setup
             .context
-            .block_on(call_zome_function(zome_call, test_setup.context.clone()));
+            .block_on(call_zome_function(Arc::clone(&test_setup.context), zome_call));
         assert_eq!(expected, Ok(result));
     }
 

@@ -37,6 +37,8 @@ use crate::workflows::remove_link::remove_link_workflow;
 use crate::workflows::send::send_workflow;
 use crate::workflows::entry_address::entry_address_workflow;
 use crate::workflows::query::query_workflow;
+use crate::workflows::call::call_workflow;
+use crate::workflows::link_entries::link_entries_workflow;
 
 #[derive(Clone)]
 pub struct ZomeCallData {
@@ -198,7 +200,7 @@ impl WasmCallData {
                 // Init Zome API Globals
                 // hc_init_globals() -> InitGlobalsOutput
                 // there is no input from the guest for input_globals_workflow
-                // instead it needs direct access to the call data
+                // instead it needs direct access to the wasm call data
                 "hc_init_global" => func!({
                     let closure_arc = std::sync::Arc::clone(&arc);
                     move || -> ZomeApiResult {
@@ -211,10 +213,30 @@ impl WasmCallData {
 
                 // Call a zome function in a different zome or dna via a bridge
                 // hc_call(zome_name: String, cap_token: Address, fn_name: String, args: String);
-                // "hc_call", Call, invoke_call;
+                // call_workflow is weird in that it needs BOTH input from the guest AND direct
+                // access to the wasm call data
+                // this creates a non-standard workflow function signature with 3 args
+                // wasm call data cannot be rolled into the input arg as it must be provided by the
+                // host while the input data must be provided by the guest
+                "hc_call" => func!({
+                    let closure_arc = std::sync::Arc::clone(&arc);
+                    move |ctx: &mut Ctx, guest_allocation_ptr: holochain_wasmer_host::AllocationPtr| -> ZomeApiResult {
+                        let guest_bytes = holochain_wasmer_host::guest::read_from_allocation_ptr(ctx, guest_allocation_ptr)?;
+                        let guest_json = JsonString::from(guest_bytes);
+                        let context = std::sync::Arc::clone(&closure_arc.context().map_err(|_| WasmError::Unspecified )?);
+
+                        invoke_workflow_trace!(context, "call_workflow", "ZomeFnCallArgs", guest_json);
+                        let args = guest_json.try_into()?;
+                        Ok(holochain_wasmer_host::json::to_allocation_ptr(
+                            context.block_on(
+                                call_workflow(Arc::clone(&context), Arc::clone(&closure_arc), &args)
+                            ).map_err(|e| WasmError::Zome(e.to_string()))?.into()
+                        ))
+                    }
+                }),
 
                 // Create a link entry
-                // "hc_link_entries", LinkEntries, invoke_link_entries;
+                "hc_link_entries" => func!(invoke_workflow!("link_entries_workflow", "LinkEntriesArgs", link_entries_workflow)),
 
                 /// Retrieve links from the DHT
                 "hc_get_links" => func!(invoke_workflow!("get_link_result_workflow", "GetLinksArgs", get_link_result_workflow)),
@@ -237,7 +259,6 @@ impl WasmCallData {
                 "hc_sleep" => func!(invoke_workflow!("sleep_workflow", "nanos", sleep_workflow)),
 
                 // Commit link deletion entry
-                // "hc_remove_link", RemoveLink, invoke_remove_link;
                 "hc_remove_link" => func!(invoke_workflow!("remove_link_workflow", "EntryWithHeader", remove_link_workflow)),
 
                 //execute cryptographic function

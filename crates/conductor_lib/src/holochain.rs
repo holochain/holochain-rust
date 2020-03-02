@@ -250,7 +250,7 @@ impl Holochain {
         params: &str,
     ) -> HolochainResult<JsonString> {
         let zome_call = ZomeFnCall::new(&zome, cap, &fn_name, JsonString::from_json(&params));
-        Ok(context.block_on(call_zome_function(zome_call, context.clone()))?)
+        Ok(context.block_on(call_zome_function(Arc::clone(&context), zome_call))?)
     }
 
     /// call a function in a zome

@@ -203,6 +203,7 @@ pub mod test {
 
         assert_eq!(result, ());
 
+        std::env::remove_var("HC_IGNORE_SIM2H_URL_PROPERTY");
         let network = network_state.network.expect("No network connection set");
         assert_eq!(network.p2p_endpoint().as_str(), "wss://localhost:9000/");
     }

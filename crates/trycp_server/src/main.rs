@@ -381,10 +381,7 @@ fn main() {
             let _url = Url::parse(&url_str).map_err(|e| {
                 invalid_request(format!("unable to parse url:{} got error: {}", url_str, e))
             })?;
-            let ram = match get_as_int("ram", &params_map) {
-                Ok(val) => val,
-                _ => 0,
-            };
+            let ram = get_as_int("ram", &params_map).unwrap_or_default();
             let ram = ram as usize;
 
             let mut state = state_registered.write().expect("should_lock");

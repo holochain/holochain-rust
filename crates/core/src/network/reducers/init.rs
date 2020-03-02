@@ -51,7 +51,7 @@ pub fn reduce_init(state: &mut NetworkState, root_state: &State, action_wrapper:
                 sim2h_config.sim2h_url = sim2h_url;
             } else {
                 debug!(
-                    "DNA has 'sim2h_url' override property set, but it's ignored because HC_INGORE_SIM@H_RUL_PROPERTY is set");
+                    "DNA has 'sim2h_url' override property set, but it's ignored because HC_INGORE_SIM2H_RULE_PROPERTY is set");
             }
         } else {
             debug!("DNA has 'sim2h_url' override property set, but it's ignored as we are not running a sim2h network backend");

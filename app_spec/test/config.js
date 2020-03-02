@@ -23,6 +23,11 @@ const network =
   : (() => {throw new Error(`Unsupported network type: ${networkType}`)})()
 )
 
+const networkOffline = {
+  type: 'sim2h',
+  sim2h_url: 'ws://bogus:666'
+}
+
 const logger = {
   type: 'debug',
   rules: {
@@ -72,6 +77,11 @@ module.exports = {
       app: dna
     },
     commonConfig
+  ),
+  oneOffline: Config.gen({
+        app: dna
+      },
+      { logger, network: networkOffline, tracing }
   ),
   two: Config.gen({
       app1: dna,

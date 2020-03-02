@@ -51,7 +51,12 @@ use futures::{
 use in_stream::*;
 use log::*;
 use rand::{seq::SliceRandom, thread_rng};
-use std::convert::TryFrom;
+use std::{
+    convert::TryFrom,
+    fs::File,
+    hash::{Hash, Hasher},
+    io::prelude::*,
+};
 
 use holochain_locksmith::Mutex;
 use holochain_metrics::{config::MetricPublisherConfig, Metric};
@@ -71,6 +76,7 @@ lazy_static! {
 
 /// if we can't acquire a lock in 20 seconds, panic!
 const MAX_LOCK_TIMEOUT: u64 = 20000;
+pub const RECEIPT_HASH_SEED: u64 = 0;
 
 //set up license_key
 new_relic_setup!("NEW_RELIC_LICENSE_KEY");
@@ -204,6 +210,8 @@ pub enum DhtAlgorithm {
 #[allow(dead_code)]
 mod mono_ref;
 use mono_ref::*;
+use std::collections::BTreeMap;
+use twox_hash::XxHash64;
 
 #[allow(dead_code)]
 mod sim2h_im_state;
@@ -287,13 +295,18 @@ impl Sim2hHandle {
             }
             WireMessage::Ping => return spawn_handle_message_ping(sim2h_handle, uri, signer),
             WireMessage::Status => return spawn_handle_message_status(sim2h_handle, uri, signer),
+            WireMessage::Debug => return spawn_handle_message_debug(sim2h_handle, uri, signer),
             WireMessage::Hello(version) => {
                 return spawn_handle_message_hello(sim2h_handle, uri, signer, version)
             }
             WireMessage::ClientToLib3h(ht::EncodedSpanWrap {
                 data: ClientToLib3h::JoinSpace(data),
                 ..
-            }) => return spawn_handle_message_join_space(sim2h_handle, uri, signer, data),
+            }) => {
+                let _ =
+                    tokio::task::spawn(handle_message_join_space(sim2h_handle, uri, signer, data));
+                return;
+            }
             message @ _ => message,
         };
 
@@ -302,17 +315,19 @@ impl Sim2hHandle {
         tokio::task::spawn(async move {
             // -- right now each agent can only be part of a single space :/ --
 
-            let (agent_id, space_hash) = 'got_info: {
-                for _ in 0_usize..10 {
-                    // await consistency of new connection
-                    let state = sim2h_handle.state().get_clone().await;
-                    if let Some(info) = state.get_space_info_from_uri(&uri) {
-                        break 'got_info info;
-                    }
-                    tokio::time::delay_for(std::time::Duration::from_millis(100)).await;
+            let (agent_id, space_hash) = {
+                let state = sim2h_handle.state().get_clone().await;
+                if let Some(info) = state.get_space_info_from_uri(&uri) {
+                    info
+                } else {
+                    error!(
+                        "uri has not joined space, cannot proceed {} {}",
+                        uri,
+                        message.message_type()
+                    );
+                    sim2h_handle.disconnect(vec![uri.clone()]);
+                    return;
                 }
-                error!("uri has not joined space, cannot proceed {}", uri);
-                return;
             };
 
             if *agent_id != signer {
@@ -483,6 +498,30 @@ fn spawn_handle_message_status(sim2h_handle: Sim2hHandle, uri: Lib3hUri, signer:
     });
 }
 
+fn spawn_handle_message_debug(sim2h_handle: Sim2hHandle, uri: Lib3hUri, signer: AgentId) {
+    tokio::task::spawn(async move {
+        debug!("Sending DebugResponse in response to Debug");
+        let state = sim2h_handle.state().get_clone().await;
+        let mut response_map: BTreeMap<SpaceHash, String> = BTreeMap::new();
+        for (hash, space) in state.spaces.iter() {
+            let json = serde_json::to_string(&space).expect("Space must be serializable");
+            response_map.insert((**hash).clone(), json.clone());
+            let filename = format!("{}.json", **hash);
+            if let Ok(mut file) = File::create(filename.clone()) {
+                file.write_all(json.into_bytes().as_slice())
+                    .unwrap_or_else(|_| error!("Could not write to file {}!", filename))
+            } else {
+                error!("Could not create file {}!", filename)
+            }
+        }
+        sim2h_handle.send(
+            signer.clone(),
+            uri.clone(),
+            &WireMessage::DebugResponse(response_map),
+        );
+    });
+}
+
 fn spawn_handle_message_hello(
     sim2h_handle: Sim2hHandle,
     uri: Lib3hUri,
@@ -517,17 +556,20 @@ fn spawn_handle_message_hello(
     }
 }
 
-fn spawn_handle_message_join_space(
+async fn handle_message_join_space(
     sim2h_handle: Sim2hHandle,
     uri: Lib3hUri,
     _signer: AgentId,
     data: SpaceData,
 ) {
-    sim2h_handle.state().spawn_new_connection(
-        data.space_address.clone(),
-        data.agent_id.clone(),
-        uri.clone(),
-    );
+    sim2h_handle
+        .state()
+        .new_connection(
+            data.space_address.clone(),
+            data.agent_id.clone(),
+            uri.clone(),
+        )
+        .await;
 
     sim2h_handle.send(
         data.agent_id.clone(),
@@ -1226,11 +1268,18 @@ impl Sim2h {
                 if !result {
                     return Err(VERIFY_FAILED_ERR_STR.into());
                 }
+                let agent_id: AgentId = signed_message.provenance.source().into();
+                send_receipt(
+                    sim2h_handle.clone(),
+                    &signed_message.payload,
+                    agent_id.clone(),
+                    url.clone(),
+                );
                 let wire_message = WireMessage::try_from(signed_message.payload)?;
-                Ok((signed_message.provenance.source().into(), wire_message))
+                Ok((agent_id, wire_message))
             })() {
                 Ok((source, wire_message)) => {
-                    sim2h_handle.handle_message(url, wire_message, source)
+                    sim2h_handle.handle_message(url.clone(), wire_message, source.clone());
                 }
                 Err(error) => {
                     error!(
@@ -1307,6 +1356,14 @@ impl Sim2h {
 
         Ok(did_work)
     }
+}
+
+fn send_receipt(sim2h_handle: Sim2hHandle, payload: &Opaque, source: AgentId, url: Lib3hUri) {
+    let mut hasher = XxHash64::with_seed(RECEIPT_HASH_SEED);
+    payload.hash(&mut hasher);
+    let hash = hasher.finish();
+    let receipt = WireMessage::Ack(hash);
+    sim2h_handle.send(source, url, &receipt);
 }
 
 async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: ScheduleGuard) {

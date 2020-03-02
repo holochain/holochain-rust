@@ -270,7 +270,6 @@ workflows:
         only:
          - develop
          - final-exam
-         - sim2h-url-property-override
    - docker-build-trycp-server:
       requires:
        - docker-build-minimal
@@ -284,7 +283,6 @@ workflows:
         only:
          - develop
          - final-exam
-         - sim2h-url-property-override
    - docker-build-circle-build:
       requires:
        - docker-build-latest

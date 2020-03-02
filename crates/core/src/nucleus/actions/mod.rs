@@ -4,8 +4,8 @@ pub mod call_zome_function;
 pub mod get_entry;
 pub mod initialize;
 pub mod run_validation_callback;
-pub mod trace_invoke_hdk_function;
-pub mod trace_return_hdk_function;
+pub mod trace_invoke_wasm_api_function;
+pub mod trace_return_wasm_api_function;
 
 #[cfg(test)]
 pub mod tests {
@@ -28,7 +28,7 @@ pub mod tests {
     use holochain_json_api::json::RawString;
     use holochain_persistence_api::cas::content::AddressableContent;
 
-    use holochain_wasm_utils::wasm_target_dir;
+    use holochain_wasm_engine::wasm_target_dir;
     use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
     use test_utils::*;
 

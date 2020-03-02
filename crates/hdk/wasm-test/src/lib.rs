@@ -1,53 +1,14 @@
-#[macro_use]
 extern crate hdk;
-extern crate holochain_wasm_utils;
+extern crate holochain_wasm_types;
 extern crate serde;
 extern crate serde_json;
-#[macro_use]
 extern crate serde_derive;
 extern crate boolinator;
-#[macro_use]
 extern crate holochain_json_derive;
+extern crate holochain_wasmer_guest;
 
-
-use boolinator::Boolinator;
-use hdk::{
-    AGENT_ADDRESS,
-    DNA_ADDRESS,
-    DNA_NAME,
-    AGENT_ID_STR,
-    PROPERTIES,
-    CAPABILITY_REQ,
-    api::G_MEM_STACK,
-    error::{ZomeApiError, ZomeApiResult},
-    global_fns::init_global_memory,
-};
-use holochain_wasm_utils::{
-    api_serialization::{
-        get_entry::{GetEntryOptions, GetEntryResult},
-        get_links::{GetLinksResult,GetLinksOptions,LinksStatusRequestKind},
-        query::{QueryArgsNames, QueryArgsOptions, QueryResult},
-    },
-    holochain_core_types::{
-        dna::{entry_types::Sharing,capabilities::CapabilityRequest},
-        entry::{
-            entry_type::{AppEntryType, EntryType},
-            AppEntryValue, Entry,
-        },
-        error::{RibosomeEncodedValue, RibosomeEncodingBits, RibosomeErrorCode},
-        validation::{EntryValidationData, LinkValidationData},
-        link::LinkMatch,
-    },
-    holochain_persistence_api::{
-        cas::content::{Address, AddressableContent},
-    },
-    holochain_json_api::{error::JsonError, json::{JsonString, RawString}},
-    memory::{
-        allocation::WasmAllocation,
-        ribosome::{load_ribosome_encoded_json, return_code_for_allocation_result},
-    },
-};
-use std::{convert::TryFrom, time::Duration};
+use hdk::prelude::*;
+use std::time::Duration;
 
 #[derive(Deserialize, Serialize, Default,Clone, Debug, DefaultJson)]
 pub struct TestEntryType {
@@ -106,43 +67,18 @@ pub fn handle_test_emit_signal(message: String) -> ZomeApiResult<()> {
 
 #[no_mangle]
 pub extern "C" fn check_commit_entry(
-    encoded_allocation_of_input: RibosomeEncodingBits,
-) -> RibosomeEncodingBits {
-    let allocation = match WasmAllocation::try_from_ribosome_encoding(encoded_allocation_of_input) {
-        Ok(allocation) => allocation,
-        Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
-    };
-
-    let memory_init_result = init_global_memory(allocation);
-    if memory_init_result.is_err() {
-        return return_code_for_allocation_result(memory_init_result).into();
-    }
-
-    // Deserialize and check for an encoded error
-    let entry: Entry = match load_ribosome_encoded_json(encoded_allocation_of_input) {
-        Ok(entry) => entry,
-        Err(hc_err) => {
-            hdk::debug(format!("ERROR: {:?}", hc_err.to_string())).ok();
-            return RibosomeEncodedValue::Failure(RibosomeErrorCode::ArgumentDeserializationFailed)
-                .into();
-        }
-    };
+    host_allocation_ptr: AllocationPtr,
+) -> AllocationPtr {
+    let entry: Entry = host_args!(host_allocation_ptr);
 
     hdk::debug(format!("Entry: {:?}", entry)).ok();
 
     let res = hdk::commit_entry(&entry.into());
 
-    let res_obj: JsonString = match res {
+    ret!(WasmResult::Ok(match res {
         Ok(hash) => hash.into(),
         Err(e) => e.into(),
-    };
-
-    let mut wasm_stack = match unsafe { G_MEM_STACK } {
-        Some(wasm_stack) => wasm_stack,
-        None => return RibosomeEncodedValue::Failure(RibosomeErrorCode::OutOfMemory).into(),
-    };
-
-    return_code_for_allocation_result(wasm_stack.write_json(res_obj)).into()
+    }))
 }
 
 fn handle_check_commit_entry_macro(entry: Entry) -> ZomeApiResult<Address> {
@@ -250,7 +186,7 @@ fn handle_links_roundtrip_create() -> ZomeApiResult<Address> {
 
 pub fn handle_create_tagged_entry(content: String, tag: String) -> Address {
 
-    
+
     let test_entry_to_create_1 = Entry::App(
         "testEntryType".into(),
         TestEntryType {
@@ -274,7 +210,7 @@ pub fn handle_create_tagged_entry(content: String, tag: String) -> Address {
 
 pub fn handle_create_tagged_entry_bad_link(content: String, tag: String) -> ZomeApiResult<()> {
 
-    
+
     let test_entry_to_create_1 = Entry::App(
         "testEntryType".into(),
         TestEntryType {
@@ -310,7 +246,7 @@ pub fn handle_create_priv_entry(content: String) -> ZomeApiResult<Address> {
 
 pub fn handle_delete_tagged_entry(content: String, tag: String) -> ZomeApiResult<()> {
 
-    
+
     let test_entry_to_create_1 = Entry::App(
         "testEntryType".into(),
         TestEntryType {
@@ -325,7 +261,7 @@ pub fn handle_delete_tagged_entry(content: String, tag: String) -> ZomeApiResult
         }
         .into(),
     );
- 
+
     hdk::remove_link(&test_entry_to_create_1.address(), &test_entry_to_create_2.address(), "intergration test", tag.as_ref())?;
     Ok(())
 }
@@ -609,8 +545,6 @@ fn handle_hash(content:String) ->ZomeApiResult<Address>
     ))
 }
 
-
-
 fn hdk_test_entry() -> Entry {
     Entry::App(hdk_test_app_entry_type(), hdk_test_entry_value())
 }
@@ -625,7 +559,7 @@ fn handle_sleep() -> ZomeApiResult<()> {
 
 pub fn handle_my_entries_by_tag(tag:Option<String>,maybe_status : Option<LinksStatusRequestKind>) -> ZomeApiResult<GetLinksResult> {
 
-   
+
 
     let test_entry_to_create = Entry::App(
         "testEntryType".into(),
@@ -643,9 +577,9 @@ pub fn handle_my_entries_by_tag(tag:Option<String>,maybe_status : Option<LinksSt
 
     if let Some(tag_matched) = tag
     {
-        
+
         hdk::get_links_with_options(&address, LinkMatch::Any, LinkMatch::Regex(&tag_matched),link_query_options)
-    } 
+    }
     else
     {
         hdk::get_links_with_options(&address, LinkMatch::Any, LinkMatch::Any,link_query_options)
@@ -661,7 +595,7 @@ pub fn handle_my_entries_immediate_timeout() -> ZomeApiResult<GetLinksResult> {
         }
         .into(),
     );
-    
+
     hdk::get_links_with_options(
         &test_entry_to_create.address(),
         LinkMatch::Exactly("intergration test"),
@@ -722,10 +656,13 @@ define_zome! {
                 {
                     EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                     {
-                        (test_entry.stuff != "FAIL").ok_or_else(|| "FAIL content is not allowed".to_string())
-
+                        if test_entry.stuff != "FAIL" {
+                            ValidationResult::Ok
+                        } else {
+                            ValidationResult::Fail("FAIL content is not allowed".into())
+                        }
                     },
-                    _=> Ok(()),
+                    _=> ValidationResult::Ok,
 
                 }
 
@@ -739,7 +676,7 @@ define_zome! {
                         hdk::ValidationPackageDefinition::ChainFull
                     },
                     validation: |validation_data: hdk::LinkValidationData | {
-                        Ok(())
+                        ValidationResult::Ok
                     }
                 ),
                 from!(
@@ -749,7 +686,7 @@ define_zome! {
                     hdk::ValidationPackageDefinition::ChainFull
                 },
                 validation: | validation_data: hdk::LinkValidationData | {
-                    Ok(())
+                    ValidationResult::Ok
                 }
                ),
                to!(
@@ -759,7 +696,7 @@ define_zome! {
                     hdk::ValidationPackageDefinition::ChainFull
                 },
                 validation: | validation_data: hdk::LinkValidationData | {
-                    Ok(())
+                    ValidationResult::Ok
                 }
                )
             ]
@@ -778,11 +715,15 @@ define_zome! {
                 {
                     EntryValidationData::Create{entry:test_entry,validation_data:_} =>
                     {
-
-                        Err(serde_json::to_string(&test_entry).unwrap())
+                        // EntryValidationData::Create is always a fail, we just need to build an
+                        // error string for it
+                        ValidationResult::Fail(match serde_json::to_string(&test_entry) {
+                            Ok(v) => v,
+                            Err(e) => e.to_string(),
+                        })
 
                     },
-                _ => Ok(())
+                _ => ValidationResult::Ok,
                 }
             }
         ),
@@ -796,7 +737,7 @@ define_zome! {
             },
 
             validation: |validation_data: hdk::EntryValidationData<TestEntryType>| {
-               Ok(())
+               ValidationResult::Ok
             }
         ),
 
@@ -809,7 +750,7 @@ define_zome! {
             },
 
             validation: |validation_data: hdk::EntryValidationData<TestEntryType>| {
-                Err("".to_string())
+                ValidationResult::Fail(String::new())
             }
         ),
 
@@ -823,7 +764,7 @@ define_zome! {
             },
 
             validation: |validation_data: hdk::EntryValidationData<TestEntryType>| {
-                Ok(())
+                ValidationResult::Ok
             },
 
             links: [
@@ -842,31 +783,40 @@ define_zome! {
 
                         if link.link().tag()=="muffins"
                         {
-                            Err("invalid tag".into())
+                            ValidationResult::Fail("invalid tag".into())
                         }
                         else
                         {
                             let base = link.link().base();
                             let target = link.link().target();
-                            let base = match hdk::get_entry(&base)? {
-                                Some(entry) => match entry {
-                                    Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,
-                                    _ => Err("System entry found")?
+                            let base = match hdk::get_entry(&base) {
+                                Ok(Some(entry)) => match entry {
+                                    Entry::App(_, test_entry) => match TestEntryType::try_from(test_entry) {
+                                        Ok(v) => v,
+                                        Err(e) => return ValidationResult::Fail(e.into()),
+                                    },
+                                    _ => return ValidationResult::Fail("System entry found".into()),
                                 },
-                                None => Err("Base not found")?,
+                                _ => return ValidationResult::UnresolvedDependencies(vec![base.clone()]),
                             };
 
-                            let target = match hdk::get_entry(&target)? {
-                                Some(entry) => match entry {
-                                    Entry::App(_, test_entry) => TestEntryType::try_from(test_entry)?,
-                                    _ => Err("System entry found")?,
+                            let target = match hdk::get_entry(&target) {
+                                Ok(Some(entry)) => match entry {
+                                    Entry::App(_, test_entry) => match TestEntryType::try_from(test_entry) {
+                                        Ok(v) => v,
+                                        Err(e) => return ValidationResult::Fail(e.into()),
+                                    },
+                                    _ => return ValidationResult::Fail("System entry found".into()),
                                 }
-                                None => Err("Target not found")?,
+                                _ => return ValidationResult::UnresolvedDependencies(vec![target.clone()]),
                             };
-                            (target.stuff.len() > base.stuff.len())
-                                .ok_or("Target stuff is not longer".to_string())
+                            if target.stuff.len() > base.stuff.len() {
+                                ValidationResult::Ok
+                            } else {
+                                ValidationResult::Fail("Target stuff is not longer".into())
+                            }
                         }
-                        
+
                     }
 
                 )
@@ -912,7 +862,7 @@ define_zome! {
     }}
 
     validate_agent: |validation_data : EntryValidationData::<AgentId>| {
-        Ok(())
+        ValidationResult::Ok
     }
 
     receive: |_from, payload| {
@@ -1140,7 +1090,7 @@ define_zome! {
             outputs: |version: ZomeApiResult<String>|,
             handler: handle_sign_payload
         }
-    
+
     ]
 
     traits: {}

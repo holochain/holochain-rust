@@ -2,18 +2,20 @@ use crate::{
     agent::find_chain_header,
     content_store::GetContent,
     state::{State, StateWrapper},
-    NEW_RELIC_LICENSE_KEY,
-};
-use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
-use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+};
+use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError, validation::ValidationResult};
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
+use holochain_json_api::json::JsonString;
+use holochain_json_api::error::JsonError;
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, DefaultJson)]
 pub struct EntryWithHeader {
     pub entry: Entry,
     pub header: ChainHeader,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl EntryWithHeader {
     pub fn new(entry: Entry, header: ChainHeader) -> EntryWithHeader {
         EntryWithHeader { entry, header }
@@ -24,8 +26,8 @@ impl EntryWithHeader {
         header: ChainHeader,
     ) -> Result<EntryWithHeader, HolochainError> {
         if entry.address() != *header.entry_address() {
-            Err(HolochainError::ValidationFailed(String::from(
-                "Entry/Header mismatch",
+            Err(HolochainError::ValidationFailed(ValidationResult::Fail(
+                "Entry/Header mismatch".into()
             )))
         } else {
             Ok(EntryWithHeader::new(entry, header))

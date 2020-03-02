@@ -6,6 +6,7 @@ use holochain_core_types::{
     entry::{deletion_entry::DeletionEntry, Entry},
     error::HolochainError,
     network::entry_aspect::EntryAspect,
+    validation::ValidationResult,
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::Address;
@@ -126,8 +127,8 @@ impl TryFrom<EntryAspect> for PendingValidationStruct {
             EntryAspect::Deletion(header) => {
                 // reconstruct the deletion entry from the header.
                 let deleted_entry_address = header.link_update_delete().ok_or_else(|| {
-                    HolochainError::ValidationFailed(String::from(
-                        "Deletion header is missing deletion link",
+                    HolochainError::ValidationFailed(ValidationResult::Fail(
+                        "Deletion header is missing deletion link".into()
                     ))
                 })?;
                 let entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address));

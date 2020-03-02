@@ -6,24 +6,23 @@ use crate::{
     nucleus::{
         actions::build_validation_package::build_validation_package, validation::validate_entry,
     },
-    NEW_RELIC_LICENSE_KEY,
-};
 
+};
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
     signature::Provenance,
-    validation::{EntryLifecycle, ValidationData},
+    validation::{EntryLifecycle, ValidationData, ValidationResult},
 };
 
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
-use holochain_wasm_utils::api_serialization::commit_entry::CommitEntryResult;
+use holochain_wasm_types::commit_entry::CommitEntryResult;
 
-use crate::wasm_engine::callback::links_utils::get_link_entries;
+use crate::workflows::callback::links_utils::get_link_entries;
 use std::{sync::Arc, vec::Vec};
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn author_entry<'a>(
     entry: &'a Entry,
     maybe_link_update_delete: Option<Address>,
@@ -40,14 +39,14 @@ pub async fn author_entry<'a>(
 
     // 0. If we are trying to author a link or link removal, make sure the linked entries exist:
     if let Entry::LinkAdd(link_data) = entry {
-        get_link_entries(&link_data.link, context)?;
+        get_link_entries(Arc::clone(&context), &link_data.link)?;
     }
     if let Entry::LinkRemove((link_data, _)) = entry {
-        get_link_entries(&link_data.link, context)?;
+        get_link_entries(Arc::clone(&context), &link_data.link)?;
     }
 
     // 1. Build the context needed for validation of the entry
-    let validation_package = build_validation_package(&entry, context.clone(), provenances)?;
+    let validation_package = build_validation_package(Arc::clone(&context), &entry, provenances)?;
     let validation_data = ValidationData {
         package: validation_package,
         lifecycle: EntryLifecycle::Chain,
@@ -59,13 +58,16 @@ pub async fn author_entry<'a>(
         "workflow/authoring_entry/{}: validating...",
         address
     );
-    validate_entry(
+    match validate_entry(
+        Arc::clone(&context),
         entry.clone(),
         maybe_link_update_delete.clone(),
         validation_data,
-        &context,
     )
-    .await?;
+    .await {
+        ValidationResult::Ok => (),
+        err => return Err(HolochainError::ValidationFailed(err)),
+    };
     log_debug!(context, "worflow/authoring_entry {}: is valid!", address);
 
     // 3. Commit the entry
@@ -115,7 +117,7 @@ pub async fn author_entry<'a>(
 pub mod tests {
 
     use crate::{
-        holochain_wasm_utils::holochain_persistence_api::cas::content::AddressableContent,
+        holochain_wasm_types::holochain_persistence_api::cas::content::AddressableContent,
         nucleus::actions::{
             get_entry::get_entry_from_dht,
             tests::{instance_by_name, test_dna},
@@ -167,7 +169,7 @@ pub mod tests {
         while entry.is_none() && tries < 10 {
             tries = tries + 1;
             {
-                entry = get_entry_from_dht(&context2, &entry_address)
+                entry = get_entry_from_dht(Arc::clone(&context2), &entry_address)
                     .expect("Could not retrieve entry from DHT");
             }
             println!("Try {}: {:?}", tries, entry);
@@ -219,7 +221,7 @@ pub mod tests {
         while entry.is_none() && tries < 10 {
             tries = tries + 1;
             {
-                entry = get_entry_from_dht(&context2, &header_entry.address())
+                entry = get_entry_from_dht(Arc::clone(&context2), &header_entry.address())
                     .expect("Could not retrieve entry from DHT");
             }
             println!("Try {}: {:?}", tries, entry);
@@ -280,7 +282,7 @@ pub mod tests {
             while entry.is_none() && tries < 10 {
                 tries = tries + 1;
                 {
-                    entry = get_entry_from_dht(&context2, &next_header_addr)
+                    entry = get_entry_from_dht(Arc::clone(&context2), &next_header_addr)
                         .expect("Could not retrieve entry from DHT");
                 }
                 println!("Try {}: {:?}", tries, entry);

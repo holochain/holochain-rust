@@ -6,15 +6,9 @@ use holochain_json_api::json::{default_to_json, JsonString, RawString};
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use lazy_static::lazy_static;
 
-use holochain_core_types::{
-    dna::capabilities::CapabilityRequest,
-    error::{RibosomeEncodedAllocation, RibosomeEncodingBits, ZomeApiInternalResult},
-};
-pub use holochain_wasm_utils::api_serialization::validation::*;
-use holochain_wasm_utils::{
-    api_serialization::ZomeApiGlobals,
-    memory::{ribosome::load_ribosome_encoded_json, stack::WasmStack},
-};
+use holochain_core_types::{dna::capabilities::CapabilityRequest, error::ZomeApiInternalResult};
+pub use holochain_wasm_types::validation::*;
+use holochain_wasm_types::ZomeApiGlobals;
 
 use crate::init_globals::init_globals;
 use std::convert::{TryFrom, TryInto};
@@ -72,6 +66,7 @@ pub use self::{
     update_remove::{remove_entry, update_agent, update_entry},
     version::{version, version_hash},
 };
+use holochain_wasmer_guest::{allocation, json, *};
 
 macro_rules! def_api_fns {
     (
@@ -96,28 +91,34 @@ macro_rules! def_api_fns {
                 &self,
                 input: I,
             ) -> ZomeApiResult<O> {
-                let mut mem_stack = unsafe { G_MEM_STACK }
-                .ok_or_else(|| ZomeApiError::Internal("debug failed to load mem_stack".to_string()))?;
-
-                let wasm_allocation = mem_stack.write_json(input)?;
+                let json: JsonString = input.try_into().map_err(|_| ZomeApiError::Internal("failed to create JSON".into()))?;
+                let guest_allocation_ptr: AllocationPtr = json::to_allocation_ptr(json);
 
                 // Call Ribosome's function
-                let encoded_input: RibosomeEncodingBits =
-                    RibosomeEncodedAllocation::from(wasm_allocation).into();
-                let encoded_output: RibosomeEncodingBits = unsafe {
+                let host_allocation_ptr: AllocationPtr = unsafe {
                     (match self {
                         $(Dispatch::$enum_variant => $function_name),*
-                    })(encoded_input)
+                    })(guest_allocation_ptr)
                 };
 
-                let result: ZomeApiInternalResult =
-                    load_ribosome_encoded_json(encoded_output).or_else(|e| {
-                        mem_stack.deallocate(wasm_allocation)?;
-                        Err(ZomeApiError::from(e))
-                    })?;
+                // deallocate the input to the already-dispatched call
+                allocation::deallocate_from_allocation_ptr(guest_allocation_ptr);
 
-                // Free result & input allocations
-                mem_stack.deallocate(wasm_allocation)?;
+                // this is very similar to args! but produces a result rather than returning
+                // immediately with a pointer
+                let result: ZomeApiInternalResult = match json::from_allocation_ptr(
+                            map_bytes(host_allocation_ptr),
+                        )
+                        .try_into()
+                        {
+                            Ok(v) => v,
+                            Err(e) => {
+                                ZomeApiInternalResult::failure(e)
+                            }
+                        };
+
+                // deallocate the host allocation for the json we (hopefully) just parsed
+                allocation::deallocate_from_allocation_ptr(host_allocation_ptr);
 
                 // Done
                 if result.ok {
@@ -135,10 +136,10 @@ macro_rules! def_api_fns {
         // WARNING All these fns need to be defined in wasms too @see the hdk integration_test.rs
         #[allow(dead_code)]
         extern "C" {
-            pub(crate) fn hc_property(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
-            pub(crate) fn hc_start_bundle(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
-            pub(crate) fn hc_close_bundle(_: RibosomeEncodingBits) -> RibosomeEncodingBits;
-            $( pub(crate) fn $function_name (_: RibosomeEncodingBits) -> RibosomeEncodingBits;) *
+            pub(crate) fn hc_property(_: AllocationPtr) -> AllocationPtr;
+            pub(crate) fn hc_start_bundle(_: AllocationPtr) -> AllocationPtr;
+            pub(crate) fn hc_close_bundle(_: AllocationPtr) -> AllocationPtr;
+            $( pub(crate) fn $function_name (_: AllocationPtr) -> AllocationPtr; ) *
         }
 
         /// Add stubs for all core API functions when compiled in test mode.
@@ -155,11 +156,11 @@ macro_rules! def_api_fns {
         /// Hence the `#[cfg(test)]` which is really important!
         #[cfg(test)]
         mod tests {
-            use crate::holochain_core_types::error::{RibosomeEncodedValue, RibosomeEncodingBits};
+            use $crate::prelude::*;
 
             $( #[no_mangle]
-                 pub fn $function_name(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-                     RibosomeEncodedValue::Success.into()
+                 pub fn $function_name(_: AllocationPtr) -> AllocationPtr {
+                     $crate::holochain_wasmer_guest::ret!(());
                  }) *
         }
 
@@ -201,9 +202,6 @@ def_api_fns! {
 //--------------------------------------------------------------------------------------------------
 // ZOME API GLOBAL VARIABLES
 //--------------------------------------------------------------------------------------------------
-
-/// Internal global for memory usage
-pub static mut G_MEM_STACK: Option<WasmStack> = None;
 
 lazy_static! {
     /// Internal global for retrieving all Zome API globals

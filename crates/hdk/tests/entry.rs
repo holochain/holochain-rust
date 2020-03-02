@@ -8,13 +8,12 @@ extern crate test_utils;
 #[macro_use]
 extern crate serde_json;
 extern crate hdk;
-extern crate holochain_wasm_utils;
 
+use hdk::prelude::*;
 use hdk::error::ZomeApiResult;
 
 use holochain_core_types::{
     entry::Entry,
-    error::{RibosomeEncodedValue, RibosomeEncodingBits},
 };
 
 use holochain_json_api::json::JsonString;
@@ -23,7 +22,7 @@ use holochain_persistence_api::{
     hash::HashString,
 };
 
-use holochain_wasm_utils::api_serialization::get_entry::{GetEntryResult, StatusRequestKind};
+use holochain_wasm_types::get_entry::{GetEntryResult, StatusRequestKind};
 use std::path::PathBuf;
 use test_utils::{
     empty_string_validation_fail_entry, example_valid_entry, example_valid_entry_address,
@@ -35,178 +34,178 @@ use test_utils::{
 // These empty function definitions below are needed for the windows linker
 //
 #[no_mangle]
-pub fn hc_init_globals(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_init_globals(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_commit_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_commit_entry(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_get_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_get_entry(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_entry_address(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_entry_address(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_query(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_query(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_update_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_update_entry(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_remove_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_remove_entry(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_send(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_send(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_encrypt(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_encrypt(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_property(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_property(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_debug(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_debug(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_call(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_call(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_crypto(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_crypto(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_meta(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_meta(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_sign_one_time(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_sign_one_time(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_verify_signature(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_verify_signature(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_link_entries(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_link_entries(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_get_links(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_get_links(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_get_links_count(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_get_links_count(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_start_bundle(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_start_bundle(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_close_bundle(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_close_bundle(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_sleep(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_sleep(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn zome_setup(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn zome_setup(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn __list_traits(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn __list_traits(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn __list_functions(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn __list_functions(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_remove_link(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_remove_link(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_keystore_list(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_keystore_list(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_keystore_new_random(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_keystore_new_random(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_keystore_derive_seed(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_keystore_derive_seed(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_keystore_derive_key(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_keystore_derive_key(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_keystore_sign(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_keystore_sign(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_keystore_get_public_key(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_keystore_get_public_key(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_commit_capability_grant(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_commit_capability_grant(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_commit_capability_claim(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_commit_capability_claim(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[no_mangle]
-pub fn hc_emit_signal(_: RibosomeEncodingBits) -> RibosomeEncodingBits {
-    RibosomeEncodedValue::Success.into()
+pub fn hc_emit_signal(_: AllocationPtr) -> AllocationPtr {
+    ret!(());
 }
 
 #[test]

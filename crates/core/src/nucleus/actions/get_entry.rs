@@ -1,4 +1,4 @@
-use crate::{content_store::GetContent, context::Context, NEW_RELIC_LICENSE_KEY};
+use crate::{content_store::GetContent, context::Context};
 use holochain_core_types::{
     crud_status::CrudStatus,
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
@@ -8,7 +8,7 @@ use holochain_core_types::{
 use holochain_persistence_api::{cas::content::Address, eav::IndexFilter};
 use std::{collections::BTreeSet, str::FromStr, sync::Arc};
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn get_entry_from_agent_chain(
     context: &Arc<Context>,
     address: &Address,
@@ -26,17 +26,17 @@ pub fn get_entry_from_agent_chain(
     agent.chain_store().get(address)
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn get_entry_from_dht(
-    context: &Arc<Context>,
+    context: Arc<Context>,
     address: &Address,
 ) -> Result<Option<Entry>, HolochainError> {
     context.state().unwrap().dht().get(address)
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn get_entry_crud_meta_from_dht(
-    context: &Arc<Context>,
+    context: Arc<Context>,
     address: &Address,
 ) -> Result<Option<(CrudStatus, Option<Address>)>, HolochainError> {
     // Get crud-status
@@ -98,13 +98,13 @@ pub(crate) fn get_entry_crud_meta_from_dht(
     Ok(Some((crud_status, maybe_link_update_delete)))
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn get_entry_with_meta(
-    context: &Arc<Context>,
+    context: Arc<Context>,
     address: Address,
 ) -> Result<Option<EntryWithMeta>, HolochainError> {
     // 1. try to get the entry
-    let entry = match get_entry_from_dht(context, &address) {
+    let entry = match get_entry_from_dht(Arc::clone(&context), &address) {
         Err(err) => return Err(err),
         Ok(None) => return Ok(None),
         Ok(Some(entry)) => entry,
@@ -112,7 +112,7 @@ pub fn get_entry_with_meta(
 
     // 2. try to get the entry's metadata
     let (crud_status, maybe_link_update_delete) =
-        match get_entry_crud_meta_from_dht(context, &address)? {
+        match get_entry_crud_meta_from_dht(Arc::clone(&context), &address)? {
             Some(crud_info) => crud_info,
             None => {
                 log_debug!(
@@ -145,10 +145,10 @@ pub mod tests {
     fn test_get_entry_from_dht_cas() {
         let entry = test_entry();
         let context = test_context_with_state(None);
-        let result = super::get_entry_from_dht(&context, &entry.address());
+        let result = super::get_entry_from_dht(Arc::clone(&context), &entry.address());
         assert_eq!(Ok(None), result);
         let _ = (*context.state().unwrap().dht()).clone().add(&entry);
-        let result = super::get_entry_from_dht(&context, &entry.address());
+        let result = super::get_entry_from_dht(Arc::clone(&context), &entry.address());
         assert_eq!(Ok(Some(entry.clone())), result);
     }
     /*

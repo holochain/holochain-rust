@@ -37,7 +37,7 @@ pub mod tests {
     };
     use holochain_json_api::json::JsonString;
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
-    use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
+    use holochain_wasm_types::get_links::GetLinksArgs;
     use test_utils::*;
 
     // TODO: Bring the old in-memory network up to speed and turn on this test again!
@@ -145,7 +145,7 @@ pub mod tests {
                 ..Default::default()
             },
         };
-        let result = context1.block_on(get_entry_result_workflow(&context1, &args));
+        let result = context1.block_on(get_entry_result_workflow(Arc::clone(&context1), &args));
         if let GetEntryResultType::Single(item) = result.unwrap().result {
             let headers = item.headers;
             assert_eq!(headers, vec![header1, header2]);

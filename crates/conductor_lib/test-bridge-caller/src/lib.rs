@@ -1,18 +1,6 @@
-#[macro_use]
 extern crate hdk;
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-extern crate serde_json;
 
-use hdk::holochain_persistence_api::{
-    cas::content::Address,
-};
-
-use hdk::holochain_json_api::{
-    json::JsonString,
-    error::JsonError
-};
+use hdk::prelude::*;
 
 fn handle_call_bridge() -> JsonString {
     hdk::call("test-callee", "greeter", Address::from("token"), "hello", JsonString::empty_object()).unwrap()
@@ -30,7 +18,7 @@ define_zome! {
     }
 
     validate_agent: |validation_data : EntryValidationData::<AgentId>| {
-        Ok(())
+        ValidationResult::Ok
     }
 
     functions: [

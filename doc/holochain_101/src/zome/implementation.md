@@ -53,7 +53,7 @@ This function will be called by the invocation dispatch (see above).
 The `wasmi::RuntimeArgs` passed to the Zome API function contains only a single
 `u64` value. This is an encoded representation of a single page of memory
 supported by the memory manager. The 16 high bits are the memory offset and the
-16 low bits are the memory length. See the `wasm_utils` crate for more
+16 low bits are the memory length. See the `wasm_engine` crate for more
 implementation details.
 
 You don't have to work with the memory manager directly, simply pass the runtime

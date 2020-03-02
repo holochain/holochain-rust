@@ -2,46 +2,23 @@
 //! but not every developer should have to write them. A notable function defined here is
 //! __hdk_get_json_definition which allows Holochain to retrieve JSON defining the Zome.
 
-use crate::{
-    api::G_MEM_STACK,
-    entry_definition::{AgentValidator, ValidatingEntryType},
-};
+use crate::prelude::*;
+use crate::entry_definition::{AgentValidator, ValidatingEntryType};
 use holochain_core_types::{
     dna::{
-        entry_types::{deserialize_entry_types, serialize_entry_types},
-        zome::{ZomeEntryTypes, ZomeFnDeclarations, ZomeTraits},
+        zome::{ZomeFnDeclarations, ZomeTraits, PartialZome},
     },
     entry::entry_type::{AppEntryType, EntryType},
-    error::{RibosomeEncodedValue, RibosomeEncodingBits},
 };
-use holochain_json_derive::DefaultJson;
-use serde_derive::{Deserialize, Serialize};
 
-use holochain_json_api::{error::JsonError, json::JsonString};
-
-use holochain_wasm_utils::{
-    api_serialization::validation::{
-        AgentIdValidationArgs, EntryValidationArgs, LinkValidationArgs, LinkValidationPackageArgs,
-    },
-    holochain_core_types::error::RibosomeErrorCode,
-    memory::{
-        allocation::AllocationError,
-        ribosome::{load_ribosome_encoded_json, return_code_for_allocation_result},
-    },
+use holochain_wasm_types::validation::{
+    AgentIdValidationArgs, EntryValidationArgs, LinkValidationArgs, LinkValidationPackageArgs,
 };
+use holochain_wasmer_guest::*;
 use std::{collections::BTreeMap, convert::TryFrom};
 
 trait Ribosome {
     fn define_entry_type(&mut self, name: String, entry_type: ValidatingEntryType);
-}
-
-#[derive(Debug, Serialize, Deserialize, DefaultJson, Default)]
-struct PartialZome {
-    #[serde(serialize_with = "serialize_entry_types")]
-    #[serde(deserialize_with = "deserialize_entry_types")]
-    entry_types: ZomeEntryTypes,
-    traits: ZomeTraits,
-    fn_declarations: ZomeFnDeclarations,
 }
 
 #[allow(improper_ctypes)]
@@ -71,259 +48,124 @@ extern "C" {
     fn zome_setup(zd: &mut ZomeDefinition);
     fn __list_traits() -> ZomeTraits;
     fn __list_functions() -> ZomeFnDeclarations;
+
+    // memory stuff
+    fn __import_allocation(guest_allocation_ptr: AllocationPtr, host_allocation_ptr: AllocationPtr);
+    fn __import_bytes(host_allocation_ptr: AllocationPtr, guest_bytes_ptr: Ptr);
+}
+
+fn zome_definition() -> ZomeDefinition {
+    let mut zd = ZomeDefinition::new();
+    unsafe { zome_setup(&mut zd) };
+    zd
 }
 
 #[no_mangle]
 pub extern "C" fn __hdk_get_validation_package_for_entry_type(
-    encoded_allocation_of_input: RibosomeEncodingBits,
-) -> RibosomeEncodingBits {
-    let allocation = match crate::global_fns::init_global_memory_from_ribosome_encoding(
-        encoded_allocation_of_input,
-    ) {
-        Ok(allocation) => allocation,
-        Err(allocation_error) => return allocation_error.as_ribosome_encoding(),
-    };
+    host_allocation_ptr: AllocationPtr,
+) -> AllocationPtr {
+    let name = host_string!(host_allocation_ptr);
 
-    let mut zd = ZomeDefinition::new();
-    unsafe { zome_setup(&mut zd) };
-
-    let name = allocation.read_to_string();
-
-    match zd
+    match zome_definition()
         .entry_types
         .into_iter()
         .find(|ref validating_entry_type| {
             validating_entry_type.name == EntryType::App(AppEntryType::from(name.clone()))
         }) {
-        None => RibosomeEncodedValue::Failure(RibosomeErrorCode::CallbackFailed).into(),
-        Some(mut entry_type_definition) => {
-            let package = (*entry_type_definition.package_creator)();
-            return_code_for_allocation_result(crate::global_fns::write_json(package)).into()
-        }
-    }
+        Some(mut entry_type_definition) => ret!((*entry_type_definition.package_creator)()),
+        None => ret!(WasmResult::Err(WasmError::CallbackFailed)),
+    };
 }
 
 #[no_mangle]
-pub extern "C" fn __hdk_validate_app_entry(
-    encoded_allocation_of_input: RibosomeEncodingBits,
-) -> RibosomeEncodingBits {
-    if let Err(allocation_error) =
-        crate::global_fns::init_global_memory_from_ribosome_encoding(encoded_allocation_of_input)
-    {
-        return allocation_error.as_ribosome_encoding();
-    }
-
-    let mut zd = ZomeDefinition::new();
-    unsafe { zome_setup(&mut zd) };
-
+pub extern "C" fn __hdk_validate_app_entry(host_allocation_ptr: AllocationPtr) -> AllocationPtr {
     // Deserialize input
-    let input: EntryValidationArgs = match load_ribosome_encoded_json(encoded_allocation_of_input) {
-        Ok(v) => v,
-        Err(e) => return RibosomeEncodedValue::from(e).into(),
-    };
+    let input: EntryValidationArgs = host_args!(host_allocation_ptr);
 
-    let entry_type = match EntryType::try_from(input.validation_data.clone()) {
-        Ok(v) => v,
-        Err(e) => return RibosomeEncodedValue::from(e).into(),
-    };
+    let entry_type = try_result!(
+        EntryType::try_from(input.validation_data.clone()),
+        "Failed to deserialize EntryType"
+    );
 
-    match zd
+    match zome_definition()
         .entry_types
         .into_iter()
         .find(|ref validating_entry_type| validating_entry_type.name == entry_type)
     {
-        None => RibosomeErrorCode::CallbackFailed as RibosomeEncodingBits,
+        None => holochain_wasmer_guest::json::to_allocation_ptr(WasmResult::Err(WasmError::CallbackFailed).into()),
         Some(mut entry_type_definition) => {
-            let validation_result = (*entry_type_definition.validator)(input.validation_data);
-
-            match validation_result {
-                Ok(()) => RibosomeEncodedValue::Success.into(),
-                Err(fail_string) => return_code_for_allocation_result(
-                    crate::global_fns::write_json(JsonString::from_json(&fail_string)),
-                )
-                .into(),
-            }
+            ret!((*entry_type_definition.validator)(input.validation_data));
         }
     }
 }
 
 #[no_mangle]
-pub extern "C" fn __hdk_validate_agent_entry(
-    encoded_allocation_of_input: RibosomeEncodingBits,
-) -> RibosomeEncodingBits {
-    if let Err(allocation_error) =
-        crate::global_fns::init_global_memory_from_ribosome_encoding(encoded_allocation_of_input)
-    {
-        return allocation_error.as_ribosome_encoding();
-    }
-
-    let mut zd = ZomeDefinition::new();
-    unsafe { zome_setup(&mut zd) };
+pub extern "C" fn __hdk_validate_agent_entry(host_allocation_ptr: AllocationPtr) -> AllocationPtr {
+    let input: AgentIdValidationArgs = host_args!(host_allocation_ptr);
 
     //get the validator code
-    let mut validator = match zd.agent_entry_validator {
-        None => {
-            return return_code_for_allocation_result(crate::global_fns::write_json(
-                JsonString::from_json("No agent validation callback registered for zome."),
-            ))
-            .into();
-        }
-        Some(v) => v,
-    };
+    let mut validator = try_result!(
+        (zome_definition().agent_entry_validator).ok_or(()),
+        "No agent validation callback registered for zome."
+    );
 
-    // Deserialize input
-    let input: AgentIdValidationArgs = match load_ribosome_encoded_json(encoded_allocation_of_input)
-    {
-        Ok(v) => v,
-        Err(e) => return RibosomeEncodedValue::from(e).into(),
-    };
-
-    let validation_result = (*validator)(input.validation_data);
-
-    match validation_result {
-        Ok(()) => RibosomeEncodedValue::Success.into(),
-        Err(fail_string) => return_code_for_allocation_result(crate::global_fns::write_json(
-            JsonString::from_json(&fail_string),
-        ))
-        .into(),
-    }
+    ret!((*validator)(input.validation_data));
 }
 
 #[no_mangle]
 pub extern "C" fn __hdk_get_validation_package_for_link(
-    encoded_allocation_of_input: RibosomeEncodingBits,
-) -> RibosomeEncodingBits {
-    if let Err(allocation_error) =
-        crate::global_fns::init_global_memory_from_ribosome_encoding(encoded_allocation_of_input)
-    {
-        return allocation_error.as_ribosome_encoding();
-    };
+    host_allocation_ptr: AllocationPtr,
+) -> AllocationPtr {
+    let input: LinkValidationPackageArgs = host_args!(host_allocation_ptr);
 
-    let mut zd = ZomeDefinition::new();
-    unsafe { zome_setup(&mut zd) };
-
-    let input: LinkValidationPackageArgs =
-        match load_ribosome_encoded_json(encoded_allocation_of_input) {
-            Ok(v) => v,
-            Err(e) => return RibosomeEncodedValue::from(e).into(),
-        };
-
-    RibosomeEncodingBits::from(
-        zd.entry_types
-            .into_iter()
-            .find(|ref validation_entry_type| {
-                validation_entry_type.name == EntryType::from(input.entry_type.clone())
+    ret!(zome_definition()
+        .entry_types
+        .into_iter()
+        .find(|ref validation_entry_type| {
+            validation_entry_type.name == EntryType::from(input.entry_type.clone())
+        })
+        .and_then(|entry_type| {
+            entry_type.links.into_iter().find(|ref link_definition| {
+                link_definition.link_type == input.link_type
+                    && link_definition.direction == input.direction
             })
-            .and_then(|entry_type| {
-                entry_type.links.into_iter().find(|ref link_definition| {
-                    link_definition.link_type == input.link_type
+        })
+        .and_then(|mut link_definition| { Some((*link_definition.package_creator)()) }));
+}
+
+#[no_mangle]
+pub extern "C" fn __hdk_validate_link(host_allocation_ptr: AllocationPtr) -> AllocationPtr {
+    let input: LinkValidationArgs = host_args!(host_allocation_ptr);
+
+    ret!(zome_definition()
+        .entry_types
+        .into_iter()
+        .find(|ref validation_entry_type| {
+            validation_entry_type.name == EntryType::from(input.entry_type.clone())
+        })
+        .and_then(|entry_type_definition| {
+            entry_type_definition
+                .links
+                .into_iter()
+                .find(|link_definition| {
+                    link_definition.link_type == *input.link.link_type()
                         && link_definition.direction == input.direction
                 })
-            })
-            .and_then(|mut link_definition| {
-                let package = (*link_definition.package_creator)();
-                Some(return_code_for_allocation_result(
-                    crate::global_fns::write_json(package),
-                ))
-            })
-            .unwrap_or(RibosomeEncodedValue::Failure(
-                RibosomeErrorCode::CallbackFailed,
-            )),
-    )
+        })
+        .and_then(|mut link_definition| {
+            Some((*link_definition.validator)(input.validation_data))
+        }));
 }
 
 #[no_mangle]
-pub extern "C" fn __hdk_validate_link(
-    encoded_allocation_of_input: RibosomeEncodingBits,
-) -> RibosomeEncodingBits {
-    if let Err(allocation_error) =
-        crate::global_fns::init_global_memory_from_ribosome_encoding(encoded_allocation_of_input)
-    {
-        return allocation_error.as_ribosome_encoding();
-    };
-
-    let mut zd = ZomeDefinition::new();
-    unsafe { zome_setup(&mut zd) }
-
-    let input: LinkValidationArgs = match load_ribosome_encoded_json(encoded_allocation_of_input) {
-        Ok(v) => v,
-        Err(e) => return RibosomeEncodedValue::from(e).into(),
-    };
-
-    RibosomeEncodingBits::from(
-        zd.entry_types
-            .into_iter()
-            .find(|ref validation_entry_type| {
-                validation_entry_type.name == EntryType::from(input.entry_type.clone())
-            })
-            .and_then(|entry_type_definition| {
-                entry_type_definition
-                    .links
-                    .into_iter()
-                    .find(|link_definition| {
-                        link_definition.link_type == *input.link.link_type()
-                            && link_definition.direction == input.direction
-                    })
-            })
-            .and_then(|mut link_definition| {
-                let validation_result = (*link_definition.validator)(input.validation_data);
-                Some(match validation_result {
-                    Ok(()) => RibosomeEncodedValue::Success,
-                    Err(fail_string) => return_code_for_allocation_result(
-                        crate::global_fns::write_json(JsonString::from_json(&fail_string)),
-                    ),
-                })
-            })
-            .unwrap_or(RibosomeEncodedValue::Failure(
-                RibosomeErrorCode::CallbackFailed,
-            )),
-    )
+pub extern "C" fn __hdk_hdk_version(_: AllocationPtr) -> AllocationPtr {
+    ret!(WasmString::from(holochain_core_types::hdk_version::HDK_VERSION.to_string()))
 }
 
 #[no_mangle]
-pub extern "C" fn __hdk_hdk_version(
-    encoded_allocation_of_input: RibosomeEncodingBits,
-) -> RibosomeEncodingBits {
-    if let Err(allocation_error) =
-        crate::global_fns::init_global_memory_from_ribosome_encoding(encoded_allocation_of_input)
-    {
-        return allocation_error.as_ribosome_encoding();
-    }
-
-    let mut mem_stack = unsafe {
-        match G_MEM_STACK {
-            Some(mem_stack) => mem_stack,
-            None => {
-                return AllocationError::BadStackAlignment.as_ribosome_encoding();
-            }
-        }
-    };
-
-    return_code_for_allocation_result(
-        mem_stack.write_string(
-            holochain_core_types::hdk_version::HDK_VERSION
-                .to_string()
-                .as_ref(),
-        ),
-    )
-    .into()
-}
-
-#[no_mangle]
-pub extern "C" fn __hdk_get_json_definition(
-    encoded_allocation_of_input: RibosomeEncodingBits,
-) -> RibosomeEncodingBits {
-    if let Err(allocation_error) =
-        crate::global_fns::init_global_memory_from_ribosome_encoding(encoded_allocation_of_input)
-    {
-        return allocation_error.as_ribosome_encoding();
-    }
-
-    let mut zd = ZomeDefinition::new();
-    unsafe { zome_setup(&mut zd) };
-
+pub extern "C" fn __hdk_get_json_definition(_: AllocationPtr) -> AllocationPtr {
     let mut entry_types = BTreeMap::new();
-    for validating_entry_type in zd.entry_types {
+    for validating_entry_type in zome_definition().entry_types {
         entry_types.insert(
             validating_entry_type.name,
             validating_entry_type.entry_type_definition,
@@ -333,24 +175,11 @@ pub extern "C" fn __hdk_get_json_definition(
     let traits = unsafe { __list_traits() };
     let fn_declarations = unsafe { __list_functions() };
 
-    let partial_zome = PartialZome {
-        entry_types,
-        traits,
-        fn_declarations,
-    };
-
-    let json_string = JsonString::from(partial_zome);
-
-    let mut mem_stack = unsafe {
-        match G_MEM_STACK {
-            Some(mem_stack) => mem_stack,
-            None => {
-                return AllocationError::BadStackAlignment.as_ribosome_encoding();
-            }
-        }
-    };
-
-    return_code_for_allocation_result(mem_stack.write_string(&String::from(json_string))).into()
+    ret!(PartialZome::new(
+            &entry_types,
+            &traits,
+            &fn_declarations,
+        ));
 }
 
 #[cfg(test)]
@@ -398,7 +227,7 @@ pub mod tests {
             },
 
             validation: |_validation_data: hdk::EntryValidationData<Post>| {
-                Ok(())
+                ValidationResult::Ok
             }
 
         );
@@ -407,10 +236,11 @@ pub mod tests {
             validating_entry_type.entry_type_definition,
         );
 
-        let partial_zome = PartialZome {
-            entry_types,
-            ..Default::default()
-        };
+        let partial_zome = PartialZome::new(
+            &entry_types,
+            &Default::default(),
+            &Default::default(),
+        );
 
         assert_eq!(
             JsonString::from(partial_zome),

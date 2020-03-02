@@ -1,0 +1,21 @@
+[package]
+name = "holochain_wasm_types"
+version = "0.0.43-alpha3"
+authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+edition = "2018"
+description = "Specialised types to allow wasm host/guest to work for holochain"
+keywords = ["holochain", "holo", "p2p", "network", "simulation"]
+license = "GPL-3.0-only"
+readme = "README.md"
+documentation = "https://github.com/holochain/holochain-rust"
+repository = "https://github.com/holochain/holochain-rust"
+
+[dependencies]
+holochain_core_types = { version = "=0.0.43-alpha3", path = "../core_types" }
+holochain_json_api = "=0.0.23"
+holochain_persistence_api = "=0.0.17"
+serde_derive = "=1.0.104"
+serde = "=1.0.104"
+holochain_json_derive = "=0.0.23"
+serde_json = { version = "=1.0.47", features = ["preserve_order"] }
+holochain_wasmer_guest = "=0.0.14"

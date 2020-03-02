@@ -3,7 +3,7 @@ use crate::{
     instance::Instance,
     network::actions::initialize_network::initialize_network,
     nucleus::actions::{call_init::call_init, initialize::initialize_chain},
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 use holochain_core_types::{
     dna::Dna,
@@ -11,7 +11,7 @@ use holochain_core_types::{
 };
 use std::sync::Arc;
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn initialize(
     instance: &Instance,
     maybe_dna: Option<Dna>,

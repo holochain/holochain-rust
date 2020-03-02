@@ -1,28 +1,29 @@
 use crate::{
     agent::{self, find_chain_header},
     content_store::GetContent,
+    workflows::{
+        callback::validation_package::get_validation_package_definition,
+    },
+    wasm_engine::callback::CallbackResult,
     context::Context,
     entry::CanPublish,
     state::{State, StateWrapper},
-    wasm_engine::callback::{
-        validation_package::get_validation_package_definition, CallbackResult,
-    },
-    NEW_RELIC_LICENSE_KEY,
+
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
     signature::Provenance,
-    validation::{ValidationPackage, ValidationPackageDefinition::*},
+    validation::{ValidationPackage, ValidationPackageDefinition::*, ValidationResult},
 };
 use std::{sync::Arc, vec::Vec};
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn build_validation_package<'a>(
-    entry: &'a Entry,
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+pub fn build_validation_package(
     context: Arc<Context>,
-    provenances: &'a Vec<Provenance>,
+    entry: &Entry,
+    provenances: &Vec<Provenance>,
 ) -> Result<ValidationPackage, HolochainError> {
     match entry.entry_type() {
         EntryType::App(app_entry_type) => {
@@ -35,10 +36,10 @@ pub fn build_validation_package<'a>(
                 .get_zome_name_for_app_entry_type(&app_entry_type)
                 .is_none()
             {
-                return Err(HolochainError::ValidationFailed(format!(
+                return Err(HolochainError::ValidationFailed(ValidationResult::Fail(format!(
                     "Unknown app entry type '{}'",
                     String::from(app_entry_type),
-                )));
+                ))));
             }
         }
 
@@ -62,10 +63,10 @@ pub fn build_validation_package<'a>(
             // FIXME
         }
         _ => {
-            return Err(HolochainError::ValidationFailed(format!(
+            return Err(HolochainError::ValidationFailed(ValidationResult::Fail(format!(
                 "Attempted to validate system entry type {:?}",
                 entry.entry_type(),
-            )));
+            ))));
         }
     };
 
@@ -103,7 +104,7 @@ pub fn build_validation_package<'a>(
         Some(entry_header) => entry_header,
     };
 
-    get_validation_package_definition(&entry, context.clone())
+    get_validation_package_definition(Arc::clone(&context), &entry)
         .and_then(|callback_result| match callback_result {
             CallbackResult::Fail(error_string) => Err(HolochainError::ErrorGeneric(error_string)),
             CallbackResult::ValidationPackageDefinition(def) => Ok(def),
@@ -151,7 +152,7 @@ pub fn build_validation_package<'a>(
 }
 
 // given a slice of headers return the entries for those marked public
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn public_chain_entries_from_headers(
     context: &Arc<Context>,
     headers: &[ChainHeader],
@@ -172,7 +173,7 @@ fn public_chain_entries_from_headers(
         .collect::<Vec<_>>()
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn all_chain_headers_before_header(
     context: &Arc<Context>,
     header: &ChainHeader,
@@ -205,7 +206,7 @@ mod tests {
         let chain_header = commit(test_entry_package_entry(), &context);
 
         let maybe_validation_package =
-            build_validation_package(&test_entry_package_entry(), context.clone(), &vec![]);
+            build_validation_package(Arc::clone(&context), &test_entry_package_entry(), &vec![]);
         println!("{:?}", maybe_validation_package);
         assert!(maybe_validation_package.is_ok());
 
@@ -231,8 +232,8 @@ mod tests {
         let chain_header = commit(test_entry_package_chain_entries(), &context);
 
         let maybe_validation_package = build_validation_package(
+            Arc::clone(&context),
             &test_entry_package_chain_entries(),
-            context.clone(),
             &vec![],
         );
         println!("{:?}", maybe_validation_package);
@@ -263,8 +264,8 @@ mod tests {
         let chain_header = commit(test_entry_package_chain_headers(), &context);
 
         let maybe_validation_package = build_validation_package(
+            Arc::clone(&context),
             &test_entry_package_chain_headers(),
-            context.clone(),
             &vec![],
         );
         assert!(maybe_validation_package.is_ok());
@@ -291,7 +292,7 @@ mod tests {
         let chain_header = commit(test_entry_package_chain_full(), &context);
 
         let maybe_validation_package =
-            build_validation_package(&test_entry_package_chain_full(), context.clone(), &vec![]);
+            build_validation_package(Arc::clone(&context), &test_entry_package_chain_full(), &vec![]);
         assert!(maybe_validation_package.is_ok());
 
         let headers = all_chain_headers_before_header(&context, &chain_header);

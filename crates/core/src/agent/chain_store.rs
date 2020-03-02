@@ -1,21 +1,17 @@
 use crate::{
     content_store::{AddContent, GetContent},
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 use globset::{GlobBuilder, GlobSetBuilder};
 use holochain_core_types::{
-    chain_header::ChainHeader,
-    entry::entry_type::EntryType,
-    error::{
-        HcResult,
-        RibosomeErrorCode::{self, *},
-    },
+    chain_header::ChainHeader, entry::entry_type::EntryType, error::HcResult,
 };
 use holochain_locksmith::RwLock;
 use holochain_persistence_api::cas::{
     content::{Address, AddressableContent, Content},
     storage::ContentAddressableStorage,
 };
+use holochain_wasmer_host::*;
 use std::{str::FromStr, sync::Arc};
 
 #[derive(Debug, Clone)]
@@ -47,7 +43,7 @@ pub enum ChainStoreQueryResult {
     Headers(Vec<ChainHeader>),
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl ChainStore {
     pub fn new(content_storage: Arc<RwLock<dyn ContentAddressableStorage>>) -> Self {
         ChainStore { content_storage }
@@ -78,7 +74,7 @@ impl ChainStore {
         start_chain_header: &Option<ChainHeader>,
         entry_type_names: &[&str],
         options: ChainStoreQueryOptions,
-    ) -> Result<ChainStoreQueryResult, RibosomeErrorCode> {
+    ) -> Result<ChainStoreQueryResult, WasmError> {
         // Get entry_type name(s), if any.  If empty/blank, returns the complete source chain.  A
         // single matching entry type name with no glob pattern matching will use the single
         // entry_type optimization.  Otherwise, we'll construct a GlobSet match and scan the list to
@@ -124,7 +120,7 @@ impl ChainStore {
                 // Single EntryType without "glob" pattern; uses .iter_type()
                 let entry_type = match EntryType::from_str(&one) {
                     Ok(inner) => inner,
-                    Err(..) => return Err(UnknownEntryType),
+                    Err(..) => return Err(WasmError::UnknownEntryType),
                 };
                 if headers {
                     ChainStoreQueryResult::Headers(
@@ -155,10 +151,10 @@ impl ChainStore {
                         GlobBuilder::new(name)
                             .literal_separator(true)
                             .build()
-                            .map_err(|_| UnknownEntryType)?,
+                            .map_err(|_| WasmError::UnknownEntryType)?,
                     );
                 }
-                let globset = builder.build().map_err(|_| UnknownEntryType)?;
+                let globset = builder.build().map_err(|_| WasmError::UnknownEntryType)?;
                 if headers {
                     ChainStoreQueryResult::Headers(
                         self.iter(start_chain_header)
@@ -226,7 +222,7 @@ impl ChainStoreIterator {
 }
 
 /// Follows ChainHeader.link through every previous Entry (of any EntryType) in the chain
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Iterator for ChainStoreIterator {
     type Item = ChainHeader;
 

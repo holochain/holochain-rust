@@ -1,25 +1,24 @@
 use crate::{
     context::Context, dht::actions::hold_aspect::hold_aspect,
     network::entry_with_header::EntryWithHeader, nucleus::validation::validate_entry,
-    NEW_RELIC_LICENSE_KEY,
+
 };
 
 use crate::{
-    nucleus::validation::ValidationError,
     workflows::{hold_entry::hold_entry_workflow, validation_package},
 };
 use holochain_core_types::{
     entry::Entry,
     error::HolochainError,
     network::entry_aspect::EntryAspect,
-    validation::{EntryLifecycle, ValidationData},
+    validation::{EntryLifecycle, ValidationData, ValidationResult},
 };
 use std::sync::Arc;
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn hold_link_workflow(
-    entry_with_header: &EntryWithHeader,
     context: Arc<Context>,
+    entry_with_header: &EntryWithHeader,
 ) -> Result<(), HolochainError> {
     let link_add = match &entry_with_header.entry {
         Entry::LinkAdd(link_add) => link_add,
@@ -32,7 +31,7 @@ pub async fn hold_link_workflow(
     log_debug!(context, "workflow/hold_link: {:?}", link);
     log_debug!(context, "workflow/hold_link: getting validation package...");
     // 1. Get hold of validation package
-    let maybe_validation_package = validation_package(&entry_with_header, context.clone())
+    let maybe_validation_package = validation_package(Arc::clone(&context), &entry_with_header)
         .await
         .map_err(|err| {
             let message = "Could not get validation package from source! -> Add to pending...";
@@ -55,25 +54,27 @@ pub async fn hold_link_workflow(
 
     // 3. Validate the entry
     log_debug!(context, "workflow/hold_link: validate...");
-    validate_entry(
+    match validate_entry(
+        Arc::clone(&context),
         entry_with_header.entry.clone(),
         None,
         validation_data,
-        &context
-    ).await
-    .map_err(|err| {
-        if let ValidationError::UnresolvedDependencies(dependencies) = &err {
+    ).await {
+        ValidationResult::Ok => (),
+        ValidationResult::UnresolvedDependencies(dependencies) => {
             log_debug!(context, "workflow/hold_link: Link could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}", dependencies);
-            HolochainError::ValidationPending
-        } else {
+            return Err(HolochainError::ValidationPending);
+        },
+        ValidationResult::Fail(e) => {
             log_warn!(context, "workflow/hold_link: Link {:?} is NOT valid! Validation error: {:?}",
                 entry_with_header.entry,
-                err,
+                e,
             );
-            HolochainError::from(err)
-        }
+            return Err(HolochainError::from(e));
+        },
+        v => return Err(HolochainError::ValidationFailed(v)),
+    };
 
-    })?;
     log_debug!(context, "workflow/hold_link: is valid!");
 
     // 3. If valid store the entry aspect in the local DHT shard
@@ -83,7 +84,7 @@ pub async fn hold_link_workflow(
     log_debug!(context, "workflow/hold_link: added! {:?}", link);
 
     //4. store link_add entry so we have all we need to respond to get links queries without any other network look-up
-    hold_entry_workflow(&entry_with_header, context.clone()).await?;
+    hold_entry_workflow(Arc::clone(&context), &entry_with_header).await?;
     log_debug!(
         context,
         "workflow/hold_entry: added! {:?}",

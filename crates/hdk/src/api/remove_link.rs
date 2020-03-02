@@ -1,6 +1,6 @@
 use crate::{error::ZomeApiError, Dispatch};
 use holochain_persistence_api::cas::content::Address;
-use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
+use holochain_wasm_types::link_entries::LinkEntriesArgs;
 
 /// Commits a LinkRemove entry to your local source chain that marks a link as 'deleted' by setting
 /// its status metadata to `Deleted` which gets published to the DHT.
@@ -26,8 +26,8 @@ use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 /// # use holochain_persistence_api::cas::content::Address;
 /// # use hdk::AGENT_ADDRESS;
 /// # use hdk::error::ZomeApiResult;
-/// # use hdk::holochain_wasm_utils::api_serialization::get_entry::GetEntryOptions;
-/// # use hdk::holochain_wasm_utils::api_serialization::get_entry::StatusRequestKind;
+/// # use hdk::holochain_wasm_types::get_entry::GetEntryOptions;
+/// # use hdk::holochain_wasm_types::get_entry::StatusRequestKind;
 /// # fn main() {
 ///
 /// #[derive(Serialize, Deserialize, Debug, DefaultJson)]

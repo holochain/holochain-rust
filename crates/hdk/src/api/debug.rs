@@ -21,7 +21,7 @@ use holochain_json_api::json::JsonString;
 /// ```
 pub fn debug<J: Into<String>>(msg: J) -> ZomeApiResult<()> {
     let _: ZomeApiResult<()> = Dispatch::Debug.with_input(JsonString::from_json(&msg.into()));
-    // internally returns RibosomeEncodedValue::Success which is a zero length allocation
+    // internally returns RibosomeReturnValue::Success which is a zero length allocation
     // return Ok(()) unconditionally instead of the "error" from success
     Ok(())
 }

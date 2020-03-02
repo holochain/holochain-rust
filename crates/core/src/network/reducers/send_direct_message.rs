@@ -2,7 +2,7 @@ use crate::{
     action::{ActionWrapper, DirectMessageData},
     network::{reducers::send, state::NetworkState},
     state::State,
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
@@ -11,7 +11,7 @@ use lib3h_protocol::{
 };
 
 #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn inner(
     network_state: &mut NetworkState,
     direct_message_data: &DirectMessageData,
@@ -41,7 +41,7 @@ fn inner(
 }
 
 #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_send_direct_message(
     network_state: &mut NetworkState,
     _root_state: &State,
@@ -59,7 +59,7 @@ pub fn reduce_send_direct_message(
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_send_direct_message_timeout(
     network_state: &mut NetworkState,
     _root_state: &State,

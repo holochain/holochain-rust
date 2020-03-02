@@ -2,8 +2,8 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     nucleus::{actions::get_entry::get_entry_from_agent_chain, ZomeFnCall, ZomeFnResult},
-    wasm_engine::{self, WasmCallData},
-    NEW_RELIC_LICENSE_KEY,
+    wasm_engine::{WasmCallData},
+
 };
 use holochain_core_types::{
     dna::{capabilities::CapabilityRequest, wasm::DnaWasm},
@@ -24,8 +24,12 @@ use holochain_dpki::utils::Verify;
 use crate::instance::dispatch_action;
 use base64;
 use futures::{future::Future, task::Poll};
-use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
+use holochain_wasm_types::crypto::CryptoMethod;
 use std::{pin::Pin, sync::Arc};
+use std::convert::TryFrom;
+use holochain_wasmer_host::JsonError;
+use holochain_wasmer_host::WasmError;
+use wasmer_runtime::Instance;
 
 #[derive(Clone, Debug, PartialEq, Hash, Serialize)]
 pub struct ExecuteZomeFnResponse {
@@ -33,7 +37,7 @@ pub struct ExecuteZomeFnResponse {
     result: ZomeFnResult,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl ExecuteZomeFnResponse {
     pub fn new(call: ZomeFnCall, result: Result<JsonString, HolochainError>) -> Self {
         ExecuteZomeFnResponse { call, result }
@@ -64,10 +68,10 @@ impl ExecuteZomeFnResponse {
 ///
 /// Use Context::block_on to wait for the call result.
 #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn call_zome_function(
-    zome_call: ZomeFnCall,
     context: Arc<Context>,
+    zome_call: ZomeFnCall,
 ) -> Result<JsonString, HolochainError> {
     log_debug!(
         context,
@@ -108,7 +112,7 @@ pub async fn call_zome_function(
 }
 
 /// validates that a given zome function call specifies a correct zome function and capability grant
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn validate_call(
     context: Arc<Context>,
     fn_call: &ZomeFnCall,
@@ -146,12 +150,12 @@ pub fn validate_call(
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn is_token_the_agent(context: Arc<Context>, request: &CapabilityRequest) -> bool {
     context.agent_id.pub_sign_key == request.cap_token.to_string()
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn get_grant(context: &Arc<Context>, address: &Address) -> Option<CapTokenGrant> {
     match get_entry_from_agent_chain(context, address).ok()?? {
         Entry::CapTokenGrant(grant) => Some(grant),
@@ -161,7 +165,7 @@ fn get_grant(context: &Arc<Context>, address: &Address) -> Option<CapTokenGrant>
 
 /// checks to see if a given function call is allowable according to the capabilities
 /// that have been registered to callers by looking for grants in the chain.
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn check_capability(context: Arc<Context>, fn_call: &ZomeFnCall) -> bool {
     let maybe_grant = get_grant(&context.clone(), &fn_call.cap_token());
     match maybe_grant {
@@ -170,13 +174,13 @@ pub fn check_capability(context: Arc<Context>, fn_call: &ZomeFnCall) -> bool {
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn encode_call_data_for_signing<J: Into<JsonString>>(function: &str, parameters: J) -> String {
     base64::encode(&format!("{}:{}", function, parameters.into()))
 }
 
 // temporary function to create a mock signature of for a zome call cap request
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn make_call_sig<J: Into<JsonString>>(
     context: Arc<Context>,
     function: &str,
@@ -192,7 +196,7 @@ fn make_call_sig<J: Into<JsonString>>(
 }
 
 // temporary function to verify a mock signature of for a zome call cap request
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn verify_call_sig<J: Into<JsonString>>(
     provenance: &Provenance,
     function: &str,
@@ -203,7 +207,7 @@ pub fn verify_call_sig<J: Into<JsonString>>(
 }
 
 /// creates a capability request for a zome call by signing the function name and parameters
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn make_cap_request_for_call<J: Into<JsonString>>(
     callers_context: Arc<Context>,
     cap_token: Address,
@@ -218,7 +222,7 @@ pub fn make_cap_request_for_call<J: Into<JsonString>>(
 }
 
 /// verifies that this grant is valid for a given requester and token value
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &ZomeFnCall) -> bool {
     let cap_functions = grant.functions();
     let maybe_zome_grants = cap_functions.get(&fn_call.zome_name);
@@ -285,22 +289,47 @@ pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &Zome
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn spawn_zome_function(context: Arc<Context>, zome_call: ZomeFnCall) {
+    // this is a hack for backwards compatibility
+    struct CallResult(JsonString);
+
+    impl TryFrom<JsonString> for CallResult {
+        type Error = JsonError;
+        fn try_from(j: JsonString) -> Result<Self, Self::Error> {
+            Ok(CallResult(j))
+        }
+    }
+
     std::thread::Builder::new()
         .name(format!("{:?}", zome_call))
         .spawn(move || {
             // Have Ribosome spin up DNA and call the zome function
-            let call_result = wasm_engine::run_dna(
-                Some(zome_call.clone().parameters.to_bytes()),
-                WasmCallData::new_zome_call(context.clone(), zome_call.clone()),
-            );
+            let call_data = WasmCallData::new_zome_call(context.clone(), zome_call.clone());
+            let maybe_instance: Result<Instance, HolochainError> = call_data.instance();
+
+            let call_result: ZomeFnResult = match maybe_instance {
+                Err(e) => Err(e),
+                Ok(mut instance) => {
+                    let call_result_hack: Result<CallResult, WasmError> = holochain_wasmer_host::guest::call(
+                        &mut instance,
+                        &call_data.fn_name(),
+                        zome_call.clone().parameters,
+                    );
+                    match call_result_hack {
+                        Ok(call_result) => Ok(call_result.0),
+                        Err(e) => Err(HolochainError::Wasm(e)),
+                    }
+                },
+            };
+
             log_debug!(
                 context,
                 "actions/call_zome_fn: got call_result from ribosome::run_dna."
             );
             // Construct response
             let response = ExecuteZomeFnResponse::new(zome_call, call_result);
+
             // Send ReturnZomeFunctionResult Action
             log_debug!(
                 context,
@@ -328,7 +357,7 @@ pub struct CallResultFuture {
 }
 
 impl Unpin for CallResultFuture {}
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Future for CallResultFuture {
     type Output = Result<JsonString, HolochainError>;
 

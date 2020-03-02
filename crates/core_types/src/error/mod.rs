@@ -2,19 +2,20 @@
 //! which is responsible for mounting and running instances of DNA, and executing WASM code.
 
 mod dna_error;
-mod ribosome_error;
 
+pub use self::dna_error::*;
 use self::HolochainError::*;
-pub use self::{dna_error::*, ribosome_error::*};
 use futures::channel::oneshot::Canceled as FutureCanceled;
 use holochain_json_api::{
     error::{JsonError, JsonResult},
     json::*,
 };
+use validation::ValidationResult;
 use holochain_locksmith::LocksmithError;
 use holochain_persistence_api::{error::PersistenceError, hash::HashString};
 use lib3h_crypto_api::CryptoError;
 
+use holochain_wasmer_common::WasmError;
 use serde_json::Error as SerdeError;
 use std::{
     error::Error,
@@ -106,10 +107,9 @@ pub enum HolochainError {
     SerializationError(String),
     InvalidOperationOnSysEntry,
     CapabilityCheckFailed,
-    ValidationFailed(String),
+    ValidationFailed(ValidationResult),
     ValidationPending,
-    Ribosome(RibosomeErrorCode),
-    RibosomeFailed(String),
+    Wasm(WasmError),
     ConfigError(String),
     Timeout,
     InitializationFailed(String),
@@ -118,6 +118,19 @@ pub enum HolochainError {
     EntryNotFoundLocally,
     EntryIsPrivate,
     List(Vec<HolochainError>),
+}
+
+impl From<HolochainError> for ValidationResult {
+    fn from(e: HolochainError) -> ValidationResult {
+        // any error _during_ validation is a failure of validation
+        ValidationResult::Fail(e.to_string())
+    }
+}
+
+impl From<WasmError> for HolochainError {
+    fn from(wasm_error: WasmError) -> HolochainError {
+        HolochainError::Wasm(wasm_error)
+    }
 }
 
 pub type HcResult<T> = Result<T, HolochainError>;
@@ -149,10 +162,9 @@ impl fmt::Display for HolochainError {
                 write!(f, "operation cannot be done on a system entry type")
             }
             CapabilityCheckFailed => write!(f, "Caller does not have Capability to make that call"),
-            ValidationFailed(fail_msg) => write!(f, "{}", fail_msg),
+            ValidationFailed(fail_msg) => write!(f, "{:?}", fail_msg),
             ValidationPending => write!(f, "Entry validation could not be completed"),
-            Ribosome(err_code) => write!(f, "{}", err_code.as_str()),
-            RibosomeFailed(fail_msg) => write!(f, "{}", fail_msg),
+            Wasm(err) => write!(f, "{:?}", err),
             ConfigError(err_msg) => write!(f, "{}", err_msg),
             Timeout => write!(f, "timeout"),
             InitializationFailed(err_msg) => write!(f, "{}", err_msg),

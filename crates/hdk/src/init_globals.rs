@@ -3,18 +3,16 @@
 //! It is automatically called at startup of each Zome function call.
 
 use crate::{api::Dispatch, error::ZomeApiResult};
-use holochain_core_types::error::RibosomeEncodingBits;
-use holochain_wasm_utils::api_serialization::ZomeApiGlobals;
+use holochain_wasm_types::ZomeApiGlobals;
+use holochain_wasmer_guest::AllocationPtr;
 
 #[allow(dead_code)]
 extern "C" {
-    pub fn hc_init_globals(
-        encoded_allocation_of_input: RibosomeEncodingBits,
-    ) -> RibosomeEncodingBits;
+    pub fn hc_init_globals(_: AllocationPtr) -> AllocationPtr;
 }
 
 // HC INIT GLOBALS - Secret Api Function
 // Retrieve all the public global values from the ribosome
 pub(crate) fn init_globals() -> ZomeApiResult<ZomeApiGlobals> {
-    Dispatch::InitGlobals.with_input(0)
+    Dispatch::InitGlobals.without_input()
 }

@@ -2,7 +2,7 @@ use crate::{
     action::{Action, ActionWrapper},
     context::ActionSender,
     instance::dispatch_action,
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::error::{HcResult, HolochainError};
@@ -14,7 +14,7 @@ use std::{pin::Pin, sync::Arc};
 /// Shutdown the network
 /// This tells the network to untrack this instance and then stops the network thread
 /// and sets the P2pNetwork instance in the state to None.
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn shutdown(
     state: Arc<RwLock<StateWrapper>>,
     action_channel: &ActionSender,
@@ -34,7 +34,7 @@ pub struct ShutdownFuture {
     state: Arc<RwLock<StateWrapper>>,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Future for ShutdownFuture {
     type Output = HcResult<()>;
 

@@ -16,33 +16,16 @@ impl ZomeCodeDef {
         quote! {
             #(
                 #[no_mangle]
-                pub extern "C" fn receive(encoded_allocation_of_input: hdk::holochain_core_types::error::RibosomeEncodingBits) -> hdk::holochain_core_types::error::RibosomeEncodingBits {
-                    let maybe_allocation = hdk::holochain_wasm_utils::memory::allocation::WasmAllocation::try_from_ribosome_encoding(encoded_allocation_of_input);
-                    let allocation = match maybe_allocation {
-                        Ok(allocation) => allocation,
-                        Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeEncodedValue::from(allocation_error).into(),
-                    };
-                    let init = hdk::global_fns::init_global_memory(allocation);
-                    if init.is_err() {
-                        return hdk::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
-                            init
-                        ).into();
-                    }
+                pub extern "C" fn receive(host_allocation_ptr: $crate::holochain_wasmer_guest::AllocationPtr) -> $crate::holochain_wasmer_guest::AllocationPtr {
+                    let input: $crate::hdk::holochain_wasm_types::receive::ReceiveParams = $crate::holochain_wasmer_guest::host_args!(host_allocation_ptr);
 
-                    // Deserialize input
-                    let input = load_json!(encoded_allocation_of_input);
-
-                    fn execute(input: hdk::holochain_wasm_utils::api_serialization::receive::ReceiveParams) -> String {
+                    fn execute(input: $crate::hdk::holochain_wasm_types::receive::ReceiveParams) -> String {
                         let #receive_from = input.from;
                         let #receive_param = input.payload;
                         #receive_blocks
                     }
 
-                    hdk::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
-                        hdk::global_fns::write_json(
-                            JsonString::from_json(&execute(input))
-                        )
-                    ).into()
+                    $crate::holochain_wasmer_guest::ret!($crate::hdk::holochain_wasm_engine::holochain_json_string::json::RawString::from(execute(input)));
                 }
             )*
         }

@@ -13,7 +13,6 @@ pub use crate::{
         reducers::reduce,
         state::ZomeFnCallState,
     },
-    wasm_engine::api::ZomeApiFunction,
 };
 use holochain_core_types::{dna::capabilities::CapabilityRequest, error::HcResult};
 use holochain_json_api::json::JsonString;
@@ -23,12 +22,13 @@ use std::sync::Arc;
 
 /// Struct holding data for tracing the call of an HDK function from a zome function
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize)]
-pub struct HdkFnCall {
-    pub function: ZomeApiFunction,
+pub struct WasmApiFnCall {
+    /// imports! name of the function that is invoked by the wasm guest
+    pub function: String,
     pub parameters: JsonString,
 }
 
-pub type HdkFnCallResult = Result<JsonString, String>;
+pub type WasmApiFnCallResult = Result<JsonString, String>;
 
 /// Struct holding data for requesting the execution of a Zome function (QueueZomeFunctionCall Action)
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize)]
@@ -280,7 +280,7 @@ pub mod tests {
         let zome_call =
             ZomeFnCall::create(context.clone(), "test_zome", token, "public_test_fn", "");
 
-        let result = context.block_on(call_zome_function(zome_call, context.clone()));
+        let result = context.block_on(call_zome_function(Arc::clone(&context), zome_call));
 
         assert!(result.is_ok());
         assert_eq!(JsonString::from(RawString::from(1337)), result.unwrap());
@@ -299,7 +299,7 @@ pub mod tests {
             "public_test_fn",
             "{}",
         );
-        let result = context.block_on(call_zome_function(call, context.clone()));
+        let result = context.block_on(call_zome_function(Arc::clone(&context), call));
 
         match result {
             Err(HolochainError::DnaMissing) => {}
@@ -317,7 +317,7 @@ pub mod tests {
         // Create zome function call:
         let call = ZomeFnCall::new("test_zome", dummy_capability_request(), "xxx", "{}");
 
-        let result = context.block_on(call_zome_function(call, context.clone()));
+        let result = context.block_on(call_zome_function(Arc::clone(&context), call));
 
         match result {
             Err(HolochainError::Dna(DnaError::ZomeFunctionNotFound(err))) => {
@@ -337,7 +337,7 @@ pub mod tests {
         // Create bad zome function call
         let call = ZomeFnCall::new("xxx", dummy_capability_request(), "public_test_fn", "{}");
 
-        let result = context.block_on(call_zome_function(call, context.clone()));
+        let result = context.block_on(call_zome_function(Arc::clone(&context), call));
 
         match result {
             Err(HolochainError::Dna(err)) => assert_eq!(err.to_string(), "Zome 'xxx' not found"),

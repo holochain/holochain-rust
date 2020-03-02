@@ -2,12 +2,12 @@ use crate::{
     action::{Action, ActionWrapper},
     nucleus::state::NucleusState,
     state::State,
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 
 /// Reduce ReturnZomeFunctionResult Action.
 /// Simply drops function call into zome_calls state.
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_return_zome_function_result(
     state: &mut NucleusState,
     _root_state: &State,
@@ -19,7 +19,9 @@ pub fn reduce_return_zome_function_result(
         .zome_call_results
         .insert(zome_fn_response.call(), zome_fn_response.result());
     state.running_zome_calls.remove(&zome_fn_response.call());
-    state.hdk_function_calls.remove(&zome_fn_response.call());
+    state
+        .wasm_api_function_calls
+        .remove(&zome_fn_response.call());
     if let Some(next_call) = state.queued_zome_calls.pop_front() {
         state.running_zome_calls.insert(next_call);
     }

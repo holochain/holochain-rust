@@ -7,7 +7,7 @@ use crate::{
         handle_custom_direct_message::handle_custom_direct_message,
         respond_validation_package_request::respond_validation_package_request,
     },
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 use std::sync::Arc;
 
@@ -16,7 +16,7 @@ use lib3h_protocol::data_types::DirectMessageData;
 use std::convert::TryFrom;
 
 #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn parse_direct_message(content: &[u8]) -> Result<DirectMessage, JsonError> {
     DirectMessage::try_from(JsonString::from_json(
         std::str::from_utf8(content)
@@ -27,7 +27,7 @@ fn parse_direct_message(content: &[u8]) -> Result<DirectMessage, JsonError> {
 /// We got a ProtocolWrapper::SendMessage, this means somebody initiates message roundtrip
 /// -> we are being called
 #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context>) {
     let message = match parse_direct_message(&*message_data.content.clone()) {
         Ok(message) => message,
@@ -87,7 +87,7 @@ pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context
 /// We got a Lib3hClientProtocol::HandleSendMessageResult.
 /// This means somebody has responded to our message that we called and this is the answer
 #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn handle_send_message_result(message_data: DirectMessageData, context: Arc<Context>) {
     let response = match parse_direct_message(&message_data.content.clone()) {
         Ok(message) => message,

@@ -3,7 +3,7 @@ use crate::{
     context::Context,
     dht::pending_validations::PendingValidation,
     instance::dispatch_action,
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 use futures::{future::Future, task::Poll};
 use std::{
@@ -12,11 +12,11 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn dispatch_queue_holding_workflow(
+    context: Arc<Context>,
     pending: PendingValidation,
     delay: Option<Duration>,
-    context: Arc<Context>,
 ) {
     let delay_with_now = delay.map(|d| (SystemTime::now(), d));
     let action_wrapper =
@@ -24,11 +24,11 @@ pub fn dispatch_queue_holding_workflow(
     dispatch_action(context.action_channel(), action_wrapper);
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn queue_holding_workflow(
+    context: Arc<Context>,
     pending: PendingValidation,
     delay: Option<Duration>,
-    context: Arc<Context>,
 ) {
     if !context
         .state()
@@ -37,7 +37,7 @@ pub async fn queue_holding_workflow(
         .has_exact_queued_holding_workflow(&pending)
     {
         log_trace!(context, "Queueing holding workflow: {:?}", pending);
-        dispatch_queue_holding_workflow(pending.clone(), delay, context.clone());
+        dispatch_queue_holding_workflow(Arc::clone(&context), Arc::clone(&pending), delay);
         QueueHoldingWorkflowFuture { context, pending }.await
     } else {
         log_trace!(
@@ -53,7 +53,7 @@ pub struct QueueHoldingWorkflowFuture {
     pending: PendingValidation,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Future for QueueHoldingWorkflowFuture {
     type Output = ();
 

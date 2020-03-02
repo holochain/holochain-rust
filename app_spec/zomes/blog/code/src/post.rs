@@ -122,7 +122,7 @@ mod tests {
             validation::{EntryLifecycle, EntryValidationData, ValidationData, ValidationPackage},
         },
         holochain_json_api::json::JsonString,
-        holochain_wasm_utils::api_serialization::validation::LinkDirection,
+        holochain_wasm_types::validation::LinkDirection,
     };
     use std::convert::TryInto;
 

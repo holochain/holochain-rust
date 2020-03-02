@@ -19,6 +19,42 @@ use chain_header::test_chain_header;
 
 use std::convert::TryFrom;
 
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, DefaultJson)]
+/// The result of a validation
+/// NOT used to represent an error somewhere _nearby_ validation, use something like
+/// Result<ValidationResult, HolochainError> to represent related errors
+/// If an error occurs _during_ validation, this is a `Fail`.
+pub enum ValidationResult {
+    /// `Ok` means whatever was validated is valid
+    Ok,
+
+    /// `Fail` means the validation function did run successfully and recognized the entry
+    /// as invalid. The String parameter holds the non-zero return value of the app validation
+    /// function.
+    Fail(String),
+
+    /// The entry could not get validated because known dependencies (like base and target
+    /// for links) were not present yet.
+    UnresolvedDependencies(Vec<Address>),
+
+    /// A validation function for the given entry could not be found.
+    /// This can happen if the entry's type is not defined in the DNA (which can only happen
+    /// if somebody is sending wrong entries..) or there is no native implementation for a
+    /// system entry type yet.
+    NotImplemented,
+
+    /// Something timed out
+    /// @TODO maybe we want to retry or handle it gracefully somehow?
+    Timeout,
+}
+
+impl From<JsonError> for ValidationResult {
+    fn from(e: JsonError) -> Self {
+        // if we can't (de)serialize some data this de facto implies a validation failure
+        Self::Fail(e.into())
+    }
+}
+
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, DefaultJson)]
 pub struct ValidationPackage {
     pub chain_header: ChainHeader,

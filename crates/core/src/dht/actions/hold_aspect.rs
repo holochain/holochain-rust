@@ -2,7 +2,7 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     instance::dispatch_action,
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::{error::HolochainError, network::entry_aspect::EntryAspect};
@@ -19,7 +19,7 @@ pub struct HoldAspectFuture {
     aspect: EntryAspect,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Future for HoldAspectFuture {
     type Output = Result<(), HolochainError>;
 

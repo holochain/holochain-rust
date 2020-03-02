@@ -1,7 +1,7 @@
 use hdk::prelude::*;
 use hdk::{
     holochain_core_types::{signature::Provenance},
-    holochain_wasm_utils::api_serialization::{
+    holochain_wasm_types::{
         get_entry::{EntryHistory, GetEntryResult},
         get_links::GetLinksResult,
     },

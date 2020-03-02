@@ -6,7 +6,7 @@ use crate::{
     config_files::App as AppConfig,
     error::DefaultResult,
     util::DIST_DIR_NAME,
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 use colored::*;
 use serde_json;

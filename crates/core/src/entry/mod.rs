@@ -4,12 +4,12 @@ pub mod validation_dependencies;
 
 use holochain_core_types::entry::entry_type::EntryType;
 
-use crate::{context::Context, NEW_RELIC_LICENSE_KEY};
+use crate::{context::Context};
 pub trait CanPublish {
     fn can_publish(&self, context: &Context) -> bool;
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl CanPublish for EntryType {
     fn can_publish(&self, context: &Context) -> bool {
         match self {

@@ -14,7 +14,7 @@ serde_derive = "=1.0.104"
 serde_json = { version = "=1.0.47", features = ["preserve_order"] }
 bitflags = "=1.2.1"
 lazy_static = "=1.4.0"
-holochain_wasm_utils = { version = "=0.0.43-alpha3", path = "../wasm_utils" }
+holochain_wasm_types = { version = "=0.0.43-alpha3", path = "../wasm_types" }
 holochain_core_types = { version = "=0.0.43-alpha3", path = "../core_types" }
 holochain_json_api = "=0.0.23"
 holochain_json_derive = "=0.0.23"
@@ -22,6 +22,7 @@ holochain_persistence_api = "=0.0.17"
 pretty_assertions = "=0.6.1"
 env_logger = "=0.6.1"
 url = "=2.1.0"
+holochain_wasmer_guest = "=0.0.14"
 
 [dev-dependencies]
 test_utils = { version = "=0.0.43-alpha3", path = "../../test_utils" }

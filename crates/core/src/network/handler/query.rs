@@ -8,7 +8,7 @@ use crate::{
     },
     nucleus,
     workflows::get_entry_result::get_entry_result_workflow,
-    NEW_RELIC_LICENSE_KEY,
+
 };
 use holochain_core_types::{
     crud_status::CrudStatus,
@@ -19,17 +19,16 @@ use holochain_core_types::{
 };
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::Address;
-use holochain_wasm_utils::api_serialization::get_entry::{
+use holochain_wasm_types::get_entry::{
     GetEntryArgs, GetEntryOptions, GetEntryResultType,
 };
 use lib3h_protocol::data_types::{QueryEntryData, QueryEntryResultData};
 use std::{convert::TryInto, sync::Arc};
 
 pub type LinkTag = String;
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn get_links(
-    context: &Arc<Context>,
+    context: Arc<Context>,
     base: Address,
     link_type: String,
     tag: String,
@@ -78,7 +77,7 @@ fn get_links(
 
             context
                 .block_on(get_entry_result_workflow(
-                    &context.clone(),
+                    Arc::clone(&context),
                     &link_add_entry_args,
                 ))
                 .map(|get_entry_result| match get_entry_result.result {
@@ -140,9 +139,9 @@ fn get_links(
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAndHeader> {
-    nucleus::actions::get_entry::get_entry_with_meta(&context, address.clone())
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+fn get_entry(context: Arc<Context>, address: Address) -> Option<EntryWithMetaAndHeader> {
+    nucleus::actions::get_entry::get_entry_with_meta(Arc::clone(&context), address.clone())
         .map(|entry_with_meta_opt| {
             let state = context
                 .state()
@@ -179,14 +178,14 @@ fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAn
 /// The network has sent us a query for entry data, so we need to examine
 /// the query and create appropriate actions for the different variants
 #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>) {
     let query_json =
         JsonString::from_json(&std::str::from_utf8(&*query_data.query.clone()).unwrap());
     let action_wrapper = match query_json.clone().try_into() {
         Ok(NetworkQuery::GetLinks(link_type, tag, options, query)) => {
             match get_links(
-                &context,
+                Arc::clone(&context),
                 query_data.entry_address.clone().into(),
                 link_type.clone(),
                 tag.clone(),
@@ -215,7 +214,7 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
             }
         }
         Ok(NetworkQuery::GetEntry) => {
-            let maybe_entry = get_entry(&context, query_data.entry_address.clone().into());
+            let maybe_entry = get_entry(Arc::clone(&context), query_data.entry_address.clone().into());
             let respond_get = NetworkQueryResult::Entry(maybe_entry);
             ActionWrapper::new(Action::RespondQuery((query_data, respond_get)))
         }
@@ -235,7 +234,7 @@ pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>
 /// The network comes back with a result to our previous query with a result, so we
 /// examine the query result for its type and dispatch different actions according to variant
 #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, context: Arc<Context>) {
     let query_result_json = JsonString::from_json(
         std::str::from_utf8(&*query_result_data.clone().query_result).unwrap(),

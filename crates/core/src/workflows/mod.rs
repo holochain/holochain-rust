@@ -22,6 +22,46 @@ pub mod hold_link;
 pub mod remove_link;
 #[autotrace]
 pub mod respond_validation_package_request;
+#[autotrace]
+pub mod callback;
+#[autotrace]
+pub mod debug;
+#[autotrace]
+pub mod commit;
+#[autotrace]
+pub mod remove_entry;
+#[autotrace]
+pub mod update_entry;
+#[autotrace]
+pub mod call;
+#[autotrace]
+pub mod meta;
+#[autotrace]
+pub mod sleep;
+#[autotrace]
+pub mod init_globals;
+#[autotrace]
+pub mod query;
+#[autotrace]
+pub mod entry_address;
+#[autotrace]
+pub mod send;
+#[autotrace]
+pub mod invoke_remove_link;
+#[autotrace]
+pub mod emit_signal;
+#[autotrace]
+pub mod capabilities;
+#[autotrace]
+pub mod keystore;
+#[autotrace]
+pub mod sign;
+#[autotrace]
+pub mod verify_signature;
+#[autotrace]
+pub mod crypto;
+#[autotrace]
+pub mod link_entries;
 
 use crate::{
     context::Context,
@@ -33,10 +73,9 @@ use crate::{
         actions::build_validation_package::build_validation_package,
         validation::build_from_dht::try_make_validation_package_dht,
     },
-    wasm_engine::callback::{
-        validation_package::get_validation_package_definition, CallbackResult,
-    },
+    wasm_engine::callback::CallbackResult,
     workflows::{
+        callback::validation_package::get_validation_package_definition,
         hold_entry::hold_entry_workflow, hold_entry_remove::hold_remove_workflow,
         hold_entry_update::hold_update_workflow, hold_link::hold_link_workflow,
         remove_link::remove_link_workflow,
@@ -48,6 +87,9 @@ use holochain_core_types::{
 };
 use holochain_persistence_api::cas::content::AddressableContent;
 use std::sync::Arc;
+
+pub(crate) type WorkflowResult<T> = Result<T, HolochainError>;
+pub(crate) type InfallibleWorkflowResult = WorkflowResult<()>;
 
 /// Try to create a ValidationPackage for the given entry without calling out to some other node.
 /// I.e. either create it just from/with the header if `ValidationPackageDefinition` is `Entry`,
@@ -78,8 +120,8 @@ pub(crate) async fn try_make_local_validation_package(
             if overlapping_provenance.is_some() {
                 // We authored this entry, so lets build the validation package here and now:
                 build_validation_package(
+                    Arc::clone(&context),
                     &entry_with_header.entry,
-                    context,
                     entry_with_header.header.provenances(),
                 )
             } else {
@@ -94,13 +136,13 @@ pub(crate) async fn try_make_local_validation_package(
 /// Gets hold of the validation package for the given entry by trying several different methods.
 #[autotrace]
 async fn validation_package(
-    entry_with_header: &EntryWithHeader,
     context: Arc<Context>,
+    entry_with_header: &EntryWithHeader,
 ) -> Result<Option<ValidationPackage>, HolochainError> {
     // 0. Call into the DNA to get the validation package definition for this entry
     // e.g. what data is needed to validate it (chain, entry, headers, etc)
     let entry = &entry_with_header.entry;
-    let validation_package_definition = get_validation_package_definition(entry, context.clone())
+    let validation_package_definition = get_validation_package_definition(Arc::clone(&context), entry)
         .and_then(|callback_result| match callback_result {
         CallbackResult::Fail(error_string) => Err(HolochainError::ErrorGeneric(error_string)),
         CallbackResult::ValidationPackageDefinition(def) => Ok(def),
@@ -234,7 +276,7 @@ pub mod tests {
         let entry_with_header = EntryWithHeader { entry, header }.clone();
 
         let validation_package = context1
-            .block_on(validation_package(&entry_with_header, context1.clone()))
+            .block_on(validation_package(Arc::clone(&context1), &entry_with_header))
             .expect("Could not recover a validation package as the non-author");
 
         assert_eq!(
@@ -251,24 +293,24 @@ pub mod tests {
 /// Runs the given pending validation using the right holding workflow
 /// as specified by PendingValidationStruct::workflow.
 pub async fn run_holding_workflow(
-    pending: PendingValidation,
     context: Arc<Context>,
+    pending: PendingValidation,
 ) -> Result<(), HolochainError> {
     match pending.workflow {
         ValidatingWorkflow::HoldLink => {
-            hold_link_workflow(&pending.entry_with_header, context.clone()).await
+            hold_link_workflow(Arc::clone(&context), &pending.entry_with_header).await
         }
         ValidatingWorkflow::HoldEntry => {
-            hold_entry_workflow(&pending.entry_with_header, context.clone()).await
+            hold_entry_workflow(Arc::clone(&context), &pending.entry_with_header).await
         }
         ValidatingWorkflow::RemoveLink => {
-            remove_link_workflow(&pending.entry_with_header, context.clone()).await
+            remove_link_workflow(Arc::clone(&context), &pending.entry_with_header).await
         }
         ValidatingWorkflow::UpdateEntry => {
-            hold_update_workflow(&pending.entry_with_header, context.clone()).await
+            hold_update_workflow(Arc::clone(&context), &pending.entry_with_header).await
         }
         ValidatingWorkflow::RemoveEntry => {
-            hold_remove_workflow(&pending.entry_with_header, context.clone()).await
+            hold_remove_workflow(Arc::clone(&context), &pending.entry_with_header).await
         }
     }
 }

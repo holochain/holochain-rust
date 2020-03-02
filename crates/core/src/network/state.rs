@@ -1,7 +1,7 @@
 use crate::{
     action::{ActionWrapper, QueryKey},
     network::{actions::Response, direct_message::DirectMessage, query::NetworkQueryResult},
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 use boolinator::*;
 use holochain_core_types::{error::HolochainError, validation::ValidationPackage};
@@ -58,7 +58,7 @@ impl PartialEq for NetworkState {
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl NetworkState {
     pub fn new() -> Self {
         NetworkState {

@@ -5,7 +5,7 @@ use crate::{
 };
 use holochain_core_types::{entry::Entry, link::LinkMatch};
 use holochain_persistence_api::{cas::content::Address, hash::HashString};
-use holochain_wasm_utils::api_serialization::{
+use holochain_wasm_types::{
     get_entry::{GetEntryOptions, GetEntryResult, GetEntryResultItem, GetEntryResultType},
     get_links::{GetLinksArgs, GetLinksOptions, GetLinksResult, GetLinksResultCount},
 };
@@ -23,13 +23,13 @@ use holochain_wasm_utils::api_serialization::{
 /// ```rust
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
-/// # extern crate holochain_wasm_utils;
+/// # extern crate holochain_wasm_engine;
 /// # extern crate holochain_json_api;
 /// # extern crate holochain_persistence_api;
 /// # use holochain_json_api::json::JsonString;
 /// # use holochain_persistence_api::cas::content::Address;
 /// # use hdk::error::ZomeApiResult;
-/// # use holochain_wasm_utils::api_serialization::get_links::{GetLinksResult, GetLinksOptions};
+/// # use holochain_wasm_types::get_links::{GetLinksResult, GetLinksOptions};
 /// # use holochain_core_types::link::LinkMatch;
 ///
 /// # fn main() {
@@ -60,13 +60,13 @@ pub fn get_links_with_options(
 /// ```rust
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
-/// # extern crate holochain_wasm_utils;
+/// # extern crate holochain_wasm_engine;
 /// # extern crate holochain_json_api;
 /// # extern crate holochain_persistence_api;
 /// # use holochain_json_api::json::JsonString;
 /// # use holochain_persistence_api::cas::content::Address;
 /// # use hdk::error::ZomeApiResult;
-/// # use holochain_wasm_utils::api_serialization::get_links::{GetLinksResultCount, GetLinksOptions};
+/// # use holochain_wasm_types::get_links::{GetLinksResultCount, GetLinksOptions};
 /// # use holochain_core_types::link::LinkMatch;
 ///
 /// # fn main() {
@@ -115,11 +115,11 @@ pub fn get_links(
 /// ```rust
 /// # extern crate hdk;
 /// # extern crate holochain_core_types;
-/// # extern crate holochain_wasm_utils;
+/// # extern crate holochain_wasm_engine;
 /// # extern crate holochain_persistence_api;
 /// # use hdk::error::ZomeApiResult;
 /// # use holochain_persistence_api::cas::content::Address;
-/// # use holochain_wasm_utils::api_serialization::{
+/// # use holochain_wasm_types::{
 /// #    get_entry::{GetEntryOptions, GetEntryResult},
 /// #    get_links::GetLinksOptions};
 /// # use holochain_core_types::link::LinkMatch;

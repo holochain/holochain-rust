@@ -1,6 +1,6 @@
 use crate::{error::ZomeApiResult, Dispatch};
 use holochain_json_api::json::JsonString;
-use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
+use holochain_wasm_types::emit_signal::EmitSignalArgs;
 
 /// Emits a signal that listeners can receive.
 /// (Status: MVP)
@@ -29,10 +29,10 @@ use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
 /// # use hdk::error::ZomeApiResult;
 /// # use std::time::Duration;
 /// # use hdk::holochain_json_api::json::JsonString;
-/// # use hdk::holochain_core_types::error::RibosomeEncodingBits;
-/// # use hdk::holochain_core_types::error::RibosomeEncodedValue;
+/// # use hdk::holochain_core_types::error::AllocationPtr;
+/// # use hdk::holochain_core_types::error::RibosomeReturnValue;
 /// # #[no_mangle]
-/// # pub fn hc_emit_signal(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
+/// # pub fn hc_emit_signal(_: AllocationPtr) -> AllocationPtr { RibosomeReturnValue::Success.into() }
 ///
 /// # fn main() {
 /// pub fn handle_receive_chat_message(message: String) -> ZomeApiResult<()> {
@@ -54,7 +54,7 @@ pub fn emit_signal<S: Into<String>, J: Into<JsonString>>(
         name: name.into(),
         arguments: arguments.into(),
     });
-    // internally returns RibosomeEncodedValue::Success which is a zero length allocation
+    // internally returns RibosomeReturnValue::Success which is a zero length allocation
     // return Ok(()) unconditionally instead of the "error" from success
     Ok(())
 }

@@ -1,11 +1,14 @@
 use crate::{
     dht::pending_validations::ValidatingWorkflow,
-    nucleus::{actions::initialize::Initialization, HdkFnCall, HdkFnCallResult, ZomeFnCall},
-    NEW_RELIC_LICENSE_KEY,
+    nucleus::{actions::initialize::Initialization, ZomeFnCall},
+    
 };
 use holochain_core_types::{dna::Dna, error::HolochainError};
 
-use crate::state::StateWrapper;
+use crate::{
+    nucleus::{WasmApiFnCall, WasmApiFnCallResult},
+    state::StateWrapper,
+};
 use holochain_json_api::{
     error::{JsonError, JsonResult},
     json::JsonString,
@@ -104,11 +107,11 @@ pub struct NucleusState {
     //read from there when loading an instance/chain.
     pub queued_zome_calls: VecDeque<ZomeFnCall>,
     pub running_zome_calls: HashSet<ZomeFnCall>,
-    pub hdk_function_calls: HashMap<ZomeFnCall, ZomeFnCallState>,
+    pub wasm_api_function_calls: HashMap<ZomeFnCall, ZomeFnCallState>,
     pub zome_call_results: HashMap<ZomeFnCall, Result<JsonString, HolochainError>>,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl NucleusState {
     pub fn new() -> Self {
         NucleusState {
@@ -117,7 +120,7 @@ impl NucleusState {
             queued_zome_calls: VecDeque::new(),
             running_zome_calls: HashSet::new(),
             zome_call_results: HashMap::new(),
-            hdk_function_calls: HashMap::new(),
+            wasm_api_function_calls: HashMap::new(),
         }
     }
 
@@ -179,7 +182,7 @@ impl From<NucleusStateSnapshot> for NucleusState {
             queued_zome_calls: VecDeque::new(),
             running_zome_calls: HashSet::new(),
             zome_call_results: HashMap::new(),
-            hdk_function_calls: HashMap::new(),
+            wasm_api_function_calls: HashMap::new(),
         }
     }
 }
@@ -201,35 +204,35 @@ impl AddressableContent for NucleusStateSnapshot {
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize)]
 pub struct ZomeFnCallState {
-    hdk_fn_invocations: Vec<(HdkFnCall, Option<HdkFnCallResult>)>,
+    wasm_api_fn_invocations: Vec<(WasmApiFnCall, Option<WasmApiFnCallResult>)>,
 }
 
 impl ZomeFnCallState {
-    pub fn begin_hdk_call(&mut self, call: HdkFnCall) {
-        self.hdk_fn_invocations.push((call, None))
+    pub fn begin_wasm_api_call(&mut self, call: WasmApiFnCall) {
+        self.wasm_api_fn_invocations.push((call, None))
     }
 
-    pub fn end_hdk_call(
+    pub fn end_wasm_api_call(
         &mut self,
-        call: HdkFnCall,
-        result: HdkFnCallResult,
+        call: WasmApiFnCall,
+        result: WasmApiFnCallResult,
     ) -> Result<(), HolochainError> {
-        if let Some((current_call, current_result)) = self.hdk_fn_invocations.pop() {
+        if let Some((current_call, current_result)) = self.wasm_api_fn_invocations.pop() {
             if call != current_call {
                 Err(HolochainError::new(
-                    "HDK call other than the current call was ended.",
+                    "Wasm API call other than the current call was ended.",
                 ))
             } else if current_result.is_some() {
                 Err(HolochainError::new(
-                    "Ending and HDK which was already ended.",
+                    "Ending and Wasm API which was already ended.",
                 ))
             } else {
-                self.hdk_fn_invocations.push((call, Some(result)));
+                self.wasm_api_fn_invocations.push((call, Some(result)));
                 Ok(())
             }
         } else {
             Err(HolochainError::new(
-                "Attempted to end HDK call, but none was started!",
+                "Attempted to end Wasm API call, but none was started!",
             ))
         }
     }
@@ -238,7 +241,7 @@ impl ZomeFnCallState {
 #[cfg(test)]
 pub mod tests {
 
-    use super::{HdkFnCall, NucleusState, ZomeFnCallState};
+    use super::{NucleusState, WasmApiFnCall, ZomeFnCallState};
     use crate::wasm_engine::api::ZomeApiFunction;
 
     /// dummy nucleus state
@@ -249,23 +252,23 @@ pub mod tests {
     #[test]
     fn test_zome_fn_call_state() {
         let mut state = ZomeFnCallState::default();
-        let call1 = HdkFnCall {
+        let call1 = WasmApiFnCall {
             function: ZomeApiFunction::Call,
             parameters: "params1".into(),
         };
-        let call2 = HdkFnCall {
+        let call2 = WasmApiFnCall {
             function: ZomeApiFunction::Call,
             parameters: "params2".into(),
         };
 
-        state.begin_hdk_call(call1.clone());
-        state.end_hdk_call(call1, Ok("result".into())).unwrap();
+        state.begin_wasm_api_call(call1.clone());
+        state.end_wasm_api_call(call1, Ok("result".into())).unwrap();
 
-        state.begin_hdk_call(call2.clone());
+        state.begin_wasm_api_call(call2.clone());
         state
-            .end_hdk_call(call2, Err("call failed for reasons".into()))
+            .end_wasm_api_call(call2, Err("call failed for reasons".into()))
             .unwrap();
 
-        assert_eq!(state.hdk_fn_invocations.len(), 2);
+        assert_eq!(state.wasm_api_fn_invocations.len(), 2);
     }
 }

@@ -2,7 +2,7 @@ use crate::{
     action::{Action, ActionWrapper},
     nucleus::state::{NucleusState, NucleusStatus},
     state::State,
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 
 /// Reduce ReturnInitializationResult Action
@@ -10,7 +10,7 @@ use crate::{
 /// otherwise set the failed message
 #[allow(unknown_lints)]
 #[allow(clippy::needless_pass_by_value)]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_return_initialization_result(
     state: &mut NucleusState,
     _root_state: &State,

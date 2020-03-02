@@ -828,15 +828,15 @@ for all zome funtions:
 pub fn store_as_json<J: TryInto<JsonString>>(
     stack: &mut WasmStack,
     jsonable: J,
-) -> Result<SinglePageAllocation, RibosomeErrorCode> {
+) -> Result<SinglePageAllocation, WasmErrorCode> {
     let j: JsonString = jsonable
         .try_into()
-        .map_err(|_| RibosomeErrorCode::ArgumentDeserializationFailed)?;
+        .map_err(|_| WasmErrorCode::ArgumentDeserializationFailed)?;
 
     let json_bytes = j.into_bytes();
     let json_bytes_len = json_bytes.len() as u32;
     if json_bytes_len > U16_MAX {
-        return Err(RibosomeErrorCode::OutOfMemory);
+        return Err(WasmErrorCode::OutOfMemory);
     }
     write_in_wasm_memory(stack, &json_bytes, json_bytes_len as u16)
 }

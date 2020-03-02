@@ -3,7 +3,7 @@ use hdk::{
     holochain_core_types::{
         signature::{Provenance, Signature},
     },
-    holochain_wasm_utils::api_serialization::keystore::KeyType,
+    holochain_wasm_types::keystore::KeyType,
 };
 
 pub fn handle_sign_message(key_id: String, message: String) -> ZomeApiResult<Signature> {

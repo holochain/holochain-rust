@@ -1,6 +1,6 @@
 use crate::{
     context::Context, entry::CanPublish, network::entry_with_header::EntryWithHeader,
-    workflows::get_entry_result::get_entry_with_meta_workflow, NEW_RELIC_LICENSE_KEY,
+    workflows::get_entry_result::get_entry_with_meta_workflow,
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
@@ -14,7 +14,7 @@ use std::sync::Arc;
 
 const GET_TIMEOUT_MS: usize = 1000;
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 async fn all_chain_headers_before_header_dht(
     context: Arc<Context>,
     header: &ChainHeader,
@@ -27,7 +27,7 @@ async fn all_chain_headers_before_header_dht(
 
         let timeout = Timeout::new(GET_TIMEOUT_MS);
         let get_entry_result =
-            get_entry_with_meta_workflow(&context, &next_header_addr, &timeout).await;
+            get_entry_with_meta_workflow(Arc::clone(&context), &next_header_addr, &timeout).await;
 
         log_debug!(
             context,
@@ -68,7 +68,7 @@ async fn public_chain_entries_from_headers_dht(
     for header in public_headers {
         let timeout = Timeout::new(GET_TIMEOUT_MS);
         let get_entry_result =
-            get_entry_with_meta_workflow(&context, &header.entry_address(), &timeout).await?;
+            get_entry_with_meta_workflow(Arc::clone(&context), &header.entry_address(), &timeout).await?;
 
         if let Some(EntryWithMetaAndHeader {
             entry_with_meta: EntryWithMeta { entry, .. },

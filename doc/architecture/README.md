@@ -18,7 +18,7 @@ Holochain applications have been designed to consist at the low-level of WebAsse
 
 [`hdk-rust`](/hdk-rust) is a solid reference implementation of this, that enables Zomes to be written in the Rust language (the same, somewhat confusingly, as Holochain Core).
 
-Within this repository, some aspects cross over between `core` and `hdk-rust`, such as [core_types](/core_types), since they get stored into WASM memory in `core`, and then loaded from WASM memory, within `hdk-rust`. Related, [wasm_utils](/wasm_utils) is used on both sides to actually perform the storing, and loading, of values into and from WASM memory.
+Within this repository, some aspects cross over between `core` and `hdk-rust`, such as [core_types](/core_types), since they get stored into WASM memory in `core`, and then loaded from WASM memory, within `hdk-rust`. Related, [wasm_engine](/wasm_engine) is used on both sides to actually perform the storing, and loading, of values into and from WASM memory.
 
 ### Other HDKs and language options
 Any language that compiles to WASM and can serialize/deserialize JSON data can be available as an option for programmers to write Holochain applications.

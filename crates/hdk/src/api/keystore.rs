@@ -1,5 +1,5 @@
 use crate::{error::ZomeApiResult, Dispatch};
-use holochain_wasm_utils::api_serialization::keystore::{
+use holochain_wasm_types::keystore::{
     KeyType, KeystoreDeriveKeyArgs, KeystoreDeriveSeedArgs, KeystoreGetPublicKeyArgs,
     KeystoreListResult, KeystoreNewRandomArgs, KeystoreSignArgs,
 };

@@ -3,7 +3,7 @@ use crate::{
     Dispatch,
 };
 use holochain_persistence_api::cas::content::Address;
-use holochain_wasm_utils::api_serialization::{
+use holochain_wasm_types::{
     QueryArgs, QueryArgsNames, QueryArgsOptions, QueryResult,
 };
 

@@ -28,25 +28,13 @@ impl ToTokens for ZomeFunction {
 
         tokens.extend(quote!{
             #[no_mangle]
-            pub extern "C" fn #zome_function_name(encoded_allocation_of_input: hdk::holochain_core_types::error::RibosomeEncodingBits) -> hdk::holochain_core_types::error::RibosomeEncodingBits {
+            pub extern "C" fn #zome_function_name(host_allocation_ptr: hdk::holochain_core_types::error::AllocationPtr) -> hdk::holochain_core_types::error::AllocationPtr {
                 use hdk::{
                     holochain_json_api::{
                         json::JsonString,
                         error::JsonError
                     },
                 };
-
-                let maybe_allocation = hdk::holochain_wasm_utils::memory::allocation::WasmAllocation::try_from_ribosome_encoding(encoded_allocation_of_input);
-                let allocation = match maybe_allocation {
-                    Ok(allocation) => allocation,
-                    Err(allocation_error) => return hdk::holochain_core_types::error::RibosomeEncodedValue::from(allocation_error).into(),
-                };
-                let init = hdk::global_fns::init_global_memory(allocation);
-                if init.is_err() {
-                    return hdk::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
-                        init
-                    ).into();
-                }
 
                 // Macro'd InputStruct
                 #[derive(Deserialize, Serialize, Debug, hdk::holochain_json_derive::DefaultJson)]
@@ -55,7 +43,7 @@ impl ToTokens for ZomeFunction {
                 }
 
                 // Deserialize input
-                let input: InputStruct = hdk::load_json!(encoded_allocation_of_input);
+                let input: InputStruct = holochain_wasmer_guest::host_args!(host_allocation_ptr);
 
                 // Macro'd function body
                 fn execute (params: InputStruct) #output_param_type {
@@ -63,9 +51,7 @@ impl ToTokens for ZomeFunction {
                     #function_body
                 }
 
-                hdk::holochain_wasm_utils::memory::ribosome::return_code_for_allocation_result(
-                    hdk::global_fns::write_json(execute(input))
-                ).into()
+                ret!(execute(input).into());
             }
         })
     }

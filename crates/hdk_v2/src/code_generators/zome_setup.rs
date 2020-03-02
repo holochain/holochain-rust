@@ -20,7 +20,7 @@ impl ZomeCodeDef {
                 #(
                     zd.define(#entry_fn_idents ());
                 )*
-                let validator = Box::new(|validation_data: hdk::holochain_wasm_utils::holochain_core_types::validation::EntryValidationData<hdk::holochain_core_types::agent::AgentId>| {
+                let validator = Box::new(|validation_data: hdk::holochain_wasm_engine::holochain_core_types::validation::EntryValidationData<hdk::holochain_core_types::agent::AgentId>| {
                     let #agent_validation_param = validation_data;
                     #agent_validation_expr
                 });

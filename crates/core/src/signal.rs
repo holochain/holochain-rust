@@ -1,7 +1,7 @@
 use crate::{action::ActionWrapper, consistency::ConsistencySignal};
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_json_api::{error::JsonError, json::JsonString};
-use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
+use holochain_wasm_types::emit_signal::EmitSignalArgs;
 use serde::{Deserialize, Deserializer};
 use snowflake::ProcessUniqueId;
 use std::thread;

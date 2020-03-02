@@ -1,7 +1,8 @@
 [workspace]
 
 members = [
-  "crates/cli",
+  # @TODO make cli work with wasmer
+  # "crates/cli",
   "crates/metrics",
   "crates/common",
   "crates/holochain",
@@ -20,7 +21,7 @@ members = [
   "crates/trycp_server",
   "crates/sim2h",
   "crates/sim2h_server",
-  "crates/wasm_utils"
+  "crates/wasm_types",
 ]
 exclude = [
   "test_utils",

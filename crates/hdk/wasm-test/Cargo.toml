@@ -14,10 +14,10 @@ members = []
 
 [dependencies]
 hdk = { path = ".." }
-holochain_wasm_utils = { path = "../../wasm_utils" }
+holochain_wasm_types = { path = "../../wasm_types" }
 serde = "=1.0.104"
 serde_derive = "=1.0.104"
 serde_json = { version = "=1.0.47", features = ["preserve_order"] }
 boolinator = "=2.4.0"
 holochain_json_derive = "=0.0.23"
-
+holochain_wasmer_guest = "=0.0.14"

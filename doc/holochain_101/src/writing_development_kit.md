@@ -19,7 +19,7 @@ Holochain sends and receives allocated bytes of memory to zomes by treating the 
 If no bytes of memory are allocated (i.e. the 32 bit length is 0) the high bits map to an internal enum. This enum is contextual to the zome but typically represents errors:
 
 ```rust
-pub enum RibosomeErrorCode {
+pub enum WasmErrorCode {
     Unspecified                     = 1 << 32,
     ArgumentDeserializationFailed   = 2 << 32,
     OutOfMemory                     = 3 << 32,
@@ -72,7 +72,7 @@ The development kit:
 - Exposes convenience functions for the Holochain API to handle relevant allocation/deallocations
 - Maps `u64` values to/from encoded error values and `u32` offset/length values for memory allocations
 
-For more details review the unit/integration test suites in `hdk-rust` and `wasm_utils`.
+For more details review the unit/integration test suites in `hdk-rust` and `wasm_engine`.
 
 ### Crafting the API
 
@@ -100,7 +100,7 @@ The Development Kit should implement and export one function per each native fun
 In order to call these "external" functions, you will need to import them and provide their signature, but in a WASM import compatible way. In Rust, for example, this is simply:
 ```rust
 extern {
-  fn hc_commit_entry(encoded_allocation_of_input: RibosomeEncodingBits) -> RibosomeEncodingBits;
+  fn hc_commit_entry(encoded_allocation_of_input: WasmAllocationInt) -> WasmAllocationInt;
 }
 ```
 

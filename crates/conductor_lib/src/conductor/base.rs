@@ -10,7 +10,7 @@ use crate::{
     key_loaders::test_keystore,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
     port_utils::{try_with_port, INTERFACE_CONNECT_ATTEMPTS_MAX},
-    Holochain, NEW_RELIC_LICENSE_KEY,
+    Holochain,
 };
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_common::paths::DNA_EXTENSION;
@@ -53,6 +53,7 @@ use crate::{
     signal_wrapper::SignalWrapper,
     static_file_server::ConductorStaticFileServer,
     static_server_impls::NickelStaticServer as StaticServer,
+    NEW_RELIC_LICENSE_KEY,
 };
 use boolinator::Boolinator;
 use holochain_core::context::InstanceStats;
@@ -1572,7 +1573,7 @@ pub mod tests {
     use holochain_core_types::dna;
     use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig, SEED_SIZE};
     use holochain_persistence_api::cas::content::Address;
-    use holochain_wasm_utils::wasm_target_dir;
+    use holochain_core::wasm_engine::io::wasm_target_dir;
     use lib3h_sodium::secbuf::SecBuf;
     use std::{
         fs::{File, OpenOptions},

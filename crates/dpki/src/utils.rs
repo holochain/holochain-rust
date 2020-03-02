@@ -1,6 +1,6 @@
 use crate::{
     password_encryption::{pw_dec, pw_enc, EncryptedData, PwHashConfig},
-    CODEC_HCS0, CONTEXT_SIZE, NEW_RELIC_LICENSE_KEY, SEED_SIZE,
+    CODEC_HCS0, CONTEXT_SIZE,  SEED_SIZE, NEW_RELIC_LICENSE_KEY,
 };
 use hcid::*;
 use holochain_core_types::{

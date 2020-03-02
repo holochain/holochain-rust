@@ -2,7 +2,7 @@ use crate::{
     action::{Action, ActionWrapper},
     nucleus::state::{NucleusState, NucleusStatus},
     state::State,
-    NEW_RELIC_LICENSE_KEY,
+    
 };
 
 /// Reduce InitializeChain Action
@@ -10,7 +10,7 @@ use crate::{
 /// already initialized, or initializing instance.
 #[allow(unknown_lints)]
 #[allow(clippy::needless_pass_by_value)]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+// #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_initialize_chain(
     state: &mut NucleusState,
     _root_state: &State,

@@ -11,7 +11,7 @@ use crate::{
     nucleus::{
         actions::{call_zome_function::ExecuteZomeFnResponse, initialize::Initialization},
         state::NucleusState,
-        HdkFnCall, HdkFnCallResult, ZomeFnCall,
+        WasmApiFnCall, WasmApiFnCallResult, ZomeFnCall,
     },
     state::State,
 };
@@ -231,10 +231,10 @@ pub enum Action {
     ReturnZomeFunctionResult(ExecuteZomeFnResponse),
 
     /// Let the State track that a zome call has called an HDK function
-    TraceInvokeHdkFunction((ZomeFnCall, HdkFnCall)),
+    TraceInvokeWasmApiFunction((ZomeFnCall, WasmApiFnCall)),
 
     /// Let the State track that an HDK function called by a zome call has returned
-    TraceReturnHdkFunction((ZomeFnCall, HdkFnCall, HdkFnCallResult)),
+    TraceReturnWasmApiFunction((ZomeFnCall, WasmApiFnCall, WasmApiFnCallResult)),
 
     /// Remove all traces of the given call from state (mainly the result)
     ClearZomeFunctionCall(ZomeFnCall),

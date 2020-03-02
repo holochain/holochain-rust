@@ -6,17 +6,19 @@ use holochain_core_types::{
     agent::AgentId,
     dna::entry_types::EntryTypeDef,
     entry::{entry_type::EntryType, AppEntryValue, Entry},
-    validation::{EntryValidationData, LinkValidationData, ValidationPackageDefinition},
+    validation::{
+        EntryValidationData, LinkValidationData, ValidationPackageDefinition, ValidationResult,
+    },
 };
-use holochain_wasm_utils::api_serialization::validation::LinkDirection;
+use holochain_wasm_types::validation::LinkDirection;
 use std::convert::TryFrom;
 
 pub type PackageCreator = Box<dyn FnMut() -> ValidationPackageDefinition + Sync>;
 
-pub type Validator = Box<dyn FnMut(EntryValidationData<Entry>) -> Result<(), String> + Sync>;
+pub type Validator = Box<dyn FnMut(EntryValidationData<Entry>) -> ValidationResult + Sync>;
 
-pub type AgentValidator = Box<dyn FnMut(EntryValidationData<AgentId>) -> Result<(), String> + Sync>;
-pub type LinkValidator = Box<dyn FnMut(LinkValidationData) -> Result<(), String> + Sync>;
+pub type AgentValidator = Box<dyn FnMut(EntryValidationData<AgentId>) -> ValidationResult + Sync>;
+pub type LinkValidator = Box<dyn FnMut(LinkValidationData) -> ValidationResult + Sync>;
 
 /// This struct represents a complete entry type definition.
 /// It wraps [EntryTypeDef](holochain_core_types::dna::entry_types::EntryTypeDef) defined in the DNA crate
@@ -220,10 +222,16 @@ macro_rules! entry {
                 $package_creator
             });
 
-            let validator = Box::new(|validation_data: $crate::holochain_wasm_utils::holochain_core_types::validation::EntryValidationData<$crate::holochain_core_types::entry::Entry>| {
-                let $validation_data = $crate::entry_definition::entry_to_native_type::<$native_type>(validation_data.clone())?;
+            let validator = Box::new(|validation_data: $crate::holochain_core_types::validation::EntryValidationData<$crate::holochain_core_types::entry::Entry>| {
+                let $validation_data = match $crate::entry_definition::entry_to_native_type::<$native_type>(validation_data.clone()) {
+                    Ok(v) => v,
+                    Err(e) => return e.into(),
+                };
                 use std::convert::TryFrom;
-                let e_type = $crate::holochain_core_types::entry::entry_type::EntryType::try_from(validation_data)?;
+                let e_type = match $crate::holochain_core_types::entry::entry_type::EntryType::try_from(validation_data) {
+                    Ok(v) => v,
+                    Err(e) => return e.into(),
+                };
                 match e_type {
                     $crate::holochain_core_types::entry::entry_type::EntryType::App(_) => {
                         $entry_validation
@@ -233,7 +241,7 @@ macro_rules! entry {
                         $entry_validation
                     }
                     _ => {
-                        Err(String::from("Schema validation failed"))?
+                        return ValidationResult::Fail("Schema validation failed".into());
                     }
                 }
             });
@@ -292,7 +300,7 @@ macro_rules! link {
                 $package_creator
             });
 
-            let validator = Box::new(|validation_data: $crate::holochain_wasm_utils::holochain_core_types::validation::LinkValidationData| {
+            let validator = Box::new(|validation_data: $crate::holochain_core_types::validation::LinkValidationData| {
                 let $validation_data = validation_data;
                 $link_validation
             });

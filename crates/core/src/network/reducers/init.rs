@@ -41,7 +41,11 @@ pub fn reduce_init(state: &mut NetworkState, root_state: &State, action_wrapper:
     if let Some(sim2h_url) = maybe_sim2h_url_override {
         // ..and we're configured to use sim2h...
         if let BackendConfig::Sim2h(sim2h_config) = &mut p2p_config.backend_config {
-            if std::env::var("HC_IGNORE_SIM2H_URL_PROPERTY").is_err() {
+            let sim2h_url_override = match std::env::var_os("HC_IGNORE_SIM2H_URL_PROPERTY") {
+                Some(val) => val == "1" || val == "true",
+                _ => false,
+            };
+            if !sim2h_url_override {
                 info!(
                     "Found property 'sim2h_url' in DNA {} - overriding conductor wide sim2h URL with: {}",
                     dna.address(),

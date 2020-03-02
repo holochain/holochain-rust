@@ -270,7 +270,7 @@ workflows:
         only:
          - develop
          - final-exam
-         - wire-message-receipts
+         - sim2h-url-property-override
    - docker-build-trycp-server:
       requires:
        - docker-build-minimal
@@ -284,7 +284,7 @@ workflows:
         only:
          - develop
          - final-exam
-         - wire-message-receipts
+         - sim2h-url-property-override
    - docker-build-circle-build:
       requires:
        - docker-build-latest

@@ -1,6 +1,7 @@
 use crate::*;
 use lib3h::rrdht_util::Location;
 use rand::Rng;
+use serde::{Serialize, Serializer};
 use std::sync::{
     atomic::{AtomicU64, Ordering},
     Arc,
@@ -127,6 +128,15 @@ impl std::fmt::Debug for UpcomingInstant {
     }
 }
 
+impl Serialize for UpcomingInstant {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&format!("{:?}", self))
+    }
+}
+
 impl UpcomingInstant {
     pub fn new_ms_from_now(ms: u64) -> Self {
         Self(
@@ -149,9 +159,10 @@ enum StoreProto {
 }
 
 /// represents an active connection
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ConnectionState {
     agent_id: MonoAgentId,
+    #[serde(serialize_with = "serialize_location")]
     agent_loc: Location,
     uri: MonoUri,
     next_gossip_check: UpcomingInstant,
@@ -167,18 +178,29 @@ pub type MonoUri = MonoRef<Lib3hUri>;
 pub type Holding = im::HashMap<MonoAspectHash, im::HashSet<MonoAgentId>>;
 
 /// so we cache entry locations as well
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct EntryInfo {
     pub entry_hash: MonoEntryHash,
+    #[serde(serialize_with = "serialize_location")]
     pub entry_loc: Location,
     pub aspects: Holding,
 }
 
+#[allow(clippy::trivially_copy_pass_by_ref)]
+pub fn serialize_location<S>(loc: &Location, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    serializer.serialize_u32(loc.clone().into())
+}
+
 /// sim2h state storage
+#[derive(Serialize)]
 pub struct Space {
+    #[serde(skip)]
     pub crypto: Box<dyn CryptoSystem>,
     pub redundancy: u64,
-    pub aspect_to_entry_hash: im::HashMap<MonoAspectHash, (MonoAspectHash, MonoEntryHash)>,
+    pub all_aspects: im::HashMap<MonoAspectHash, MonoAspectHash>,
     pub entry_to_all_aspects: im::HashMap<MonoEntryHash, EntryInfo>,
     pub connections: im::HashMap<MonoAgentId, ConnectionState>,
     pub uri_to_connection: im::HashMap<MonoUri, MonoAgentId>,
@@ -188,7 +210,7 @@ pub struct Space {
 impl std::fmt::Debug for Space {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Store")
-            .field("aspect_to_entry_hash", &self.aspect_to_entry_hash)
+            .field("all_aspects", &self.all_aspects)
             .field("entry_to_all_aspects", &self.entry_to_all_aspects)
             .field("connections", &self.connections)
             .field("uri_to_connection", &self.uri_to_connection)
@@ -201,7 +223,7 @@ impl Clone for Space {
         Self {
             crypto: self.crypto.box_clone(),
             redundancy: self.redundancy,
-            aspect_to_entry_hash: self.aspect_to_entry_hash.clone(),
+            all_aspects: self.all_aspects.clone(),
             entry_to_all_aspects: self.entry_to_all_aspects.clone(),
             connections: self.connections.clone(),
             uri_to_connection: self.uri_to_connection.clone(),
@@ -215,7 +237,7 @@ impl Space {
         Space {
             crypto,
             redundancy,
-            aspect_to_entry_hash: im::HashMap::new(),
+            all_aspects: im::HashMap::new(),
             entry_to_all_aspects: im::HashMap::new(),
             connections: im::HashMap::new(),
             uri_to_connection: im::HashMap::new(),
@@ -389,20 +411,13 @@ impl Space {
         entry_hash
     }
 
-    fn priv_check_insert_aspect_to_entry(
-        &mut self,
-        entry_hash: MonoEntryHash,
-        aspect_hash: &AspectHash,
-    ) -> MonoAspectHash {
-        if let Some((a, e)) = self.aspect_to_entry_hash.get(aspect_hash) {
-            if e != &entry_hash {
-                panic!("entry/aspect mismatch - corrupted data?");
-            }
+    fn priv_check_insert_aspect(&mut self, aspect_hash: &AspectHash) -> MonoAspectHash {
+        if let Some(a) = self.all_aspects.get(aspect_hash) {
             return a.clone();
         }
         let aspect_hash: MonoAspectHash = aspect_hash.clone().into();
-        self.aspect_to_entry_hash
-            .insert(aspect_hash.clone(), (aspect_hash.clone(), entry_hash));
+        self.all_aspects
+            .insert(aspect_hash.clone(), aspect_hash.clone());
         aspect_hash
     }
 
@@ -416,8 +431,7 @@ impl Space {
         let entry_hash = self.priv_check_insert_entry_hash(entry_hash);
         let mut mono_aspects = Vec::new();
         for aspect_hash in aspects {
-            mono_aspects
-                .push(self.priv_check_insert_aspect_to_entry(entry_hash.clone(), aspect_hash));
+            mono_aspects.push(self.priv_check_insert_aspect(aspect_hash));
         }
         let e = self.entry_to_all_aspects.get_mut(&entry_hash).unwrap();
         for a in mono_aspects {
@@ -506,24 +520,18 @@ impl Store {
 
         let clone_ref_clone = clone_ref.clone();
         tokio::task::spawn(async move {
-            let mut should_end_task = false;
-            let mut handle_message = move |msg| {
-                match msg {
-                    //StoreProto::GetClone(sender) => {
-                    //    let _ = sender.send(store.clone());
-                    //}
-                    StoreProto::Mutate(aol_entry, complete) => {
-                        store.mutate(aol_entry);
-                        let store_clone = store.clone();
-                        let clone_ref_clone_clone = clone_ref_clone.clone();
-                        tokio::task::spawn(async move {
-                            *clone_ref_clone_clone.write().await = store_clone;
-                            let _ = complete.send(());
-                        });
-                    }
+            let mut handle_message = move |msg| match msg {
+                StoreProto::Mutate(aol_entry, complete) => {
+                    store.mutate(aol_entry);
+                    let store_clone = store.clone();
+                    let clone_ref_clone_clone = clone_ref_clone.clone();
+                    tokio::task::spawn(async move {
+                        *clone_ref_clone_clone.write().await = store_clone;
+                        let _ = complete.send(());
+                    });
                 }
             };
-            loop {
+            'store_recv_loop: loop {
                 if let None = weak_ref_dummy.upgrade() {
                     // there are no more references to us...
                     // let this task end
@@ -546,8 +554,7 @@ impl Store {
                             match recv_mut.try_recv() {
                                 Err(tokio::sync::mpsc::error::TryRecvError::Empty) => break,
                                 Err(tokio::sync::mpsc::error::TryRecvError::Closed) => {
-                                    should_end_task = true;
-                                    break;
+                                    break 'store_recv_loop;
                                 }
                                 Ok(msg) => handle_message(msg),
                             }
@@ -559,14 +566,10 @@ impl Store {
                             count,
                             loop_start.elapsed().as_millis()
                         );
-
-                        // if we got a Closed on our recv
-                        if should_end_task {
-                            return;
-                        }
                     }
                 }
             }
+            warn!("im state store_recv_loop ended!");
         });
 
         StoreHandle::new(ref_dummy, clone_ref, send_mut, con_incr)
@@ -883,29 +886,31 @@ impl StoreHandle {
             },
             sender,
         );
-        let _ = self.send_mut.send(msg);
+        if let Err(_) = self.send_mut.send(msg) {
+            error!("failed to send im store message - shutting down?");
+            return async { () }.boxed();
+        }
         async move {
             let _ = receiver.await;
         }
         .boxed()
     }
 
-    pub fn spawn_new_connection(&self, space_hash: SpaceHash, agent_id: AgentId, uri: Lib3hUri) {
-        let f = self.new_connection(space_hash, agent_id, uri);
-        tokio::task::spawn(f);
-    }
-
     /*
     #[must_use]
     pub fn drop_connection(&self, space_hash: SpaceHash, agent_id: AgentId) -> BoxFuture<'static, ()> {
         let (sender, receiver) = tokio::sync::oneshot::channel();
-        let _ = self
+        if let Err(_) = self
             .send_mut
             .send(StoreProto::Mutate(AolEntry::DropConnection {
                 aol_idx: self.con_incr.inc(),
                 space_hash,
                 agent_id,
-            }, sender));
+            }, sender))
+        {
+            error!("failed to send im store message - shutting down?");
+            return async { () }.boxed();
+        }
         async move {
             let _ = receiver.await;
         }.boxed()
@@ -920,13 +925,16 @@ impl StoreHandle {
     #[must_use]
     pub fn drop_connection_by_uri(&self, uri: Lib3hUri) -> BoxFuture<'static, ()> {
         let (sender, receiver) = tokio::sync::oneshot::channel();
-        let _ = self.send_mut.send(StoreProto::Mutate(
+        if let Err(_) = self.send_mut.send(StoreProto::Mutate(
             AolEntry::DropConnectionByUri {
                 aol_idx: self.con_incr.inc(),
                 uri,
             },
             sender,
-        ));
+        )) {
+            error!("failed to send im store message - shutting down?");
+            return async { () }.boxed();
+        }
         async move {
             let _ = receiver.await;
         }
@@ -947,7 +955,7 @@ impl StoreHandle {
         aspects: im::HashSet<AspectHash>,
     ) -> BoxFuture<'static, ()> {
         let (sender, receiver) = tokio::sync::oneshot::channel();
-        let _ = self.send_mut.send(StoreProto::Mutate(
+        if let Err(_) = self.send_mut.send(StoreProto::Mutate(
             AolEntry::AgentHoldsAspects {
                 aol_idx: self.con_incr.inc(),
                 space_hash,
@@ -956,7 +964,10 @@ impl StoreHandle {
                 aspects,
             },
             sender,
-        ));
+        )) {
+            error!("failed to send im store message - shutting down?");
+            return async { () }.boxed();
+        }
         async move {
             let _ = receiver.await;
         }
@@ -984,7 +995,9 @@ impl StoreHandle {
             },
             sender_c,
         )) {
+            error!("failed to send im store message - shutting down?");
             // we're probably shutting down, prevent panic!s
+            // note this future will never resolve - because it cannot
             return futures::future::pending().await;
         }
         let _ = receiver_c.await;
@@ -1112,6 +1125,58 @@ mod tests {
     #[test]
     fn workflow_test() {
         async_run(async_workflow_test().boxed());
+    }
+
+    async fn async_same_aspect_in_differing_entries_test() {
+        let aid1 = gen_agent();
+
+        let space_hash: SpaceHash = "abcd".into();
+        let entry_hash_1: EntryHash = "test1".into();
+        let entry_hash_2: EntryHash = "test2".into();
+        let aspect_hash: AspectHash = "one".into();
+        let uri1: Lib3hUri = url::Url::parse("ws://yada1").unwrap().into();
+
+        let crypto = Box::new(lib3h_sodium::SodiumCryptoSystem::new());
+        let store = Store::new(
+            crypto,
+            0,       // FULL SYNC
+            Some(6), // set a nice/short 6ms gossip interval for testing : )
+        );
+
+        store
+            .new_connection(space_hash.clone(), aid1.clone(), uri1.clone())
+            .await;
+
+        store
+            .agent_holds_aspects(
+                space_hash.clone(),
+                aid1.clone(),
+                entry_hash_1.clone(),
+                im::hashset! {aspect_hash.clone()},
+            )
+            .await;
+
+        store
+            .agent_holds_aspects(
+                space_hash.clone(),
+                aid1.clone(),
+                entry_hash_2.clone(),
+                im::hashset! {aspect_hash.clone()},
+            )
+            .await;
+
+        let state = store.get_clone().await;
+        debug!("GOT: {:#?}", state);
+
+        let space = state.spaces.get(&space_hash).unwrap();
+
+        assert_eq!(1, space.all_aspects.len());
+        assert_eq!(2, space.entry_to_all_aspects.len());
+    }
+
+    #[test]
+    fn same_aspect_in_differing_entries_test() {
+        async_run(async_same_aspect_in_differing_entries_test().boxed());
     }
 
     async fn async_gossip_test() {

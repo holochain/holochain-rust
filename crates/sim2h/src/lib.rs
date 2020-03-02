@@ -1,4 +1,5 @@
 #![feature(vec_remove_item)]
+#![feature(label_break_value)]
 #![allow(clippy::redundant_clone)]
 
 extern crate backtrace;
@@ -50,13 +51,32 @@ use futures::{
 use in_stream::*;
 use log::*;
 use rand::{seq::SliceRandom, thread_rng};
-use std::convert::TryFrom;
+use std::{
+    convert::TryFrom,
+    fs::File,
+    hash::{Hash, Hasher},
+    io::prelude::*,
+};
 
 use holochain_locksmith::Mutex;
 use holochain_metrics::{config::MetricPublisherConfig, Metric};
 
+lazy_static! {
+    static ref SET_THREAD_PANIC_FATAL: bool = {
+        let orig_handler = std::panic::take_hook();
+        std::panic::set_hook(Box::new(move |panic_info| {
+            eprintln!("THREAD PANIC {:#?}", panic_info);
+            // invoke the default handler and exit the process
+            orig_handler(panic_info);
+            std::process::exit(1);
+        }));
+        true
+    };
+}
+
 /// if we can't acquire a lock in 20 seconds, panic!
 const MAX_LOCK_TIMEOUT: u64 = 20000;
+pub const RECEIPT_HASH_SEED: u64 = 0;
 
 //set up license_key
 new_relic_setup!("NEW_RELIC_LICENSE_KEY");
@@ -112,9 +132,9 @@ impl MetricsTimerGenerator {
         let (sender, mut recv) = tokio::sync::mpsc::unbounded_channel::<(&'static str, f64)>();
         let out = async move {
             let metric_publisher = MetricPublisherConfig::default().create_metric_publisher();
-            loop {
+            'metric_loop: loop {
                 let msg = match recv.next().await {
-                    None => return,
+                    None => break 'metric_loop,
                     Some(msg) => msg,
                 };
                 // TODO - this write is technically blocking
@@ -124,6 +144,7 @@ impl MetricsTimerGenerator {
                     .unwrap()
                     .publish(&Metric::new_timestamped_now(msg.0, None, msg.1));
             }
+            warn!("metric loop ended");
         }
         .boxed();
         (Self { sender }, out)
@@ -189,6 +210,8 @@ pub enum DhtAlgorithm {
 #[allow(dead_code)]
 mod mono_ref;
 use mono_ref::*;
+use std::collections::BTreeMap;
+use twox_hash::XxHash64;
 
 #[allow(dead_code)]
 mod sim2h_im_state;
@@ -272,13 +295,18 @@ impl Sim2hHandle {
             }
             WireMessage::Ping => return spawn_handle_message_ping(sim2h_handle, uri, signer),
             WireMessage::Status => return spawn_handle_message_status(sim2h_handle, uri, signer),
+            WireMessage::Debug => return spawn_handle_message_debug(sim2h_handle, uri, signer),
             WireMessage::Hello(version) => {
                 return spawn_handle_message_hello(sim2h_handle, uri, signer, version)
             }
             WireMessage::ClientToLib3h(ht::EncodedSpanWrap {
                 data: ClientToLib3h::JoinSpace(data),
                 ..
-            }) => return spawn_handle_message_join_space(sim2h_handle, uri, signer, data),
+            }) => {
+                let _ =
+                    tokio::task::spawn(handle_message_join_space(sim2h_handle, uri, signer, data));
+                return;
+            }
             message @ _ => message,
         };
 
@@ -287,13 +315,19 @@ impl Sim2hHandle {
         tokio::task::spawn(async move {
             // -- right now each agent can only be part of a single space :/ --
 
-            let state = sim2h_handle.state().get_clone().await;
-            let (agent_id, space_hash) = match state.get_space_info_from_uri(&uri) {
-                None => {
-                    error!("uri has not joined space, cannoct proceed {}", uri);
+            let (agent_id, space_hash) = {
+                let state = sim2h_handle.state().get_clone().await;
+                if let Some(info) = state.get_space_info_from_uri(&uri) {
+                    info
+                } else {
+                    error!(
+                        "uri has not joined space, cannot proceed {} {}",
+                        uri,
+                        message.message_type()
+                    );
+                    sim2h_handle.disconnect(vec![uri.clone()]);
                     return;
                 }
-                Some((agent_id, space_hash)) => (agent_id, space_hash),
             };
 
             if *agent_id != signer {
@@ -443,18 +477,47 @@ fn spawn_handle_message_status(sim2h_handle: Sim2hHandle, uri: Lib3hUri, signer:
     tokio::task::spawn(async move {
         debug!("Sending StatusResponse in response to Status");
         let state = sim2h_handle.state().get_clone().await;
+        let mut joined_connections = 0_usize;
+        for (_, space) in state.spaces.iter() {
+            joined_connections += space.connections.len();
+        }
         sim2h_handle.send(
             signer.clone(),
             uri.clone(),
             &WireMessage::StatusResponse(StatusData {
                 spaces: state.spaces_count(),
                 connections: sim2h_handle.connection_count.get().await,
+                joined_connections,
                 redundant_count: match sim2h_handle.dht_algorithm() {
                     DhtAlgorithm::FullSync => 0,
                     DhtAlgorithm::NaiveSharding { redundant_count } => *redundant_count,
                 },
                 version: WIRE_VERSION,
             }),
+        );
+    });
+}
+
+fn spawn_handle_message_debug(sim2h_handle: Sim2hHandle, uri: Lib3hUri, signer: AgentId) {
+    tokio::task::spawn(async move {
+        debug!("Sending DebugResponse in response to Debug");
+        let state = sim2h_handle.state().get_clone().await;
+        let mut response_map: BTreeMap<SpaceHash, String> = BTreeMap::new();
+        for (hash, space) in state.spaces.iter() {
+            let json = serde_json::to_string(&space).expect("Space must be serializable");
+            response_map.insert((**hash).clone(), json.clone());
+            let filename = format!("{}.json", **hash);
+            if let Ok(mut file) = File::create(filename.clone()) {
+                file.write_all(json.into_bytes().as_slice())
+                    .unwrap_or_else(|_| error!("Could not write to file {}!", filename))
+            } else {
+                error!("Could not create file {}!", filename)
+            }
+        }
+        sim2h_handle.send(
+            signer.clone(),
+            uri.clone(),
+            &WireMessage::DebugResponse(response_map),
         );
     });
 }
@@ -493,17 +556,20 @@ fn spawn_handle_message_hello(
     }
 }
 
-fn spawn_handle_message_join_space(
+async fn handle_message_join_space(
     sim2h_handle: Sim2hHandle,
     uri: Lib3hUri,
     _signer: AgentId,
     data: SpaceData,
 ) {
-    sim2h_handle.state().spawn_new_connection(
-        data.space_address.clone(),
-        data.agent_id.clone(),
-        uri.clone(),
-    );
+    sim2h_handle
+        .state()
+        .new_connection(
+            data.space_address.clone(),
+            data.agent_id.clone(),
+            uri.clone(),
+        )
+        .await;
 
     sim2h_handle.send(
         data.agent_id.clone(),
@@ -968,7 +1034,7 @@ pub fn run_sim2h(
             }
         };
         let mut blocking_fn = Some(gen_blocking_fn(sim2h));
-        loop {
+        'sim2h_process_loop: loop {
             // NOTE - once we move everything in sim2h to futures
             //        we can get rid of the `process()` function
             //        and remove this spawn_blocking code
@@ -978,7 +1044,7 @@ pub fn run_sim2h(
                     // we can't recover because the sim2h instance is lost
                     // but don't panic... just exit
                     error!("sim2h process failed: {:?}", e);
-                    return;
+                    break 'sim2h_process_loop;
                 }
                 Ok((sim2h, Err(e))) => {
                     if e.to_string().contains("Bind error:") {
@@ -1000,6 +1066,7 @@ pub fn run_sim2h(
             };
             blocking_fn = Some(gen_blocking_fn(sim2h));
         }
+        warn!("sim2h process loop ended");
     });
 
     (rt, bind_recv)
@@ -1030,6 +1097,9 @@ impl Sim2h {
         dht_algorithm: DhtAlgorithm,
         tracer: Option<ht::Tracer>,
     ) -> Self {
+        // make sure if a thread panics, the whole process exits
+        assert!(*SET_THREAD_PANIC_FATAL);
+
         let (metric_gen, metric_task) = MetricsTimerGenerator::new();
 
         let (connection_mgr, connection_mgr_evt_recv, connection_count) = ConnectionMgr::new();
@@ -1198,11 +1268,18 @@ impl Sim2h {
                 if !result {
                     return Err(VERIFY_FAILED_ERR_STR.into());
                 }
+                let agent_id: AgentId = signed_message.provenance.source().into();
+                send_receipt(
+                    sim2h_handle.clone(),
+                    &signed_message.payload,
+                    agent_id.clone(),
+                    url.clone(),
+                );
                 let wire_message = WireMessage::try_from(signed_message.payload)?;
-                Ok((signed_message.provenance.source().into(), wire_message))
+                Ok((agent_id, wire_message))
             })() {
                 Ok((source, wire_message)) => {
-                    sim2h_handle.handle_message(url, wire_message, source)
+                    sim2h_handle.handle_message(url.clone(), wire_message, source.clone());
                 }
                 Err(error) => {
                     error!(
@@ -1281,13 +1358,29 @@ impl Sim2h {
     }
 }
 
+fn send_receipt(sim2h_handle: Sim2hHandle, payload: &Opaque, source: AgentId, url: Lib3hUri) {
+    let mut hasher = XxHash64::with_seed(RECEIPT_HASH_SEED);
+    payload.hash(&mut hasher);
+    let hash = hasher.finish();
+    let receipt = WireMessage::Ack(hash);
+    sim2h_handle.send(source, url, &receipt);
+}
+
 async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: ScheduleGuard) {
     let gossip_full_start = std::time::Instant::now();
 
     let agents_needing_gossip = sim2h_handle.state().check_gossip().await.spaces();
 
+    if agents_needing_gossip.is_empty() {
+        debug!("sim2h gossip no agents needing gossip");
+    }
+
     for (space_hash, agents) in agents_needing_gossip.iter() {
-        trace!("sim2h gossip agent count: {}", agents.len());
+        trace!(
+            "sim2h gossip agent count: {} in space {:?}",
+            agents.len(),
+            space_hash
+        );
 
         for agent_id in agents {
             // explicitly yield here as we don't want to hog the scheduler
@@ -1300,8 +1393,6 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
                 None => continue,
                 Some(r) => r,
             };
-
-            trace!("sim2h gossip entry count: {}", r.len());
 
             for (entry_hash, aspects) in r.iter() {
                 if aspects.is_empty() {

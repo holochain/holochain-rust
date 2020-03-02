@@ -83,12 +83,17 @@ pub enum GetLinksNetworkResult {
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
 pub enum NetworkQuery {
     GetEntry,
-    GetLinks(String, String, Option<CrudStatus>, GetLinksNetworkQuery),
+    GetLinks(
+        Option<String>,
+        Option<String>,
+        Option<CrudStatus>,
+        GetLinksNetworkQuery,
+    ),
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, DefaultJson, Clone)]
 #[allow(clippy::large_enum_variant)]
 pub enum NetworkQueryResult {
     Entry(Option<EntryWithMetaAndHeader>),
-    Links(GetLinksNetworkResult, String, String),
+    Links(GetLinksNetworkResult, Option<String>, Option<String>),
 }

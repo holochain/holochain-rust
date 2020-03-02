@@ -419,6 +419,7 @@ fn main() {
         let mut conductor = Command::new("holochain")
             .args(&["-c", &config_path])
             .env("RUST_BACKTRACE", "full")
+            .env("HC_IGNORE_SIM2H_URL_PROPERTY","true")
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
@@ -483,8 +484,8 @@ fn main() {
     io.add_method("replace_conductor", move |params: Params| {
         if allow_replace_conductor {
             Ok(Value::String(os_eval(&format!("curl -L -k https://github.com/holochain/{}/releases/download/{}/{} -o holochain.tar.gz && tar -xzvf holochain.tar.gz && mv holochain /holochain/.cargo/bin/holochain && rm holochain.tar.gz",
-             get_as_string("repo", &unwrap_params_map(params.clone())?)?, 
-             get_as_string("tag", &unwrap_params_map(params.clone())?)?, 
+             get_as_string("repo", &unwrap_params_map(params.clone())?)?,
+             get_as_string("tag", &unwrap_params_map(params.clone())?)?,
              get_as_string("file_name", &unwrap_params_map(params)?)?))))
         } else {
             println!("replace not allowed (-c to enable)");

@@ -1,6 +1,7 @@
 use crate::*;
 use lib3h::rrdht_util::Location;
 use rand::Rng;
+use serde::{Serialize, Serializer};
 use std::sync::{
     atomic::{AtomicU64, Ordering},
     Arc,
@@ -127,6 +128,15 @@ impl std::fmt::Debug for UpcomingInstant {
     }
 }
 
+impl Serialize for UpcomingInstant {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&format!("{:?}", self))
+    }
+}
+
 impl UpcomingInstant {
     pub fn new_ms_from_now(ms: u64) -> Self {
         Self(
@@ -149,9 +159,10 @@ enum StoreProto {
 }
 
 /// represents an active connection
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ConnectionState {
     agent_id: MonoAgentId,
+    #[serde(serialize_with = "serialize_location")]
     agent_loc: Location,
     uri: MonoUri,
     next_gossip_check: UpcomingInstant,
@@ -167,15 +178,26 @@ pub type MonoUri = MonoRef<Lib3hUri>;
 pub type Holding = im::HashMap<MonoAspectHash, im::HashSet<MonoAgentId>>;
 
 /// so we cache entry locations as well
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct EntryInfo {
     pub entry_hash: MonoEntryHash,
+    #[serde(serialize_with = "serialize_location")]
     pub entry_loc: Location,
     pub aspects: Holding,
 }
 
+#[allow(clippy::trivially_copy_pass_by_ref)]
+pub fn serialize_location<S>(loc: &Location, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    serializer.serialize_u32(loc.clone().into())
+}
+
 /// sim2h state storage
+#[derive(Serialize)]
 pub struct Space {
+    #[serde(skip)]
     pub crypto: Box<dyn CryptoSystem>,
     pub redundancy: u64,
     pub all_aspects: im::HashMap<MonoAspectHash, MonoAspectHash>,

@@ -25,7 +25,6 @@ use holochain_persistence_api::{
     },
     eav::{EavFilter, EntityAttributeValueStorage, IndexFilter},
 };
-use regex::Regex;
 
 use crate::{dht::pending_validations::PendingValidation, state::StateWrapper};
 use chrono::{offset::FixedOffset, DateTime};
@@ -99,19 +98,22 @@ impl AddressableContent for DhtStoreSnapshot {
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn create_get_links_eavi_query<'a>(
     address: Address,
-    link_type: String,
-    tag: String,
+    link_type: Option<String>,
+    tag: Option<String>,
 ) -> Result<EaviQuery<'a>, HolochainError> {
-    let link_type_regex = Regex::new(&link_type)
-        .map_err(|_| HolochainError::from("Invalid regex passed for type"))?;
-    let tag_regex =
-        Regex::new(&tag).map_err(|_| HolochainError::from("Invalid regex passed for tag"))?;
     Ok(EaviQuery::new(
         Some(address).into(),
         EavFilter::predicate(move |attr: Attribute| match attr {
             Attribute::LinkTag(query_link_type, query_tag)
             | Attribute::RemovedLink(query_link_type, query_tag) => {
-                link_type_regex.is_match(&query_link_type) && tag_regex.is_match(&query_tag)
+                link_type
+                    .clone()
+                    .map(|link_type| link_type == query_link_type)
+                    .unwrap_or(true)
+                    && tag
+                        .clone()
+                        .map(|tag| tag.to_uppercase() == query_tag.to_uppercase())
+                        .unwrap_or(true)
             }
             _ => false,
         }),
@@ -163,8 +165,8 @@ impl DhtStore {
     pub fn get_links(
         &self,
         address: Address,
-        link_type: String,
-        tag: String,
+        link_type: Option<String>,
+        tag: Option<String>,
         crud_filter: Option<CrudStatus>,
         configuration: GetLinksQueryConfiguration,
     ) -> Result<Vec<(EntityAttributeValueIndex, CrudStatus)>, HolochainError> {

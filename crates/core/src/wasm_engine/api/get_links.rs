@@ -77,8 +77,8 @@ pub mod tests {
     ) -> Vec<u8> {
         let args = GetLinksArgs {
             entry_address: base.clone(),
-            link_type: link_type.to_regex_string().unwrap(),
-            tag: tag.to_regex_string().unwrap(),
+            link_type: link_type.into(),
+            tag: tag.into(),
             options: Default::default(),
         };
         println!("GetLinksArgs: {:?}", args);

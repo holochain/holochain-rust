@@ -325,8 +325,8 @@ pub mod tests {
         println!("\n get_links() ...");
         let get_links_args = GetLinksArgs {
             entry_address: entry_addresses[0].clone(),
-            link_type: "test-link".into(),
-            tag: "test-tag".into(),
+            link_type: Some("test-link".into()),
+            tag: Some("test-tag".into()),
             options: Default::default(),
         };
 

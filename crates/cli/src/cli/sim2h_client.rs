@@ -7,7 +7,11 @@ use sim2h::{
     crypto::{Provenance, SignedWireMessage},
     WireMessage, WIRE_VERSION,
 };
-use std::sync::{Arc, Mutex};
+use std::{
+    fs::File,
+    io::prelude::*,
+    sync::{Arc, Mutex},
+};
 use url2::prelude::*;
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
@@ -54,9 +58,10 @@ pub fn sim2h_client(
         "hello" => WireMessage::Hello(WIRE_VERSION),
         "status" => WireMessage::Status,
         "trace_filter" => WireMessage::TraceFilter(trace_filter.unwrap()),
+        "debug" => WireMessage::Debug,
         _ => {
             return Err(format!(
-                "expecting 'ping' or 'status' for message, got: {}",
+                "expecting 'ping', 'status' or 'debug' for message, got: {}",
                 message_string
             ))
         }
@@ -77,6 +82,24 @@ pub fn sim2h_client(
                         | WireMessage::StatusResponse(_)
                         | WireMessage::TraceFilterResponse(_) => {
                             println!("Got response => {:?}", msg);
+                            break;
+                        }
+                        WireMessage::DebugResponse(debug_response_map) => {
+                            println!("Got DebugResponse for {} spaces.", debug_response_map.len());
+                            for (space, json) in debug_response_map {
+                                let filename = format!("{}.json", space);
+                                println!(
+                                    "Writing Sim2h state dump for space {} to file: {}",
+                                    space, filename
+                                );
+
+                                File::create(filename.clone())
+                                    .unwrap_or_else(|_| {
+                                        panic!("Could not create file {}!", filename)
+                                    })
+                                    .write_all(json.into_bytes().as_slice())
+                                    .expect("Could not write to file!");
+                            }
                             break;
                         }
                         _ => println!("{:?}", msg),

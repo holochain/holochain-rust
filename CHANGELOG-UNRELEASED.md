@@ -7,13 +7,12 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Added
 
 ### Changed
-- Changed Pagination to have different types [#2110](https://github.com/holochain/holochain-rust/pull/2110)
+
 ### Deprecated
 
 ### Removed
 
 ### Fixed
 
-- Fixing wire message TK-01102
-
 ### Security
+

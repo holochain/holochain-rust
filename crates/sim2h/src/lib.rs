@@ -50,7 +50,9 @@ use log::*;
 use rand::{seq::SliceRandom, thread_rng};
 use std::{
     convert::TryFrom,
+    fs::File,
     hash::{Hash, Hasher},
+    io::prelude::*,
 };
 
 use holochain_locksmith::Mutex;
@@ -208,6 +210,7 @@ pub enum DhtAlgorithm {
 #[allow(dead_code)]
 mod mono_ref;
 use mono_ref::*;
+use std::collections::BTreeMap;
 use twox_hash::XxHash64;
 
 #[allow(dead_code)]
@@ -304,6 +307,7 @@ impl Sim2hHandle {
             }
             WireMessage::Ping => return spawn_handle_message_ping(sim2h_handle, uri, signer),
             WireMessage::Status => return spawn_handle_message_status(sim2h_handle, uri, signer),
+            WireMessage::Debug => return spawn_handle_message_debug(sim2h_handle, uri, signer),
             WireMessage::Hello(version) => {
                 return spawn_handle_message_hello(sim2h_handle, uri, signer, version)
             }
@@ -311,12 +315,8 @@ impl Sim2hHandle {
                 data: ClientToLib3h::JoinSpace(data),
                 ..
             }) => {
-                let _ = tokio::task::spawn(spawn_handle_message_join_space(
-                    sim2h_handle,
-                    uri,
-                    signer,
-                    data,
-                ));
+                let _ =
+                    tokio::task::spawn(handle_message_join_space(sim2h_handle, uri, signer, data));
                 return;
             }
             message @ _ => message,
@@ -327,20 +327,19 @@ impl Sim2hHandle {
         tokio::task::spawn(async move {
             // -- right now each agent can only be part of a single space :/ --
 
-            let (agent_id, space_hash) = 'got_info: {
-                for _ in 0_usize..600 {
-                    // await consistency of new connection
-                    let state = sim2h_handle.state().get_clone().await;
-                    if let Some(info) = state.get_space_info_from_uri(&uri) {
-                        break 'got_info info;
-                    }
-                    tokio::time::delay_for(std::time::Duration::from_millis(100)).await;
+            let (agent_id, space_hash) = {
+                let state = sim2h_handle.state().get_clone().await;
+                if let Some(info) = state.get_space_info_from_uri(&uri) {
+                    info
+                } else {
+                    error!(
+                        "uri has not joined space, cannot proceed {} {}",
+                        uri,
+                        message.message_type()
+                    );
+                    sim2h_handle.disconnect(vec![uri.clone()]);
+                    return;
                 }
-                let s = tracing::error_span!("uri_error");
-                let _g = s.enter();
-                tracing::error!(?message, ?uri, ?signer);
-                error!("uri has not joined space, cannot proceed {}", uri);
-                return;
             };
 
             if *agent_id != signer {
@@ -511,6 +510,30 @@ fn spawn_handle_message_status(sim2h_handle: Sim2hHandle, uri: Lib3hUri, signer:
     });
 }
 
+fn spawn_handle_message_debug(sim2h_handle: Sim2hHandle, uri: Lib3hUri, signer: AgentId) {
+    tokio::task::spawn(async move {
+        debug!("Sending DebugResponse in response to Debug");
+        let state = sim2h_handle.state().get_clone().await;
+        let mut response_map: BTreeMap<SpaceHash, String> = BTreeMap::new();
+        for (hash, space) in state.spaces.iter() {
+            let json = serde_json::to_string(&space).expect("Space must be serializable");
+            response_map.insert((**hash).clone(), json.clone());
+            let filename = format!("{}.json", **hash);
+            if let Ok(mut file) = File::create(filename.clone()) {
+                file.write_all(json.into_bytes().as_slice())
+                    .unwrap_or_else(|_| error!("Could not write to file {}!", filename))
+            } else {
+                error!("Could not create file {}!", filename)
+            }
+        }
+        sim2h_handle.send(
+            signer.clone(),
+            uri.clone(),
+            &WireMessage::DebugResponse(response_map),
+        );
+    });
+}
+
 fn spawn_handle_message_hello(
     sim2h_handle: Sim2hHandle,
     uri: Lib3hUri,
@@ -545,7 +568,7 @@ fn spawn_handle_message_hello(
     }
 }
 
-async fn spawn_handle_message_join_space(
+async fn handle_message_join_space(
     sim2h_handle: Sim2hHandle,
     uri: Lib3hUri,
     _signer: AgentId,
@@ -553,7 +576,7 @@ async fn spawn_handle_message_join_space(
 ) {
     sim2h_handle
         .state()
-        .spawn_new_connection(
+        .new_connection(
             data.space_address.clone(),
             data.agent_id.clone(),
             uri.clone(),

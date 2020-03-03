@@ -287,8 +287,8 @@ mod tests {
         let link_type = String::from("test-link");
         let key = GetLinksKey {
             base_address: entry.address(),
-            link_type,
-            tag: "link-tag".to_string(),
+            link_type: Some(link_type),
+            tag: Some("link-tag".to_string()),
             id: snowflake::ProcessUniqueId::new().to_string(),
         };
         let config = GetLinksQueryConfiguration::default();

@@ -10,8 +10,8 @@ use holochain_persistence_api::cas::content::Address;
 #[derive(Deserialize, Default, Debug, Serialize, Clone, PartialEq, Eq, Hash, DefaultJson)]
 pub struct GetLinksArgs {
     pub entry_address: Address,
-    pub link_type: String,
-    pub tag: String,
+    pub link_type: Option<String>,
+    pub tag: Option<String>,
     pub options: GetLinksOptions,
 }
 

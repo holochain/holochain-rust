@@ -60,7 +60,7 @@ pub fn naive_sharding_should_store(
 mod tests {
     use super::*;
     use lib3h_sodium::SodiumCryptoSystem;
-    use log::*;
+    use holochain_tracing::prelude::*;
     const REDUNDANT_COUNT: u64 = 50;
 
     // generate a test agent id (HcS)

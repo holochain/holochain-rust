@@ -8,7 +8,7 @@ use crate::websocket::{
     tls::TlsConfig,
     wss_info::WssInfo,
 };
-use log::*;
+use holochain_tracing::prelude::*;
 use url2::prelude::*;
 
 use std::net::{TcpListener, TcpStream};

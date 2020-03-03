@@ -4051,7 +4051,6 @@ dependencies = [
  "lib3h_protocol 0.0.38 (git+https://github.com/holochain/lib3h?branch=bump_tracing)",
  "lib3h_sodium 0.0.38 (git+https://github.com/holochain/lib3h?branch=bump_tracing)",
  "lib3h_zombie_actor 0.0.38 (git+https://github.com/holochain/lib3h?branch=bump_tracing)",
- "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "nanoid 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "native-tls 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "newrelic 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",

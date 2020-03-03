@@ -8,11 +8,12 @@ extern crate holochain_common;
 
 use lib3h_protocol::uri::Builder;
 use lib3h_sodium::SodiumCryptoSystem;
-use log::*;
 use newrelic::{LogLevel, LogOutput, NewRelicConfig};
 use sim2h::{run_sim2h, DhtAlgorithm, MESSAGE_LOGGER};
 use std::path::PathBuf;
 use structopt::StructOpt;
+use holochain_tracing::prelude::*;
+
 
 #[derive(StructOpt)]
 #[structopt(rename_all = "kebab-case")]
@@ -50,7 +51,7 @@ struct Cli {
     #[structopt(
         long,
         help = "Outputs structured json from logging",
-        default_value = "Json"
+        default_value = "Log"
     )]
     structured: ht::structured::Output,
 }
@@ -65,12 +66,7 @@ fn main() {
         .unwrap_or_else(|_| warn!("Could not configure new relic daemon"));
     let args = Cli::from_args();
 
-    if let Some(service_name) = args.tracing_name {
-        ht::tracing::init(service_name).expect("Failed to start tracing");
-    } else {
-        ht::structured::init_fmt(args.structured).expect("Failed to start structed tracing");
-        tracing_log::LogTracer::init().expect("Failed to init tracing log");
-    };
+    ht::structured::init_fmt(args.structured, args.tracing_name).expect("Failed to start structed tracing");
 
     let host = "ws://0.0.0.0/";
     let uri = Builder::with_raw_url(host)

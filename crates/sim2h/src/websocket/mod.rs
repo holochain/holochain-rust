@@ -6,7 +6,6 @@
 /// The connection pool implemented abstractly based on any rust io Read/Write Stream.
 /// Module tcp implements a concrete type based on std::net::TcpStream.
 extern crate env_logger;
-extern crate log;
 
 mod mem;
 mod mem_stream;

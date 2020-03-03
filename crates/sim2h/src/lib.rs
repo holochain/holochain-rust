@@ -6,7 +6,6 @@
 extern crate backtrace;
 extern crate env_logger;
 extern crate lib3h_crypto_api;
-extern crate log;
 extern crate nanoid;
 extern crate num_cpus;
 #[macro_use]
@@ -46,7 +45,6 @@ use futures::{
     stream::StreamExt,
 };
 use in_stream::*;
-use log::*;
 use rand::{seq::SliceRandom, thread_rng};
 use std::{
     convert::TryFrom,
@@ -61,6 +59,7 @@ use holochain_tracing as ht;
 use holochain_tracing_macros::{autotrace, newrelic_autotrace};
 use tracing::{instrument, Level};
 use tracing_futures::Instrument;
+use ht::prelude::*;
 
 lazy_static! {
     static ref SET_THREAD_PANIC_FATAL: bool = {

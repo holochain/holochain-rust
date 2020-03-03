@@ -61,6 +61,21 @@ use std::{
 use holochain_locksmith::Mutex;
 use holochain_metrics::{config::MetricPublisherConfig, Metric};
 
+/// use the default 0 seed for xxHash
+pub const RECEIPT_HASH_SEED: u64 = 0;
+
+/// Generates a u64 hash response for an `Ack` message given input bytes
+pub fn generate_ack_receipt_hash(payload: &Opaque) -> u64 {
+    let mut hasher = XxHash64::with_seed(RECEIPT_HASH_SEED);
+    payload.hash(&mut hasher);
+    hasher.finish()
+}
+
+/// internal generate the full `Ack` message.
+fn gen_receipt(payload: &Opaque) -> WireMessage {
+    WireMessage::Ack(generate_ack_receipt_hash(payload))
+}
+
 lazy_static! {
     static ref SET_THREAD_PANIC_FATAL: bool = {
         let orig_handler = std::panic::take_hook();
@@ -76,7 +91,6 @@ lazy_static! {
 
 /// if we can't acquire a lock in 20 seconds, panic!
 const MAX_LOCK_TIMEOUT: u64 = 20000;
-pub const RECEIPT_HASH_SEED: u64 = 0;
 
 //set up license_key
 new_relic_setup!("NEW_RELIC_LICENSE_KEY");
@@ -282,6 +296,8 @@ impl Sim2hHandle {
         &self.state
     }
 
+    /// Notify core/sim2h_worker that we have processed the current message
+    /// sufficiently, and are ready to receive another message.
     pub fn send_receipt(&self, receipt: &WireMessage, source: &AgentId, url: &Lib3hUri) {
         self.send(source.clone(), url.clone(), receipt);
     }
@@ -1317,7 +1333,6 @@ impl Sim2h {
                 let agent_id: AgentId = signed_message.provenance.source().into();
                 let receipt = gen_receipt(&signed_message.payload);
 
-                sim2h_handle.send_receipt(&receipt, &agent_id, &url);
                 let wire_message = WireMessage::try_from(signed_message.payload)?;
                 Ok((agent_id, wire_message, receipt))
             })() {
@@ -1399,13 +1414,6 @@ impl Sim2h {
 
         Ok(did_work)
     }
-}
-
-fn gen_receipt(payload: &Opaque) -> WireMessage {
-    let mut hasher = XxHash64::with_seed(RECEIPT_HASH_SEED);
-    payload.hash(&mut hasher);
-    let hash = hasher.finish();
-    WireMessage::Ack(hash)
 }
 
 async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: ScheduleGuard) {

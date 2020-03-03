@@ -59,6 +59,7 @@ use holochain_locksmith::Mutex;
 use holochain_metrics::{config::MetricPublisherConfig, Metric};
 use holochain_tracing as ht;
 use holochain_tracing_macros::{autotrace, newrelic_autotrace};
+use tracing::{instrument, Level};
 use tracing_futures::Instrument;
 
 lazy_static! {
@@ -225,7 +226,6 @@ struct Sim2hHandle {
     metric_gen: MetricsTimerGenerator,
     connection_mgr: ConnectionMgrHandle,
     connection_count: ConnectionCount,
-    tracer: Option<ht::Tracer>,
 }
 
 impl Sim2hHandle {
@@ -235,7 +235,6 @@ impl Sim2hHandle {
         metric_gen: MetricsTimerGenerator,
         connection_mgr: ConnectionMgrHandle,
         connection_count: ConnectionCount,
-        tracer: Option<ht::Tracer>,
     ) -> Self {
         let redundancy = match dht_algorithm {
             DhtAlgorithm::FullSync => 0,
@@ -247,7 +246,6 @@ impl Sim2hHandle {
             metric_gen,
             connection_mgr,
             connection_count,
-            tracer,
         }
     }
 
@@ -323,7 +321,6 @@ impl Sim2hHandle {
         };
 
         // you have to be in a space to proceed further
-        let tracer = self.tracer.clone().unwrap_or_else(|| ht::null_tracer());
         tokio::task::spawn(async move {
             // -- right now each agent can only be part of a single space :/ --
 
@@ -351,11 +348,10 @@ impl Sim2hHandle {
             }
 
             match message {
-                WireMessage::ClientToLib3h(span_wrap) => {
-                    let span = ht::SpanWrap::from(span_wrap.clone())
-                        .follower(&tracer, "handle_joined - ClientToLib3h");
-                    let _spanguard = span.map(|span| ht::push_span(span));
-                    match span_wrap.data.clone() {
+                WireMessage::ClientToLib3h(ht::EncodedSpanWrap { data, .. }) => {
+                    let span = tracing::info_span!("ClientToLib3h");
+                    let _g = span.enter();
+                    match data {
                         ClientToLib3h::LeaveSpace(_data) => {
                             // for now, just disconnect on LeaveSpace
                             sim2h_handle.disconnect(vec![uri.clone()]);
@@ -367,7 +363,7 @@ impl Sim2hHandle {
                                 uri,
                                 signer,
                                 space_hash,
-                                span_wrap.swapped(dm_data),
+                                dm_data,
                             );
                         }
                         ClientToLib3h::PublishEntry(data) => {
@@ -376,7 +372,7 @@ impl Sim2hHandle {
                                 uri,
                                 signer,
                                 space_hash,
-                                span_wrap.swapped(data),
+                                data,
                             );
                         }
                         ClientToLib3h::QueryEntry(query_data) => {
@@ -394,18 +390,17 @@ impl Sim2hHandle {
                         }
                     }
                 }
-                WireMessage::Lib3hToClientResponse(span_wrap) => {
-                    let span = ht::SpanWrap::from(span_wrap.clone())
-                        .follower(&tracer, "handle_joined - Lib3hToClientResponse");
-                    let _spanguard = span.map(|span| ht::push_span(span));
-                    match span_wrap.data.clone() {
+                WireMessage::Lib3hToClientResponse(ht::EncodedSpanWrap { data, .. }) => {
+                    let span = tracing::info_span!("Lib3hToClientResponse");
+                    let _g = span.enter();
+                    match data {
                         Lib3hToClientResponse::HandleSendDirectMessageResult(dm_data) => {
                             return spawn_handle_message_send_dm_result(
                                 sim2h_handle,
                                 uri,
                                 signer,
                                 space_hash,
-                                span_wrap.swapped(dm_data),
+                                dm_data,
                             );
                         }
                         Lib3hToClientResponse::HandleGetAuthoringEntryListResult(list_data) => {
@@ -421,7 +416,7 @@ impl Sim2hHandle {
                                 uri,
                                 signer,
                                 space_hash,
-                                span_wrap.swapped(list_data),
+                                list_data,
                             );
                             return;
                         }
@@ -440,7 +435,7 @@ impl Sim2hHandle {
                                 uri,
                                 signer,
                                 space_hash,
-                                span_wrap.swapped(fetch_result),
+                                fetch_result,
                             );
                         }
                         Lib3hToClientResponse::HandleQueryEntryResult(query_result) => {
@@ -449,7 +444,7 @@ impl Sim2hHandle {
                                 uri,
                                 signer,
                                 space_hash,
-                                span_wrap.swapped(query_result),
+                                query_result,
                             );
                         }
                         message @ _ => {
@@ -568,6 +563,7 @@ fn spawn_handle_message_hello(
     }
 }
 
+#[tracing::instrument(level = "info", skip(sim2h_handle))]
 async fn handle_message_join_space(
     sim2h_handle: Sim2hHandle,
     uri: Lib3hUri,
@@ -587,34 +583,31 @@ async fn handle_message_join_space(
         data.agent_id.clone(),
         uri.clone(),
         &WireMessage::Lib3hToClient(
-            ht::top_follower("request_gossiping_list")
-                .wrap(Lib3hToClient::HandleGetGossipingEntryList(GetListData {
+            ht::span_wrap_encode!(
+                Level::INFO,
+                Lib3hToClient::HandleGetGossipingEntryList(GetListData {
                     request_id: "".into(),
                     space_address: data.space_address.clone(),
                     provider_agent_id: data.agent_id.clone(),
-                }))
-                .into(),
+                })
+            )
+            .into(),
         ),
     );
 
-    let span = tracing::info_span!("Out");
-    let id = span.id();
-    let _g = span.enter();
-    let span_wrap: ht::EncodedSpanWrap<()> = id
-        .and_then(|id| ht::tracing::span_context(&id).map(|context| context.wrap(())))
-        .unwrap_or_else(|| ht::wrap((), "No context".into()))
-        .into();
     sim2h_handle.send(
         data.agent_id.clone(),
         uri,
         &WireMessage::Lib3hToClient(
-            span_wrap
-                .swapped(Lib3hToClient::HandleGetAuthoringEntryList(GetListData {
+            ht::span_wrap_encode!(
+                Level::INFO,
+                Lib3hToClient::HandleGetAuthoringEntryList(GetListData {
                     request_id: "".into(),
                     space_address: data.space_address.clone(),
                     provider_agent_id: data.agent_id,
-                }))
-                .into(),
+                })
+            )
+            .into(),
         ),
     );
 }
@@ -652,13 +645,8 @@ fn spawn_handle_message_send_dm(
     _uri: Lib3hUri,
     _signer: AgentId,
     space_hash: MonoRef<SpaceHash>,
-    span_wrap: ht::EncodedSpanWrap<DirectMessageData>,
+    data: DirectMessageData,
 ) {
-    // Avoid clone of data
-    let (span_wrap, data) = {
-        let s = span_wrap.swapped(());
-        (s, span_wrap.data)
-    };
     let to_agent_id = data.to_agent_id.clone();
     let data_space_hash = data.space_address.clone();
     inner_spawn_handle_message_send_dmx(
@@ -666,22 +654,24 @@ fn spawn_handle_message_send_dm(
         to_agent_id,
         data_space_hash,
         space_hash,
-        WireMessage::Lib3hToClient(span_wrap.swapped(Lib3hToClient::HandleSendDirectMessage(data))),
+        WireMessage::Lib3hToClient(
+            ht::span_wrap_encode!(
+                tracing::Level::INFO,
+                Lib3hToClient::HandleSendDirectMessage(data)
+            )
+            .into(),
+        ),
     );
 }
 
+#[instrument(level = "info", skip(sim2h_handle))]
 fn spawn_handle_message_send_dm_result(
     sim2h_handle: Sim2hHandle,
     _uri: Lib3hUri,
     _signer: AgentId,
     space_hash: MonoRef<SpaceHash>,
-    span_wrap: ht::EncodedSpanWrap<DirectMessageData>,
+    data: DirectMessageData,
 ) {
-    // Avoid clone of data
-    let (span_wrap, data) = {
-        let s = span_wrap.swapped(());
-        (s, span_wrap.data)
-    };
     let to_agent_id = data.to_agent_id.clone();
     let data_space_hash = data.space_address.clone();
     inner_spawn_handle_message_send_dmx(
@@ -689,22 +679,19 @@ fn spawn_handle_message_send_dm_result(
         to_agent_id,
         data_space_hash,
         space_hash,
-        WireMessage::Lib3hToClient(span_wrap.swapped(Lib3hToClient::SendDirectMessageResult(data))),
+        WireMessage::Lib3hToClient(
+            ht::span_wrap_encode!(Level::INFO, Lib3hToClient::SendDirectMessageResult(data)).into(),
+        ),
     );
 }
-
+#[instrument(level = "info", skip(sim2h_handle))]
 fn spawn_handle_message_publish_entry(
     sim2h_handle: Sim2hHandle,
     _uri: Lib3hUri,
     signer: AgentId,
     space_hash: MonoRef<SpaceHash>,
-    span_wrap: ht::EncodedSpanWrap<ProvidedEntryData>,
+    data: ProvidedEntryData,
 ) {
-    // Avoid clone of data
-    let (span_wrap, data) = {
-        let s = span_wrap.swapped(());
-        (s, span_wrap.data)
-    };
     if data.space_address != *space_hash {
         error!(
             "space mismatch - agent is in {}, message is for {}",
@@ -722,15 +709,14 @@ fn spawn_handle_message_publish_entry(
             .collect();
         let mut multi_message = Vec::new();
         for aspect in data.entry.aspect_list {
-            multi_message.push(span_wrap.swapped(Lib3hToClient::HandleStoreEntryAspect(
-                StoreEntryAspectData {
-                    request_id: "".into(),
-                    space_address: (&*space_hash).clone(),
-                    provider_agent_id: signer.clone(),
-                    entry_address: data.entry.entry_address.clone(),
-                    entry_aspect: aspect,
-                },
-            )));
+            let data = Lib3hToClient::HandleStoreEntryAspect(StoreEntryAspectData {
+                request_id: "".into(),
+                space_address: (&*space_hash).clone(),
+                provider_agent_id: signer.clone(),
+                entry_address: data.entry.entry_address.clone(),
+                entry_aspect: aspect,
+            });
+            multi_message.push(ht::span_wrap_encode!(Level::INFO, data).into());
         }
         let multi_message = WireMessage::MultiSend(multi_message);
 
@@ -784,18 +770,14 @@ fn spawn_handle_message_list_data(
     }
 }
 
+#[instrument(level = "info", skip(sim2h_handle))]
 fn spawn_handle_message_authoring_entry_list(
     sim2h_handle: Sim2hHandle,
     uri: Lib3hUri,
     signer: AgentId,
     space_hash: MonoRef<SpaceHash>,
-    span_wrap: ht::EncodedSpanWrap<EntryListData>,
+    list_data: EntryListData,
 ) {
-    // Avoid clone of data
-    let (span_wrap, list_data) = {
-        let s = span_wrap.swapped(());
-        (s, span_wrap.data)
-    };
     if signer != list_data.provider_agent_id || list_data.space_address != *space_hash {
         error!(
             "space mismatch - agent is in {}, message is for {}",
@@ -804,54 +786,57 @@ fn spawn_handle_message_authoring_entry_list(
         return;
     }
 
-    tokio::task::spawn(async move {
-        let state = sim2h_handle.state().get_clone().await;
+    tokio::task::spawn(
+        async move {
+            let state = sim2h_handle.state().get_clone().await;
 
-        let mut multi_message = Vec::new();
+            let mut multi_message = Vec::new();
 
-        for (entry_hash, aspects) in list_data.address_map {
-            let mut aspect_list = Vec::new();
+            for (entry_hash, aspects) in list_data.address_map {
+                let mut aspect_list = Vec::new();
 
-            for aspect in aspects {
-                let agents_that_need_aspect =
-                    state.get_agents_that_need_aspect(&space_hash, &entry_hash, &aspect);
-                if !agents_that_need_aspect.is_empty() {
-                    aspect_list.push(aspect.clone());
+                for aspect in aspects {
+                    let agents_that_need_aspect =
+                        state.get_agents_that_need_aspect(&space_hash, &entry_hash, &aspect);
+                    if !agents_that_need_aspect.is_empty() {
+                        aspect_list.push(aspect.clone());
+                    }
+                }
+
+                if !aspect_list.is_empty() {
+                    multi_message.push(
+                        ht::span_wrap_encode!(
+                            Level::INFO,
+                            Lib3hToClient::HandleFetchEntry(FetchEntryData {
+                                request_id: "".to_string(),
+                                space_address: (&*space_hash).clone(),
+                                provider_agent_id: signer.clone(),
+                                entry_address: entry_hash.clone(),
+                                aspect_address_list: Some(aspect_list),
+                            },)
+                        )
+                        .into(),
+                    );
                 }
             }
 
-            if !aspect_list.is_empty() {
-                multi_message.push(span_wrap.swapped(Lib3hToClient::HandleFetchEntry(
-                    FetchEntryData {
-                        request_id: "".to_string(),
-                        space_address: (&*space_hash).clone(),
-                        provider_agent_id: signer.clone(),
-                        entry_address: entry_hash.clone(),
-                        aspect_address_list: Some(aspect_list),
-                    },
-                )));
+            if !multi_message.is_empty() {
+                let multi_send = WireMessage::MultiSend(multi_message);
+                sim2h_handle.send(signer, uri, &multi_send);
             }
         }
-
-        if !multi_message.is_empty() {
-            let multi_send = WireMessage::MultiSend(multi_message);
-            sim2h_handle.send(signer, uri, &multi_send);
-        }
-    });
+        .instrument(tracing::info_span!("authoring_entry")),
+    );
 }
 
+#[instrument(level = "info", skip(sim2h_handle))]
 fn spawn_handle_message_fetch_entry_result(
     sim2h_handle: Sim2hHandle,
     _uri: Lib3hUri,
     signer: AgentId,
     space_hash: MonoRef<SpaceHash>,
-    span_wrap: ht::EncodedSpanWrap<FetchEntryResultData>,
+    fetch_result: FetchEntryResultData,
 ) {
-    // Avoid cloning data
-    let (span_wrap, fetch_result) = {
-        let s = span_wrap.swapped(());
-        (s, span_wrap.data)
-    };
     if signer != fetch_result.provider_agent_id || fetch_result.space_address != *space_hash {
         error!(
             "space mismatch - agent is in {}, message is for {}",
@@ -881,15 +866,14 @@ fn spawn_handle_message_fetch_entry_result(
 
             for agent_id in agents_that_need_aspect {
                 let m = to_agent.entry(agent_id.clone()).or_default();
-                m.0.push(span_wrap.swapped(Lib3hToClient::HandleStoreEntryAspect(
-                    StoreEntryAspectData {
-                        request_id: "".into(),
-                        space_address: (&*space_hash).clone(),
-                        provider_agent_id: (&*agent_id).clone(),
-                        entry_address: fetch_result.entry.entry_address.clone(),
-                        entry_aspect: aspect.clone(),
-                    },
-                )));
+                let data = Lib3hToClient::HandleStoreEntryAspect(StoreEntryAspectData {
+                    request_id: "".into(),
+                    space_address: (&*space_hash).clone(),
+                    provider_agent_id: (&*agent_id).clone(),
+                    entry_address: fetch_result.entry.entry_address.clone(),
+                    entry_aspect: aspect.clone(),
+                });
+                m.0.push(ht::span_wrap_encode!(Level::INFO, data).into());
 
                 let e =
                     m.1.entry(fetch_result.entry.entry_address.clone())
@@ -917,9 +901,10 @@ fn spawn_handle_message_fetch_entry_result(
                 );
             }
         }
-    });
+    }.instrument(tracing::info_span!("spawn_handle_message_fetch_entry_result")));
 }
 
+#[instrument(level = "info", skip(sim2h_handle))]
 fn spawn_handle_message_query_entry(
     sim2h_handle: Sim2hHandle,
     _uri: Lib3hUri,
@@ -935,45 +920,44 @@ fn spawn_handle_message_query_entry(
         return;
     }
 
-    tokio::task::spawn(async move {
-        let state = sim2h_handle.state().get_clone().await;
+    tokio::task::spawn(
+        async move {
+            let state = sim2h_handle.state().get_clone().await;
 
-        let holding_agents = state.get_agents_for_query(
-            &space_hash,
-            &query_data.entry_address,
-            Some(&query_data.requester_agent_id),
-        );
-        // TODO db - send it out to more than one node
-        //           then give it some aggregation time
-        let query_target = holding_agents[0].clone();
+            let holding_agents = state.get_agents_for_query(
+                &space_hash,
+                &query_data.entry_address,
+                Some(&query_data.requester_agent_id),
+            );
+            // TODO db - send it out to more than one node
+            //           then give it some aggregation time
+            let query_target = holding_agents[0].clone();
 
-        let url = match state.lookup_joined(&space_hash, &query_target) {
-            None => {
-                error!("AHH - the query_target we found doesn't exist");
-                return;
-            }
-            Some(url) => url,
-        };
-        let span = ht::top_follower("inner");
-        let query_message = WireMessage::Lib3hToClient(
-            span.wrap(Lib3hToClient::HandleQueryEntry(query_data))
-                .into(),
-        );
-        sim2h_handle.send((&*query_target).clone(), url.clone(), &query_message);
-    });
+            let url = match state.lookup_joined(&space_hash, &query_target) {
+                None => {
+                    error!("AHH - the query_target we found doesn't exist");
+                    return;
+                }
+                Some(url) => url,
+            };
+            let query_message = WireMessage::Lib3hToClient(
+                ht::span_wrap_encode!(Level::INFO, Lib3hToClient::HandleQueryEntry(query_data))
+                    .into(),
+            );
+            sim2h_handle.send((&*query_target).clone(), url.clone(), &query_message);
+        }
+        .instrument(tracing::info_span!("message_query")),
+    );
 }
 
+#[instrument(level = "info", skip(sim2h_handle))]
 fn spawn_handle_message_query_entry_result(
     sim2h_handle: Sim2hHandle,
     _uri: Lib3hUri,
     signer: AgentId,
     space_hash: MonoRef<SpaceHash>,
-    span_wrap: ht::EncodedSpanWrap<QueryEntryResultData>,
+    query_result: QueryEntryResultData,
 ) {
-    let (span_wrap, query_result) = {
-        let s = span_wrap.swapped(());
-        (s, span_wrap.data)
-    };
     if signer != query_result.responder_agent_id || query_result.space_address != *space_hash {
         error!(
             "space mismatch - agent is in {}, message is for {}",
@@ -982,21 +966,28 @@ fn spawn_handle_message_query_entry_result(
         return;
     }
 
-    tokio::task::spawn(async move {
-        let req_agent_id = query_result.requester_agent_id.clone();
-        let msg_out = WireMessage::ClientToLib3hResponse(
-            span_wrap.swapped(ClientToLib3hResponse::QueryEntryResult(query_result)),
-        );
-        let state = sim2h_handle.state().get_clone().await;
-        let to_url = match state.lookup_joined(&space_hash, &req_agent_id) {
-            Some(to_url) => to_url,
-            None => {
-                error!("unvalidated proxy agent {}", &req_agent_id);
-                return;
-            }
-        };
-        sim2h_handle.send(req_agent_id, to_url.clone(), &msg_out);
-    });
+    tokio::task::spawn(
+        async move {
+            let req_agent_id = query_result.requester_agent_id.clone();
+            let msg_out = WireMessage::ClientToLib3hResponse(
+                ht::span_wrap_encode!(
+                    Level::INFO,
+                    ClientToLib3hResponse::QueryEntryResult(query_result)
+                )
+                .into(),
+            );
+            let state = sim2h_handle.state().get_clone().await;
+            let to_url = match state.lookup_joined(&space_hash, &req_agent_id) {
+                Some(to_url) => to_url,
+                None => {
+                    error!("unvalidated proxy agent {}", &req_agent_id);
+                    return;
+                }
+            };
+            sim2h_handle.send(req_agent_id, to_url.clone(), &msg_out);
+        }
+        .instrument(tracing::info_span!("handle_message_query_entry_result")),
+    );
 }
 
 /// creates a tokio runtime and executes the Sim2h instance within it
@@ -1005,7 +996,6 @@ pub fn run_sim2h(
     crypto: Box<dyn CryptoSystem>,
     bind_spec: Lib3hUri,
     dht_algorithm: DhtAlgorithm,
-    tracer: Option<ht::Tracer>,
 ) -> (
     tokio::runtime::Runtime,
     tokio::sync::oneshot::Receiver<Lib3hUri>,
@@ -1021,7 +1011,7 @@ pub fn run_sim2h(
     let (bind_send, bind_recv) = tokio::sync::oneshot::channel();
 
     rt.spawn(async move {
-        let sim2h = Sim2h::new(crypto, bind_spec, dht_algorithm, tracer);
+        let sim2h = Sim2h::new(crypto, bind_spec, dht_algorithm);
         let _ = bind_send.send(sim2h.bound_uri.clone().unwrap());
 
         /*
@@ -1114,7 +1104,6 @@ impl Sim2h {
         crypto: Box<dyn CryptoSystem>,
         bind_spec: Lib3hUri,
         dht_algorithm: DhtAlgorithm,
-        tracer: Option<ht::Tracer>,
     ) -> Self {
         // make sure if a thread panics, the whole process exits
         assert!(*SET_THREAD_PANIC_FATAL);
@@ -1130,7 +1119,6 @@ impl Sim2h {
             metric_gen.clone(),
             connection_mgr,
             connection_count,
-            tracer,
         );
 
         let config = TcpBindConfig::default();
@@ -1441,13 +1429,6 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
                     None => continue,
                     Some(uri) => uri,
                 };
-                let span = tracing::info_span!("Out");
-                let id = span.id();
-                let _g = span.enter();
-                let span_wrap: ht::EncodedSpanWrap<()> = id
-                    .and_then(|id| ht::tracing::span_context(&id).map(|context| context.wrap(())))
-                    .unwrap_or_else(|| ht::wrap((), "No context".into()))
-                    .into();
 
                 let wire_message = WireMessage::Lib3hToClient({
                     let s = FetchEntryData {
@@ -1458,7 +1439,8 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
                         aspect_address_list: Some(aspects.iter().map(|a| (&**a).clone()).collect()),
                     };
                     tracing::info!(message = "wire_message", ?s.request_id, ?s.space_address);
-                    span_wrap.swapped(Lib3hToClient::HandleFetchEntry(s)).into()
+                    ht::span_wrap_encode!(tracing::Level::INFO, Lib3hToClient::HandleFetchEntry(s))
+                        .into()
                 });
 
                 sim2h_handle.send((&*query_agent).clone(), (&*uri).clone(), &wire_message);

@@ -65,13 +65,11 @@ fn main() {
         .unwrap_or_else(|_| warn!("Could not configure new relic daemon"));
     let args = Cli::from_args();
 
-    let tracer = if let Some(service_name) = args.tracing_name {
+    if let Some(service_name) = args.tracing_name {
         ht::tracing::init(service_name).expect("Failed to start tracing");
-        None
     } else {
         ht::structured::init_fmt(args.structured).expect("Failed to start structed tracing");
         tracing_log::LogTracer::init().expect("Failed to init tracing log");
-        None
     };
 
     let host = "ws://0.0.0.0/";
@@ -90,7 +88,6 @@ fn main() {
         DhtAlgorithm::NaiveSharding {
             redundant_count: args.sharding,
         },
-        tracer,
     );
 
     // just park the main thread indefinitely...

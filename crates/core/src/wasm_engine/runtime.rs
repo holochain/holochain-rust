@@ -32,13 +32,14 @@ use crate::workflows::keystore::keystore_derive_key_workflow;
 use crate::workflows::keystore::keystore_derive_seed_workflow;
 use crate::workflows::keystore::keystore_new_random_workflow;
 use crate::workflows::sign::sign_one_time_workflow;
-use crate::workflows::crypto::crypto_workflow;
-use crate::workflows::remove_link::remove_link_workflow;
+use crate::workflows::remove_link_wasm::remove_link_wasm_workflow;
 use crate::workflows::send::send_workflow;
 use crate::workflows::entry_address::entry_address_workflow;
 use crate::workflows::query::query_workflow;
 use crate::workflows::call::call_workflow;
 use crate::workflows::link_entries::link_entries_workflow;
+use crate::workflows::crypto::decrypt_workflow;
+use crate::workflows::sign::sign_workflow;
 
 #[derive(Clone)]
 pub struct ZomeCallData {
@@ -171,6 +172,7 @@ impl WasmCallData {
                 move |ctx: &mut Ctx, guest_allocation_ptr: holochain_wasmer_host::AllocationPtr| -> ZomeApiResult {
                     let guest_bytes = holochain_wasmer_host::guest::read_from_allocation_ptr(ctx, guest_allocation_ptr)?;
                     let guest_json = JsonString::from_bytes(guest_bytes);
+                    println!("invoke_workflow: {}", &guest_json);
                     let context = std::sync::Arc::clone(&closure_arc.context().map_err(|_| WasmError::Unspecified )?);
 
                     // in general we will have more luck tracing json than arbitrary structs
@@ -262,10 +264,12 @@ impl WasmCallData {
                 "hc_sleep" => func!(invoke_workflow!("sleep_workflow", "nanos", sleep_workflow)),
 
                 // Commit link deletion entry
-                "hc_remove_link" => func!(invoke_workflow!("remove_link_workflow", "EntryWithHeader", remove_link_workflow)),
+                "hc_remove_link" => func!(invoke_workflow!("remove_link_wasm_workflow", "EntryWithHeader", remove_link_wasm_workflow)),
 
                 //execute cryptographic function
-                "hc_crypto" => func!(invoke_workflow!("crypto_workflow", "CryptoArgs", crypto_workflow)),
+                // "hc_crypto" => func!(invoke_workflow!("crypto_workflow", "CryptoArgs", crypto_workflow)),
+                "hc_sign" => func!(invoke_workflow!("sign_workflow", "WasmString", sign_workflow)),
+                "hc_decrypt" => func!(invoke_workflow!("decrypt_workflow", "WasmString", decrypt_workflow)),
 
                 // Sign a block of data with a one-time key that is then shredded
                 "hc_sign_one_time" => func!(invoke_workflow!("sign_one_time_workflow", "OneTimeSignArgs", sign_one_time_workflow)),

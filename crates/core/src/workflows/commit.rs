@@ -6,10 +6,11 @@ use std::sync::Arc;
 
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn commit_app_entry_workflow(context: Arc<Context>, commit_entry_args: &CommitEntryArgs) -> Result<CommitEntryResult, HolochainError> {
+    println!("commit_app_entry_workflow {:?}", commit_entry_args);
     author_entry(
+        Arc::clone(&context),
         &commit_entry_args.entry(),
         None,
-        &context,
         &commit_entry_args.options().provenance(),
     ).await
 }

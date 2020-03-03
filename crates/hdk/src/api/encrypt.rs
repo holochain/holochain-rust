@@ -1,7 +1,7 @@
 use crate::error::ZomeApiResult;
 use holochain_wasm_types::crypto::{CryptoArgs, CryptoMethod};
 use holochain_wasmer_guest::host_call;
-use crate::api::hc_crypto;
+use crate::api::hc_encrypt;
 
 /// encrypts a string payload using the agent's private key.
 /// Returns the message as a string.
@@ -26,7 +26,7 @@ use crate::api::hc_crypto;
 /// # }
 /// ```
 pub fn encrypt<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
-    host_call!(hc_crypto, CryptoArgs {
+    host_call!(hc_encrypt, CryptoArgs {
         payload: payload.into(),
         method: CryptoMethod::Encrypt,
     })?

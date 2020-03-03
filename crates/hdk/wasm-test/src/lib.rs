@@ -9,6 +9,7 @@ extern crate holochain_wasmer_guest;
 
 use hdk::prelude::*;
 use std::time::Duration;
+use hdk::holochain_core_types::signature::Signature;
 
 #[derive(Deserialize, Serialize, Default,Clone, Debug, DefaultJson)]
 pub struct TestEntryType {
@@ -635,7 +636,7 @@ pub fn handle_get_version(hash: Option<bool>) -> ZomeApiResult<String>
     }
 }
 
-pub fn handle_sign_payload(payload: String) -> ZomeApiResult<String>
+pub fn handle_sign_payload(payload: String) -> ZomeApiResult<Signature>
 {
     hdk::sign(payload)
 }
@@ -827,17 +828,20 @@ define_zome! {
     init: || {{
 
         // should be able to commit an entry
-        let entry = Entry::App(
+        let _entry = Entry::App(
             "testEntryType".into(),
             EntryStruct {
                 stuff: "called from init".into(),
             }
             .into(),
         );
-        let _addr = match hdk::commit_entry(&entry) {
-            Ok(v) => v,
-            Err(e) => return CallbackResult::Fail(e.into()),
-        };
+        // let _addr = match hdk::commit_entry(&entry) {
+        //     Ok(v) => v,
+        //     Err(e) => {
+        //         hdk::debug(e.clone()).ok();
+        //         return CallbackResult::Fail(e.into())
+        //     }
+        // };
         CallbackResult::Pass
 
 //         // should be able to get the entry
@@ -884,10 +888,10 @@ define_zome! {
                 }
                 .into(),
             );
-            match hdk::commit_entry(&entry) {
+            CallbackResult::ReceiveResult(match hdk::commit_entry(&entry) {
                 Ok(address) => format!("Committed: '{}' / address: {}", payload, address.to_string()),
                 Err(error) => format!("Error committing in receive: '{}'", error.to_string()),
-            }
+            })
         }
     }
 
@@ -1097,7 +1101,7 @@ define_zome! {
 
         sign_payload: {
             inputs: |payload: String|,
-            outputs: |version: ZomeApiResult<String>|,
+            outputs: |version: ZomeApiResult<Signature>|,
             handler: handle_sign_payload
         }
 

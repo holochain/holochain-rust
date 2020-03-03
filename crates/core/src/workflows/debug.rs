@@ -10,6 +10,7 @@ use holochain_core_types::error::HolochainError;
 /// Returns an HcApiReturnCode as I64
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn debug_workflow(context: std::sync::Arc<Context>, input: &WasmString) -> Result<(), HolochainError> {
+    println!("debug println: {:?}", input);
     log_debug!(context, "dna: '{}'", input.to_string());
     Ok(())
 }

@@ -71,8 +71,8 @@ pub fn commit_entry_result(
     entry: &Entry,
     options: CommitEntryOptions,
 ) -> ZomeApiResult<CommitEntryResult> {
-    host_call!(hc_commit_entry, CommitEntryArgs {
+    Ok(host_call!(hc_commit_entry, CommitEntryArgs {
         entry: entry.clone(),
         options,
-    })?
+    })?)
 }

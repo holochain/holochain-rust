@@ -5,6 +5,21 @@ use lib3h_sodium::secbuf::SecBuf;
 use crate::workflows::WorkflowResult;
 use crate::context::Context;
 use std::sync::Arc;
+use holochain_wasm_types::wasm_string::WasmString;
+use holochain_wasm_types::crypto::CryptoArgs;
+use crate::workflows::crypto::crypto_workflow;
+use holochain_wasm_types::crypto::CryptoMethod;
+
+pub async fn sign_workflow(context: Arc<Context>, payload: &WasmString) -> WorkflowResult<Signature> {
+    let r = Ok(Signature::from(crypto_workflow(
+        Arc::clone(&context),
+        &CryptoArgs {
+            payload: payload.to_string(),
+            method: CryptoMethod::Sign,
+        }).await?));
+    println!("sign_workflow: {:?}", r);
+    r
+}
 
 /// ZomeApiFunction::SignOneTime function code
 /// args: [0] encoded MemoryAllocation as u64

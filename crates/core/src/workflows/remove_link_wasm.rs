@@ -7,7 +7,7 @@ use crate::{
         },
     },
     workflows::author_entry::author_entry,
-    
+
 };
 use holochain_core_types::{
     entry::Entry,
@@ -20,18 +20,18 @@ use holochain_wasm_types::{
     link_entries::LinkEntriesArgs,
 };
 use holochain_wasmer_host::*;
-use crate::wasm_engine::runtime::Runtime;
+use std::sync::Arc;
+use crate::context::Context;
 
 /// ZomeApiFunction::GetLinks function code
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: GetLinksArgs
 /// Returns an HcApiReturnCode as I64
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn invoke_remove_link(
-    runtime: &mut Runtime,
-    input: LinkEntriesArgs,
+pub async fn remove_link_wasm_workflow(
+    context: Arc<Context>,
+    input: &LinkEntriesArgs,
 ) -> Result<(), HolochainError> {
-    let context = runtime.context().map_err(|e| WasmError::Zome(e.to_string()))?;
     let top_chain_header_option = context.state().unwrap().agent().top_chain_header();
 
     let top_chain_header = match top_chain_header_option {
@@ -91,8 +91,7 @@ pub fn invoke_remove_link(
             let entry = Entry::LinkRemove((link_remove, filtered_links));
 
             // Wait for future to be resolved
-            context
-                .block_on(author_entry(&entry, None, &context, &vec![]))
+            author_entry(Arc::clone(&context), &entry, None, &vec![]).await
                 .map(|_| ())
         }
     }

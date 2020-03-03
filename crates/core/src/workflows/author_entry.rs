@@ -23,13 +23,14 @@ use crate::workflows::callback::links_utils::get_link_entries;
 use std::{sync::Arc, vec::Vec};
 
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub async fn author_entry<'a>(
-    entry: &'a Entry,
+pub async fn author_entry(
+    context: Arc<Context>,
+    entry: &Entry,
     maybe_link_update_delete: Option<Address>,
-    context: &'a Arc<Context>,
-    provenances: &'a Vec<Provenance>,
+    provenances: &Vec<Provenance>,
 ) -> Result<CommitEntryResult, HolochainError> {
     let address = entry.address();
+    println!("author 0");
     log_debug!(
         context,
         "workflow/authoring_entry: {} with content: {:?}",
@@ -45,12 +46,16 @@ pub async fn author_entry<'a>(
         get_link_entries(Arc::clone(&context), &link_data.link)?;
     }
 
+    println!("author 1");
+
     // 1. Build the context needed for validation of the entry
     let validation_package = build_validation_package(Arc::clone(&context), &entry, provenances)?;
     let validation_data = ValidationData {
         package: validation_package,
         lifecycle: EntryLifecycle::Chain,
     };
+
+    println!("author 2");
 
     // 2. Validate the entry
     log_debug!(
@@ -70,6 +75,8 @@ pub async fn author_entry<'a>(
     };
     log_debug!(context, "worflow/authoring_entry {}: is valid!", address);
 
+    println!("author 3");
+
     // 3. Commit the entry
     log_debug!(
         context,
@@ -79,8 +86,10 @@ pub async fn author_entry<'a>(
     let addr = commit_entry(entry.clone(), maybe_link_update_delete, &context).await?;
     log_debug!(context, "workflow/authoring_entry/{}: committed", address);
 
+    println!("author 4");
+
     // 4. Publish the valid entry to DHT. This will call Hold to itself
-    if entry.entry_type().can_publish(context) {
+    if entry.entry_type().can_publish(&context) {
         log_debug!(
             context,
             "workflow/authoring_entry/{}: publishing...",
@@ -95,6 +104,8 @@ pub async fn author_entry<'a>(
             address
         );
     }
+
+    println!("author 5");
 
     // 5. Publish the header for all types (including private entries)
     log_debug!(
@@ -156,9 +167,9 @@ pub mod tests {
 
         let entry_address = context1
             .block_on(author_entry(
+                Arc::clone(&context1),
                 &test_entry_with_value("{\"stuff\":\"test entry value\"}"),
                 None,
-                &context1,
                 &vec![],
             ))
             .unwrap()
@@ -196,9 +207,9 @@ pub mod tests {
 
         let entry_address = context1
             .block_on(author_entry(
+                Arc::clone(&context1),
                 &test_entry_with_value("{\"stuff\":\"test entry value\"}"),
                 None,
-                &context1,
                 &vec![],
             ))
             .unwrap()
@@ -246,9 +257,9 @@ pub mod tests {
         // Jill publishes an entry
         context1
             .block_on(author_entry(
+                Arc::clone(&context1),
                 &test_entry_with_value("{\"stuff\":\"test entry value number 1\"}"),
                 None,
-                &context1,
                 &vec![],
             ))
             .unwrap()
@@ -258,9 +269,9 @@ pub mod tests {
         // Jill publishes another entry
         context1
             .block_on(author_entry(
+                Arc::clone(&context1),
                 &test_entry_with_value("{\"stuff\":\"test entry value number 2\"}"),
                 None,
-                &context1,
                 &vec![],
             ))
             .unwrap()

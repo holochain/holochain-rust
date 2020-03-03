@@ -40,10 +40,10 @@ pub async fn update_entry_workflow(
     let entry = entry_args.new_entry.clone();
 
     author_entry(
-            &entry,
-            Some(latest_entry.address()),
-            &context,
-            &vec![], // TODO should provenance be a parameter?
-        ).await
-        .map(|result| result.address())
+        Arc::clone(&context),
+        &entry,
+        Some(latest_entry.address()),
+        &vec![], // TODO should provenance be a parameter?
+    ).await
+    .map(|result| result.address())
 }

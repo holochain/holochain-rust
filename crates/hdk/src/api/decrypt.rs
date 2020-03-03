@@ -1,7 +1,9 @@
-use crate::error::ZomeApiResult;
-use holochain_wasm_types::crypto::{CryptoArgs, CryptoMethod};
+// use crate::error::ZomeApiResult;
+use holochain_wasm_types::wasm_string::WasmString;
 use holochain_wasmer_guest::host_call;
- use crate::api::hc_crypto;
+use std::convert::TryFrom;
+use holochain_wasmer_guest::JsonString;
+use crate::api::hc_decrypt;
 
 /// decrypts a string payload using the agent's private key.
 /// Returns the message as a string.
@@ -25,9 +27,7 @@ use holochain_wasmer_guest::host_call;
 /// }
 /// # }
 /// ```
-pub fn decrypt<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
-    host_call!(hc_crypto, CryptoArgs {
-        payload: payload.into(),
-        method: CryptoMethod::Decrypt,
-    })?
+pub fn decrypt<S: Into<String>, O: TryFrom<JsonString>>(payload: S) -> Result<O, O::Error> {
+    let s: String = payload.into();
+    host_call!(hc_decrypt, WasmString::from(s))
 }

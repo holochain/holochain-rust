@@ -1,14 +1,15 @@
 use crate::error::ZomeApiResult;
 use holochain_core_types::signature::Provenance;
 use holochain_wasm_types::{
-    crypto::{CryptoArgs, CryptoMethod},
+    wasm_string::{WasmString},
     sign::{OneTimeSignArgs, SignOneTimeResult},
     verify_signature::VerifySignatureArgs,
 };
 use holochain_wasmer_guest::host_call;
 use crate::api::hc_verify_signature;
 use crate::api::hc_sign_one_time;
-use crate::api::hc_crypto;
+use crate::api::hc_sign;
+use holochain_core_types::signature::Signature;
 
 /// Signs a string payload using the agent's private key.
 /// Returns the signature as a string.
@@ -33,11 +34,9 @@ use crate::api::hc_crypto;
 /// }
 /// # }
 /// ```
-pub fn sign<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
-    host_call!(hc_crypto, CryptoArgs {
-        payload: payload.into(),
-        method: CryptoMethod::Sign,
-    })?
+pub fn sign<S: Into<String>>(payload: S) -> ZomeApiResult<Signature> {
+    let s: String = payload.into();
+    Ok(host_call!(hc_sign, WasmString::from(s))?)
 }
 
 /// Signs a vector of payloads with a private key that is generated and shredded.

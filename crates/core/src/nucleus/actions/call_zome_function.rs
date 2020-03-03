@@ -479,7 +479,7 @@ pub mod tests {
             .unwrap();
         let grant_entry = Entry::CapTokenGrant(grant.clone());
         let grant_addr = context
-            .block_on(author_entry(&grant_entry, None, &context, &vec![]))
+            .block_on(author_entry(Arc::clone(&context), &grant_entry, None, &vec![]))
             .unwrap()
             .address();
         let maybe_grant = get_grant(&context, &grant_addr);

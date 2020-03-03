@@ -95,7 +95,7 @@ impl ToString for CallbackParams {
 
 // // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn run_callback(context: Arc<Context>, call: CallbackFnCall) -> CallbackResult {
-    println!("{:?}", &call);
+    println!("callback call {:?}", &call);
     println!("{:?}", &call.parameters);
     let call_data = WasmCallData::new_callback_call(context, call.clone());
     match holochain_wasmer_host::guest::call(

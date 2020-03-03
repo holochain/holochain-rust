@@ -27,6 +27,7 @@ pub fn build_validation_package(
 ) -> Result<ValidationPackage, HolochainError> {
     match entry.entry_type() {
         EntryType::App(app_entry_type) => {
+            println!("build_validation_package {:?}", entry);
             if context
                 .state()
                 .expect("No state in build_validation_package")

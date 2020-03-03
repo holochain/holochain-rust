@@ -43,10 +43,10 @@ pub async fn remove_entry_workflow(
     let deletion_entry = Entry::Deletion(DeletionEntry::new(deleted_entry_address.clone()));
 
     author_entry(
-            &deletion_entry.clone(),
-            Some(deleted_entry_address),
-            &context,
-            &vec![],
-        ).await
-        .map(|_| deletion_entry.address())
+        Arc::clone(&context),
+        &deletion_entry.clone(),
+        Some(deleted_entry_address),
+        &vec![],
+    ).await
+    .map(|_| deletion_entry.address())
 }

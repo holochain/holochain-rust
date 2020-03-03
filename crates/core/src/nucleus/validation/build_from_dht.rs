@@ -146,9 +146,9 @@ pub mod tests {
 
         let _entry_address = context
             .block_on(author_entry(
+                Arc::clone(&context),
                 &test_entry_with_value("{\"stuff\":\"test entry value\"}"),
                 None,
-                &context,
                 &vec![],
             ))
             .unwrap()
@@ -190,7 +190,7 @@ pub mod tests {
 
         // jack authors the entry
         context2
-            .block_on(author_entry(&entry, None, &context2, &vec![]))
+            .block_on(author_entry(Arc::clone(&context2), &entry, None, &vec![]))
             .unwrap()
             .address();
 

@@ -251,13 +251,13 @@ macro_rules! define_zome {
             pub extern "C" fn receive(host_allocation_ptr: holochain_wasmer_guest::AllocationPtr) -> holochain_wasmer_guest::AllocationPtr {
                 let input: $crate::holochain_wasm_types::receive::ReceiveParams = holochain_wasmer_guest::host_args!(host_allocation_ptr);
 
-                fn execute(input: $crate::holochain_wasm_types::receive::ReceiveParams ) -> String {
+                fn execute(input: $crate::holochain_wasm_types::receive::ReceiveParams ) -> CallbackResult {
                     let $receive_param = input.payload;
                     let $receive_from = input.from;
                     $receive_expr
                 }
 
-                ret!(WasmResult::Ok(JsonString::from_json(&execute(input))));
+                ret!(&execute(input));
             }
         )*
 
@@ -370,7 +370,7 @@ macro_rules! define_zome {
                         $handler_path($($input_param_name),*)
                     }
 
-                    ret!(WasmResult::Ok(execute(input).into()));
+                    ret!(execute(input));
                 }
         )*
     };

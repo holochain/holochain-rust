@@ -47,7 +47,7 @@ pub mod entry_address;
 #[autotrace]
 pub mod send;
 #[autotrace]
-pub mod invoke_remove_link;
+pub mod remove_link_wasm;
 #[autotrace]
 pub mod emit_signal;
 #[autotrace]
@@ -260,7 +260,7 @@ pub mod tests {
 
         // jack authors the entry
         context2
-            .block_on(author_entry(&entry, None, &context2, &vec![]))
+            .block_on(author_entry(Arc::clone(&context2), &entry, None, &vec![]))
             .unwrap()
             .address();
 

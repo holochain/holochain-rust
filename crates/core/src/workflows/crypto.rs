@@ -1,19 +1,21 @@
-use holochain_json_api::json::*;
 use holochain_wasm_types::crypto::CryptoArgs;
 use crate::workflows::WorkflowResult;
 use crate::context::Context;
 use std::sync::Arc;
+use holochain_wasm_types::wasm_string::WasmString;
+use holochain_wasm_types::crypto::CryptoMethod;
 
 /// ZomeApiFunction::Sign function code
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected argument: u64
 /// Returns an HcApiReturnCode as I64
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub async fn crypto_workflow(context: Arc<Context>, crypto_args: &CryptoArgs) -> WorkflowResult<JsonString> {
+pub async fn crypto_workflow(context: Arc<Context>, crypto_args: &CryptoArgs) -> WorkflowResult<String> {
+    println!("crypto_workflow: {:?}", crypto_args);
     let message = context
         .conductor_api
-        .execute(crypto_args.payload.clone(), crypto_args.method.clone())
-        .map(|sig| JsonString::from_json(&sig));
+        .execute(crypto_args.payload.clone(), crypto_args.method.clone());
+    println!("crypto_workflow message: {:?}", message);
 
     log_debug!(
         context,
@@ -25,6 +27,26 @@ pub async fn crypto_workflow(context: Arc<Context>, crypto_args: &CryptoArgs) ->
     );
 
     message
+}
+
+pub async fn encrypt_workflow(context: Arc<Context>, payload: &WasmString) -> WorkflowResult<WasmString> {
+    crypto_workflow(
+        Arc::clone(&context),
+        &CryptoArgs {
+            payload: payload.to_string(),
+            method: CryptoMethod::Encrypt,
+        }
+    ).await.map(|encrypted_string| WasmString::from(encrypted_string))
+}
+
+pub async fn decrypt_workflow(context: Arc<Context>, payload: &WasmString) -> WorkflowResult<WasmString> {
+    crypto_workflow(
+        Arc::clone(&context),
+        &CryptoArgs {
+            payload: payload.to_string(),
+            method: CryptoMethod::Decrypt,
+        }
+    ).await.map(|decrypted_string| WasmString::from(decrypted_string))
 }
 
 #[cfg(test)]

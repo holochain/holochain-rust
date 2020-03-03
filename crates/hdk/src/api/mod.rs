@@ -84,7 +84,9 @@ holochain_wasmer_guest::host_externs!(
     hc_send,
     hc_sleep,
     hc_remove_link,
-    hc_crypto,
+    hc_sign,
+    hc_encrypt,
+    hc_decrypt,
     hc_sign_one_time,
     hc_verify_signature,
     hc_keystore_list,
@@ -96,7 +98,8 @@ holochain_wasmer_guest::host_externs!(
     hc_commit_capability_grant,
     hc_commit_capability_claim,
     hc_emit_signal,
-    hc_meta
+    hc_meta,
+    hc_timestamp
 );
 
 //--------------------------------------------------------------------------------------------------

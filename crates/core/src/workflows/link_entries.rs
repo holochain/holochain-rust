@@ -47,7 +47,7 @@ pub async fn link_entries_workflow(
 
     // Wait for future to be resolved
     // This is where the link entry actually gets created.
-    author_entry(&entry, None, &context, &vec![]).await
+    author_entry(Arc::clone(&context), &entry, None, &vec![]).await
         .map(|_| entry.address())
 }
 

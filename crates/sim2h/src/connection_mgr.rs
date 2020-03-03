@@ -164,8 +164,7 @@ async fn con_mgr_task(mut con_mgr: ConnectionMgr, weak_ref_dummy: Weak<()>) {
             break 'con_mgr_task;
         }
 
-        let p = con_mgr.process();
-        match p {
+        match con_mgr.process() {
             DidWork => tokio::task::yield_now().await,
             NoWork => tokio::time::delay_for(std::time::Duration::from_millis(5)).await,
             EndTask => break 'con_mgr_task,

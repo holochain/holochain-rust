@@ -286,15 +286,15 @@ impl Sim2hHandle {
     pub fn handle_message(&self, uri: Lib3hUri, message: WireMessage, signer: AgentId) {
         let context = message
             .try_get_span()
-            .and_then(|spans| spans.get(0).map(|s| (*s).to_owned()))
-            .and_then(|span| ht::SpanContext::decode(span).ok());
-        let follow = ht::follow_span!("follower", context);
+            // Not using multi messages in this function so first is fine.
+            .and_then(|spans| spans.first().cloned())
+            .and_then(|span| ht::SpanContext::decode(span.clone()).ok());
+        let follow = ht::follow_span!(tracing::Level::INFO, context);
         let _g = follow.enter();
-
-        tracing::info!("testing");
-        let span = tracing::info_span!("inner span");
-        let _guard = span.enter();
-        tracing::info!("testing again");
+        // The above follow span will not be reported to jaeger so it's helpful to create an inner follow
+        let span = tracing::info_span!("inner_message_follow");
+        let _g = span.enter();
+        tracing::info!(received = ?message);
 
         // dispatch to correct handler
         let sim2h_handle = self.clone();
@@ -954,10 +954,6 @@ fn spawn_handle_message_query_entry(
             }
             Some(url) => url,
         };
-
-        let span = tracing::info_span!("Out qe", root = true);
-        //let id = span.id();
-        let _g = span.enter();
         let span = ht::top_follower("inner");
         let query_message = WireMessage::Lib3hToClient(
             span.wrap(Lib3hToClient::HandleQueryEntry(query_data))

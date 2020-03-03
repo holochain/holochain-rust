@@ -63,27 +63,8 @@ fn main() {
         .logging(LogLevel::Error, LogOutput::StdErr)
         .init()
         .unwrap_or_else(|_| warn!("Could not configure new relic daemon"));
-    //env_logger::init();
     let args = Cli::from_args();
 
-    /*
-    let tracer = if let Some(service_name) = args.tracing_name {
-        let (span_tx, span_rx) = crossbeam_channel::unbounded();
-        let _ = std::thread::Builder::new()
-            .name("tracer_loop".to_string())
-            .spawn(move || {
-                info!("Tracer loop started.");
-                // TODO: killswitch
-                let reporter = ht::reporter::JaegerBinaryReporter::new(&service_name).unwrap();
-                for span in span_rx {
-                    reporter.report(&[span]).expect("could not report span");
-                }
-            });
-        Some(ht::Tracer::with_sender(ht::AllSampler, span_tx))
-    } else {
-        None
-    };
-    */
     let tracer = if let Some(service_name) = args.tracing_name {
         ht::tracing::init(service_name).expect("Failed to start tracing");
         None

@@ -42,14 +42,13 @@ pub fn sim2h_client(
     }
     let url = Url2::parse(format!("{}://{}:{}", url.scheme(), ip, maybe_port.unwrap()));
 
-    if let Some(trace_filter) = trace_filter.clone() {
-        if let Err(e) = trace_filter
-            .parse::<tracing_subscriber::filter::EnvFilter>()
+    // Check that the filter pares before sending it across the network
+    trace_filter.as_ref()
+        .map(|tf|
+            tf.parse::<tracing_subscriber::filter::EnvFilter>()
             .map_err(|e| format!("{:?}", e))
-        {
-            return Err(e);
-        }
-    }
+            .ok()
+        );
 
     println!("connecting to: {}", url);
     let mut job = Job::new(&url)?;
@@ -57,7 +56,7 @@ pub fn sim2h_client(
         "ping" => WireMessage::Ping,
         "hello" => WireMessage::Hello(WIRE_VERSION),
         "status" => WireMessage::Status,
-        "trace_filter" => WireMessage::TraceFilter(trace_filter.unwrap()),
+        "trace_filter" => WireMessage::TraceFilter(trace_filter.expect("Tried to set an invalid trace filter")),
         "debug" => WireMessage::Debug,
         _ => {
             return Err(format!(

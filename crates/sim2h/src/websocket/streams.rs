@@ -4,8 +4,8 @@ use crate::websocket::{
     WsSrvMidHandshake, WsStream, WssConnectResult, WssMidHandshake, WssSrvAcceptResult,
     WssSrvMidHandshake, WssStream,
 };
-use holochain_tracing_macros::newrelic_autotrace;
 use holochain_tracing::prelude::*;
+use holochain_tracing_macros::newrelic_autotrace;
 
 use lib3h::transport::error::{TransportError, TransportResult};
 

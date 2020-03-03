@@ -6,14 +6,13 @@ extern crate structopt;
 #[macro_use(new_relic_setup)]
 extern crate holochain_common;
 
+use holochain_tracing::prelude::*;
 use lib3h_protocol::uri::Builder;
 use lib3h_sodium::SodiumCryptoSystem;
 use newrelic::{LogLevel, LogOutput, NewRelicConfig};
 use sim2h::{run_sim2h, DhtAlgorithm, MESSAGE_LOGGER};
 use std::path::PathBuf;
 use structopt::StructOpt;
-use holochain_tracing::prelude::*;
-
 
 #[derive(StructOpt)]
 #[structopt(rename_all = "kebab-case")]
@@ -66,7 +65,8 @@ fn main() {
         .unwrap_or_else(|_| warn!("Could not configure new relic daemon"));
     let args = Cli::from_args();
 
-    ht::structured::init_fmt(args.structured, args.tracing_name).expect("Failed to start structed tracing");
+    ht::structured::init_fmt(args.structured, args.tracing_name)
+        .expect("Failed to start structed tracing");
 
     let host = "ws://0.0.0.0/";
     let uri = Builder::with_raw_url(host)

@@ -57,9 +57,9 @@ use holochain_locksmith::Mutex;
 use holochain_metrics::{config::MetricPublisherConfig, Metric};
 use holochain_tracing as ht;
 use holochain_tracing_macros::{autotrace, newrelic_autotrace};
+use ht::prelude::*;
 use tracing::{instrument, Level};
 use tracing_futures::Instrument;
-use ht::prelude::*;
 
 lazy_static! {
     static ref SET_THREAD_PANIC_FATAL: bool = {
@@ -844,63 +844,68 @@ fn spawn_handle_message_fetch_entry_result(
         return;
     }
 
-    tokio::task::spawn(async move {
-        let state = sim2h_handle.state().get_clone().await;
+    tokio::task::spawn(
+        async move {
+            let state = sim2h_handle.state().get_clone().await;
 
-        #[allow(clippy::type_complexity)]
-        let mut to_agent: std::collections::HashMap<
-            MonoRef<AgentId>,
-            (
-                Vec<ht::EncodedSpanWrap<Lib3hToClient>>,
-                std::collections::HashMap<EntryHash, im::HashSet<AspectHash>>,
-            ),
-        > = std::collections::HashMap::new();
+            #[allow(clippy::type_complexity)]
+            let mut to_agent: std::collections::HashMap<
+                MonoRef<AgentId>,
+                (
+                    Vec<ht::EncodedSpanWrap<Lib3hToClient>>,
+                    std::collections::HashMap<EntryHash, im::HashSet<AspectHash>>,
+                ),
+            > = std::collections::HashMap::new();
 
-        for aspect in fetch_result.entry.aspect_list {
-            let agents_that_need_aspect = state.get_agents_that_need_aspect(
-                &space_hash,
-                &fetch_result.entry.entry_address,
-                &aspect.aspect_address.clone(),
-            );
-
-            for agent_id in agents_that_need_aspect {
-                let m = to_agent.entry(agent_id.clone()).or_default();
-                let data = Lib3hToClient::HandleStoreEntryAspect(StoreEntryAspectData {
-                    request_id: "".into(),
-                    space_address: (&*space_hash).clone(),
-                    provider_agent_id: (&*agent_id).clone(),
-                    entry_address: fetch_result.entry.entry_address.clone(),
-                    entry_aspect: aspect.clone(),
-                });
-                m.0.push(ht::span_wrap_encode!(Level::INFO, data).into());
-
-                let e =
-                    m.1.entry(fetch_result.entry.entry_address.clone())
-                        .or_default();
-                e.insert(aspect.aspect_address.clone());
-            }
-        }
-
-        for (agent_id, (multi_message, mut holding)) in to_agent.drain() {
-            let uri = match state.lookup_joined(&space_hash, &agent_id) {
-                None => continue,
-                Some(uri) => uri,
-            };
-
-            let multi_send = WireMessage::MultiSend(multi_message);
-
-            sim2h_handle.send((&*agent_id).clone(), (&*uri).clone(), &multi_send);
-
-            for (entry_hash, aspects) in holding.drain() {
-                sim2h_handle.state().spawn_agent_holds_aspects(
-                    (&*space_hash).clone(),
-                    (&*agent_id).clone(),
-                    entry_hash,
-                    aspects,
+            for aspect in fetch_result.entry.aspect_list {
+                let agents_that_need_aspect = state.get_agents_that_need_aspect(
+                    &space_hash,
+                    &fetch_result.entry.entry_address,
+                    &aspect.aspect_address.clone(),
                 );
+
+                for agent_id in agents_that_need_aspect {
+                    let m = to_agent.entry(agent_id.clone()).or_default();
+                    let data = Lib3hToClient::HandleStoreEntryAspect(StoreEntryAspectData {
+                        request_id: "".into(),
+                        space_address: (&*space_hash).clone(),
+                        provider_agent_id: (&*agent_id).clone(),
+                        entry_address: fetch_result.entry.entry_address.clone(),
+                        entry_aspect: aspect.clone(),
+                    });
+                    m.0.push(ht::span_wrap_encode!(Level::INFO, data).into());
+
+                    let e =
+                        m.1.entry(fetch_result.entry.entry_address.clone())
+                            .or_default();
+                    e.insert(aspect.aspect_address.clone());
+                }
+            }
+
+            for (agent_id, (multi_message, mut holding)) in to_agent.drain() {
+                let uri = match state.lookup_joined(&space_hash, &agent_id) {
+                    None => continue,
+                    Some(uri) => uri,
+                };
+
+                let multi_send = WireMessage::MultiSend(multi_message);
+
+                sim2h_handle.send((&*agent_id).clone(), (&*uri).clone(), &multi_send);
+
+                for (entry_hash, aspects) in holding.drain() {
+                    sim2h_handle.state().spawn_agent_holds_aspects(
+                        (&*space_hash).clone(),
+                        (&*agent_id).clone(),
+                        entry_hash,
+                        aspects,
+                    );
+                }
             }
         }
-    }.instrument(tracing::info_span!("spawn_handle_message_fetch_entry_result")));
+        .instrument(tracing::info_span!(
+            "spawn_handle_message_fetch_entry_result"
+        )),
+    );
 }
 
 #[instrument(level = "info", skip(sim2h_handle))]

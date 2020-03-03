@@ -1,3 +1,4 @@
+use crate::NEW_RELIC_LICENSE_KEY;
 use holochain_core_types::error::HolochainError;
 use holochain_locksmith::RwLock;
 use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
@@ -10,6 +11,7 @@ use std::{fmt, sync::Arc};
 #[derive(Clone)]
 pub struct ConductorApi(Arc<RwLock<IoHandler>>);
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_API)]
 pub fn send_json_rpc(
     handle: Arc<RwLock<IoHandler>>,
     payload: String,
@@ -48,6 +50,7 @@ pub fn send_json_rpc(
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_API)]
 impl ConductorApi {
     pub fn new(conductor_api: Arc<RwLock<IoHandler>>) -> ConductorApi {
         ConductorApi(conductor_api)

@@ -4,6 +4,7 @@ use crate::{
     error::HolochainInstanceError,
     static_file_server::ConductorStaticFileServer,
     static_server_impls::NickelStaticServer as StaticServer,
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::error::HolochainError;
 use std::{path::PathBuf, sync::Arc};
@@ -27,6 +28,7 @@ pub trait ConductorUiAdmin {
     fn stop_ui_interface(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl ConductorUiAdmin for Conductor {
     fn install_ui_bundle_from_file(
         &mut self,

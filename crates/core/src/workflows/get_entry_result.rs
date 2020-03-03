@@ -1,7 +1,7 @@
 use crate::{
     context::Context,
     network::{self, actions::query::QueryMethod, query::NetworkQueryResult},
-    nucleus,
+    nucleus, NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{chain_header::ChainHeader, time::Timeout};
 
@@ -15,6 +15,7 @@ use holochain_wasm_utils::api_serialization::get_entry::{
 use std::sync::Arc;
 
 /// Get Entry workflow
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn get_entry_with_meta_workflow<'a>(
     context: &'a Arc<Context>,
     address: &'a Address,
@@ -67,6 +68,7 @@ pub async fn get_entry_with_meta_workflow<'a>(
 }
 
 /// Get GetEntryResult workflow
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn get_entry_result_workflow<'a>(
     context: &'a Arc<Context>,
     args: &'a GetEntryArgs,

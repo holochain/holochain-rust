@@ -1,6 +1,7 @@
 use crate::{
     context::Context,
     wasm_engine::{api::ZomeApiResult, Runtime},
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::error::{HcResult, HolochainError};
 
@@ -13,6 +14,7 @@ use snowflake::ProcessUniqueId;
 use std::sync::Arc;
 use wasmi::{RuntimeArgs, RuntimeValue};
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn conductor_callback<S: Into<String>>(
     method: S,
     params: S,
@@ -49,6 +51,7 @@ fn conductor_callback<S: Into<String>>(
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_keystore_list(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
     let result = conductor_callback("agent/keystore/list", "{}", context.clone());
@@ -67,6 +70,7 @@ pub fn invoke_keystore_list(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeA
     runtime.store_result(Ok(KeystoreListResult { ids: string_list }))
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_keystore_new_random(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
 
@@ -92,6 +96,7 @@ pub fn invoke_keystore_new_random(runtime: &mut Runtime, args: &RuntimeArgs) -> 
     runtime.store_result(Ok(()))
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_keystore_derive_seed(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
     // deserialize args
@@ -117,6 +122,7 @@ pub fn invoke_keystore_derive_seed(runtime: &mut Runtime, args: &RuntimeArgs) ->
     runtime.store_result(Ok(()))
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_keystore_derive_key(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
     // deserialize args
@@ -156,6 +162,7 @@ pub fn invoke_keystore_derive_key(runtime: &mut Runtime, args: &RuntimeArgs) -> 
     runtime.store_result(Ok(JsonString::from_json(&string)))
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_keystore_sign(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
     // deserialize args
@@ -193,6 +200,7 @@ pub fn invoke_keystore_sign(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeAp
     runtime.store_result(Ok(JsonString::from_json(&string)))
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_keystore_get_public_key(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
     // deserialize args

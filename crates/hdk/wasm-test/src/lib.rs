@@ -223,7 +223,7 @@ fn handle_links_roundtrip_create() -> ZomeApiResult<Address> {
         .into(),
     );
     hdk::commit_entry(&entry_1)?;
-
+    //gives enough time for nano seconds to iterate
     let entry_2 = Entry::App(
         "testEntryType".into(),
         EntryStruct {
@@ -243,6 +243,7 @@ fn handle_links_roundtrip_create() -> ZomeApiResult<Address> {
     hdk::commit_entry(&entry_3)?;
 
     hdk::link_entries(&entry_1.address(), &entry_2.address(), "test", "test-tag")?;
+    hdk::sleep(Duration::from_secs(5))?;
     hdk::link_entries(&entry_1.address(), &entry_3.address(), "test", "test-tag")?;
     Ok(entry_1.address())
 }
@@ -643,7 +644,7 @@ pub fn handle_my_entries_by_tag(tag:Option<String>,maybe_status : Option<LinksSt
     if let Some(tag_matched) = tag
     {
         
-        hdk::get_links_with_options(&address, LinkMatch::Any, LinkMatch::Regex(&tag_matched),link_query_options)
+        hdk::get_links_with_options(&address, LinkMatch::Any, LinkMatch::Exactly(&tag_matched),link_query_options)
     } 
     else
     {

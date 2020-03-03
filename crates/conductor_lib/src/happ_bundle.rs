@@ -1,4 +1,4 @@
-use crate::{config::*, port_utils::get_free_port};
+use crate::{config::*, port_utils::get_free_port, NEW_RELIC_LICENSE_KEY};
 use boolinator::Boolinator;
 use std::collections::HashMap;
 
@@ -39,6 +39,7 @@ pub struct HappBundleInstanceReference {
     pub instance_id: String,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl HappBundle {
     pub fn id_references_are_consistent(&self) -> Result<(), String> {
         for bridge in self.bridges.iter() {

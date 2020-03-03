@@ -19,6 +19,8 @@ pub use crate::{
         entry::{entry_type::EntryType, Entry},
         error::HolochainError,
         link::LinkMatch,
+        network::query::{Pagination, SizePagination, SortOrder, TimePagination},
+        time::Iso8601,
     },
     holochain_json_api::{error::JsonError, json::JsonString},
     holochain_persistence_api::cas::content::{Address, AddressableContent},

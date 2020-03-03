@@ -1,6 +1,7 @@
 use crate::{
     wasm_engine::{api::ZomeApiResult, Runtime},
     workflows::{author_entry::author_entry, get_entry_result::get_entry_result_workflow},
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::error::HolochainError;
 
@@ -14,6 +15,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: UpdateEntryArgs
 /// Returns an HcApiReturnCode as I64
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_update_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
     // deserialize args

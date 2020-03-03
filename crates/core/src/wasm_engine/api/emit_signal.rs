@@ -1,6 +1,7 @@
 use crate::{
     signal::{Signal, UserSignal},
     wasm_engine::{api::ZomeApiResult, Runtime},
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
 use std::convert::TryFrom;
@@ -10,6 +11,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// args: [0] encoded MemoryAllocation as u64
 /// Expecting a string as complex input argument
 /// Returns an HcApiReturnCode as I64
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_emit_signal(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
 

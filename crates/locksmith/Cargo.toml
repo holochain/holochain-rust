@@ -1,6 +1,6 @@
 [package]
 name = "holochain_locksmith"
-version = "0.0.42-alpha5"
+version = "0.0.43-alpha3"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 description = "helpers for mutex deadlock diagnosis"
@@ -20,5 +20,12 @@ parking_lot ="=0.9.0"
 snowflake = "=1.3.0"
 
 [features]
-default = []
+#default brings in no features
+default =[]
+#this sets a bypass for the locksmith
 bypass = []
+#this feature allows the compilation with backtraces involved
+backtraces = []
+
+#feature flag for turning on debug info, I figured we could use this for some of the noise in the logs
+debug_info = ["backtraces"]

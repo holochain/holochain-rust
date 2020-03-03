@@ -6,6 +6,7 @@ use crate::{
     },
     dpki_instance::DpkiInstance,
     keystore::{Keystore, PRIMARY_KEYBUNDLE_ID},
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::error::HolochainError;
 use holochain_locksmith::RwLock;
@@ -71,6 +72,7 @@ pub trait ConductorAdmin {
     ) -> Result<(), HolochainError>;
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl ConductorAdmin for Conductor {
     /// Installs a DNA package from the file system to the conductor
     /// If copy=true it will also copy the DNA package to the conductors default

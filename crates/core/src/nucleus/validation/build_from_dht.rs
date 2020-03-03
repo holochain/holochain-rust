@@ -1,6 +1,6 @@
 use crate::{
     context::Context, entry::CanPublish, network::entry_with_header::EntryWithHeader,
-    workflows::get_entry_result::get_entry_with_meta_workflow,
+    workflows::get_entry_result::get_entry_with_meta_workflow, NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
@@ -14,6 +14,7 @@ use std::sync::Arc;
 
 const GET_TIMEOUT_MS: usize = 1000;
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 async fn all_chain_headers_before_header_dht(
     context: Arc<Context>,
     header: &ChainHeader,

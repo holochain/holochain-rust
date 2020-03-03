@@ -1,4 +1,4 @@
-use crate::NetworkingType;
+use crate::{NetworkingType, NEW_RELIC_LICENSE_KEY};
 use cli;
 use colored::*;
 use error::DefaultResult;
@@ -17,11 +17,11 @@ use holochain_persistence_api::cas::content::AddressableContent;
 use std::{fs, path::PathBuf};
 
 pub enum Networking {
-    N3h,
     Sim2h(String),
 }
 
 /// Starts a minimal configuration Conductor with the current application running
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 pub fn run(
     dna_path: PathBuf,
     package: bool,
@@ -72,6 +72,7 @@ pub fn run(
     Ok(())
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 pub fn get_interface_type_string(given_type: String) -> String {
     // note that this behaviour is documented within
     // holochain_common::env_vars module and should be updated
@@ -80,6 +81,7 @@ pub fn get_interface_type_string(given_type: String) -> String {
     EnvVar::Interface.value().ok().unwrap_or_else(|| given_type)
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 pub fn hc_run_configuration(
     dna_path: &PathBuf,
     port: u16,
@@ -100,6 +102,7 @@ pub fn hc_run_configuration(
     })
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 pub fn hc_run_bundle_configuration(
     bundle: &HappBundle,
     port: u16,
@@ -123,6 +126,7 @@ pub fn hc_run_bundle_configuration(
 pub(crate) const AGENT_NAME_DEFAULT: &str = "testAgent";
 const AGENT_CONFIG_ID: &str = "hc-run-agent";
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn agent_configuration(agent_name: String) -> AgentConfiguration {
     // note that this behaviour is documented within
     // holochain_common::env_vars module and should be updated
@@ -147,6 +151,7 @@ fn agent_configuration(agent_name: String) -> AgentConfiguration {
 // DNA
 const DNA_CONFIG_ID: &str = "hc-run-dna";
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn dna_configuration(dna_path: &PathBuf) -> DnaConfiguration {
     let dna = Conductor::load_dna(dna_path).unwrap_or_else(|_| {
         panic!(
@@ -168,6 +173,7 @@ fn dna_configuration(dna_path: &PathBuf) -> DnaConfiguration {
 // STORAGE
 const LOCAL_STORAGE_PATH: &str = ".hc";
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn storage_configuration(persist: bool) -> DefaultResult<StorageConfiguration> {
     if persist {
         fs::create_dir_all(LOCAL_STORAGE_PATH)?;
@@ -183,6 +189,7 @@ fn storage_configuration(persist: bool) -> DefaultResult<StorageConfiguration> {
 // INSTANCE
 const INSTANCE_CONFIG_ID: &str = "test-instance";
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn instance_configuration(storage: StorageConfiguration) -> InstanceConfiguration {
     InstanceConfiguration {
         id: INSTANCE_CONFIG_ID.into(),
@@ -195,6 +202,7 @@ fn instance_configuration(storage: StorageConfiguration) -> InstanceConfiguratio
 // INTERFACE
 const INTERFACE_CONFIG_ID: &str = "websocket-interface";
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn interface_configuration(
     interface_type: &String,
     port: u16,
@@ -220,6 +228,7 @@ fn interface_configuration(
 }
 
 // LOGGER
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn logger_configuration(logging: bool) -> LoggerConfiguration {
     // temporary log rules, should come from a configuration
     LoggerConfiguration {
@@ -234,41 +243,15 @@ fn logger_configuration(logging: bool) -> LoggerConfiguration {
 }
 
 // NETWORKING
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn networking_configuration(networked: Option<Networking>) -> Option<NetworkConfig> {
-    // create an n3h network config if the --networked flag is set
+    // create a network config if the --networked flag is set
     let networked = match networked {
         Some(n) => n,
         None => return None,
     };
 
     match networked {
-        Networking::N3h => {
-            // note that this behaviour is documented within
-            // holochain_common::env_vars module and should be updated
-            // if this logic changes
-            let mut bootstrap_nodes = Vec::new();
-            if let Ok(node) = EnvVar::N3hBootstrapNode.value() {
-                bootstrap_nodes.push(node);
-            };
-
-            Some(NetworkConfig::N3h(N3hConfig {
-                bootstrap_nodes,
-                n3h_log_level: EnvVar::N3hLogLevel
-                    .value()
-                    .ok()
-                    .unwrap_or_else(default_n3h_log_level),
-                n3h_mode: EnvVar::N3hMode
-                    .value()
-                    .ok()
-                    .unwrap_or_else(default_n3h_mode),
-                n3h_persistence_path: EnvVar::N3hWorkDir
-                    .value()
-                    .ok()
-                    .unwrap_or_else(default_n3h_persistence_path),
-                n3h_ipc_uri: Default::default(),
-                networking_config_file: EnvVar::NetworkingConfigFile.value().ok(),
-            }))
-        }
         Networking::Sim2h(sim2h_url) => Some(NetworkConfig::Sim2h(Sim2hConfig { sim2h_url })),
     }
 }
@@ -276,7 +259,6 @@ fn networking_configuration(networked: Option<Networking>) -> Option<NetworkConf
 impl Networking {
     pub fn new(networking_type: NetworkingType, sim2h_url: String) -> Self {
         match networking_type {
-            NetworkingType::N3h => Self::N3h,
             NetworkingType::Sim2h => Self::Sim2h(sim2h_url),
         }
     }
@@ -435,19 +417,6 @@ mod tests {
 
     #[test]
     fn test_networking_configuration() {
-        let networking = super::networking_configuration(Some(Networking::N3h));
-        assert_eq!(
-            networking,
-            Some(NetworkConfig::N3h(N3hConfig {
-                bootstrap_nodes: Vec::new(),
-                n3h_log_level: default_n3h_log_level(),
-                n3h_mode: default_n3h_mode(),
-                n3h_persistence_path: default_n3h_persistence_path(),
-                n3h_ipc_uri: Default::default(),
-                networking_config_file: None,
-            }))
-        );
-
         let networking =
             super::networking_configuration(Some(Networking::Sim2h("wss://localhost:9000".into())));
         assert_eq!(

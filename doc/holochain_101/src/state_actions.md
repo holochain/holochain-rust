@@ -49,7 +49,7 @@ dispatch logic should be split to facilitate clean unit testing.
 pub fn reduce(
     old_state: Arc<FooState>,
     action_wrapper: &ActionWrapper,
-    action_channel: &Sender<ActionWrapper>,
+    action_channel: &ActionSender,
     observer_channel: &Sender<Observer>,
 ) -> Arc<AgentState> {
   let handler = resolve_action_handler(action_wrapper);
@@ -71,7 +71,7 @@ The action handler should map signals to action handlers.
 ```rust
 fn resolve_action_handler(
     action_wrapper: &ActionWrapper,
-) -> Option<fn(&mut AgentState, &ActionWrapper, &Sender<ActionWrapper>, &Sender<Observer>)> {
+) -> Option<fn(&mut AgentState, &ActionWrapper, &ActionSender, &Sender<Observer>)> {
     match action_wrapper.action() {
         Action::Commit(_, _) => Some(handle_commit),
         Action::Query(_) => Some(handle_get),
@@ -93,7 +93,7 @@ collisions.
 fn handle_foo(
     state: &mut FooState,
     action_wrapper: &ActionWrapper,
-    _action_channel: &Sender<ActionWrapper>,
+    _action_channel: &ActionSender,
     _observer_channel: &Sender<Observer>,
 ) {
     let action = action_wrapper.action();

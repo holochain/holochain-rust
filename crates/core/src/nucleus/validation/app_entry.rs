@@ -7,6 +7,7 @@ use crate::{
         validation::{entry_to_validation_data, ValidationError, ValidationResult},
         CallbackFnCall,
     },
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     entry::{entry_type::AppEntryType, Entry},
@@ -17,6 +18,7 @@ use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use holochain_wasm_utils::api_serialization::validation::EntryValidationArgs;
 use std::sync::Arc;
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn validate_app_entry(
     entry: Entry,
     app_entry_type: AppEntryType,

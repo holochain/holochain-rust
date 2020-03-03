@@ -15,7 +15,6 @@ for dep in \
  holochain_conductor_lib_api \
  hdk \
  sim2h \
- sim1h \
  test_utils \
  core_types \
  holochain_locksmith \

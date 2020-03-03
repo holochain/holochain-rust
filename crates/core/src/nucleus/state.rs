@@ -1,6 +1,7 @@
 use crate::{
     dht::pending_validations::ValidatingWorkflow,
     nucleus::{actions::initialize::Initialization, HdkFnCall, HdkFnCallResult, ZomeFnCall},
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{dna::Dna, error::HolochainError};
 
@@ -17,6 +18,7 @@ use serde::{
 };
 use std::{collections::VecDeque, convert::TryFrom, fmt};
 
+#[autotrace]
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]
 pub enum NucleusStatus {
     New,
@@ -106,6 +108,7 @@ pub struct NucleusState {
     pub zome_call_results: HashMap<ZomeFnCall, Result<JsonString, HolochainError>>,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl NucleusState {
     pub fn new() -> Self {
         NucleusState {

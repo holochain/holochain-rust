@@ -10,7 +10,7 @@ We are committed to foster a vibrant thriving community, including growing a cul
 
 ## Coordination
 
-* Chat with us on our [chat server](https://chat.holochain.net) or [Gitter](https://gitter.im/metacurrency/holochain)
+* Chat with us on our [chat server](https://chat.holochain.org) or [Gitter](https://gitter.im/metacurrency/holochain)
 
 ## Test Driven Development
 We use **test driven development**. When you add a new function or feature, be sure to add both unit tests and integration tests to shows that it works.  Pull requests without tests will most-likely not be accepted!

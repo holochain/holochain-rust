@@ -3,6 +3,7 @@ use crate::{
     context::Context,
     nucleus::state::{NucleusStateSnapshot, NUCLEUS_SNAPSHOT_ADDRESS},
     state::State,
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::error::HolochainError;
 use holochain_locksmith::RwLock;
@@ -39,6 +40,7 @@ impl PartialEq for SimplePersister {
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Persister for SimplePersister {
     fn save(&mut self, state: &StateWrapper) -> Result<(), HolochainError> {
         let lock = &*self.storage.clone();

@@ -1,4 +1,7 @@
-use crate::holochain_wasm_utils::holochain_persistence_api::cas::content::AddressableContent;
+use crate::{
+    holochain_wasm_utils::holochain_persistence_api::cas::content::AddressableContent,
+    NEW_RELIC_LICENSE_KEY,
+};
 use holochain_core_types::network::entry_aspect::EntryAspect;
 use im::{HashMap, HashSet};
 use lib3h_protocol::types::{AspectHash, EntryHash};
@@ -9,6 +12,7 @@ pub type AspectMapBare = HashMap<EntryHash, AspectSet>;
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct AspectMap(AspectMapBare);
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl AspectMap {
     pub fn new() -> Self {
         Self::default()
@@ -146,19 +150,6 @@ mod tests {
 
     use super::*;
     use im::hashset;
-    use sim1h::aspect::fixture::content_aspect_fresh;
-
-    #[test]
-    fn test_address_map_add_and_contains() {
-        let mut map = AspectMap::new();
-        let test_aspect = content_aspect_fresh();
-        assert_eq!(map.bare().len(), 0);
-        map.add(&test_aspect);
-        assert_eq!(map.bare().len(), 1);
-        assert!(map.contains(&test_aspect));
-        let other_test_aspect = content_aspect_fresh();
-        assert!(!map.contains(&other_test_aspect));
-    }
 
     #[test]
     fn test_merge_address_maps_merges_entries() {

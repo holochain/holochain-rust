@@ -4,6 +4,7 @@ use crate::{
     network::entry_with_header::EntryWithHeader,
     nucleus::validation::{validate_entry, ValidationError},
     workflows::validation_package,
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     error::HolochainError,
@@ -12,6 +13,7 @@ use holochain_core_types::{
 };
 use std::sync::Arc;
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn hold_update_workflow(
     entry_with_header: &EntryWithHeader,
     context: Arc<Context>,

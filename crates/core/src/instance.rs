@@ -1,7 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper},
     consistency::ConsistencyModel,
-    context::Context,
+    context::{ActionReceiver, ActionSender, Context},
     dht::actions::{
         queue_holding_workflow::queue_holding_workflow,
         remove_queued_holding_workflow::remove_queued_holding_workflow,
@@ -12,6 +12,7 @@ use crate::{
     signal::Signal,
     state::{State, StateWrapper},
     workflows::{application, run_holding_workflow},
+    NEW_RELIC_LICENSE_KEY,
 };
 #[cfg(test)]
 use crate::{
@@ -23,11 +24,11 @@ use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},
-    ugly::lax_send_sync,
 };
 use holochain_locksmith::RwLock;
 #[cfg(test)]
 use holochain_persistence_api::cas::content::Address;
+use holochain_tracing::{self as ht, channel::lax_send_wrapped};
 use snowflake::ProcessUniqueId;
 use std::{
     sync::{
@@ -48,7 +49,7 @@ pub const RETRY_VALIDATION_DURATION_MAX: Duration = Duration::from_secs(60 * 60)
 pub struct Instance {
     /// The object holding the state. Actions go through the store sequentially.
     state: Arc<RwLock<StateWrapper>>,
-    action_channel: Option<Sender<ActionWrapper>>,
+    action_channel: Option<ActionSender>,
     observer_channel: Option<Sender<Observer>>,
     scheduler_handle: Option<Arc<ScheduleHandle>>,
     persister: Option<Arc<RwLock<dyn Persister>>>,
@@ -64,6 +65,8 @@ pub struct Observer {
 
 pub static DISPATCH_WITHOUT_CHANNELS: &str = "dispatch called without channels open";
 
+#[autotrace]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Instance {
     /// This is initializing and starting the redux action loop and adding channels to dispatch
     /// actions and observers to the context
@@ -135,7 +138,7 @@ impl Instance {
     // which would panic if `send` was called upon them. These `expect`s just bring more visibility to
     // that potential failure mode.
     // @see https://github.com/holochain/holochain-rust/issues/739
-    fn action_channel(&self) -> &Sender<ActionWrapper> {
+    fn action_channel(&self) -> &ActionSender {
         self.action_channel
             .as_ref()
             .expect("Action channel not initialized")
@@ -157,10 +160,10 @@ impl Instance {
     }
 
     /// Returns recievers for actions and observers that get added to this instance
-    fn initialize_channels(&mut self) -> (Receiver<ActionWrapper>, Receiver<Observer>) {
-        let (tx_action, rx_action) = unbounded::<ActionWrapper>();
+    fn initialize_channels(&mut self) -> (ActionReceiver, Receiver<Observer>) {
+        let (tx_action, rx_action) = unbounded::<ht::SpanWrap<ActionWrapper>>();
         let (tx_observer, rx_observer) = unbounded::<Observer>();
-        self.action_channel = Some(tx_action);
+        self.action_channel = Some(tx_action.into());
         self.observer_channel = Some(tx_observer);
 
         (rx_action, rx_observer)
@@ -178,7 +181,7 @@ impl Instance {
     pub fn start_action_loop(
         &mut self,
         context: Arc<Context>,
-        rx_action: Receiver<ActionWrapper>,
+        rx_action: ActionReceiver,
         rx_observer: Receiver<Observer>,
     ) {
         self.stop_action_loop();
@@ -190,6 +193,7 @@ impl Instance {
         self.kill_switch = Some(kill_sender);
         let instance_is_alive = sub_context.instance_is_alive.clone();
         instance_is_alive.store(true, Ordering::Relaxed);
+
         let _ = thread::Builder::new()
             .name(format!(
                 "action_loop/{}",
@@ -197,16 +201,22 @@ impl Instance {
             ))
             .spawn(move || {
                 let mut state_observers: Vec<Observer> = Vec::new();
-                let mut unprocessed_action: Option<ActionWrapper> = None;
+                let mut unprocessed_action: Option<ht::SpanWrap<ActionWrapper>> = None;
                 while kill_receiver.try_recv().is_err() {
-                    if let Some(action_wrapper) = unprocessed_action.clone().or_else(|| rx_action.recv_timeout(Duration::from_secs(1)).ok()) {
+                    if let Some(action_wrapper) = unprocessed_action.take().or_else(|| rx_action.recv_timeout(Duration::from_secs(1)).ok()) {
                         // Add new observers
                         state_observers.extend(rx_observer.try_iter());
+                        let action = action_wrapper.action();
                         // Ping can happen often, and should be as lightweight as possible
-                        let should_process = *action_wrapper.action() != Action::Ping;
+                        let should_process = *action != Action::Ping;
                         if should_process {
                             match sync_self.process_action(&action_wrapper, &sub_context) {
                                 Ok(()) => {
+                                    let tag = ht::Tag::new("action", format!("{:?}", action));
+                                    let _guard = action_wrapper.follower_(&sub_context.tracer, "action_loop thread", |s| s.tag(tag).start()).map(|span| {
+
+                                        ht::push_span(span)
+                                    });
                                     sync_self.emit_signals(&sub_context, &action_wrapper);
                                     // Tick all observers and remove those that have lost their receiving part
                                     state_observers= state_observers
@@ -244,9 +254,20 @@ impl Instance {
     /// returns the new vector of observers
     pub(crate) fn process_action(
         &self,
-        action_wrapper: &ActionWrapper,
+        action_wrapper: &ht::SpanWrap<ActionWrapper>,
         context: &Arc<Context>,
     ) -> Result<(), HolochainError> {
+        let span = action_wrapper
+            .follower(&context.tracer, "begin process_action")
+            .unwrap_or_else(|| {
+                context
+                    .tracer
+                    .span("ROOT: process_action")
+                    .tag(ht::debug_tag("action_wrapper", action_wrapper))
+                    .start()
+                    .into()
+            });
+        let _trace_guard = ht::push_span(span);
         context.redux_wants_write.store(true, Relaxed);
         // Mutate state
         {
@@ -258,7 +279,7 @@ impl Instance {
                 .try_write_until(Instant::now().checked_add(Duration::from_secs(10)).unwrap())
                 .ok_or_else(|| HolochainError::Timeout)?;
 
-            new_state = state.reduce(action_wrapper.clone());
+            new_state = state.reduce(action_wrapper.data.clone());
 
             // Change the state
             *state = new_state;
@@ -295,6 +316,11 @@ impl Instance {
                 while kill_receiver.try_recv().is_err() {
                     log_trace!(context, "Checking holding queue...");
                     loop {
+                        // TODO: TRACING: it would be ideal to be able to associate a tracing Span with each queued holding workflow.
+                        // To do this, we'd need to store a Span in each item of the DhtStore::queued_holding_workflows.
+                        // However, Span is not Clone, and the entire DhtStore needs to be Cloned.
+                        // So, the span has to be cut short here until we stop cloning the state.
+
                         let dht_store = context
                             .state()
                             .expect("Couldn't get state in run_pending_validations")
@@ -311,6 +337,7 @@ impl Instance {
 
                             let c = context.clone();
                             let pending = pending.clone();
+
                             let closure = async move || {
                                 match run_holding_workflow(pending.clone(), c.clone()).await {
                                     // If we couldn't run the validation due to unresolved dependencies,
@@ -431,10 +458,11 @@ impl Instance {
     }
 
     #[allow(clippy::needless_lifetimes)]
+    #[no_autotrace]
     pub async fn shutdown_network(&self) -> HcResult<()> {
         network::actions::shutdown::shutdown(
             self.state.clone(),
-            self.action_channel.as_ref().unwrap().clone(),
+            self.action_channel.as_ref().unwrap(),
         )
         .await
     }
@@ -461,8 +489,9 @@ impl Drop for Instance {
 /// # Panics
 ///
 /// Panics if the channels passed are disconnected.
-pub fn dispatch_action(action_channel: &Sender<ActionWrapper>, action_wrapper: ActionWrapper) {
-    lax_send_sync(action_channel.clone(), action_wrapper, "dispatch_action");
+#[autotrace]
+pub fn dispatch_action(action_channel: &ActionSender, action_wrapper: ActionWrapper) {
+    lax_send_wrapped(action_channel.clone(), action_wrapper, "dispatch_action");
 }
 
 #[cfg(test)]
@@ -535,6 +564,7 @@ pub mod tests {
                 false,
                 holochain_metrics::config::MetricPublisherConfig::default()
                     .create_metric_publisher(),
+                Arc::new(ht::null_tracer()),
             )),
             logger,
         )
@@ -560,7 +590,7 @@ pub mod tests {
     #[cfg_attr(tarpaulin, skip)]
     pub fn test_context_with_channels(
         agent_name: &str,
-        action_channel: &Sender<ActionWrapper>,
+        action_channel: &ActionSender,
         observer_channel: &Sender<Observer>,
         network_name: Option<&str>,
     ) -> Arc<Context> {
@@ -587,6 +617,7 @@ pub mod tests {
                 Arc::new(RwLock::new(
                     holochain_metrics::DefaultMetricPublisher::default(),
                 )),
+                Arc::new(ht::null_tracer()),
             )
             .unwrap(),
         )
@@ -615,6 +646,7 @@ pub mod tests {
             Arc::new(RwLock::new(
                 holochain_metrics::DefaultMetricPublisher::default(),
             )),
+            Arc::new(ht::null_tracer()),
         );
         let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
@@ -644,6 +676,7 @@ pub mod tests {
             Arc::new(RwLock::new(
                 holochain_metrics::DefaultMetricPublisher::default(),
             )),
+            Arc::new(ht::null_tracer()),
         );
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();
@@ -859,7 +892,11 @@ pub mod tests {
         let context = test_context("alex", netname);
         let dna = test_utils::create_test_dna_with_wat("test_zome", None);
         let dna_entry = Entry::Dna(Box::new(dna));
-        let commit_action = ActionWrapper::new(Action::Commit((dna_entry.clone(), None, vec![])));
+        let commit_action = ht::test_wrap(ActionWrapper::new(Action::Commit((
+            dna_entry.clone(),
+            None,
+            vec![],
+        ))));
 
         // Set up instance and process the action
         let instance = Instance::new(test_context("jason", netname));
@@ -883,8 +920,11 @@ pub mod tests {
         // Create Context, Agent and Commit AgentIdEntry Action
         let context = test_context("alex", netname);
         let agent_entry = Entry::AgentId(context.agent_id.clone());
-        let commit_agent_action =
-            ActionWrapper::new(Action::Commit((agent_entry.clone(), None, vec![])));
+        let commit_agent_action = ht::test_wrap(ActionWrapper::new(Action::Commit((
+            agent_entry.clone(),
+            None,
+            vec![],
+        ))));
 
         // Set up instance and process the action
         let instance = Instance::new(context.clone());
@@ -932,6 +972,7 @@ pub mod tests {
                 Arc::new(RwLock::new(
                     holochain_metrics::DefaultMetricPublisher::default(),
                 )),
+                Arc::new(ht::null_tracer()),
             )),
             logger,
         )
@@ -955,7 +996,11 @@ pub mod tests {
 
         // write an entry larger than the initial mmap
         let entry = test_entry(0, 3 * initial_mmap_size);
-        let commit_agent_action = ActionWrapper::new(Action::Commit((entry.clone(), None, vec![])));
+        let commit_agent_action = ht::test_wrap(ActionWrapper::new(Action::Commit((
+            entry.clone(),
+            None,
+            vec![],
+        ))));
 
         instance
             .process_action(&commit_agent_action, &context)

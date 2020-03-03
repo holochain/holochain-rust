@@ -21,7 +21,7 @@ use lib3h_sodium::{
     secbuf::SecBuf,
 };
 
-use crate::conductor::passphrase_manager::PassphraseManager;
+use crate::{conductor::passphrase_manager::PassphraseManager, NEW_RELIC_LICENSE_KEY};
 use holochain_dpki::{password_encryption::PwHashConfig, seed::SeedType};
 use std::{
     collections::{BTreeMap, HashMap},
@@ -114,6 +114,7 @@ fn make_passphrase_check(
     encrypt_with_passphrase_buf(&mut check_buf, passphrase, hash_config)
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl Keystore {
     /// Create a new keystore.
     /// This will query `passphrase_manager` immediately to set a passphrase for the keystore.

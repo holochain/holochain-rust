@@ -1,6 +1,7 @@
 use crate::{
     wasm_engine::{api::ZomeApiResult, runtime::Runtime},
     workflows::author_entry::author_entry,
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     entry::Entry,
@@ -16,6 +17,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// ZomeApiFunction::LinkEntries function code
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: LinkEntriesArgs
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_link_entries(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
     // deserialize args

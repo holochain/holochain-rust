@@ -17,6 +17,8 @@
 extern crate holochain_conductor_lib;
 extern crate holochain_core_types;
 extern crate holochain_locksmith;
+#[macro_use]
+extern crate holochain_common;
 extern crate lib3h_sodium;
 #[cfg(unix)]
 extern crate signal_hook;
@@ -34,6 +36,8 @@ use holochain_locksmith::spawn_locksmith_guard_watcher;
 use signal_hook::{iterator::Signals, SIGINT, SIGTERM};
 use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc};
 use structopt::StructOpt;
+
+new_relic_setup!("NEW_RELIC_LICENSE_KEY");
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "holochain")]
@@ -64,7 +68,10 @@ impl Default for SignalConfiguration {
 const MAGIC_STRING: &str = "*** Done. All interfaces started.";
 
 #[cfg_attr(tarpaulin, skip)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR)]
 fn main() {
+    let _ = spawn_locksmith_guard_watcher();
+
     lib3h_sodium::check_init();
     let opt = Opt::from_args();
 
@@ -90,8 +97,6 @@ fn main() {
         .config
         .unwrap_or_else(|| config::default_persistence_dir().join("conductor-config.toml"));
     let config_path_str = config_path.to_str().unwrap();
-
-    let _ = spawn_locksmith_guard_watcher();
 
     println!("Using config path: {}", config_path_str);
     match bootstrap_from_config(config_path_str) {
@@ -157,6 +162,7 @@ fn main() {
 }
 
 #[cfg_attr(tarpaulin, skip)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR)]
 fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
     let config = load_config_file(&String::from(path))?;
     config
@@ -181,6 +187,7 @@ fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
 }
 
 #[cfg_attr(tarpaulin, skip)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR)]
 fn load_config_file(path: &String) -> Result<Configuration, HolochainError> {
     let mut f = File::open(path)?;
     let mut contents = String::new();

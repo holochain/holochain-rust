@@ -33,7 +33,9 @@ pub type Entity = Address;
 
 /// All Attribute values are pre-defined here. If ever a user-defined Attribute is needed,
 /// just add a new Custom variant for it with a String parameter
-#[derive(PartialEq, Eq, PartialOrd, Hash, Clone, Debug, Serialize, Deserialize, DefaultJson)]
+#[derive(
+    PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Debug, Serialize, Deserialize, DefaultJson,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum Attribute {
     CrudStatus,

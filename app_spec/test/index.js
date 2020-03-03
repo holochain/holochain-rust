@@ -15,9 +15,6 @@ const middleware =
   ( networkType === 'websocket'
   ? combine(tapeExecutor(require('tape')), localOnly, callSync)
 
-  : networkType === 'sim1h'
-  ? combine(tapeExecutor(require('tape')), localOnly, callSync)
-
   : networkType === 'sim2h'
   ? combine(tapeExecutor(require('tape')), localOnly, callSync)
 
@@ -43,6 +40,7 @@ require('./files/memo')(orchestrator.registerScenario)
 require('./files/crypto')(orchestrator.registerScenario)
 require('./files/offline-validation')(orchestrator.registerScenario)
 require('./multi-dna')(orchestrator.registerScenario)
+require('./offline')(orchestrator.registerScenario)
 // require('./validate-agent-test')(orchestrator.registerScenario)
 
 // Check to see that we haven't accidentally disabled a bunch of scenarios

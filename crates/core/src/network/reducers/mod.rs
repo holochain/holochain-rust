@@ -45,6 +45,7 @@ use crate::{
         state::NetworkState,
     },
     state::State,
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
@@ -62,6 +63,8 @@ use snowflake::ProcessUniqueId;
 use std::sync::Arc;
 
 /// maps incoming action to the correct handler
+#[autotrace]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
     match action_wrapper.action() {
         Action::ClearActionResponse(_) => Some(reduce_clear_action_response),
@@ -91,6 +94,8 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
     }
 }
 
+#[autotrace]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce(
     old_state: Arc<NetworkState>,
     root_state: &State,
@@ -109,6 +114,8 @@ pub fn reduce(
 
 /// Sends the given Lib3hClientProtocol over the network using the network proxy instance
 /// that lives in the NetworkState.
+#[autotrace]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn send(
     network_state: &mut NetworkState,
     msg: Lib3hClientProtocol,
@@ -117,8 +124,14 @@ pub fn send(
         .network
         .as_mut()
         .map(|network| {
+            let span: ht::Span = ht::with_top_or_null(|top| {
+                top.follower_("send-inner", |s| {
+                    s.tag(ht::Tag::new("msg", format!("{:?}", msg))).start()
+                })
+                .into()
+            });
             network
-                .send(msg)
+                .send(span.wrap(msg).into())
                 .map_err(|error| HolochainError::IoError(error.to_string()))
         })
         .ok_or_else(|| HolochainError::ErrorGeneric("Network not initialized".to_string()))?
@@ -128,6 +141,8 @@ pub fn send(
 /// This creates a transient connection as every node-to-node communication follows a
 /// request-response pattern. This function therefore logs the open connection
 /// (expecting a response) in network_state.direct_message_connections.
+#[autotrace]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn send_message(
     network_state: &mut NetworkState,
     to_agent_id: &Address,
@@ -147,7 +162,8 @@ pub fn send_message(
         content: content.into(),
     };
 
-    let _ = send(network_state, Lib3hClientProtocol::SendDirectMessage(data))?;
+    let msg = Lib3hClientProtocol::SendDirectMessage(data);
+    let _ = send(network_state, msg)?;
 
     network_state.direct_message_connections.insert(id, message);
 

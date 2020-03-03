@@ -2,6 +2,7 @@ use crate::{
     action::{Action, ActionWrapper},
     network::state::NetworkState,
     state::State,
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_net::{
     connection::net_connection::NetSend, p2p_config::BackendConfig, p2p_network::P2pNetwork,
@@ -10,6 +11,8 @@ use holochain_persistence_api::cas::content::AddressableContent;
 use lib3h_protocol::{data_types::SpaceData, protocol_client::Lib3hClientProtocol, Address};
 use log::{debug, error, info};
 
+#[autotrace]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_init(state: &mut NetworkState, root_state: &State, action_wrapper: &ActionWrapper) {
     let action = action_wrapper.action();
     let network_settings = unwrap_to!(action => Action::InitNetwork);
@@ -38,13 +41,22 @@ pub fn reduce_init(state: &mut NetworkState, root_state: &State, action_wrapper:
     if let Some(sim2h_url) = maybe_sim2h_url_override {
         // ..and we're configured to use sim2h...
         if let BackendConfig::Sim2h(sim2h_config) = &mut p2p_config.backend_config {
-            info!(
-                "Found property 'sim2h_url' in DNA {} - overriding conductor wide sim2h URL with: {}",
-                dna.address(),
-                sim2h_url,
-            );
-            // ..override the conductor wide setting.
-            sim2h_config.sim2h_url = sim2h_url;
+            let sim2h_url_override = match std::env::var_os("HC_IGNORE_SIM2H_URL_PROPERTY") {
+                Some(val) => val == "1" || val == "true",
+                _ => false,
+            };
+            if !sim2h_url_override {
+                info!(
+                    "Found property 'sim2h_url' in DNA {} - overriding conductor wide sim2h URL with: {}",
+                    dna.address(),
+                    sim2h_url,
+                );
+                // ..override the conductor wide setting.
+                sim2h_config.sim2h_url = sim2h_url;
+            } else {
+                debug!(
+                    "DNA has 'sim2h_url' override property set, but it's ignored because HC_IGNORE_SIM2H_URL_PROPERTY is set");
+            }
         } else {
             debug!("DNA has 'sim2h_url' override property set, but it's ignored as we are not running a sim2h network backend");
         }
@@ -55,6 +67,8 @@ pub fn reduce_init(state: &mut NetworkState, root_state: &State, action_wrapper:
         p2p_config,
         Some(Address::from(network_settings.agent_id.clone())),
         Some(root_state.conductor_api.clone()),
+        // TODO: This probably shouldn't be none but I can't figure out how to get the tracer
+        None,
     )
     .unwrap();
 
@@ -79,7 +93,7 @@ pub fn reduce_init(state: &mut NetworkState, root_state: &State, action_wrapper:
     state.dna_address = Some(network_settings.dna_address.clone());
     state.agent_id = Some(network_settings.agent_id.clone());
 
-    if let Err(err) = network.send(json) {
+    if let Err(err) = network.send(ht::top_follower("reduce_init").wrap(json).into()) {
         error!("Could not send JsonProtocol::TrackDna. Error: {:?}", err);
         error!("Failed to initialize network!");
         network.stop();
@@ -103,6 +117,7 @@ pub mod test {
     use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use holochain_persistence_file::{cas::file::FilesystemStorage, eav::file::EavFileStorage};
+    use holochain_tracing as ht;
     use serde_json::json;
     use std::sync::Arc;
     use tempfile;
@@ -128,6 +143,7 @@ pub mod test {
             Arc::new(RwLock::new(
                 holochain_metrics::DefaultMetricPublisher::default(),
             )),
+            Arc::new(ht::null_tracer()),
         );
 
         let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
@@ -183,11 +199,45 @@ pub mod test {
 
         root_state = root_state.reduce(ActionWrapper::new(Action::InitializeChain(dna)));
 
+        std::env::remove_var("HC_IGNORE_SIM2H_URL_PROPERTY");
         let result = reduce_init(&mut network_state, &root_state, &action_wrapper);
 
         assert_eq!(result, ());
 
         let network = network_state.network.expect("No network connection set");
         assert_eq!(network.p2p_endpoint().as_str(), "wss://localhost:9000/");
+    }
+
+    #[test]
+    pub fn should_not_set_sim2h_url_if_overridden() {
+        let p2p_config = P2pConfig::new_with_sim2h_backend("wss://0.0.0.0:9999");
+        let context: Arc<Context> = test_context(p2p_config);
+        let dna_address: Address = context.agent_id.address();
+        let agent_id = context.agent_id.content().to_string();
+        let handler = NetHandler::new(Box::new(|_| Ok(())));
+        let network_settings = crate::action::NetworkSettings {
+            p2p_config: context.p2p_config.clone(),
+            dna_address,
+            agent_id,
+            handler,
+        };
+        let action_wrapper = ActionWrapper::new(Action::InitNetwork(network_settings));
+
+        let mut network_state = NetworkState::new();
+        let mut root_state = test_store(context.clone());
+
+        let props = json!({"sim2h_url": "wss://localhost:9000"});
+        let mut dna = Dna::new();
+        dna.properties = props;
+
+        root_state = root_state.reduce(ActionWrapper::new(Action::InitializeChain(dna)));
+
+        std::env::set_var("HC_IGNORE_SIM2H_URL_PROPERTY", "true");
+        let result = reduce_init(&mut network_state, &root_state, &action_wrapper);
+
+        assert_eq!(result, ());
+
+        let network = network_state.network.expect("No network connection set");
+        assert_eq!(network.p2p_endpoint().as_str(), "wss://0.0.0.0:9999/");
     }
 }

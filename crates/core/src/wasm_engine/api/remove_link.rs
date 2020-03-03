@@ -8,6 +8,7 @@ use crate::{
     },
     wasm_engine::{api::ZomeApiResult, Runtime},
     workflows::author_entry::author_entry,
+    NEW_RELIC_LICENSE_KEY,
 };
 
 use holochain_core_types::{
@@ -27,6 +28,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: GetLinksArgs
 /// Returns an HcApiReturnCode as I64
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
     // deserialize args
@@ -67,11 +69,11 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
     );
     let get_links_args = GetLinksArgs {
         entry_address: link.base().clone(),
-        link_type: link.link_type().clone(),
-        tag: link.tag().clone(),
+        link_type: Some(link.link_type().clone()),
+        tag: Some(link.tag().clone()),
         options: GetLinksOptions::default(),
     };
-    let config = GetLinksQueryConfiguration { headers: false };
+    let config = GetLinksQueryConfiguration::default();
     let method = QueryMethod::Link(get_links_args, GetLinksNetworkQuery::Links(config));
     let response_result = context.block_on(query(context.clone(), method, Timeout::default()));
     if response_result.is_err() {

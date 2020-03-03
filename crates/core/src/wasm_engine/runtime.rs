@@ -6,6 +6,7 @@ use crate::{
         memory::WasmPageManager,
         Defn,
     },
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::error::{
     HolochainError, RibosomeEncodedValue, RibosomeEncodingBits, RibosomeRuntimeBits,
@@ -51,6 +52,7 @@ impl fmt::Display for BadCallError {
 
 impl HostError for BadCallError {}
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl WasmCallData {
     pub fn new_zome_call(context: Arc<Context>, call: ZomeFnCall) -> Self {
         WasmCallData::ZomeCall(ZomeCallData { context, call })
@@ -104,6 +106,7 @@ pub struct Runtime {
     pub data: WasmCallData,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Runtime {
     pub fn zome_call_data(&self) -> Result<ZomeCallData, Trap> {
         match &self.data {

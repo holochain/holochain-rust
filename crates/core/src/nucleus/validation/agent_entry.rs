@@ -5,6 +5,7 @@ use crate::{
         validation::{ValidationError, ValidationResult},
         CallbackFnCall,
     },
+    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     agent::AgentId,
@@ -17,6 +18,7 @@ use holochain_wasm_utils::api_serialization::validation::AgentIdValidationArgs;
 use futures::{future, future::FutureExt};
 use std::sync::Arc;
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn validate_agent_entry(
     entry: Entry,
     validation_data: ValidationData,

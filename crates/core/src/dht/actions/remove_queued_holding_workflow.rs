@@ -3,10 +3,12 @@ use crate::{
     context::Context,
     dht::pending_validations::PendingValidation,
     instance::dispatch_action,
+    NEW_RELIC_LICENSE_KEY,
 };
 use futures::{future::Future, task::Poll};
 use std::{pin::Pin, sync::Arc};
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn remove_queued_holding_workflow(pending: PendingValidation, context: Arc<Context>) {
     let action_wrapper = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow(pending.clone()));
     dispatch_action(context.action_channel(), action_wrapper.clone());
@@ -18,6 +20,7 @@ pub struct RemoveQueuedHoldingWorkflowFuture {
     pending: PendingValidation,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Future for RemoveQueuedHoldingWorkflowFuture {
     type Output = ();
 

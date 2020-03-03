@@ -3,6 +3,7 @@ use crate::{
     context::Context,
     dht::pending_validations::PendingValidation,
     instance::dispatch_action,
+    NEW_RELIC_LICENSE_KEY,
 };
 use futures::{future::Future, task::Poll};
 use std::{
@@ -11,6 +12,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn dispatch_queue_holding_workflow(
     pending: PendingValidation,
     delay: Option<Duration>,
@@ -22,6 +24,7 @@ pub fn dispatch_queue_holding_workflow(
     dispatch_action(context.action_channel(), action_wrapper);
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn queue_holding_workflow(
     pending: PendingValidation,
     delay: Option<Duration>,
@@ -50,6 +53,7 @@ pub struct QueueHoldingWorkflowFuture {
     pending: PendingValidation,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Future for QueueHoldingWorkflowFuture {
     type Output = ();
 

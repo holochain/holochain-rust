@@ -56,5 +56,5 @@ let
   '';
 in
 {
- buildInputs = [ pkgs.kcov pkgs.curl hc-rust-test hc-rust-coverage-kcov ];
+ buildInputs = if pkgs.stdenv.isLinux then [ pkgs.kcov pkgs.curl hc-rust-test hc-rust-coverage-kcov ] else [ hc-rust-test ];
 }

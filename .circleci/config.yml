@@ -160,6 +160,7 @@ jobs:
        nix-shell --run hc-release-github-binaries
 
  deploy-linux:
+  resource_class: xlarge
   docker:
    - image: holochain/holonix:ubuntu
   steps:

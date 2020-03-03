@@ -160,6 +160,7 @@ jobs:
        nix-shell --run hc-release-github-binaries
 
  deploy-linux:
+  resource_class: xlarge
   docker:
    - image: holochain/holonix:ubuntu
   steps:
@@ -270,7 +271,6 @@ workflows:
         only:
          - develop
          - final-exam
-         - wire-message-receipts
    - docker-build-trycp-server:
       requires:
        - docker-build-minimal
@@ -284,7 +284,6 @@ workflows:
         only:
          - develop
          - final-exam
-         - wire-message-receipts
    - docker-build-circle-build:
       requires:
        - docker-build-latest

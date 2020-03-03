@@ -6,21 +6,13 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
-- Added command to sim2h wire protocol for getting live debug info [#2128](https://github.com/holochain/holochain-rust/pull/2128)
-
 ### Changed
-
-- Changed Pagination to have different types [#2110](https://github.com/holochain/holochain-rust/pull/2110)
-- Link matches are not based on regex anymore [#2133](https://github.com/holochain/holochain-rust/pull/2133)
 
 ### Deprecated
 
 ### Removed
 
 ### Fixed
-- Make Holochain (i.e. Sim2hWorker) work offline again (that is without being connected to Sim2h) [#2119](https://github.com/holochain/holochain-rust/pull/2119)
-
-- Fixing wire message TK-01102
-- Fixed `panic!("entry/aspect mismatch - corrupted data?")` [#2135](https://github.com/holochain/holochain-rust/pull/2135)
 
 ### Security
+

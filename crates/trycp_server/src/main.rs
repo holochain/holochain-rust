@@ -554,6 +554,7 @@ fn main() {
         let mut conductor = Command::new("holochain")
             .args(&["-c", &config_path])
             .env("RUST_BACKTRACE", "full")
+            .env("HC_IGNORE_SIM2H_URL_PROPERTY", "true")
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()

@@ -1,9 +1,11 @@
-use crate::{error::ZomeApiResult};
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_types::call::ZomeFnCallArgs;
 use holochain_wasmer_guest::host_call;
 use crate::api::hc_call;
+use crate::error::ZomeApiResult;
+use crate::error::ZomeApiError;
+use std::convert::TryFrom;
 
 /// Call an exposed function from another zome or another (bridged) instance running
 /// in the same conductor.
@@ -240,18 +242,22 @@ use crate::api::hc_call;
 ///
 /// # }
 /// ```
-pub fn call<S: Into<String>>(
+pub fn call<S: Into<String>, O: TryFrom<JsonString>> (
     instance_handle: S,
     zome_name: S,
     cap_token: Address,
     fn_name: S,
     fn_args: JsonString,
-) -> ZomeApiResult<JsonString> {
-    host_call!(hc_call, ZomeFnCallArgs {
+) -> ZomeApiResult<O>
+where O::Error: ToString{
+    match host_call!(hc_call, ZomeFnCallArgs {
         instance_handle: instance_handle.into(),
         zome_name: zome_name.into(),
         cap_token,
         fn_name: fn_name.into(),
         fn_args: String::from(fn_args),
-    })?
+    }) {
+        Ok(v) => Ok(v),
+        Err(e) => Err(ZomeApiError::Internal(e.to_string())),
+    }
 }

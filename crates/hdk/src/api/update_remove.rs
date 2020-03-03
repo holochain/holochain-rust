@@ -15,10 +15,10 @@ use crate::api::hc_update_entry;
 /// The updated entry will hold the previous entry's address in its header,
 /// which will be used by validation routes.
 pub fn update_entry(new_entry: Entry, address: &Address) -> ZomeApiResult<Address> {
-    host_call!(hc_update_entry, UpdateEntryArgs {
+    Ok(host_call!(hc_update_entry, UpdateEntryArgs {
         new_entry,
         address: address.clone(),
-    })?
+    })?)
 }
 
 /// NOT YET AVAILABLE
@@ -30,5 +30,5 @@ pub fn update_agent() -> ZomeApiResult<Address> {
 /// its status metadata to `Deleted` and adding the DeleteEntry's address in the deleted entry's
 /// metadata, which will be used by validation routes.
 pub fn remove_entry(address: &Address) -> ZomeApiResult<Address> {
-    host_call!(hc_remove_entry, address.to_owned())?
+    Ok(host_call!(hc_remove_entry, address.to_owned())?)
 }

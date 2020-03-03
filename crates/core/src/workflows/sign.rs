@@ -11,14 +11,12 @@ use crate::workflows::crypto::crypto_workflow;
 use holochain_wasm_types::crypto::CryptoMethod;
 
 pub async fn sign_workflow(context: Arc<Context>, payload: &WasmString) -> WorkflowResult<Signature> {
-    let r = Ok(Signature::from(crypto_workflow(
+    Ok(Signature::from(crypto_workflow(
         Arc::clone(&context),
         &CryptoArgs {
             payload: payload.to_string(),
             method: CryptoMethod::Sign,
-        }).await?));
-    println!("sign_workflow: {:?}", r);
-    r
+        }).await?))
 }
 
 /// ZomeApiFunction::SignOneTime function code

@@ -19,8 +19,8 @@ use holochain_core_types::{
 
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::{
-    cas::content::{Address, AddressableContent},
     hash::HashString,
+    cas::content::{Address, AddressableContent},
 };
 
 use std::{env, path::PathBuf};
@@ -496,7 +496,7 @@ fn test_signing() {
             r#"{"Ok":"4COnF0Jz8fLNLEOFKToXG/v8y6KsfS9DUDP4h9+Pu5VChCRGIldk34L+MvPDz8V9ZW+2FGBRoup+31rZvCX5CQ=="}"#
         ))
     );
-    
+
     println!("test_signing: payload escapes");
     let payload_escapes = json!({ "payload": r#"test " payload"# }).to_string();
     let result = make_test_call(&mut hc, "sign_payload", &payload_escapes);

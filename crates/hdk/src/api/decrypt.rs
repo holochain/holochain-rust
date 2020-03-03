@@ -29,5 +29,5 @@ use crate::api::hc_decrypt;
 /// ```
 pub fn decrypt<S: Into<String>, O: TryFrom<JsonString>>(payload: S) -> Result<O, O::Error> {
     let s: String = payload.into();
-    host_call!(hc_decrypt, WasmString::from(s))
+    Ok(host_call!(hc_decrypt, WasmString::from(s))?)
 }

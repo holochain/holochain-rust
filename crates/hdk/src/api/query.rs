@@ -95,8 +95,8 @@ pub fn query_result(
     entry_type_names: QueryArgsNames,
     options: QueryArgsOptions,
 ) -> ZomeApiResult<QueryResult> {
-    host_call!(hc_query, QueryArgs {
+    Ok(host_call!(hc_query, QueryArgs {
         entry_type_names,
         options,
-    })?
+    })?)
 }

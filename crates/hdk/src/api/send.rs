@@ -5,6 +5,7 @@ use holochain_wasm_types::send::{SendArgs, SendOptions};
 use crate::api::DNA_NAME;
 use holochain_wasmer_guest::host_call;
 use crate::api::hc_send;
+use holochain_json_api::json::RawString;
 
 /// Sends a node-to-node message to the given agent, specified by their address.
 /// Addresses of agents can be accessed using [hdk::AGENT_ADDRESS](struct.AGENT_ADDRESS.html).
@@ -130,11 +131,11 @@ use crate::api::hc_send;
 ///}
 /// # }
 /// ```
-pub fn send(to_agent: Address, payload: String, timeout: Timeout) -> ZomeApiResult<String> {
-    host_call!(hc_send, SendArgs {
+pub fn send(to_agent: Address, payload: String, timeout: Timeout) -> ZomeApiResult<RawString> {
+    Ok(host_call!(hc_send, SendArgs {
         to_agent,
         payload,
         options: SendOptions(timeout),
         zome: DNA_NAME.to_string(),
-    })?
+    })?)
 }

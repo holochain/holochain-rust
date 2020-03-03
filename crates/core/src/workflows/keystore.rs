@@ -1,6 +1,6 @@
 use crate::{context::Context};
 use holochain_core_types::error::{HcResult, HolochainError};
-
+use holochain_core_types::signature::Signature;
 use holochain_json_api::json::JsonString;
 
 use holochain_wasm_types::{
@@ -112,7 +112,7 @@ pub async fn keystore_derive_seed_workflow(context: Arc<Context>, args_str: &Was
 }
 
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub async fn keystore_derive_key_workflow(context: Arc<Context>, args_str: &WasmString) -> WorkflowResult<JsonString> {
+pub async fn keystore_derive_key_workflow(context: Arc<Context>, args_str: &WasmString) -> WorkflowResult<Signature> {
     let result = conductor_callback(
         "agent/keystore/add_key_from_seed",
         &args_str.to_string(),
@@ -144,11 +144,11 @@ pub async fn keystore_derive_key_workflow(context: Arc<Context>, args_str: &Wasm
         args_str,
         string
     );
-    Ok(JsonString::from_json(&string))
+    Ok(Signature::from(string))
 }
 
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub async fn keystore_sign_workflow(context: Arc<Context>, args_str: &WasmString) -> WorkflowResult<JsonString> {
+pub async fn keystore_sign_workflow(context: Arc<Context>, args_str: &WasmString) -> WorkflowResult<Signature> {
     let result = conductor_callback("agent/keystore/sign", &args_str.to_string(), Arc::clone(&context));
     let string: String = match result {
         Ok(json_string) => {
@@ -174,14 +174,14 @@ pub async fn keystore_sign_workflow(context: Arc<Context>, args_str: &WasmString
         string
     );
 
-    Ok(JsonString::from_json(&string))
+    Ok(Signature::from(string))
 }
 
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn keystore_get_public_key_workflow(
     context: Arc<Context>,
     args_str: &WasmString,
-) -> Result<JsonString, HolochainError> {
+) -> WorkflowResult<Signature> {
     let result = conductor_callback(
         "agent/keystore/get_public_key",
         &args_str.to_string(),
@@ -213,5 +213,5 @@ pub async fn keystore_get_public_key_workflow(
         args_str,
         string
     );
-    Ok(JsonString::from_json(&string))
+    Ok(Signature::from(string))
 }

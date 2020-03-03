@@ -78,10 +78,10 @@ pub fn link_entries<S: Into<String>>(
     link_type: S,
     tag: S,
 ) -> Result<Address, ZomeApiError> {
-    host_call!(hc_link_entries, LinkEntriesArgs {
+    Ok(host_call!(hc_link_entries, LinkEntriesArgs {
         base: base.clone(),
         target: target.clone(),
         link_type: link_type.into(),
         tag: tag.into(),
-    })?
+    })?)
 }

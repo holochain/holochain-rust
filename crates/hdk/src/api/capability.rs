@@ -15,12 +15,12 @@ pub fn commit_capability_grant<S: Into<String>>(
     assignees: Option<Vec<Address>>,
     functions: CapFunctions,
 ) -> ZomeApiResult<Address> {
-    host_call!(hc_commit_capability_grant, CommitCapabilityGrantArgs {
+    Ok(host_call!(hc_commit_capability_grant, CommitCapabilityGrantArgs {
         id: id.into(),
         cap_type,
         assignees,
         functions,
-    })?
+    })?)
 }
 
 /// Adds a capability claim to the local chain
@@ -29,9 +29,9 @@ pub fn commit_capability_claim<S: Into<String>>(
     grantor: Address,
     token: Address,
 ) -> ZomeApiResult<Address> {
-    host_call!(hc_commit_capability_claim, CommitCapabilityClaimArgs {
+    Ok(host_call!(hc_commit_capability_claim, CommitCapabilityClaimArgs {
         id: id.into(),
         grantor,
         token,
-    })?
+    })?)
 }

@@ -52,8 +52,8 @@ pub fn emit_signal<S: Into<String>, J: Into<JsonString>>(
     name: S,
     arguments: J,
 ) -> ZomeApiResult<()> {
-    host_call!(hc_emit_signal, EmitSignalArgs {
+    Ok(host_call!(hc_emit_signal, EmitSignalArgs {
         name: name.into(),
         arguments: arguments.into(),
-    })?
+    })?)
 }

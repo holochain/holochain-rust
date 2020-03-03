@@ -83,8 +83,8 @@ pub fn get_entry_result(
     address: &Address,
     options: GetEntryOptions,
 ) -> ZomeApiResult<GetEntryResult> {
-    host_call!(hc_get_entry, GetEntryArgs {
+    Ok(host_call!(hc_get_entry, GetEntryArgs {
         address: address.clone(),
         options,
-    })?
+    })?)
 }

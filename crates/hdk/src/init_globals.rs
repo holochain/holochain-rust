@@ -6,6 +6,7 @@ use crate::{error::ZomeApiResult};
 use holochain_wasm_types::ZomeApiGlobals;
 use holochain_wasmer_guest::AllocationPtr;
 use holochain_wasmer_guest::host_call;
+// use crate::debug;
 
 #[allow(dead_code)]
 extern "C" {
@@ -15,5 +16,8 @@ extern "C" {
 // HC INIT GLOBALS - Secret Api Function
 // Retrieve all the public global values from the ribosome
 pub(crate) fn init_globals() -> ZomeApiResult<ZomeApiGlobals> {
-    host_call!(hc_init_globals, ())?
+    // let r = host_call!(hc_init_globals, ());
+    // debug(format!("{:?}", r)).ok();
+    // Ok(r?)
+    Ok(host_call!(hc_init_globals, ())?)
 }

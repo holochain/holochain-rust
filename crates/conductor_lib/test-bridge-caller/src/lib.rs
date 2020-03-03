@@ -2,12 +2,12 @@ extern crate hdk;
 
 use hdk::prelude::*;
 
-fn handle_call_bridge() -> JsonString {
-    hdk::call("test-callee", "greeter", Address::from("token"), "hello", JsonString::empty_object()).unwrap()
+fn handle_call_bridge() -> ZomeApiResult<RawString> {
+    Ok(hdk::call("test-callee", "greeter", Address::from("token"), "hello", JsonString::empty_object())?)
 }
 
-fn handle_call_bridge_error() -> JsonString {
-    hdk::call("test-callee", "greeter", Address::from("token"), "non-existent-function", JsonString::empty_object()).into()
+fn handle_call_bridge_error() -> ZomeApiResult<RawString> {
+    Ok(hdk::call("test-callee", "greeter", Address::from("token"), "non-existent-function", JsonString::empty_object())?)
 }
 
 define_zome! {
@@ -24,13 +24,13 @@ define_zome! {
     functions: [
         call_bridge: {
             inputs: | |,
-            outputs: |result: JsonString|,
+            outputs: |result: ZomeApiResult<RawString>|,
             handler: handle_call_bridge
         }
 
         call_bridge_error: {
             inputs: | |,
-            outputs: |result: JsonString|,
+            outputs: |result: ZomeApiResult<RawString>|,
             handler: handle_call_bridge_error
         }
     ]

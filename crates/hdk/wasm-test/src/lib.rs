@@ -10,6 +10,7 @@ extern crate holochain_wasmer_guest;
 use hdk::prelude::*;
 use std::time::Duration;
 use hdk::holochain_core_types::signature::Signature;
+use holochain_wasm_types::holochain_persistence_api::hash::HashString;
 
 #[derive(Deserialize, Serialize, Default,Clone, Debug, DefaultJson)]
 pub struct TestEntryType {
@@ -27,7 +28,7 @@ struct EntryStruct {
 }
 
 #[no_mangle]
-pub extern "C" fn handle_check_global() -> Address {
+pub extern "C" fn handle_check_global() -> HashString {
     hdk::AGENT_LATEST_HASH.clone()
 }
 
@@ -428,11 +429,11 @@ fn handle_check_app_entry_address() -> ZomeApiResult<Address> {
 //     json!({"result": "FIXME"}).into()
 // }
 
-fn handle_check_call() -> ZomeApiResult<JsonString> {
+fn handle_check_call() -> ZomeApiResult<HashString> {
     let empty_dumpty = JsonString::empty_object();
     hdk::debug(format!("empty_dumpty = {:?}", empty_dumpty))?;
 
-    let maybe_hash = hdk::call(
+    let maybe_hash: ZomeApiResult<HashString> = hdk::call(
         hdk::THIS_INSTANCE,
         "test_zome",
         Address::from(hdk::PUBLIC_TOKEN.to_string()),
@@ -550,7 +551,7 @@ fn hdk_test_entry() -> Entry {
     Entry::App(hdk_test_app_entry_type(), hdk_test_entry_value())
 }
 
-fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String> {
+fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<RawString> {
     hdk::send(to_agent, message, 60000.into())
 }
 
@@ -970,7 +971,7 @@ define_zome! {
 
         check_call: {
             inputs: | |,
-            outputs: |result: ZomeApiResult<JsonString>|,
+            outputs: |result: ZomeApiResult<HashString>|,
             handler: handle_check_call
         }
 
@@ -1025,7 +1026,7 @@ define_zome! {
 
         send_message: {
             inputs: |to_agent: Address, message: String|,
-            outputs: |response: ZomeApiResult<String>|,
+            outputs: |response: ZomeApiResult<RawString>|,
             handler: handle_send_message
         }
 

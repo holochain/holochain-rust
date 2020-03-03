@@ -66,10 +66,10 @@ pub fn remove_link<S: Into<String>>(
     link_type: S,
     tag: S,
 ) -> Result<(), ZomeApiError> {
-    host_call!(hc_remove_link, LinkEntriesArgs {
+    Ok(host_call!(hc_remove_link, LinkEntriesArgs {
         base: base.clone(),
         target: target.clone(),
         link_type: link_type.into(),
         tag: tag.into(),
-    })?
+    })?)
 }

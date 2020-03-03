@@ -22,5 +22,5 @@ use crate::api::hc_sleep;
 /// # }
 /// ```
 pub fn sleep(duration: Duration) -> ZomeApiResult<()> {
-    host_call!(hc_sleep, duration.as_nanos())?
+    Ok(host_call!(hc_sleep, duration.as_nanos())?)
 }

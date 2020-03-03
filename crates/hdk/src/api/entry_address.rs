@@ -47,5 +47,5 @@ use crate::api::hc_entry_address;
 /// # }
 /// ```
 pub fn entry_address(entry: &Entry) -> ZomeApiResult<Address> {
-    host_call!(hc_entry_address, entry)?
+    Ok(host_call!(hc_entry_address, entry)?)
 }

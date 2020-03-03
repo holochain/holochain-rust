@@ -49,12 +49,12 @@ pub fn get_links_with_options(
     let type_re = link_type.to_regex_string()?;
     let tag_re = tag.to_regex_string()?;
 
-    host_call!(hc_get_links, GetLinksArgs {
+    Ok(host_call!(hc_get_links, GetLinksArgs {
         entry_address: base.clone(),
         link_type: type_re,
         tag: tag_re,
         options,
-    })?
+    })?)
 }
 
 /// Similar to the get_links_with_options but it allows the user to get the number of links in the dht
@@ -85,12 +85,12 @@ pub fn get_links_count_with_options(
 ) -> ZomeApiResult<GetLinksResultCount> {
     let type_re = link_type.to_regex_string()?;
     let tag_re = tag.to_regex_string()?;
-    host_call!(hc_get_links_count, GetLinksArgs {
+    Ok(host_call!(hc_get_links_count, GetLinksArgs {
         entry_address: base.clone(),
         link_type: type_re,
         tag: tag_re,
         options,
-    })?
+    })?)
 }
 
 pub fn get_links_count(

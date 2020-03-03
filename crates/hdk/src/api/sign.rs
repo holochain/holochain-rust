@@ -68,9 +68,9 @@ pub fn sign_one_time<S: Into<String>>(payloads: Vec<S>) -> ZomeApiResult<SignOne
     for p in payloads {
         converted_payloads.push(p.into());
     }
-    host_call!(hc_sign_one_time, OneTimeSignArgs {
+    Ok(host_call!(hc_sign_one_time, OneTimeSignArgs {
         payloads: converted_payloads,
-    })?
+    })?)
 }
 
 /// Verifies a provenance (public key, signature) against a payload
@@ -99,8 +99,8 @@ pub fn verify_signature<S: Into<String>>(
     provenance: Provenance,
     payload: S,
 ) -> ZomeApiResult<bool> {
-    host_call!(hc_verify_signature, VerifySignatureArgs {
+    Ok(host_call!(hc_verify_signature, VerifySignatureArgs {
         provenance,
         payload: payload.into(),
-    })?
+    })?)
 }

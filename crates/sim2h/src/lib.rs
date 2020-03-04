@@ -61,6 +61,21 @@ use std::{
 use holochain_locksmith::Mutex;
 use holochain_metrics::{config::MetricPublisherConfig, Metric};
 
+/// use the default 0 seed for xxHash
+pub const RECEIPT_HASH_SEED: u64 = 0;
+
+/// Generates a u64 hash response for an `Ack` message given input bytes
+pub fn generate_ack_receipt_hash(payload: &Opaque) -> u64 {
+    let mut hasher = XxHash64::with_seed(RECEIPT_HASH_SEED);
+    payload.hash(&mut hasher);
+    hasher.finish()
+}
+
+/// internal generate the full `Ack` message.
+fn gen_receipt(payload: &Opaque) -> WireMessage {
+    WireMessage::Ack(generate_ack_receipt_hash(payload))
+}
+
 lazy_static! {
     static ref SET_THREAD_PANIC_FATAL: bool = {
         let orig_handler = std::panic::take_hook();
@@ -76,7 +91,6 @@ lazy_static! {
 
 /// if we can't acquire a lock in 20 seconds, panic!
 const MAX_LOCK_TIMEOUT: u64 = 20000;
-pub const RECEIPT_HASH_SEED: u64 = 0;
 
 //set up license_key
 new_relic_setup!("NEW_RELIC_LICENSE_KEY");
@@ -282,8 +296,20 @@ impl Sim2hHandle {
         &self.state
     }
 
+    /// Notify core/sim2h_worker that we have processed the current message
+    /// sufficiently, and are ready to receive another message.
+    pub fn send_receipt(&self, receipt: &WireMessage, source: &AgentId, url: &Lib3hUri) {
+        self.send(source.clone(), url.clone(), receipt);
+    }
+
     /// forward a message to be handled
-    pub fn handle_message(&self, uri: Lib3hUri, message: WireMessage, signer: AgentId) {
+    pub fn handle_message(
+        &self,
+        uri: Lib3hUri,
+        message: WireMessage,
+        signer: AgentId,
+        receipt: WireMessage,
+    ) {
         // dispatch to correct handler
         let sim2h_handle = self.clone();
 
@@ -293,18 +319,29 @@ impl Sim2hHandle {
                 error!("This is soo wrong. Clients should never send a message that only servers can send.");
                 return;
             }
-            WireMessage::Ping => return spawn_handle_message_ping(sim2h_handle, uri, signer),
-            WireMessage::Status => return spawn_handle_message_status(sim2h_handle, uri, signer),
-            WireMessage::Debug => return spawn_handle_message_debug(sim2h_handle, uri, signer),
+            WireMessage::Ping => {
+                return spawn_handle_message_ping(sim2h_handle, uri, signer, receipt)
+            }
+            WireMessage::Status => {
+                return spawn_handle_message_status(sim2h_handle, uri, signer, receipt)
+            }
+            WireMessage::Debug => {
+                return spawn_handle_message_debug(sim2h_handle, uri, signer, receipt)
+            }
             WireMessage::Hello(version) => {
-                return spawn_handle_message_hello(sim2h_handle, uri, signer, version)
+                return spawn_handle_message_hello(sim2h_handle, uri, signer, version, receipt)
             }
             WireMessage::ClientToLib3h(ht::EncodedSpanWrap {
                 data: ClientToLib3h::JoinSpace(data),
                 ..
             }) => {
-                let _ =
-                    tokio::task::spawn(handle_message_join_space(sim2h_handle, uri, signer, data));
+                let _ = tokio::task::spawn(handle_message_join_space(
+                    sim2h_handle,
+                    uri,
+                    signer,
+                    data,
+                    receipt,
+                ));
                 return;
             }
             message @ _ => message,
@@ -337,6 +374,8 @@ impl Sim2hHandle {
                 );
                 return;
             }
+
+            sim2h_handle.send_receipt(&receipt, &signer, &uri);
 
             match message {
                 WireMessage::ClientToLib3h(span_wrap) => {
@@ -463,17 +502,28 @@ impl Sim2hHandle {
     }
 }
 
-fn spawn_handle_message_ping(sim2h_handle: Sim2hHandle, uri: Lib3hUri, signer: AgentId) {
+fn spawn_handle_message_ping(
+    sim2h_handle: Sim2hHandle,
+    uri: Lib3hUri,
+    signer: AgentId,
+    receipt: WireMessage,
+) {
     /*
     tokio::task::spawn(async move {
     });
     */
     // no processing here, don't bother actually spawning
     debug!("Sending Pong in response to Ping");
-    sim2h_handle.send(signer, uri, &WireMessage::Pong);
+    sim2h_handle.send(signer.clone(), uri.clone(), &WireMessage::Pong);
+    sim2h_handle.send_receipt(&receipt, &signer, &uri);
 }
 
-fn spawn_handle_message_status(sim2h_handle: Sim2hHandle, uri: Lib3hUri, signer: AgentId) {
+fn spawn_handle_message_status(
+    sim2h_handle: Sim2hHandle,
+    uri: Lib3hUri,
+    signer: AgentId,
+    receipt: WireMessage,
+) {
     tokio::task::spawn(async move {
         debug!("Sending StatusResponse in response to Status");
         let state = sim2h_handle.state().get_clone().await;
@@ -495,10 +545,16 @@ fn spawn_handle_message_status(sim2h_handle: Sim2hHandle, uri: Lib3hUri, signer:
                 version: WIRE_VERSION,
             }),
         );
+        sim2h_handle.send_receipt(&receipt, &signer, &uri);
     });
 }
 
-fn spawn_handle_message_debug(sim2h_handle: Sim2hHandle, uri: Lib3hUri, signer: AgentId) {
+fn spawn_handle_message_debug(
+    sim2h_handle: Sim2hHandle,
+    uri: Lib3hUri,
+    signer: AgentId,
+    receipt: WireMessage,
+) {
     tokio::task::spawn(async move {
         debug!("Sending DebugResponse in response to Debug");
         let state = sim2h_handle.state().get_clone().await;
@@ -519,6 +575,7 @@ fn spawn_handle_message_debug(sim2h_handle: Sim2hHandle, uri: Lib3hUri, signer: 
             uri.clone(),
             &WireMessage::DebugResponse(response_map),
         );
+        sim2h_handle.send_receipt(&receipt, &signer, &uri);
     });
 }
 
@@ -527,6 +584,7 @@ fn spawn_handle_message_hello(
     uri: Lib3hUri,
     signer: AgentId,
     version: u32,
+    receipt: WireMessage,
 ) {
     /*
     tokio::task::spawn(async move {
@@ -535,7 +593,7 @@ fn spawn_handle_message_hello(
     // no processing here, don't bother actually spawning
     debug!("Sending HelloResponse in response to Hello({})", version);
     sim2h_handle.send(
-        signer,
+        signer.clone(),
         uri.clone(),
         &WireMessage::HelloResponse(HelloData {
             redundant_count: match sim2h_handle.dht_algorithm() {
@@ -546,6 +604,7 @@ fn spawn_handle_message_hello(
             extra: None,
         }),
     );
+    sim2h_handle.send_receipt(&receipt, &signer, &uri);
     // versions do not match - disconnect them
     if version != WIRE_VERSION {
         warn!(
@@ -559,8 +618,9 @@ fn spawn_handle_message_hello(
 async fn handle_message_join_space(
     sim2h_handle: Sim2hHandle,
     uri: Lib3hUri,
-    _signer: AgentId,
+    signer: AgentId,
     data: SpaceData,
+    receipt: WireMessage,
 ) {
     sim2h_handle
         .state()
@@ -570,6 +630,8 @@ async fn handle_message_join_space(
             uri.clone(),
         )
         .await;
+
+    sim2h_handle.send_receipt(&receipt, &signer, &uri);
 
     sim2h_handle.send(
         data.agent_id.clone(),
@@ -1262,24 +1324,20 @@ impl Sim2h {
     fn handle_payload(sim2h_handle: Sim2hHandle, url: Lib3hUri, payload: Opaque) {
         tokio::task::spawn(async move {
             let _m = sim2h_handle.metric_timer("sim2h-handle_payload");
-            match (|| -> Sim2hResult<(AgentId, WireMessage)> {
+            match (|| -> Sim2hResult<(AgentId, WireMessage, WireMessage)> {
                 let signed_message = SignedWireMessage::try_from(payload.clone())?;
                 let result = signed_message.verify().unwrap();
                 if !result {
                     return Err(VERIFY_FAILED_ERR_STR.into());
                 }
                 let agent_id: AgentId = signed_message.provenance.source().into();
-                send_receipt(
-                    sim2h_handle.clone(),
-                    &signed_message.payload,
-                    agent_id.clone(),
-                    url.clone(),
-                );
+                let receipt = gen_receipt(&signed_message.payload);
+
                 let wire_message = WireMessage::try_from(signed_message.payload)?;
-                Ok((agent_id, wire_message))
+                Ok((agent_id, wire_message, receipt))
             })() {
-                Ok((source, wire_message)) => {
-                    sim2h_handle.handle_message(url.clone(), wire_message, source.clone());
+                Ok((source, wire_message, receipt)) => {
+                    sim2h_handle.handle_message(url.clone(), wire_message, source.clone(), receipt);
                 }
                 Err(error) => {
                     error!(
@@ -1356,14 +1414,6 @@ impl Sim2h {
 
         Ok(did_work)
     }
-}
-
-fn send_receipt(sim2h_handle: Sim2hHandle, payload: &Opaque, source: AgentId, url: Lib3hUri) {
-    let mut hasher = XxHash64::with_seed(RECEIPT_HASH_SEED);
-    payload.hash(&mut hasher);
-    let hash = hasher.finish();
-    let receipt = WireMessage::Ack(hash);
-    sim2h_handle.send(source, url, &receipt);
 }
 
 async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: ScheduleGuard) {

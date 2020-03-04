@@ -372,7 +372,7 @@ fn send_json_rpc<S: Into<String>>(
 
     connection
         .write(
-            serde_json::to_vec(&JsonRpcRequest::new("1", method.into(), params))
+            serde_json::to_vec(&JsonRpcRequest::new("1", method, params))
                 .unwrap()
                 .into(),
         )
@@ -741,7 +741,7 @@ fn check_url(url: &String) -> bool {
 
     // if there is a successful reset, the the rpc call should return "reset"
     match result {
-        Ok(r) => r.to_string() == "reset".to_string(),
+        Ok(r) => r == "reset",
         _ => false,
     }
 }

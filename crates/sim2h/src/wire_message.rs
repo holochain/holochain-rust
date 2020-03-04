@@ -4,6 +4,7 @@ use crate::error::Sim2hError;
 use holochain_tracing as ht;
 use holochain_tracing_macros::newrelic_autotrace;
 use lib3h_protocol::{data_types::Opaque, protocol::*, types::SpaceHash};
+use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, convert::TryFrom};
 
 pub type WireMessageVersion = u32;

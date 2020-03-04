@@ -14,6 +14,8 @@ use lib3h_protocol::{data_types::Opaque, types::AgentPubKey};
 use lib3h_sodium::{secbuf::SecBuf, sign};
 
 use holochain_tracing_macros::newrelic_autotrace;
+use lazy_static::lazy_static;
+use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

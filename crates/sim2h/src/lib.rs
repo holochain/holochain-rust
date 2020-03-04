@@ -3,19 +3,6 @@
 #![feature(proc_macro_hygiene)]
 #![allow(clippy::redundant_clone)]
 
-extern crate backtrace;
-extern crate env_logger;
-extern crate lib3h_crypto_api;
-extern crate nanoid;
-extern crate num_cpus;
-#[macro_use]
-extern crate serde;
-#[macro_use]
-extern crate lazy_static;
-
-#[macro_use]
-extern crate holochain_common;
-
 #[allow(dead_code)]
 mod naive_sharding;
 #[allow(dead_code)]
@@ -53,11 +40,13 @@ use std::{
     io::prelude::*,
 };
 
+use holochain_common::new_relic_setup;
 use holochain_locksmith::Mutex;
 use holochain_metrics::{config::MetricPublisherConfig, Metric};
 use holochain_tracing as ht;
 use holochain_tracing_macros::{autotrace, newrelic_autotrace};
 use ht::prelude::*;
+use lazy_static::lazy_static;
 use tracing::{instrument, Level};
 use tracing_futures::Instrument;
 

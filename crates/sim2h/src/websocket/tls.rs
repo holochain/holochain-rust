@@ -1,6 +1,3 @@
-extern crate native_tls;
-extern crate openssl;
-
 use crate::websocket::{FAKE_PASS, FAKE_PKCS12};
 
 use lib3h::transport::error::TransportResult;
@@ -15,6 +12,7 @@ use openssl::{
     x509::{self, X509Name, X509},
 };
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
+use serde::{Deserialize, Serialize};
 
 // Generates a key/cert pair
 fn generate_pair() -> (PKey<Private>, x509::X509) {

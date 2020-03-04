@@ -74,7 +74,7 @@ struct Cli {
 
     #[structopt(
         long,
-        short = "s",
+        short = "e",
         help = "Register with a manager (url + port, e.g. ws://final-exam:9000)"
     )]
     /// url of manager to register availability with

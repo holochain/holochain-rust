@@ -91,3 +91,6 @@ pub use tls::*;
 
 mod ws;
 pub use ws::*;
+
+mod json_rpc;
+pub use json_rpc::*;

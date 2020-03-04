@@ -5,6 +5,11 @@ extern crate serde_json;
 
 //use log::error;
 //use std::process::exit;
+use in_stream::{
+    json_rpc::{JsonRpcRequest, JsonRpcResponse},
+    *,
+};
+
 use self::tempfile::Builder;
 use jsonrpc_core::{IoHandler, Params, Value};
 use jsonrpc_ws_server::ServerBuilder;
@@ -24,6 +29,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 use structopt::StructOpt;
+use url2::prelude::*;
 //use jsonrpc_lite::JsonRpc;
 //use snowflake::ProcessUniqueId;
 use serde_derive::Serialize;
@@ -68,11 +74,19 @@ struct Cli {
 
     #[structopt(
         long,
-        short = "r",
+        short = "s",
         help = "Register with a manager (url + port, e.g. ws://final-exam:9000)"
     )]
     /// url of manager to register availability with
     register: Option<String>,
+
+    #[structopt(
+        long,
+        short,
+        help = "The host name to use when registering with a manager",
+        default_value = "localhost"
+    )]
+    host: String,
 }
 
 type PortRange = (u16, u16);
@@ -306,9 +320,7 @@ fn save_file(file_path: PathBuf, content: &[u8]) -> Result<(), jsonrpc_core::typ
 }
 
 fn get_info_as_json() -> Value {
-    let output = Command::new("holochain")
-        .args(&["-i"])
-        .output();
+    let output = Command::new("holochain").args(&["-i"]).output();
     if output.is_err() {
         return Value::String("failed to execute holochain".into());
     }
@@ -345,6 +357,47 @@ fn os_eval(arbitrary_command: &str) -> String {
     }
 }
 
+fn send_json_rpc<S: Into<String>>(
+    uri: S,
+    method: &str,
+    params: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    let uri: String = uri.into();
+    let connection_uri = Url2::try_parse(uri.clone())
+        .map_err(|e| format!("unable to parse url:{} got error: {}", uri, e))?;
+    //        let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
+    let config = WssConnectConfig::new(TcpConnectConfig::default());
+    let mut connection: InStreamWss<InStreamTcp> =
+        InStreamWss::connect(&connection_uri, config).map_err(|e| format!("{}", e))?;
+
+    connection
+        .write(
+            serde_json::to_vec(&JsonRpcRequest::new("1", method.into(), params))
+                .unwrap()
+                .into(),
+        )
+        .unwrap();
+    connection.flush().map_err(|e| format!("{}", e))?;
+
+    let mut res = WsFrame::default();
+    loop {
+        match connection.read(&mut res) {
+            Ok(_) => {
+                break;
+            }
+            Err(e) if e.would_block() => std::thread::sleep(std::time::Duration::from_millis(1)),
+            Err(e) => panic!("{:?}", e),
+        }
+    }
+
+    let res: JsonRpcResponse = serde_json::from_slice(res.as_bytes()).unwrap();
+    if let Some(err) = res.error {
+        Err(format!("{:?}", err))
+    } else {
+        Ok(res.result.unwrap())
+    }
+}
+
 fn main() {
     let args = Cli::from_args();
     let mut io = IoHandler::new();
@@ -365,8 +418,21 @@ fn main() {
     let players_arc_reset = players_arc.clone();
     let players_arc_spawn = players_arc;
 
-    if args.register.is_some() {
-        panic!("not_implemented");
+    if let Some(connection_uri) = args.register {
+        let result = send_json_rpc(
+            connection_uri.clone(),
+            "register",
+            json!({ "url": format!("ws://{}:{}", args.host, args.port) }),
+        );
+        if let Err(e) = result {
+            println!(
+                "error {:?} encountered while registering with {}",
+                e, connection_uri
+            );
+            return;
+        };
+
+        println!("{}", result.unwrap());
     }
 
     // if we are acting as a manger add the "register" and "request" commands
@@ -671,62 +737,11 @@ fn check_player_config(
 
 fn check_url(url: &String) -> bool {
     // send reset to Url to confirm that it's working, and ready.
-    let result = send_json_rpc(url, &"reset".to_string(), &"{}".to_string());
+    let result = send_json_rpc(url, "reset", json!({}));
 
     // if there is a successful reset, the the rpc call should return "reset"
     match result {
-        Ok(r) => r == "reset".to_string(),
+        Ok(r) => r.to_string() == "reset".to_string(),
         _ => false,
     }
-}
-
-fn send_json_rpc<S: Into<String>>(
-    //   handle: Arc<RwLock<IoHandler>>,
-    url: S,
-    method: S,
-    params: S,
-) -> Result<String, jsonrpc_core::types::error::Error> {
-    //  let handler = handle.write().unwrap();
-    //let method = method.into();
-    //let id = format!("{}", ProcessUniqueId::new());
-    /*let request = json!({
-            "jsonrpc": "2.0",
-            "method": method,
-            "params": params.into(),
-            "id": id,
-    }).to_string();*/
-    let url = url.into();
-    let method = method.into();
-    let params = params.into();
-    //println!("bout to call {} {} {}", url, method, params);
-    // TEMPORARY CHEAT FOR websocket JSONrpc call!!!
-    let output = Command::new("node")
-        .args(&["test/jsrpc.js", &url, &method, &params])
-        .output()
-        .expect("failed to execute process");
-    println!(
-        "JSRPC: {} err: {}",
-        String::from_utf8(output.stdout).unwrap(),
-        String::from_utf8(output.stderr).unwrap()
-    );
-    Ok("reset".to_string())
-    /*
-    let response = handler
-        .handle_request_sync(&request)
-        .ok_or_else(|| format!("json request {} failed", method))?;
-
-    let response = JsonRpc::parse(&response)?;
-
-    match response {
-        JsonRpc::Success(_) => Ok(String::from(
-            response.get_result()?["result".into()],
-        )),
-        JsonRpc::Error(_) => internal_errror(serde_json::to_string(
-            &response.get_error()?,
-        )?),
-        _ => internal_error(format!(
-            "{} failed",
-            method
-        )),
-    }*/
 }

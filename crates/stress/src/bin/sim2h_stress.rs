@@ -292,6 +292,7 @@ struct Job {
     connection: InStreamWss<InStreamTcp>,
     //connection: InStreamWss<InStreamTls<InStreamTcp>>,
     stress_config: OptStressRunConfig,
+    got_ack: bool,
     next_ping: std::time::Instant,
     next_publish: std::time::Instant,
     next_dm: std::time::Instant,
@@ -325,6 +326,7 @@ impl Job {
             sec_key: Arc::new(Mutex::new(sec_key)),
             connection,
             stress_config,
+            got_ack: false,
             next_ping: std::time::Instant::now(),
             next_publish: std::time::Instant::now(),
             next_dm: std::time::Instant::now(),
@@ -462,7 +464,9 @@ impl Job {
 
     fn priv_handle_msg(&mut self, logger: &mut StressJobMetricLogger, msg: WireMessage) {
         match msg {
-            WireMessage::Ack(_) => (),
+            WireMessage::Ack(_) => {
+                self.got_ack = true;
+            }
             WireMessage::Pong => {
                 // with the current Ping/Pong structs
                 // there's no way to correlate specific messages
@@ -541,6 +545,10 @@ impl StressJob for Job {
             }
             Err(e) if e.would_block() => (),
             Err(e) => panic!(e),
+        }
+
+        if !self.got_ack {
+            return StressJobTickResult::default();
         }
 
         let now = std::time::Instant::now();

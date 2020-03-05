@@ -12,9 +12,7 @@ macro_rules! guard_struct {
 
         impl<'a, T: ?Sized> $HcGuard<'a, T> {
             pub fn new(inner: $Guard<'a, T>) -> Self {
-                Self {
-                    inner,
-                }
+                Self { inner }
             }
 
             /// Add some context which will output in the case that this guard
@@ -31,9 +29,7 @@ macro_rules! guard_struct {
 
             /// Explicitly consume and unlock this mutex fairly, regardless
             /// of what kind of unlocking was specified at initialization
-            pub fn unlock_fair(self) {
-
-            }
+            pub fn unlock_fair(self) {}
         }
     };
 }

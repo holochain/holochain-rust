@@ -1,6 +1,6 @@
 use crate::{
-    error::LocksmithResult,
     bypass::guard::{HcMutexGuard, HcRwLockReadGuard, HcRwLockWriteGuard},
+    error::LocksmithResult,
 };
 use parking_lot::{Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use std::time::{Duration, Instant};

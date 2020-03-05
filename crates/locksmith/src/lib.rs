@@ -16,4 +16,3 @@ pub use bypass::*;
 
 mod error;
 pub use crate::error::LocksmithError;
-

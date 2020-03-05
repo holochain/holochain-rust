@@ -380,13 +380,11 @@ fn send_json_rpc<S: Into<String>>(
     connection.flush().map_err(|e| format!("{}", e))?;
 
     let mut res = WsFrame::default();
-    loop {
-        match connection.read(&mut res) {
-            Ok(_) => {
-                break;
-            }
-            Err(e) if e.would_block() => std::thread::sleep(std::time::Duration::from_millis(1)),
-            Err(e) => panic!("{:?}", e),
+    while let Err(e) = connection.read(&mut res) {
+        if e.would_block() {
+            std::thread::sleep(std::time::Duration::from_millis(1))
+        } else {
+            return Err(format!("{:?}", e));
         }
     }
 

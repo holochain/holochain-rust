@@ -37,102 +37,158 @@ type CmdRecv = tokio::sync::mpsc::UnboundedReceiver<ConMgrCommand>;
 
 pub type ConnectionMgrEventRecv = EvtRecv;
 
-/// internal websocket polling loop
-async fn wss_task(uri: Lib3hUri, mut wss: TcpWss, evt_send: EvtSend, mut cmd_recv: CmdRecv) {
-    let mut frame = None;
+struct CmdInfo {
+    did_work: bool,
+    cmd_count: u64,
+    read_count: u64,
+    evt_send: EvtSend,
+    cmd_recv: CmdRecv,
+    uri: Lib3hUri,
+    wss: TcpWss,
+    frame: Option<WsFrame>,
+}
 
+enum Loop {
+    Break,
+    Continue,
+}
+
+// process a batch of control commands
+async fn process_control_cmds(cmd_info: &mut CmdInfo) -> Loop {
+    let CmdInfo {
+        ref mut did_work,
+        ref mut cmd_count,
+        ref evt_send,
+        ref mut cmd_recv,
+        ref uri,
+        ref mut wss,
+        ..
+    } = *cmd_info;
+
+    for _ in 0..10 {
+        match cmd_recv.try_recv() {
+            Ok(cmd) => {
+                *cmd_count += 1;
+                *did_work = true;
+                match cmd {
+                    ConMgrCommand::SendData(_uri, frame) => {
+                        tracing::info!(message = "SendData", ?_uri);
+                        if let Err(e) = wss.write(frame) {
+                            error!("socket write error {} {:?}", uri, e);
+                            let _ =
+                                evt_send.send(ConMgrEvent::Disconnect(uri.clone(), Some(e.into())));
+                            // end task
+                            return Loop::Break;
+                        }
+                    }
+                    ConMgrCommand::Disconnect(_uri) => {
+                        debug!("disconnecting socket {}", uri);
+                        let _ = evt_send.send(ConMgrEvent::Disconnect(uri.clone(), None));
+                        // end task
+                        return Loop::Break;
+                    }
+                    ConMgrCommand::Connect(_, _) => unreachable!(),
+                }
+            }
+            Err(tokio::sync::mpsc::error::TryRecvError::Empty) => break,
+            Err(tokio::sync::mpsc::error::TryRecvError::Closed) => {
+                debug!("socket cmd channel closed {}", uri);
+                let _ = evt_send.send(ConMgrEvent::Disconnect(uri.clone(), None));
+                // channel broken, end task
+                return Loop::Break;
+            }
+        }
+    }
+    return Loop::Continue;
+}
+
+// process a batch of incoming websocket frames
+async fn process_websocket_frames(cmd_info: &mut CmdInfo) -> Loop {
+    let CmdInfo {
+        ref mut did_work,
+        ref evt_send,
+        ref uri,
+        ref mut wss,
+        ref mut read_count,
+        ref mut frame,
+        ..
+    } = *cmd_info;
+    for _ in 0..10 {
+        if frame.is_none() {
+            *frame = Some(WsFrame::default());
+        }
+        match wss.read(frame.as_mut().unwrap()) {
+            Ok(_) => {
+                *read_count += 1;
+                *did_work = true;
+                let data = frame.take().unwrap();
+                debug!("socket {} read {} bytes", uri, data.as_bytes().len());
+                if let Err(_) = evt_send.send(ConMgrEvent::ReceiveData(uri.clone(), data)) {
+                    debug!("socket evt channel closed {}", uri);
+                    // end task
+                    return Loop::Break;
+                }
+            }
+            Err(e) if e.would_block() => break,
+            Err(e) => {
+                error!("socket read error {} {:?}", uri, e);
+                let _ = evt_send.send(ConMgrEvent::Disconnect(uri.clone(), Some(e.into())));
+                // end task
+                return Loop::Break;
+            }
+        }
+    }
+    return Loop::Continue;
+}
+
+/// internal websocket polling loop
+async fn wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend, cmd_recv: CmdRecv) {
     // TODO - this should be done with tokio tcp streams && selecting
     //        for now, we're just pausing when no work happens
 
+    let mut cmd_info = CmdInfo {
+        did_work: false,
+        cmd_count: 0,
+        read_count: 0,
+        evt_send,
+        cmd_recv,
+        uri,
+        wss,
+        frame: None,
+    };
     'wss_task_loop: loop {
         tracing::info_span!("wss_task");
-        let mut did_work = false;
 
         let loop_start = std::time::Instant::now();
-        let mut cmd_count = 0;
-        let mut read_count = 0;
 
         // first, process a batch of control commands
-        for _ in 0..10 {
-            match cmd_recv.try_recv() {
-                Ok(cmd) => {
-                    cmd_count += 1;
-                    did_work = true;
-                    match cmd {
-                        ConMgrCommand::SendData(_uri, frame) => {
-                            tracing::info!(message = "SendData", ?_uri);
-                            if let Err(e) = wss.write(frame) {
-                                error!("socket write error {} {:?}", uri, e);
-                                let _ = evt_send
-                                    .send(ConMgrEvent::Disconnect(uri.clone(), Some(e.into())));
-                                // end task
-                                break 'wss_task_loop;
-                            }
-                        }
-                        ConMgrCommand::Disconnect(_uri) => {
-                            debug!("disconnecting socket {}", uri);
-                            let _ = evt_send.send(ConMgrEvent::Disconnect(uri.clone(), None));
-                            // end task
-                            break 'wss_task_loop;
-                        }
-                        ConMgrCommand::Connect(_, _) => unreachable!(),
-                    }
-                }
-                Err(tokio::sync::mpsc::error::TryRecvError::Empty) => break,
-                Err(tokio::sync::mpsc::error::TryRecvError::Closed) => {
-                    debug!("socket cmd channel closed {}", uri);
-                    let _ = evt_send.send(ConMgrEvent::Disconnect(uri.clone(), None));
-                    // channel broken, end task
-                    break 'wss_task_loop;
-                }
-            }
+        if let Loop::Break = process_control_cmds(&mut cmd_info).await {
+            break 'wss_task_loop;
         }
 
         // next process a batch of incoming websocket frames
-        for _ in 0..10 {
-            if frame.is_none() {
-                frame = Some(WsFrame::default());
-            }
-            match wss.read(frame.as_mut().unwrap()) {
-                Ok(_) => {
-                    read_count += 1;
-                    did_work = true;
-                    let data = frame.take().unwrap();
-                    debug!("socket {} read {} bytes", uri, data.as_bytes().len());
-                    if let Err(_) = evt_send.send(ConMgrEvent::ReceiveData(uri.clone(), data)) {
-                        debug!("socket evt channel closed {}", uri);
-                        // end task
-                        break 'wss_task_loop;
-                    }
-                }
-                Err(e) if e.would_block() => break,
-                Err(e) => {
-                    error!("socket read error {} {:?}", uri, e);
-                    let _ = evt_send.send(ConMgrEvent::Disconnect(uri.clone(), Some(e.into())));
-                    // end task
-                    break 'wss_task_loop;
-                }
-            }
+        if let Loop::Break = process_websocket_frames(&mut cmd_info).await {
+            break 'wss_task_loop;
         }
 
         trace!(
             "wss_task uri {} process {} commands and {} reads in {} ms",
-            uri,
-            cmd_count,
-            read_count,
+            cmd_info.uri,
+            cmd_info.cmd_count,
+            cmd_info.read_count,
             loop_start.elapsed().as_millis(),
         );
 
         // if we did work we might have more work to do,
         // if not, let this task get parked for a time
-        if did_work {
+        if cmd_info.did_work {
             tokio::task::yield_now().await;
         } else {
             tokio::time::delay_for(std::time::Duration::from_millis(5)).await;
         }
     }
 
-    debug!("wss_task ENDING {}", uri);
+    debug!("wss_task ENDING {}", cmd_info.uri);
 }
 
 #[tracing::instrument]
@@ -218,6 +274,107 @@ impl ConnectionMgr {
         )
     }
 
+    fn handle_connect_data(&mut self, uri: Lib3hUri, wss: InStreamWss<InStreamTcp>) {
+        tracing::info!(?uri);
+        let cmd_send = spawn_wss_task(uri.clone(), wss, self.evt_send_from_children.clone());
+        if let Some(old) = self.wss_map.insert(uri.clone(), cmd_send) {
+            error!("REPLACING ACTIVE CONNECTION: {}", uri);
+            let _ = old.send(ConMgrCommand::Disconnect(uri));
+        }
+    }
+
+    fn handle_send_data(&mut self, uri: Lib3hUri, frame: WsFrame) {
+        tracing::info!(?uri);
+        let mut remove = false;
+        if let Some(cmd_send) = self.wss_map.get(&uri) {
+            if let Err(_) = cmd_send.send(ConMgrCommand::SendData(uri.clone(), frame)) {
+                tracing::error!(?uri);
+                remove = true;
+            }
+        }
+        if remove {
+            self.wss_map.remove(&uri);
+        }
+    }
+
+    fn process_sent_cmds(
+        &mut self,
+        cmd_count: &mut u64,
+        did_work: &mut bool,
+    ) -> Option<ConMgrResult> {
+        for _ in 0..100 {
+            match self.cmd_recv.try_recv() {
+                Ok(cmd) => {
+                    *cmd_count += 1;
+                    *did_work = true;
+                    match cmd {
+                        ConMgrCommand::SendData(uri, frame) => self.handle_send_data(uri, frame),
+                        ConMgrCommand::Disconnect(uri) => {
+                            if let Some(cmd_send) = self.wss_map.remove(&uri) {
+                                tracing::error!(?uri);
+                                let _ = cmd_send.send(ConMgrCommand::Disconnect(uri));
+                            }
+                        }
+                        ConMgrCommand::Connect(uri, wss) => {
+                            self.handle_connect_data(uri, wss);
+                        }
+                    }
+                }
+                Err(tokio::sync::mpsc::error::TryRecvError::Empty) => break,
+                Err(tokio::sync::mpsc::error::TryRecvError::Closed) => {
+                    // channel broken, end task
+                    tracing::error!("Closed");
+                    return Some(EndTask);
+                }
+            }
+        }
+        None
+    }
+
+    fn process_child_cmds(
+        &mut self,
+        recv_count: &mut u64,
+        did_work: &mut bool,
+    ) -> Option<ConMgrResult> {
+        for _ in 0..100 {
+            match self.evt_recv_from_children.try_recv() {
+                Ok(evt) => {
+                    *recv_count += 1;
+                    *did_work = true;
+                    match evt {
+                        ConMgrEvent::Disconnect(uri, maybe_err) => {
+                            if let Some(cmd_send) = self.wss_map.remove(&uri) {
+                                let _ = cmd_send.send(ConMgrCommand::Disconnect(uri.clone()));
+                            }
+                            if let Err(_) = self
+                                .evt_send_to_parent
+                                .send(ConMgrEvent::Disconnect(uri, maybe_err))
+                            {
+                                // channel broken, end task
+                                return Some(EndTask);
+                            }
+                        }
+                        evt @ _ => {
+                            // just forward
+                            if let Err(e) = self.evt_send_to_parent.send(evt) {
+                                // channel broken, end task
+                                tracing::error!(?e);
+                                return Some(EndTask);
+                            }
+                        }
+                    }
+                }
+                Err(tokio::sync::mpsc::error::TryRecvError::Empty) => break,
+                Err(tokio::sync::mpsc::error::TryRecvError::Closed) => {
+                    // channel broken, end task
+                    tracing::error!("Closed");
+                    return Some(EndTask);
+                }
+            }
+        }
+        None
+    }
+
     /// internal check our channels
     fn process(&mut self) -> ConMgrResult {
         tracing::info_span!("process");
@@ -231,94 +388,15 @@ impl ConnectionMgr {
         let c_count = self.wss_map.len();
 
         // first, if any of our handles sent commands / process a batch of them
-        for _ in 0..100 {
-            match self.cmd_recv.try_recv() {
-                Ok(cmd) => {
-                    cmd_count += 1;
-                    did_work = true;
-                    match cmd {
-                        ConMgrCommand::SendData(uri, frame) => {
-                            tracing::info!(?uri);
-                            let mut remove = false;
-                            if let Some(cmd_send) = self.wss_map.get(&uri) {
-                                if let Err(_) =
-                                    cmd_send.send(ConMgrCommand::SendData(uri.clone(), frame))
-                                {
-                                    tracing::error!(?uri);
-                                    remove = true;
-                                }
-                            }
-                            if remove {
-                                self.wss_map.remove(&uri);
-                            }
-                        }
-                        ConMgrCommand::Disconnect(uri) => {
-                            if let Some(cmd_send) = self.wss_map.remove(&uri) {
-                                tracing::error!(?uri);
-                                let _ = cmd_send.send(ConMgrCommand::Disconnect(uri));
-                            }
-                        }
-                        ConMgrCommand::Connect(uri, wss) => {
-                            tracing::info!(?uri);
-                            let cmd_send = spawn_wss_task(
-                                uri.clone(),
-                                wss,
-                                self.evt_send_from_children.clone(),
-                            );
-                            if let Some(old) = self.wss_map.insert(uri.clone(), cmd_send) {
-                                error!("REPLACING ACTIVE CONNECTION: {}", uri);
-                                let _ = old.send(ConMgrCommand::Disconnect(uri));
-                            }
-                        }
-                    }
-                }
-                Err(tokio::sync::mpsc::error::TryRecvError::Empty) => break,
-                Err(tokio::sync::mpsc::error::TryRecvError::Closed) => {
-                    // channel broken, end task
-                    tracing::error!("Closed");
-                    return EndTask;
-                }
-            }
+        if let Some(r) = self.process_sent_cmds(&mut cmd_count, &mut did_work) {
+            return r;
         }
 
         // next, if any of our child wss_tasks sent info, process it
         // mostly we just need to know if any are disconnected.
         // we forward all other messages
-        for _ in 0..100 {
-            match self.evt_recv_from_children.try_recv() {
-                Ok(evt) => {
-                    recv_count += 1;
-                    did_work = true;
-                    match evt {
-                        ConMgrEvent::Disconnect(uri, maybe_err) => {
-                            if let Some(cmd_send) = self.wss_map.remove(&uri) {
-                                let _ = cmd_send.send(ConMgrCommand::Disconnect(uri.clone()));
-                            }
-                            if let Err(_) = self
-                                .evt_send_to_parent
-                                .send(ConMgrEvent::Disconnect(uri, maybe_err))
-                            {
-                                // channel broken, end task
-                                return EndTask;
-                            }
-                        }
-                        evt @ _ => {
-                            // just forward
-                            if let Err(e) = self.evt_send_to_parent.send(evt) {
-                                // channel broken, end task
-                                tracing::error!(?e);
-                                return EndTask;
-                            }
-                        }
-                    }
-                }
-                Err(tokio::sync::mpsc::error::TryRecvError::Empty) => break,
-                Err(tokio::sync::mpsc::error::TryRecvError::Closed) => {
-                    // channel broken, end task
-                    tracing::error!("Closed");
-                    return EndTask;
-                }
-            }
+        if let Some(r) = self.process_child_cmds(&mut recv_count, &mut did_work) {
+            return r;
         }
 
         let new_c_count = self.wss_map.len();

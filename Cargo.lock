@@ -1232,7 +1232,7 @@ dependencies = [
  "holochain_net",
  "holochain_persistence_api",
  "holochain_persistence_file",
- "holochain_tracing",
+ "holochain_tracing 0.0.21",
  "holochain_tracing_macros",
  "holochain_wasm_utils",
  "ignore",
@@ -1357,7 +1357,7 @@ dependencies = [
  "holochain_conductor_lib",
  "holochain_core_types",
  "holochain_locksmith",
- "holochain_tracing",
+ "holochain_tracing 0.0.21",
  "holochain_tracing_macros",
  "lazy_static",
  "lib3h_sodium",
@@ -1402,7 +1402,7 @@ dependencies = [
  "holochain_persistence_lmdb",
  "holochain_persistence_mem",
  "holochain_persistence_pickle",
- "holochain_tracing",
+ "holochain_tracing 0.0.21",
  "holochain_tracing_macros",
  "holochain_wasm_utils",
  "hyper 0.12.25",
@@ -1492,7 +1492,7 @@ dependencies = [
  "holochain_persistence_file",
  "holochain_persistence_lmdb",
  "holochain_persistence_mem",
- "holochain_tracing",
+ "holochain_tracing 0.0.21",
  "holochain_tracing_macros",
  "holochain_wasm_utils",
  "im",
@@ -1702,7 +1702,7 @@ dependencies = [
  "holochain_logging",
  "holochain_metrics",
  "holochain_persistence_api",
- "holochain_tracing",
+ "holochain_tracing 0.0.21",
  "holochain_tracing_macros",
  "in_stream",
  "jsonrpc-core",
@@ -1844,7 +1844,7 @@ dependencies = [
  "crossbeam-channel",
  "env_logger 0.6.1",
  "hcid",
- "holochain_tracing",
+ "holochain_tracing 0.0.21",
  "in_stream",
  "lib3h_crypto_api",
  "lib3h_protocol",
@@ -1889,12 +1889,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "holochain_tracing"
+version = "0.0.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b2c8096827323e8502865283e5e83e15c97ec84018b2d4daca8e1404b9226cf"
+dependencies = [
+ "backtrace",
+ "chrono",
+ "crossbeam-channel",
+ "lazy_static",
+ "log 0.4.8",
+ "opentelemetry",
+ "opentelemetry-jaeger",
+ "rustracing",
+ "rustracing_jaeger",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "shrinkwraprs 0.3.0",
+ "tracing",
+ "tracing-core",
+ "tracing-serde",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "holochain_tracing_macros"
-version = "0.0.20"
-source = "git+https://github.com/holochain/holochain-tracing?branch=tokio#f1a6b69bea86508483d87f8e5b2cab25f966306f"
+version = "0.0.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "575e96ae35c495303785bea98f84e10cb01614f3801d1406076ed9c7061e588e"
 dependencies = [
  "crossbeam-channel",
- "holochain_tracing",
+ "holochain_tracing 0.0.21",
  "lazy_static",
  "log 0.4.8",
  "newrelic",
@@ -2281,7 +2307,7 @@ dependencies = [
  "env_logger 0.6.1",
  "hcid",
  "holochain_persistence_api",
- "holochain_tracing",
+ "holochain_tracing 0.0.20",
  "lazy_static",
  "lib3h_crypto_api",
  "lib3h_mdns",
@@ -2377,7 +2403,7 @@ dependencies = [
  "backtrace",
  "crossbeam-channel",
  "detach 0.0.38",
- "holochain_tracing",
+ "holochain_tracing 0.0.20",
  "lazy_static",
  "lock_api 0.1.5",
  "log 0.4.8",
@@ -4413,7 +4439,7 @@ dependencies = [
  "holochain_locksmith",
  "holochain_metrics",
  "holochain_persistence_api",
- "holochain_tracing",
+ "holochain_tracing 0.0.21",
  "holochain_tracing_macros",
  "im",
  "in_stream",
@@ -4454,7 +4480,7 @@ dependencies = [
  "env_logger 0.7.1",
  "futures 0.3.2",
  "holochain_common",
- "holochain_tracing",
+ "holochain_tracing 0.0.21",
  "holochain_tracing_macros",
  "lazy_static",
  "lib3h",
@@ -6000,3 +6026,8 @@ dependencies = [
  "podio",
  "time",
 ]
+
+[[patch.unused]]
+name = "holochain_tracing_macros"
+version = "0.0.20"
+source = "git+https://github.com/holochain/holochain-tracing?branch=tokio#f1a6b69bea86508483d87f8e5b2cab25f966306f"

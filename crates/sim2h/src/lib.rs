@@ -47,6 +47,7 @@ use holochain_tracing as ht;
 use holochain_tracing_macros::{autotrace, newrelic_autotrace};
 use ht::prelude::*;
 use lazy_static::lazy_static;
+use sim2h_im_state::{MonoAspectHash, MonoEntryHash, StoreRef};
 use tracing::{instrument, Level};
 use tracing_futures::Instrument;
 
@@ -289,7 +290,13 @@ impl Sim2hHandle {
     }
 
     /// forward a message to be handled
-    pub fn handle_message(&self, uri: Lib3hUri, message: WireMessage, signer: AgentId, receipt: WireMessage) {
+    pub fn handle_message(
+        &self,
+        uri: Lib3hUri,
+        message: WireMessage,
+        signer: AgentId,
+        receipt: WireMessage,
+    ) {
         let context = message
             .try_get_span()
             // Not using multi messages in this function so first is fine.
@@ -370,109 +377,11 @@ impl Sim2hHandle {
 
             match message {
                 WireMessage::ClientToLib3h(ht::EncodedSpanWrap { data, .. }) => {
-                    let span = tracing::info_span!("ClientToLib3h");
-                    let _g = span.enter();
-                    match data {
-                        ClientToLib3h::LeaveSpace(_data) => {
-                            // for now, just disconnect on LeaveSpace
-                            sim2h_handle.disconnect(vec![uri.clone()]);
-                            return;
-                        }
-                        ClientToLib3h::SendDirectMessage(dm_data) => {
-                            return spawn_handle_message_send_dm(
-                                sim2h_handle,
-                                uri,
-                                signer,
-                                space_hash,
-                                dm_data,
-                            );
-                        }
-                        ClientToLib3h::PublishEntry(data) => {
-                            return spawn_handle_message_publish_entry(
-                                sim2h_handle,
-                                uri,
-                                signer,
-                                space_hash,
-                                data,
-                            );
-                        }
-                        ClientToLib3h::QueryEntry(query_data) => {
-                            return spawn_handle_message_query_entry(
-                                sim2h_handle,
-                                uri,
-                                signer,
-                                space_hash,
-                                query_data,
-                            );
-                        }
-                        message @ _ => {
-                            error!("unhandled message type {:?}", message);
-                            return;
-                        }
-                    }
+                    return client_to_lib3h(data, uri, sim2h_handle, signer, space_hash).await;
                 }
                 WireMessage::Lib3hToClientResponse(ht::EncodedSpanWrap { data, .. }) => {
-                    let span = tracing::info_span!("Lib3hToClientResponse");
-                    let _g = span.enter();
-                    match data {
-                        Lib3hToClientResponse::HandleSendDirectMessageResult(dm_data) => {
-                            return spawn_handle_message_send_dm_result(
-                                sim2h_handle,
-                                uri,
-                                signer,
-                                space_hash,
-                                dm_data,
-                            );
-                        }
-                        Lib3hToClientResponse::HandleGetAuthoringEntryListResult(list_data) => {
-                            spawn_handle_message_list_data(
-                                sim2h_handle.clone(),
-                                uri.clone(),
-                                signer.clone(),
-                                space_hash.clone(),
-                                list_data.clone(),
-                            );
-                            spawn_handle_message_authoring_entry_list(
-                                sim2h_handle,
-                                uri,
-                                signer,
-                                space_hash,
-                                list_data,
-                            );
-                            return;
-                        }
-                        Lib3hToClientResponse::HandleGetGossipingEntryListResult(list_data) => {
-                            return spawn_handle_message_list_data(
-                                sim2h_handle,
-                                uri,
-                                signer,
-                                space_hash,
-                                list_data,
-                            );
-                        }
-                        Lib3hToClientResponse::HandleFetchEntryResult(fetch_result) => {
-                            return spawn_handle_message_fetch_entry_result(
-                                sim2h_handle,
-                                uri,
-                                signer,
-                                space_hash,
-                                fetch_result,
-                            );
-                        }
-                        Lib3hToClientResponse::HandleQueryEntryResult(query_result) => {
-                            return spawn_handle_message_query_entry_result(
-                                sim2h_handle,
-                                uri,
-                                signer,
-                                space_hash,
-                                query_result,
-                            );
-                        }
-                        message @ _ => {
-                            error!("unhandled message type {:?}", message);
-                            return;
-                        }
-                    }
+                    return lib3h_to_client_response(data, uri, sim2h_handle, signer, space_hash)
+                        .await;
                 }
                 message @ _ => {
                     error!("unhandled message type {:?}", message);
@@ -487,6 +396,111 @@ impl Sim2hHandle {
         for d in disconnect.iter() {
             self.state().spawn_drop_connection_by_uri(d.clone());
             self.connection_mgr.disconnect(d.clone());
+        }
+    }
+}
+
+#[instrument(skip(data, sim2h_handle))]
+async fn client_to_lib3h(
+    data: ClientToLib3h,
+    uri: Lib3hUri,
+    sim2h_handle: Sim2hHandle,
+    signer: AgentId,
+    space_hash: MonoRef<SpaceHash>,
+) {
+    match data {
+        ClientToLib3h::LeaveSpace(_data) => {
+            // for now, just disconnect on LeaveSpace
+            sim2h_handle.disconnect(vec![uri.clone()]);
+        }
+        ClientToLib3h::SendDirectMessage(dm_data) => {
+            return spawn_handle_message_send_dm(sim2h_handle, uri, signer, space_hash, dm_data);
+        }
+        ClientToLib3h::PublishEntry(data) => {
+            return spawn_handle_message_publish_entry(sim2h_handle, uri, signer, space_hash, data);
+        }
+        ClientToLib3h::QueryEntry(query_data) => {
+            return spawn_handle_message_query_entry(
+                sim2h_handle,
+                uri,
+                signer,
+                space_hash,
+                query_data,
+            );
+        }
+        message @ _ => {
+            error!("unhandled message type {:?}", message);
+        }
+    }
+}
+
+#[instrument(skip(data, sim2h_handle))]
+async fn lib3h_to_client_response(
+    data: Lib3hToClientResponse,
+    uri: Lib3hUri,
+    sim2h_handle: Sim2hHandle,
+    signer: AgentId,
+    space_hash: MonoRef<SpaceHash>,
+) {
+    let span = tracing::info_span!("Lib3hToClientResponse");
+    let _g = span.enter();
+    match data {
+        Lib3hToClientResponse::HandleSendDirectMessageResult(dm_data) => {
+            return spawn_handle_message_send_dm_result(
+                sim2h_handle,
+                uri,
+                signer,
+                space_hash,
+                dm_data,
+            );
+        }
+        Lib3hToClientResponse::HandleGetAuthoringEntryListResult(list_data) => {
+            spawn_handle_message_list_data(
+                sim2h_handle.clone(),
+                uri.clone(),
+                signer.clone(),
+                space_hash.clone(),
+                list_data.clone(),
+            );
+            spawn_handle_message_authoring_entry_list(
+                sim2h_handle,
+                uri,
+                signer,
+                space_hash,
+                list_data,
+            );
+            return;
+        }
+        Lib3hToClientResponse::HandleGetGossipingEntryListResult(list_data) => {
+            return spawn_handle_message_list_data(
+                sim2h_handle,
+                uri,
+                signer,
+                space_hash,
+                list_data,
+            );
+        }
+        Lib3hToClientResponse::HandleFetchEntryResult(fetch_result) => {
+            return spawn_handle_message_fetch_entry_result(
+                sim2h_handle,
+                uri,
+                signer,
+                space_hash,
+                fetch_result,
+            );
+        }
+        Lib3hToClientResponse::HandleQueryEntryResult(query_result) => {
+            return spawn_handle_message_query_entry_result(
+                sim2h_handle,
+                uri,
+                signer,
+                space_hash,
+                query_result,
+            );
+        }
+        message @ _ => {
+            error!("unhandled message type {:?}", message);
+            return;
         }
     }
 }
@@ -1438,50 +1452,14 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
 
             let gossip_agent_start = std::time::Instant::now();
 
-            let r = match state.get_gossip_aspects_needed_for_agent(&space_hash, &agent_id) {
-                None => continue,
-                Some(r) => r,
-            };
-
-            for (entry_hash, aspects) in r.iter() {
-                if aspects.is_empty() {
-                    continue;
-                }
-
-                let query_agents = state.get_agents_for_query(&space_hash, &entry_hash, None);
-
-                if query_agents.is_empty() {
-                    warn!(
-                        "nobody online to service gossip request for aspects in entry hash {:?}",
-                        entry_hash
-                    );
-                    continue;
-                }
-
-                // TODO - if we have multiple options,
-                // do we want to fire off more than one?
-                let query_agent = query_agents[0].clone();
-
-                let uri = match state.lookup_joined(space_hash, &query_agent) {
+            let gossip_aspects =
+                match state.get_gossip_aspects_needed_for_agent(&space_hash, &agent_id) {
                     None => continue,
-                    Some(uri) => uri,
+                    Some(r) => r,
                 };
 
-                let wire_message = WireMessage::Lib3hToClient({
-                    let s = FetchEntryData {
-                        request_id: "".to_string(),
-                        space_address: (&**space_hash).clone(),
-                        provider_agent_id: (&*query_agent).clone(),
-                        entry_address: (&**entry_hash).clone(),
-                        aspect_address_list: Some(aspects.iter().map(|a| (&**a).clone()).collect()),
-                    };
-                    tracing::info!(message = "wire_message", ?s.request_id, ?s.space_address);
-                    ht::span_wrap_encode!(tracing::Level::INFO, Lib3hToClient::HandleFetchEntry(s))
-                        .into()
-                });
+            fetch_entry_data(gossip_aspects, space_hash, &sim2h_handle, state).await;
 
-                sim2h_handle.send((&*query_agent).clone(), (&*uri).clone(), &wire_message);
-            }
             trace!(
                 "sim2h gossip agent in {} ms",
                 gossip_agent_start.elapsed().as_millis()
@@ -1489,4 +1467,50 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
         }
     }
     trace!("sim2h gossip full loop in {} ms (ok to be long, this task is broken into multiple sub-loops)", gossip_full_start.elapsed().as_millis());
+}
+
+async fn fetch_entry_data(
+    gossip_aspects: im::HashMap<MonoEntryHash, im::HashSet<MonoAspectHash>>,
+    space_hash: &MonoRef<SpaceHash>,
+    sim2h_handle: &Sim2hHandle,
+    state: StoreRef,
+) {
+    for (entry_hash, aspects) in gossip_aspects.iter() {
+        if aspects.is_empty() {
+            continue;
+        }
+
+        let query_agents = state.get_agents_for_query(&space_hash, &entry_hash, None);
+
+        if query_agents.is_empty() {
+            warn!(
+                "nobody online to service gossip request for aspects in entry hash {:?}",
+                entry_hash
+            );
+            continue;
+        }
+
+        // TODO - if we have multiple options,
+        // do we want to fire off more than one?
+        let query_agent = query_agents[0].clone();
+
+        let uri = match state.lookup_joined(space_hash, &query_agent) {
+            None => continue,
+            Some(uri) => uri,
+        };
+
+        let wire_message = WireMessage::Lib3hToClient({
+            let s = FetchEntryData {
+                request_id: "".to_string(),
+                space_address: (&**space_hash).clone(),
+                provider_agent_id: (&*query_agent).clone(),
+                entry_address: (&**entry_hash).clone(),
+                aspect_address_list: Some(aspects.iter().map(|a| (&**a).clone()).collect()),
+            };
+            tracing::info!(message = "wire_message", ?s.request_id, ?s.space_address);
+            ht::span_wrap_encode!(tracing::Level::INFO, Lib3hToClient::HandleFetchEntry(s)).into()
+        });
+
+        sim2h_handle.send((&*query_agent).clone(), (&*uri).clone(), &wire_message);
+    }
 }

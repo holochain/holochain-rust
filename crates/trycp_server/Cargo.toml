@@ -18,7 +18,6 @@ env_logger = "0.7.0"
 structopt = "0.2.15"
 jsonrpc-core = "14.0"
 jsonrpc-ws-server = "14.0"
-jsonrpc-lite = "=0.5.0"
 serde_json = { version = "=1.0.47", features = ["preserve_order"] }
 serde_derive = "=1.0.104"
 serde = "=1.0.104"

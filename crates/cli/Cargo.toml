@@ -29,7 +29,7 @@ holochain_persistence_file = "=0.0.17"
 holochain_wasm_utils = { path = "../wasm_utils" }
 crossbeam-channel = "=0.3.8"
 structopt = "=0.3.3"
-failure = "=0.1.5"
+failure = "=0.1.7"
 serde = "=1.0.104"
 serde_derive = "=1.0.104"
 serde_json = { version = "=1.0.47", features = ["preserve_order"] }

@@ -620,7 +620,7 @@ version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "47c5e5ac752e18207b12e16b10631ae5f7f68f8805f335f9b817ead83d9ffce1"
 dependencies = [
- "quote 1.0.2",
+ "quote 1.0.3",
  "syn 1.0.16",
 ]
 
@@ -632,8 +632,9 @@ checksum = "891f5117f720f720924586e087b7eb385d816afb467a231c2fec64239de00986"
 
 [[package]]
 name = "detach"
-version = "0.0.38"
-source = "git+https://github.com/holochain/lib3h?branch=bump_tracing#f0fec62aad715118b58c20d2f99bd1f636172b59"
+version = "0.0.39"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b2d499a5f50381cc039336f1ad5838f1543c2beb536ef7b0affd7b816301e295"
 
 [[package]]
 name = "deunicode"
@@ -815,9 +816,9 @@ dependencies = [
 
 [[package]]
 name = "failure"
-version = "0.1.5"
+version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "795bd83d3abeb9220f257e597aa0080a508b27533824adf336529648f6abf7e2"
+checksum = "b8529c2421efa3066a5cbd8063d2244603824daccb6936b079010bb2aa89464b"
 dependencies = [
  "backtrace",
  "failure_derive",
@@ -825,12 +826,12 @@ dependencies = [
 
 [[package]]
 name = "failure_derive"
-version = "0.1.6"
+version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0bc225b78e0391e4b8683440bf2e63c2deeeb2ce5189eab46e2b68c6d3725d08"
+checksum = "030a733c8287d6213886dd487564ff5c8f6aae10278b3588ed177f9d18f8d231"
 dependencies = [
  "proc-macro2 1.0.9",
- "quote 1.0.2",
+ "quote 1.0.3",
  "syn 1.0.16",
  "synstructure 0.12.3",
 ]
@@ -1036,7 +1037,7 @@ checksum = "9a5081aa3de1f7542a794a397cde100ed903b0630152d0973479018fd85423a7"
 dependencies = [
  "proc-macro-hack 0.5.11",
  "proc-macro2 1.0.9",
- "quote 1.0.2",
+ "quote 1.0.3",
  "syn 1.0.16",
 ]
 
@@ -1232,7 +1233,7 @@ dependencies = [
  "holochain_net",
  "holochain_persistence_api",
  "holochain_persistence_file",
- "holochain_tracing 0.0.21",
+ "holochain_tracing",
  "holochain_tracing_macros",
  "holochain_wasm_utils",
  "ignore",
@@ -1357,7 +1358,7 @@ dependencies = [
  "holochain_conductor_lib",
  "holochain_core_types",
  "holochain_locksmith",
- "holochain_tracing 0.0.21",
+ "holochain_tracing",
  "holochain_tracing_macros",
  "lazy_static",
  "lib3h_sodium",
@@ -1402,7 +1403,7 @@ dependencies = [
  "holochain_persistence_lmdb",
  "holochain_persistence_mem",
  "holochain_persistence_pickle",
- "holochain_tracing 0.0.21",
+ "holochain_tracing",
  "holochain_tracing_macros",
  "holochain_wasm_utils",
  "hyper 0.12.25",
@@ -1492,7 +1493,7 @@ dependencies = [
  "holochain_persistence_file",
  "holochain_persistence_lmdb",
  "holochain_persistence_mem",
- "holochain_tracing 0.0.21",
+ "holochain_tracing",
  "holochain_tracing_macros",
  "holochain_wasm_utils",
  "im",
@@ -1702,7 +1703,7 @@ dependencies = [
  "holochain_logging",
  "holochain_metrics",
  "holochain_persistence_api",
- "holochain_tracing 0.0.21",
+ "holochain_tracing",
  "holochain_tracing_macros",
  "in_stream",
  "jsonrpc-core",
@@ -1844,7 +1845,7 @@ dependencies = [
  "crossbeam-channel",
  "env_logger 0.6.1",
  "hcid",
- "holochain_tracing 0.0.21",
+ "holochain_tracing",
  "in_stream",
  "lib3h_crypto_api",
  "lib3h_protocol",
@@ -1866,33 +1867,9 @@ dependencies = [
 
 [[package]]
 name = "holochain_tracing"
-version = "0.0.20"
-source = "git+https://github.com/holochain/holochain-tracing?branch=tokio#f1a6b69bea86508483d87f8e5b2cab25f966306f"
-dependencies = [
- "backtrace",
- "chrono",
- "crossbeam-channel",
- "lazy_static",
- "log 0.4.8",
- "opentelemetry",
- "opentelemetry-jaeger",
- "rustracing",
- "rustracing_jaeger",
- "serde",
- "serde_derive",
- "serde_json",
- "shrinkwraprs 0.3.0",
- "tracing",
- "tracing-core",
- "tracing-serde",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "holochain_tracing"
-version = "0.0.21"
+version = "0.0.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b2c8096827323e8502865283e5e83e15c97ec84018b2d4daca8e1404b9226cf"
+checksum = "9172240b1df04a67e151ba7b9f71fa97e69f11dfc1aa88cd930d3edee642d8ba"
 dependencies = [
  "backtrace",
  "chrono",
@@ -1915,17 +1892,17 @@ dependencies = [
 
 [[package]]
 name = "holochain_tracing_macros"
-version = "0.0.21"
+version = "0.0.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "575e96ae35c495303785bea98f84e10cb01614f3801d1406076ed9c7061e588e"
+checksum = "99f1f9a41d4218f9cdd855332b1ca8b4c1eefe67e1ee2267204236eeef699dd8"
 dependencies = [
  "crossbeam-channel",
- "holochain_tracing 0.0.21",
+ "holochain_tracing",
  "lazy_static",
  "log 0.4.8",
  "newrelic",
  "proc-macro2 1.0.9",
- "quote 1.0.2",
+ "quote 1.0.3",
  "syn 1.0.16",
 ]
 
@@ -2151,9 +2128,9 @@ dependencies = [
 
 [[package]]
 name = "integer-encoding"
-version = "1.1.3"
+version = "1.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "40e9c5447a1098bcd69d313acfb34c53cee271038ba1eb31fa654b237d89b299"
+checksum = "083cfe51895f8d283aaf210a736fdf5d08a1171faa44fe08e979cc0c961b891a"
 
 [[package]]
 name = "iovec"
@@ -2299,15 +2276,16 @@ checksum = "b294d6fa9ee409a054354afc4352b0b9ef7ca222c69b8812cbea9e7d2bf3783f"
 
 [[package]]
 name = "lib3h"
-version = "0.0.38"
-source = "git+https://github.com/holochain/lib3h?branch=bump_tracing#f0fec62aad715118b58c20d2f99bd1f636172b59"
+version = "0.0.39"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3424523ed67034627737fc366dd43e0652c41b83e399d7a457092d06c0009e28"
 dependencies = [
  "backtrace",
- "detach 0.0.38",
+ "detach 0.0.39",
  "env_logger 0.6.1",
  "hcid",
  "holochain_persistence_api",
- "holochain_tracing 0.0.20",
+ "holochain_tracing",
  "lazy_static",
  "lib3h_crypto_api",
  "lib3h_mdns",
@@ -2332,8 +2310,9 @@ dependencies = [
 
 [[package]]
 name = "lib3h_crypto_api"
-version = "0.0.38"
-source = "git+https://github.com/holochain/lib3h?branch=bump_tracing#f0fec62aad715118b58c20d2f99bd1f636172b59"
+version = "0.0.39"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96a276f3aff537551724afdbbc595d36e4522024dd6faf0f5b8b2c480468e492"
 dependencies = [
  "serde",
  "serde_derive",
@@ -2342,8 +2321,9 @@ dependencies = [
 
 [[package]]
 name = "lib3h_mdns"
-version = "0.0.38"
-source = "git+https://github.com/holochain/lib3h?branch=bump_tracing#f0fec62aad715118b58c20d2f99bd1f636172b59"
+version = "0.0.39"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "efeb969f8e490866337ed25725a7f406f510a58fdaafe350c36d0fc0f6cf212c"
 dependencies = [
  "byteorder",
  "hostname",
@@ -2358,8 +2338,9 @@ dependencies = [
 
 [[package]]
 name = "lib3h_p2p_protocol"
-version = "0.0.38"
-source = "git+https://github.com/holochain/lib3h?branch=bump_tracing#f0fec62aad715118b58c20d2f99bd1f636172b59"
+version = "0.0.39"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "331186254d4bb15d50ea59fe677e6b60c790ff0f8f3e269467242a7bc2800e87"
 dependencies = [
  "capnp",
  "serde",
@@ -2369,8 +2350,9 @@ dependencies = [
 
 [[package]]
 name = "lib3h_protocol"
-version = "0.0.38"
-source = "git+https://github.com/holochain/lib3h?branch=bump_tracing#f0fec62aad715118b58c20d2f99bd1f636172b59"
+version = "0.0.39"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5365f2c6d9cf737c605be57cc6722608f308faeb3a9ba3809b0a35a3882972d8"
 dependencies = [
  "backtrace",
  "base64 0.10.1",
@@ -2385,8 +2367,9 @@ dependencies = [
 
 [[package]]
 name = "lib3h_sodium"
-version = "0.0.38"
-source = "git+https://github.com/holochain/lib3h?branch=bump_tracing#f0fec62aad715118b58c20d2f99bd1f636172b59"
+version = "0.0.39"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dea4ae2b4404509da824fee503da6db7dccf686613a201e45f0e1d56365c19d2"
 dependencies = [
  "lazy_static",
  "lib3h_crypto_api",
@@ -2397,13 +2380,14 @@ dependencies = [
 
 [[package]]
 name = "lib3h_zombie_actor"
-version = "0.0.38"
-source = "git+https://github.com/holochain/lib3h?branch=bump_tracing#f0fec62aad715118b58c20d2f99bd1f636172b59"
+version = "0.0.39"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eecf9c13c2c140be7eebb20e25ba6340098981336d35e6699532581f8336ff5f"
 dependencies = [
  "backtrace",
  "crossbeam-channel",
- "detach 0.0.38",
- "holochain_tracing 0.0.20",
+ "detach 0.0.39",
+ "holochain_tracing",
  "lazy_static",
  "lock_api 0.1.5",
  "log 0.4.8",
@@ -3269,7 +3253,7 @@ dependencies = [
  "pest",
  "pest_meta",
  "proc-macro2 1.0.9",
- "quote 1.0.2",
+ "quote 1.0.3",
  "syn 1.0.16",
 ]
 
@@ -3323,7 +3307,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "385322a45f2ecf3410c68d2a549a4a2685e8051d0f278e39743ff4e451cb9b3f"
 dependencies = [
  "proc-macro2 1.0.9",
- "quote 1.0.2",
+ "quote 1.0.3",
  "syn 1.0.16",
 ]
 
@@ -3428,7 +3412,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aeccfe4d5d8ea175d5f0e4a2ad0637e0f4121d63bd99d356fb1f39ab2e7c6097"
 dependencies = [
  "proc-macro2 1.0.9",
- "quote 1.0.2",
+ "quote 1.0.3",
  "syn 1.0.16",
 ]
 
@@ -3448,7 +3432,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ecd45702f76d6d3c75a80564378ae228a85f0b59d2f3ed43c91b4a69eb2ebfc5"
 dependencies = [
  "proc-macro2 1.0.9",
- "quote 1.0.2",
+ "quote 1.0.3",
  "syn 1.0.16",
 ]
 
@@ -3537,9 +3521,9 @@ dependencies = [
 
 [[package]]
 name = "quote"
-version = "1.0.2"
+version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "053a8c8bcc71fcce321828dc897a98ab9760bef03a4fc36693c231e5b3216cfe"
+checksum = "2bdc6c187c65bca4260c9011c9e3132efe4909da44726bad24cf7572ae338d7f"
 dependencies = [
  "proc-macro2 1.0.9",
 ]
@@ -4254,7 +4238,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "128f9e303a5a29922045a830221b8f78ec74a5f544944f3d5984f8ec3895ef64"
 dependencies = [
  "proc-macro2 1.0.9",
- "quote 1.0.2",
+ "quote 1.0.3",
  "syn 1.0.16",
 ]
 
@@ -4397,7 +4381,7 @@ dependencies = [
  "bitflags",
  "itertools 0.8.2",
  "proc-macro2 1.0.9",
- "quote 1.0.2",
+ "quote 1.0.3",
  "syn 1.0.16",
 ]
 
@@ -4439,7 +4423,7 @@ dependencies = [
  "holochain_locksmith",
  "holochain_metrics",
  "holochain_persistence_api",
- "holochain_tracing 0.0.21",
+ "holochain_tracing",
  "holochain_tracing_macros",
  "im",
  "in_stream",
@@ -4480,7 +4464,7 @@ dependencies = [
  "env_logger 0.7.1",
  "futures 0.3.2",
  "holochain_common",
- "holochain_tracing 0.0.21",
+ "holochain_tracing",
  "holochain_tracing_macros",
  "lazy_static",
  "lib3h",
@@ -4641,7 +4625,7 @@ dependencies = [
  "heck",
  "proc-macro-error",
  "proc-macro2 1.0.9",
- "quote 1.0.2",
+ "quote 1.0.3",
  "syn 1.0.16",
 ]
 
@@ -4680,7 +4664,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "123bd9499cfb380418d509322d7a6d52e5315f064fe4b3ad18a53d6b92c07859"
 dependencies = [
  "proc-macro2 1.0.9",
- "quote 1.0.2",
+ "quote 1.0.3",
  "unicode-xid 0.2.0",
 ]
 
@@ -4703,7 +4687,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67656ea1dc1b41b1451851562ea232ec2e5a80242139f7e679ceccfb5d61f545"
 dependencies = [
  "proc-macro2 1.0.9",
- "quote 1.0.2",
+ "quote 1.0.3",
  "syn 1.0.16",
  "unicode-xid 0.2.0",
 ]
@@ -4841,7 +4825,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a7b51e1fbc44b5a0840be594fbc0f960be09050f2617e61e6aa43bef97cd3ef4"
 dependencies = [
  "proc-macro2 1.0.9",
- "quote 1.0.2",
+ "quote 1.0.3",
  "syn 1.0.16",
 ]
 
@@ -5027,7 +5011,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f0c3acc6aa564495a0f2e1d59fab677cd7f81a19994cfc7f3ad0e64301560389"
 dependencies = [
  "proc-macro2 1.0.9",
- "quote 1.0.2",
+ "quote 1.0.3",
  "syn 1.0.16",
 ]
 
@@ -5198,7 +5182,7 @@ version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fbad39da2f9af1cae3016339ad7f2c7a9e870f12e8fd04c4fd7ef35b30c0d2b"
 dependencies = [
- "quote 1.0.2",
+ "quote 1.0.3",
  "syn 1.0.16",
 ]
 
@@ -5277,7 +5261,7 @@ version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "edcf0b9b2caa5f4804ef77aeee1b929629853d806117c48258f402b69737e65c"
 dependencies = [
- "quote 1.0.2",
+ "quote 1.0.3",
  "syn 1.0.16",
 ]
 
@@ -6026,8 +6010,3 @@ dependencies = [
  "podio",
  "time",
 ]
-
-[[patch.unused]]
-name = "holochain_tracing_macros"
-version = "0.0.20"
-source = "git+https://github.com/holochain/holochain-tracing?branch=tokio#f1a6b69bea86508483d87f8e5b2cab25f966306f"

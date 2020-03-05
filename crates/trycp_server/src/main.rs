@@ -526,7 +526,6 @@ fn main() {
     });
 
     io.add_method("reset", move |params: Params| {
-        println!("reset");
         let params_map = unwrap_params_map(params)?;
         let killall = get_as_bool("killall", &params_map, Some(false))?;
         {

@@ -55,7 +55,7 @@ struct Cli {
     - Compact: Same as Log but with less information
     - Json: Output logs as structured json (machine readable)
     ",
-    default_value = "Log"
+        default_value = "Log"
     )]
     structured: ht::structured::Output,
 }

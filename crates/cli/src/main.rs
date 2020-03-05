@@ -163,9 +163,6 @@ enum Cli {
         #[structopt(long, short = "m", default_value = "ping")]
         /// message to send to the sim2h server ('ping' or 'status')
         message: String,
-        #[structopt(long)]
-        /// message to send to the sim2h server ('ping' or 'status')
-        trace_filter: Option<String>,
     },
 }
 arg_enum! {
@@ -331,14 +328,10 @@ fn run() -> HolochainResult<()> {
             println!("DNA Hash: {}", dna_hash);
         }
 
-        Cli::Sim2hClient {
-            url,
-            message,
-            trace_filter,
-        } => {
+        Cli::Sim2hClient { url, message } => {
             println!("url: {}", &url);
             println!("message: {}", &message);
-            cli::sim2h_client(url, message, trace_filter)?;
+            cli::sim2h_client(url, message)?;
         }
     }
 

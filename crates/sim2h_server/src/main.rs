@@ -49,8 +49,13 @@ struct Cli {
 
     #[structopt(
         long,
-        help = "Outputs structured json from logging",
-        default_value = "Log"
+        help = "Outputs structured json from logging:
+    - None: No logging at all (fastest)
+    - Log: Output logs to stdout with spans (human readable)
+    - Compact: Same as Log but with less information
+    - Json: Output logs as structured json (machine readable)
+    ",
+    default_value = "Log"
     )]
     structured: ht::structured::Output,
 }

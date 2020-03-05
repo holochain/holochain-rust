@@ -15,11 +15,7 @@ use std::{
 use url2::prelude::*;
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
-pub fn sim2h_client(
-    url_string: String,
-    message_string: String,
-    trace_filter: Option<String>,
-) -> Result<(), String> {
+pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), String> {
     let url = match Url2::try_parse(url_string.clone()) {
         Err(e) => Err(format!(
             "unable to parse url:{} got error: {}",
@@ -42,22 +38,12 @@ pub fn sim2h_client(
     }
     let url = Url2::parse(format!("{}://{}:{}", url.scheme(), ip, maybe_port.unwrap()));
 
-    // Check that the filter pares before sending it across the network
-    trace_filter.as_ref().map(|tf| {
-        tf.parse::<tracing_subscriber::filter::EnvFilter>()
-            .map_err(|e| format!("{:?}", e))
-            .ok()
-    });
-
     println!("connecting to: {}", url);
     let mut job = Job::new(&url)?;
     job.send_wire(match message_string.as_ref() {
         "ping" => WireMessage::Ping,
         "hello" => WireMessage::Hello(WIRE_VERSION),
         "status" => WireMessage::Status,
-        "trace_filter" => {
-            WireMessage::TraceFilter(trace_filter.expect("Tried to set an invalid trace filter"))
-        }
         "debug" => WireMessage::Debug,
         _ => {
             return Err(format!(
@@ -79,8 +65,7 @@ pub fn sim2h_client(
                     match msg {
                         WireMessage::Pong
                         | WireMessage::HelloResponse(_)
-                        | WireMessage::StatusResponse(_)
-                        | WireMessage::TraceFilterResponse(_) => {
+                        | WireMessage::StatusResponse(_) => {
                             println!("Got response => {:?}", msg);
                             break;
                         }

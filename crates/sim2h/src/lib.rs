@@ -1,6 +1,5 @@
 #![feature(vec_remove_item)]
 #![feature(label_break_value)]
-#![feature(proc_macro_hygiene)]
 #![allow(clippy::redundant_clone)]
 
 #[allow(dead_code)]
@@ -377,11 +376,10 @@ impl Sim2hHandle {
 
             match message {
                 WireMessage::ClientToLib3h(ht::EncodedSpanWrap { data, .. }) => {
-                    return client_to_lib3h(data, uri, sim2h_handle, signer, space_hash).await;
+                    return client_to_lib3h(data, uri, sim2h_handle, signer, space_hash);
                 }
                 WireMessage::Lib3hToClientResponse(ht::EncodedSpanWrap { data, .. }) => {
-                    return lib3h_to_client_response(data, uri, sim2h_handle, signer, space_hash)
-                        .await;
+                    return lib3h_to_client_response(data, uri, sim2h_handle, signer, space_hash);
                 }
                 message @ _ => {
                     error!("unhandled message type {:?}", message);
@@ -401,7 +399,7 @@ impl Sim2hHandle {
 }
 
 #[instrument(skip(data, sim2h_handle))]
-async fn client_to_lib3h(
+fn client_to_lib3h(
     data: ClientToLib3h,
     uri: Lib3hUri,
     sim2h_handle: Sim2hHandle,
@@ -435,7 +433,7 @@ async fn client_to_lib3h(
 }
 
 #[instrument(skip(data, sim2h_handle))]
-async fn lib3h_to_client_response(
+fn lib3h_to_client_response(
     data: Lib3hToClientResponse,
     uri: Lib3hUri,
     sim2h_handle: Sim2hHandle,
@@ -1458,7 +1456,7 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
                     Some(r) => r,
                 };
 
-            fetch_entry_data(gossip_aspects, space_hash, &sim2h_handle, state).await;
+            fetch_entry_data(gossip_aspects, space_hash, &sim2h_handle, state);
 
             trace!(
                 "sim2h gossip agent in {} ms",
@@ -1469,7 +1467,7 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
     trace!("sim2h gossip full loop in {} ms (ok to be long, this task is broken into multiple sub-loops)", gossip_full_start.elapsed().as_millis());
 }
 
-async fn fetch_entry_data(
+fn fetch_entry_data(
     gossip_aspects: im::HashMap<MonoEntryHash, im::HashSet<MonoAspectHash>>,
     space_hash: &MonoRef<SpaceHash>,
     sim2h_handle: &Sim2hHandle,

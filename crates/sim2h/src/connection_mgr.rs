@@ -54,7 +54,7 @@ enum Loop {
 }
 
 // process a batch of control commands
-async fn process_control_cmds(cmd_info: &mut CmdInfo) -> Loop {
+fn process_control_cmds(cmd_info: &mut CmdInfo) -> Loop {
     let CmdInfo {
         ref mut did_work,
         ref mut cmd_count,
@@ -103,7 +103,7 @@ async fn process_control_cmds(cmd_info: &mut CmdInfo) -> Loop {
 }
 
 // process a batch of incoming websocket frames
-async fn process_websocket_frames(cmd_info: &mut CmdInfo) -> Loop {
+fn process_websocket_frames(cmd_info: &mut CmdInfo) -> Loop {
     let CmdInfo {
         ref mut did_work,
         ref evt_send,
@@ -162,12 +162,12 @@ async fn wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend, cmd_recv: CmdRe
         let loop_start = std::time::Instant::now();
 
         // first, process a batch of control commands
-        if let Loop::Break = process_control_cmds(&mut cmd_info).await {
+        if let Loop::Break = process_control_cmds(&mut cmd_info) {
             break 'wss_task_loop;
         }
 
         // next process a batch of incoming websocket frames
-        if let Loop::Break = process_websocket_frames(&mut cmd_info).await {
+        if let Loop::Break = process_websocket_frames(&mut cmd_info) {
             break 'wss_task_loop;
         }
 

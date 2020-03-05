@@ -509,9 +509,6 @@ impl Sim2hWorker {
         match message {
             WireMessage::Ping => self.send_wire_message(WireMessage::Pong)?,
             WireMessage::Pong => {}
-            // Todo update the filter
-            WireMessage::TraceFilter(_filter) => {}
-            WireMessage::TraceFilterResponse(_) => {}
             WireMessage::Lib3hToClient(span_wrap) => self.to_core.push(span_wrap.map(|m| Lib3hServerProtocol::from(m))),
             WireMessage::MultiSend(messages) => {
                 for span_wrap in messages.into_iter() {

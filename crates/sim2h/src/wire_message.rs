@@ -1,6 +1,5 @@
 //! encapsulates lib3h ghostmessage for sim2h including security challenge
 use crate::error::Sim2hError;
-
 use holochain_tracing as ht;
 use holochain_tracing_macros::newrelic_autotrace;
 use lib3h_protocol::{data_types::Opaque, protocol::*, types::SpaceHash};
@@ -48,8 +47,6 @@ pub enum WireMessage {
     Status,
     StatusResponse(StatusData),
     Ack(u64),
-    TraceFilter(String),
-    TraceFilterResponse(String),
     Debug,
     DebugResponse(BTreeMap<SpaceHash, String>),
 }
@@ -64,8 +61,6 @@ impl WireMessage {
             WireMessage::StatusResponse(_) => "StatusResponse",
             WireMessage::Hello(_) => "Hello",
             WireMessage::HelloResponse(_) => "HelloResponse",
-            WireMessage::TraceFilter(_) => "TraceFilter",
-            WireMessage::TraceFilterResponse(_) => "TraceFilterResponse",
             WireMessage::Debug => "Debug",
             WireMessage::DebugResponse(_) => "DebugResponse",
             WireMessage::ClientToLib3h(span_wrap) => match span_wrap.data {

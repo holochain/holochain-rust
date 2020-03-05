@@ -376,7 +376,7 @@ fn send_json_rpc<S: Into<String>>(
                 .unwrap()
                 .into(),
         )
-        .unwrap();
+        .map_err(|e| format!("{}", e))?;
     connection.flush().map_err(|e| format!("{}", e))?;
 
     let mut res = WsFrame::default();

@@ -6,7 +6,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
-- Adds the notion of a manager to trycp_server so that we can dynamical manage pools available nodes for test runs in final-exam  [PR#2123](https://github.com/holochain/holochain-rust/pull/2123)
+- Adds the notion of a manager to trycp_server so that we can dynamically manage pools of available nodes for test runs in final-exam  [PR#2123](https://github.com/holochain/holochain-rust/pull/2123)
 
 ### Changed
 

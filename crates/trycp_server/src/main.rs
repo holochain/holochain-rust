@@ -327,6 +327,7 @@ fn get_info_as_json() -> Value {
     let output = output.unwrap();
     let info_str = String::from_utf8(output.stdout).unwrap();
 
+    // poor man's JSON convert
     let re = Regex::new(r"(?P<key>[^:]+):\s+(?P<val>.*)\n").unwrap();
     let mut map: Map<String, Value> = Map::new();
     for caps in re.captures_iter(&info_str) {

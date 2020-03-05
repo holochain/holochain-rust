@@ -274,8 +274,8 @@ impl Sim2hHandle {
             .try_get_span()
             // Not using multi messages in this function so first is fine.
             .and_then(|spans| spans.first().cloned())
-            .and_then(|span| ht::SpanContext::decode(span.clone()).ok());
-        let follow = ht::follow_span!(tracing::Level::INFO, context);
+            .and_then(|context| ht::SpanContext::decode(context.clone()).ok());
+        let follow = ht::follow_span!(Level::INFO, context);
         let _g = follow.enter();
         // The above follow span will not be reported to jaeger so it's helpful to create an inner follow
         let span = tracing::info_span!("inner_message_follow");

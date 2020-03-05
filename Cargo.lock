@@ -1722,7 +1722,7 @@ dependencies = [
 [[package]]
 name = "holochain_tracing"
 version = "0.0.20"
-source = "git+https://github.com/holochain/holochain-tracing?branch=tokio#0c9e64cd69c342481371255f74d19ef60b0f1311"
+source = "git+https://github.com/holochain/holochain-tracing?branch=tokio#6dc3a558bf367a1c64bbf90c5e0d426fba4ed7cc"
 dependencies = [
  "backtrace 0.3.27 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1739,7 +1739,6 @@ dependencies = [
  "shrinkwraprs 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tracing 0.1.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "tracing-core 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
- "tracing-opentelemetry 0.2.0 (git+https://github.com/freesig/tracing-opentelemetry.git?branch=holochain)",
  "tracing-serde 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tracing-subscriber 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -1747,7 +1746,7 @@ dependencies = [
 [[package]]
 name = "holochain_tracing_macros"
 version = "0.0.20"
-source = "git+https://github.com/holochain/holochain-tracing?branch=tokio#0c9e64cd69c342481371255f74d19ef60b0f1311"
+source = "git+https://github.com/holochain/holochain-tracing?branch=tokio#6dc3a558bf367a1c64bbf90c5e0d426fba4ed7cc"
 dependencies = [
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_tracing 0.0.20 (git+https://github.com/holochain/holochain-tracing?branch=tokio)",
@@ -4774,17 +4773,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tracing-opentelemetry"
-version = "0.2.0"
-source = "git+https://github.com/freesig/tracing-opentelemetry.git?branch=holochain#4438efab1b4f3f0872f530187a65081aeed8a039"
-dependencies = [
- "opentelemetry 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "tracing-core 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
- "tracing-subscriber 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "tracing-serde"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5938,7 +5926,6 @@ dependencies = [
 "checksum tracing-core 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)" = "0aa83a9a47081cd522c09c81b31aec2c9273424976f922ad61c053b58350b715"
 "checksum tracing-futures 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "58b6233e421bf43203d36a8cd430acd24a75bed39832b0e07bec24541f9759e9"
 "checksum tracing-log 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "5e0f8c7178e13481ff6765bd169b33e8d554c5d2bbede5e32c356194be02b9b9"
-"checksum tracing-opentelemetry 0.2.0 (git+https://github.com/freesig/tracing-opentelemetry.git?branch=holochain)" = "<none>"
 "checksum tracing-serde 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d65dea8255e378ab7db9db2077a90cb3e051515e18eaa819a405c4eb129b9beb"
 "checksum tracing-subscriber 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "c6bbfcf5ab0799649189b0df4bd7f730f1929a3846d33ae56cb0ad6e0bbdad09"
 "checksum trackable 0.2.23 (registry+https://github.com/rust-lang/crates.io-index)" = "11475c3c53b075360eac9794965822cb053996046545f91cf61d90e00b72efa5"

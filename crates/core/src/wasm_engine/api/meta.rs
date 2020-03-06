@@ -1,7 +1,4 @@
-use crate::{
-    wasm_engine::{api::ZomeApiResult, Runtime},
-    NEW_RELIC_LICENSE_KEY,
-};
+use crate::wasm_engine::{api::ZomeApiResult, Runtime};
 use holochain_core_types::{hdk_version::HDK_VERSION, HDK_HASH};
 use holochain_wasm_utils::api_serialization::meta::{MetaArgs, MetaMethod, MetaResult};
 use std::convert::TryFrom;

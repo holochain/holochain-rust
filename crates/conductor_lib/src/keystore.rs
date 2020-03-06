@@ -21,7 +21,7 @@ use lib3h_sodium::{
     secbuf::SecBuf,
 };
 
-use crate::{conductor::passphrase_manager::PassphraseManager, NEW_RELIC_LICENSE_KEY};
+use crate::conductor::passphrase_manager::PassphraseManager;
 use holochain_dpki::{password_encryption::PwHashConfig, seed::SeedType};
 use std::{
     collections::{BTreeMap, HashMap},

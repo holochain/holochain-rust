@@ -1,4 +1,3 @@
-use crate::NEW_RELIC_LICENSE_KEY;
 use std::{ops::Range, thread, time::Duration};
 
 pub const INTERFACE_CONNECT_ATTEMPTS_MAX: usize = 30;

@@ -1,4 +1,4 @@
-use crate::{error::DefaultResult, util, NEW_RELIC_LICENSE_KEY};
+use crate::{error::DefaultResult, util};
 use base64;
 use serde_json;
 use std::{

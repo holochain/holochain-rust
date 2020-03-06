@@ -6,7 +6,6 @@ use crate::{
         dht_store::DhtStore,
         pending_validations::{PendingValidationWithTimeout, ValidationTimeout},
     },
-    NEW_RELIC_LICENSE_KEY,
 };
 use std::sync::Arc;
 

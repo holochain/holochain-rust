@@ -23,7 +23,6 @@ use crate::{
         InterfaceConfiguration, InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
     },
     keystore::{KeyType, Keystore, Secret},
-    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_dpki::utils::SeedContext;
 use serde_json::{self, map::Map};

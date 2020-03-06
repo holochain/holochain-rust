@@ -117,7 +117,7 @@ jobs:
      - checkout
      - run:
          name: sim2h server
-         command: nix-shell --run "hc-sim2h-server -p 9002"
+         command: nix-shell --run "hc-sim2h-server -p 9002 --structured None"
          background: true
          no_output_timeout: 20m
      - run:
@@ -160,6 +160,7 @@ jobs:
        nix-shell --run hc-release-github-binaries
 
  deploy-linux:
+  resource_class: xlarge
   docker:
    - image: holochain/holonix:ubuntu
   steps:

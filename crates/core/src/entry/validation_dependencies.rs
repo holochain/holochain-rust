@@ -1,4 +1,4 @@
-use crate::{network::entry_with_header::EntryWithHeader, NEW_RELIC_LICENSE_KEY};
+use crate::network::entry_with_header::EntryWithHeader;
 use holochain_core_types::entry::Entry;
 use holochain_persistence_api::cas::content::Address;
 

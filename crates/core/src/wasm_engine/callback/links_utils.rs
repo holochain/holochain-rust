@@ -1,6 +1,4 @@
-use crate::{
-    context::Context, workflows::get_entry_result::get_entry_result_workflow, NEW_RELIC_LICENSE_KEY,
-};
+use crate::{context::Context, workflows::get_entry_result::get_entry_result_workflow};
 use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,

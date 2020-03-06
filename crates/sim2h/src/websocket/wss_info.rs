@@ -1,7 +1,5 @@
-use crate::{
-    websocket::{streams::WebsocketStreamState, BaseStream, TransportResult},
-    NEW_RELIC_LICENSE_KEY,
-};
+use crate::websocket::{streams::WebsocketStreamState, BaseStream, TransportResult};
+use holochain_tracing_macros::newrelic_autotrace;
 
 /// Represents an individual connection
 #[derive(Debug)]
@@ -12,7 +10,7 @@ pub struct WssInfo<T: std::io::Read + std::io::Write + std::fmt::Debug> {
     pub(in crate::websocket) stateful_socket: WebsocketStreamState<T>,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+#[newrelic_autotrace(SIM2H)]
 impl<T: std::io::Read + std::io::Write + std::fmt::Debug> WssInfo<T> {
     pub fn close(&mut self) -> TransportResult<()> {
         if let WebsocketStreamState::ReadyWss(socket) = &mut self.stateful_socket {

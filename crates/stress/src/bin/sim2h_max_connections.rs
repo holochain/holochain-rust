@@ -200,7 +200,6 @@ pub fn main() {
         Box::new(SodiumCryptoSystem::new()),
         Lib3hUri(url.into()),
         DhtAlgorithm::FullSync,
-        None,
     );
     rt.block_on(async move {
         let bound_uri = binding.await.unwrap();

@@ -9,7 +9,6 @@ use crate::{
     dht::dht_store::DhtStore,
     network::state::NetworkState,
     nucleus::state::{NucleusState, NucleusStateSnapshot},
-    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_conductor_lib_api::ConductorApi;
 use holochain_core_types::{

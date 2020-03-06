@@ -6,7 +6,6 @@ use crate::{
         NetResult,
     },
     p2p_network::Lib3hClientProtocolWrapped,
-    NEW_RELIC_LICENSE_KEY,
 };
 use lib3h::{
     dht::mirror_dht::MirrorDht,

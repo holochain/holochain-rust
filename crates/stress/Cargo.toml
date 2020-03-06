@@ -1,6 +1,6 @@
 [package]
 name = "holochain_stress"
-version = "0.0.44-alpha1"
+version = "0.0.44-alpha3"
 description = "holochain stress tests"
 license = "GPL-3.0-only"
 homepage = "https://github.com/holochain/holochain-rust"
@@ -14,10 +14,10 @@ base64 = "=0.10.1"
 crossbeam-channel = "=0.3.8"
 env_logger = "=0.6.1"
 hcid = "=0.0.6"
-lib3h_crypto_api = "=0.0.38"
-lib3h_protocol = "=0.0.38"
-lib3h_sodium = "=0.0.38"
-holochain_tracing = "=0.0.19"
+lib3h_crypto_api = "=0.0.39"
+lib3h_protocol = "=0.0.39"
+lib3h_sodium = "=0.0.39"
+holochain_tracing = "=0.0.22"
 log = "=0.4.8"
 nanoid = "=0.2.0"
 native-tls = "=0.2.3"
@@ -26,8 +26,8 @@ prettytable-rs = "=0.8.0"
 serde = "=1.0.104"
 serde_derive = "=1.0.104"
 serde_json = { version = "=1.0.47", features = ["preserve_order"] }
-sim2h = { version = "=0.0.44-alpha1", path = "../sim2h" }
-in_stream = { version = "=0.0.44-alpha1", path = "../in_stream" }
+sim2h = { version = "=0.0.44-alpha3", path = "../sim2h" }
+in_stream = { version = "=0.0.44-alpha3", path = "../in_stream" }
 structopt = "=0.3.3"
 tokio = { version = "=0.2.11", features = ["full"] }
 toml = "=0.5.0"

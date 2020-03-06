@@ -1,6 +1,6 @@
 [package]
 name = "sim2h"
-version = "0.0.44-alpha1"
+version = "0.0.44-alpha3"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 description = "A simulation of lib3h"
@@ -17,21 +17,21 @@ hcid = "=0.0.6"
 holochain_persistence_api = "=0.0.17"
 holochain_json_api = "=0.0.23"
 futures = "=0.3.2"
-lib3h = "=0.0.38"
-lib3h_crypto_api = "=0.0.38"
-lib3h_sodium = "=0.0.38"
-lib3h_protocol = "=0.0.38"
-lib3h_zombie_actor = "=0.0.38"
-holochain_tracing = "=0.0.19"
-holochain_core_types = { version = "=0.0.44-alpha1", path = "../core_types" }
-holochain_locksmith = { version = "=0.0.44-alpha1", path = "../locksmith" }
-holochain_metrics = { version = "=0.0.44-alpha1", path = "../metrics" }
-holochain_common = { version = "=0.0.44-alpha1", path = "../common" }
-holochain_tracing_macros = "=0.0.19"
+lib3h = "=0.0.39"
+lib3h_crypto_api = "=0.0.39"
+lib3h_sodium = "=0.0.39"
+lib3h_protocol = "=0.0.39"
+lib3h_zombie_actor = "=0.0.39"
+holochain_tracing = "=0.0.22"
+holochain_core_types = { version = "=0.0.44-alpha3", path = "../core_types" }
+holochain_locksmith = { version = "=0.0.44-alpha3", path = "../locksmith" }
+holochain_metrics = { version = "=0.0.44-alpha3", path = "../metrics" }
+holochain_common = { version = "=0.0.44-alpha3", path = "../common" }
+holochain_tracing_macros = "=0.0.22"
 im = { version = "=14.0.0", features = ["serde"] }
-in_stream = { version = "=0.0.44-alpha1", path = "../in_stream" }
+in_stream = { version = "=0.0.44-alpha3", path = "../in_stream" }
 uuid = { version = "0.4", features = ["v4"] }
-log = "=0.4.8"
+#log = "=0.4.8"
 env_logger = "=0.6.1"
 lazy_static = "=1.4.0"
 nanoid = "=0.2.0"
@@ -46,7 +46,7 @@ serde_derive = "=1.0.104"
 serde_json = "=1.0.47"
 tokio = { version = "=0.2.11", features = ["full"] }
 #tokio-tungstenite = { git = "https://github.com/snapview/tokio-tungstenite.git" }
-rand = "=0.7.2"
+rand = "=0.7.3"
 base64 = "=0.10.1"
 chrono = "=0.4.6"
 native-tls = "=0.2.3"
@@ -55,4 +55,6 @@ tungstenite = "=0.9.2"
 threadpool = "=1.7.1"
 chashmap = "=2.2.2"
 newrelic="0.2"
+tracing = "=0.1.13"
+tracing-futures = "=0.2.2"
 twox-hash = "1.5.0"

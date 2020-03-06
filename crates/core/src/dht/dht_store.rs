@@ -4,7 +4,6 @@ use crate::{
         aspect_map::{AspectMap, AspectMapBare},
         pending_validations::{PendingValidationWithTimeout, ValidationTimeout},
     },
-    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     chain_header::ChainHeader,

@@ -1,6 +1,9 @@
 //! encapsulates lib3h ghostmessage for sim2h including security challenge
-use crate::{error::Sim2hError, NEW_RELIC_LICENSE_KEY};
+use crate::error::Sim2hError;
+use holochain_tracing as ht;
+use holochain_tracing_macros::newrelic_autotrace;
 use lib3h_protocol::{data_types::Opaque, protocol::*, types::SpaceHash};
+use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, convert::TryFrom};
 
 pub type WireMessageVersion = u32;
@@ -48,7 +51,7 @@ pub enum WireMessage {
     DebugResponse(BTreeMap<SpaceHash, String>),
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+#[newrelic_autotrace(SIM2H)]
 impl WireMessage {
     pub fn message_type(&self) -> String {
         String::from(match self {
@@ -72,6 +75,7 @@ impl WireMessage {
             WireMessage::ClientToLib3hResponse(span_wrap) => match span_wrap.data {
                 ClientToLib3hResponse::BootstrapSuccess => "[C<L]BootsrapSuccess",
                 ClientToLib3hResponse::FetchEntryResult(_) => "[C<L]FetchEntryResult",
+                // TODO this needs to respond because core will never know it has joined.
                 ClientToLib3hResponse::JoinSpaceResult => "[C<L]JoinSpaceResult",
                 ClientToLib3hResponse::LeaveSpaceResult => "[C<L]LeaveSpaceResult",
                 ClientToLib3hResponse::QueryEntryResult(_) => "[C<L]QueryEntryResult",
@@ -113,6 +117,16 @@ impl WireMessage {
             WireMessage::Err(_) => "[Error] {:?}",
             WireMessage::Ack(_) => "[Ack] {:?}",
         })
+    }
+    pub fn try_get_span(&self) -> Option<Vec<&ht::EncodedSpanContext>> {
+        match self {
+            WireMessage::ClientToLib3h(s) => s.span_context.as_ref().map(|s| vec![s]),
+            WireMessage::ClientToLib3hResponse(s) => s.span_context.as_ref().map(|s| vec![s]),
+            WireMessage::Lib3hToClient(s) => s.span_context.as_ref().map(|s| vec![s]),
+            WireMessage::Lib3hToClientResponse(s) => s.span_context.as_ref().map(|s| vec![s]),
+            WireMessage::MultiSend(m) => m.iter().map(|s| s.span_context.as_ref()).collect(),
+            _ => None,
+        }
     }
 }
 

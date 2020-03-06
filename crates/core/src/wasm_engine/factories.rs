@@ -7,14 +7,14 @@ use wasmi::{
 };
 
 /// Creates a WASM module, that is the executable program, from a given WASM binary byte array.
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn wasm_module_factory(wasm: Arc<Vec<u8>>) -> Result<Module, HolochainError> {
     wasmi::Module::from_buffer(&*wasm).map_err(|e| HolochainError::ErrorGeneric(e.into()))
 }
 
 /// Creates a runnable WASM module instance from a module reference.
 /// Adds the Holochain specific API functions as imports.
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn wasm_instance_factory(module: &Module) -> Result<ModuleRef, HolochainError> {
     // invoke_index and resolve_func work together to enable callable host functions
     // within WASM modules, which is how the core API functions

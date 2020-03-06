@@ -5,7 +5,7 @@ use crate::{
 };
 use lib3h_protocol::protocol_client::Lib3hClientProtocol;
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_respond_authoring_list(
     network_state: &mut NetworkState,
     _root_state: &State,

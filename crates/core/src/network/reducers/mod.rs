@@ -63,7 +63,7 @@ use std::sync::Arc;
 
 /// maps incoming action to the correct handler
 #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
     match action_wrapper.action() {
         Action::ClearActionResponse(_) => Some(reduce_clear_action_response),
@@ -94,7 +94,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
 }
 
 #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce(
     old_state: Arc<NetworkState>,
     root_state: &State,
@@ -114,7 +114,7 @@ pub fn reduce(
 /// Sends the given Lib3hClientProtocol over the network using the network proxy instance
 /// that lives in the NetworkState.
 #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn send(
     network_state: &mut NetworkState,
     msg: Lib3hClientProtocol,
@@ -141,7 +141,7 @@ pub fn send(
 /// request-response pattern. This function therefore logs the open connection
 /// (expecting a response) in network_state.direct_message_connections.
 #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn send_message(
     network_state: &mut NetworkState,
     to_agent_id: &Address,

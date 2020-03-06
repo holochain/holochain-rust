@@ -37,7 +37,7 @@ pub struct P2pNetwork {
     connection: NetConnectionThread,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl P2pNetwork {
     /// Constructor
     /// `config` is the configuration of the p2p module `handler` is the closure for handling Protocol messages received from the network module.
@@ -199,7 +199,7 @@ impl std::fmt::Debug for P2pNetwork {
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl NetSend for P2pNetwork {
     /// send a Protocol message to the p2p network instance
     fn send(&mut self, data: Lib3hClientProtocolWrapped) -> NetResult<()> {

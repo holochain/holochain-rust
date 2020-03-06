@@ -87,7 +87,7 @@ impl P2pConfig {
 }
 
 // Constructors
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl P2pConfig {
     pub fn new(
         backend_kind: P2pBackendKind,
@@ -191,7 +191,7 @@ impl P2pConfig {
 }
 
 /// end_user config
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl P2pConfig {
     pub fn default_end_user_config() -> serde_json::Value {
         json!({

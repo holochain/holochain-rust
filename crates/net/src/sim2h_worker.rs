@@ -91,7 +91,6 @@ pub struct Sim2hWorker {
     tracer: Option<ht::Tracer>,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl Sim2hWorker {
     pub fn advertise(self) -> url::Url {
         Url::parse("ws://example.com").unwrap()
@@ -603,7 +602,6 @@ impl Sim2hWorker {
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl NetWorker for Sim2hWorker {
     /// We got a message from core
     /// -> forward it to the NetworkEngine

@@ -88,7 +88,7 @@ pub struct Seed {
     pub buf: SecBuf,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl Seed {
     pub fn new(seed_buf: SecBuf, seed_type: SeedType) -> Self {
         assert_eq!(seed_buf.len(), SEED_SIZE);
@@ -160,7 +160,7 @@ pub struct RootSeed {
     inner: Seed,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl SeedTrait for RootSeed {
     fn seed(&self) -> &Seed {
         &self.inner
@@ -170,7 +170,7 @@ impl SeedTrait for RootSeed {
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl RootSeed {
     /// Construct from a 32 bytes seed buffer
     pub fn new(seed_buf: SecBuf) -> Self {
@@ -201,7 +201,7 @@ pub struct DeviceSeed {
     inner: Seed,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl SeedTrait for DeviceSeed {
     fn seed(&self) -> &Seed {
         &self.inner
@@ -211,7 +211,7 @@ impl SeedTrait for DeviceSeed {
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl DeviceSeed {
     /// Construct from a 32 bytes seed buffer
     pub fn new(seed_buf: SecBuf) -> Self {
@@ -243,7 +243,7 @@ pub struct DevicePinSeed {
     inner: Seed,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl SeedTrait for DevicePinSeed {
     fn seed(&self) -> &Seed {
         &self.inner
@@ -253,7 +253,7 @@ impl SeedTrait for DevicePinSeed {
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl DevicePinSeed {
     /// Construct from a 32 bytes seed buffer
     pub fn new(seed_buf: SecBuf) -> Self {
@@ -287,7 +287,7 @@ pub struct EncryptedSeed {
     data: EncryptedData,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl EncryptedSeed {
     fn new(data: EncryptedData, kind: SeedType) -> Self {
         Self { kind, data }
@@ -308,7 +308,7 @@ impl EncryptedSeed {
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl MnemonicableSeed for EncryptedSeed {
     fn new_with_mnemonic(phrase: String, seed_type: SeedType) -> HcResult<Self> {
         // split out the two phrases, decode then combine the bytes

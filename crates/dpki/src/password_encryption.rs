@@ -25,7 +25,7 @@ pub(crate) struct EncryptedData {
 /// @param {SecBuf} hash_result - Empty SecBuf to receive the resulting hash.
 /// @param {Option<PwHashConfig>} config - Optional hashing settings
 /// TODO make salt optional
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 pub(crate) fn pw_hash(
     password: &mut SecBuf,
     salt: &mut SecBuf,
@@ -46,7 +46,7 @@ pub(crate) fn pw_hash(
 /// @param {SecBuf} passphrase - the passphrase to use for encrypting
 /// @param {Option<PwHashConfig>} config - Optional encrypting settings
 /// @return {EncryptedData} - the resulting encrypted data
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 pub(crate) fn pw_enc(
     data: &mut SecBuf,
     passphrase: &mut SecBuf,
@@ -67,7 +67,7 @@ pub(crate) fn pw_enc(
 /// @param {SecBuf} passphrase - the passphrase to use for encrypting
 /// @param {Option<PwHashConfig>} config - Optional encrypting settings
 /// @return {EncryptedData} - the resulting encrypted data
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 pub(crate) fn pw_enc_zero_nonce(
     data: &mut SecBuf,
     passphrase: &mut SecBuf,
@@ -82,7 +82,7 @@ pub(crate) fn pw_enc_zero_nonce(
 }
 
 /// Private general wrapper of pw_enc
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 fn pw_enc_base(
     data: &mut SecBuf,
     passphrase: &mut SecBuf,
@@ -111,7 +111,7 @@ fn pw_enc_base(
 /// @param {SecBuf} passphrase - the passphrase to use for encrypting
 /// @param {SecBuf} decrypted_data - the dresulting ecrypted data
 /// @param {Option<PwHashConfig>} config - Optional decrypting settings
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 pub(crate) fn pw_dec(
     encrypted_data: &EncryptedData,
     passphrase: &mut SecBuf,

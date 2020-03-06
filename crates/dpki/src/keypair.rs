@@ -62,7 +62,7 @@ pub struct SigningKeyPair {
     pub private: SecBuf,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl KeyPair for SigningKeyPair {
     fn public(&self) -> String {
         self.public.clone()
@@ -92,7 +92,7 @@ impl KeyPair for SigningKeyPair {
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl SigningKeyPair {
     /// Standard Constructor
     pub fn new(public: Base32, private: SecBuf) -> Self {
@@ -134,7 +134,7 @@ pub struct EncryptingKeyPair {
     pub private: SecBuf,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl KeyPair for EncryptingKeyPair {
     fn public(&self) -> String {
         self.public.clone()
@@ -165,7 +165,7 @@ impl KeyPair for EncryptingKeyPair {
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl EncryptingKeyPair {
     /// Standard Constructor
     pub fn new(public: String, private: SecBuf) -> Self {
@@ -246,12 +246,12 @@ impl EncryptingKeyPair {
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 pub fn generate_random_sign_keypair() -> HcResult<SigningKeyPair> {
     let mut seed = utils::generate_random_seed_buf();
     SigningKeyPair::new_from_seed(&mut seed)
 }
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 pub fn generate_random_enc_keypair() -> HcResult<EncryptingKeyPair> {
     let mut seed = utils::generate_random_seed_buf();
     EncryptingKeyPair::new_from_seed(&mut seed)

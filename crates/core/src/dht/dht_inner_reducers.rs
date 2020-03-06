@@ -31,7 +31,7 @@ pub(crate) enum LinkModification {
 }
 
 /// Used as the inner function for both commit and hold reducers
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn reduce_store_entry_inner(store: &mut DhtStore, entry: &Entry) -> HcResult<()> {
     match store.add(entry) {
         Ok(()) => create_crud_status_eav(&entry.address(), CrudStatus::Live).map(|status_eav| {
@@ -43,7 +43,7 @@ pub(crate) fn reduce_store_entry_inner(store: &mut DhtStore, entry: &Entry) -> H
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn reduce_add_remove_link_inner(
     store: &mut DhtStore,
     link: &LinkData,
@@ -77,7 +77,7 @@ pub(crate) fn reduce_add_remove_link_inner(
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn reduce_update_entry_inner(
     store: &mut DhtStore,
     old_address: &Address,
@@ -93,7 +93,7 @@ pub(crate) fn reduce_update_entry_inner(
     Ok(new_address.clone())
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn reduce_remove_entry_inner(
     store: &mut DhtStore,
     latest_deleted_address: &Address,

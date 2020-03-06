@@ -17,7 +17,7 @@ use holochain_core_types::{
 };
 use std::{sync::Arc, vec::Vec};
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn build_validation_package<'a>(
     entry: &'a Entry,
     context: Arc<Context>,
@@ -150,7 +150,7 @@ pub fn build_validation_package<'a>(
 }
 
 // given a slice of headers return the entries for those marked public
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn public_chain_entries_from_headers(
     context: &Arc<Context>,
     headers: &[ChainHeader],
@@ -171,7 +171,7 @@ fn public_chain_entries_from_headers(
         .collect::<Vec<_>>()
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn all_chain_headers_before_header(
     context: &Arc<Context>,
     header: &ChainHeader,

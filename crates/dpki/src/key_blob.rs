@@ -96,7 +96,7 @@ pub trait Blobbable {
 // Seed
 //--------------------------------------------------------------------------------------------------
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl Blobbable for Seed {
     fn blob_type() -> BlobType {
         BlobType::Seed
@@ -159,7 +159,7 @@ const KEYBUNDLE_BLOB_SIZE: usize = 1 // version byte
 
 pub const KEYBUNDLE_BLOB_SIZE_ALIGNED: usize = ((KEYBUNDLE_BLOB_SIZE + 8 - 1) / 8) * 8;
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl Blobbable for KeyBundle {
     fn blob_type() -> BlobType {
         BlobType::KeyBundle
@@ -279,7 +279,7 @@ const SIGNING_KEY_BLOB_SIZE: usize = 1 // version byte
 
 pub const SIGNING_KEY_BLOB_SIZE_ALIGNED: usize = ((SIGNING_KEY_BLOB_SIZE + 8 - 1) / 8) * 8;
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl Blobbable for SigningKeyPair {
     fn blob_type() -> BlobType {
         BlobType::SigningKey
@@ -378,7 +378,7 @@ const ENCRYPTING_KEY_BLOB_SIZE: usize = 1 // version byte
 
 pub const ENCRYPTING_KEY_BLOB_SIZE_ALIGNED: usize = ((ENCRYPTING_KEY_BLOB_SIZE + 8 - 1) / 8) * 8;
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl Blobbable for EncryptingKeyPair {
     fn blob_type() -> BlobType {
         BlobType::EncryptingKey

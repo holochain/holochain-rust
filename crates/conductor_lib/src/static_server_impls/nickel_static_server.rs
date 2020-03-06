@@ -21,7 +21,7 @@ pub struct NickelStaticServer {
     running: bool,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl ConductorStaticFileServer for NickelStaticServer {
     fn from_configs(
         config: UiInterfaceConfiguration,

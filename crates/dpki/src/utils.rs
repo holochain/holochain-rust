@@ -17,7 +17,7 @@ pub trait Verify {
     fn verify(&self, data: String) -> HcResult<bool>;
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl Verify for Provenance {
     fn verify(&self, data: String) -> HcResult<bool> {
         crate::utils::verify(self.source(), data, self.signature())
@@ -28,7 +28,7 @@ impl Verify for Provenance {
 /// @param {Base32} pub_key_b32 - Public signing key to decode
 /// @param {HcidEncoding} codec - The configured HCID decoder to use
 /// @return {SecBuf} Resulting decoded key
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 pub(crate) fn decode_pub_key(pub_key_b32: Base32, codec: &HcidEncoding) -> HcResult<SecBuf> {
     // Decode Base32 public key
     let pub_key = codec.decode(&pub_key_b32)?;
@@ -43,7 +43,7 @@ pub(crate) fn decode_pub_key(pub_key_b32: Base32, codec: &HcidEncoding) -> HcRes
 /// @param {SecBuf} pub_key_sec - Public signing key to encode
 /// @param {HcidEncoding} codec - The configured HCID encoder to use
 /// @return {Base32} Resulting HCID encoded key
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 pub(crate) fn encode_pub_key(pub_key_sec: &mut SecBuf, codec: &HcidEncoding) -> HcResult<Base32> {
     let locker = pub_key_sec.read_lock();
     Ok(codec.encode(&locker[0..SEED_SIZE])?)
@@ -69,7 +69,7 @@ pub fn verify(source: Address, data: String, signature: Signature) -> HcResult<b
 /// @param {SecBuf} data - Data buffer to verify
 /// @param {SecBuf} signature - Candidate signature for that data buffer
 /// @return true if verification succeeded
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 pub fn verify_bufs(
     pub_sign_key_b32: Base32,
     data: &mut SecBuf,
@@ -83,7 +83,7 @@ pub struct SeedContext {
     inner: [u8; 8],
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 impl SeedContext {
     pub fn new(data: [u8; 8]) -> Self {
         assert_eq!(data.len(), CONTEXT_SIZE);
@@ -99,7 +99,7 @@ impl SeedContext {
 }
 
 /// derive a seed from a source seed
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 pub fn generate_derived_seed_buf(
     mut src_seed: &mut SecBuf,
     seed_context: &SeedContext,
@@ -116,7 +116,7 @@ pub fn generate_derived_seed_buf(
 }
 
 /// returns a random buf
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 pub fn generate_random_buf(size: usize) -> SecBuf {
     let mut seed = SecBuf::with_insecure(size);
     seed.randomize();
@@ -124,13 +124,13 @@ pub fn generate_random_buf(size: usize) -> SecBuf {
 }
 
 /// returns a random seed buf
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 pub fn generate_random_seed_buf() -> SecBuf {
     generate_random_buf(SEED_SIZE)
 }
 
 /// encrypt and base64 encode a secbuf
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 pub fn encrypt_with_passphrase_buf(
     data_buf: &mut SecBuf,
     passphrase: &mut SecBuf,
@@ -144,7 +144,7 @@ pub fn encrypt_with_passphrase_buf(
 }
 
 /// unencode base64 and decrypt a passphrase encrypted blob
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_DPKI)]
 pub fn decrypt_with_passphrase_buf(
     blob: &str,
     passphrase: &mut SecBuf,

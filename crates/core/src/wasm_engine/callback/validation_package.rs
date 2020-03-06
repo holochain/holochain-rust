@@ -19,7 +19,7 @@ use holochain_wasm_utils::api_serialization::validation::LinkValidationPackageAr
 use std::{convert::TryFrom, sync::Arc};
 
 #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn get_validation_package_definition(
     entry: &Entry,
     context: Arc<Context>,

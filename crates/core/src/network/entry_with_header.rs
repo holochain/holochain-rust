@@ -12,7 +12,7 @@ pub struct EntryWithHeader {
     pub header: ChainHeader,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl EntryWithHeader {
     pub fn new(entry: Entry, header: ChainHeader) -> EntryWithHeader {
         EntryWithHeader { entry, header }

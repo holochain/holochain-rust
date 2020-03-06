@@ -27,7 +27,7 @@ pub trait ConductorUiAdmin {
     fn stop_ui_interface(&mut self, id: &String) -> Result<(), HolochainInstanceError>;
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl ConductorUiAdmin for Conductor {
     fn install_ui_bundle_from_file(
         &mut self,

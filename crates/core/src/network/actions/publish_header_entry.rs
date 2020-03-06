@@ -11,7 +11,7 @@ use std::{pin::Pin, sync::Arc};
 
 /// Publish Header Entry Action Creator
 /// Returns a future that resolves to an ActionResponse.
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn publish_header_entry(address: Address, context: &Arc<Context>) -> HcResult<Address> {
     let action_wrapper = ActionWrapper::new(Action::PublishHeaderEntry(address));
     dispatch_action(context.action_channel(), action_wrapper.clone());
@@ -29,7 +29,7 @@ pub struct PublishHeaderEntryFuture {
     action: ActionWrapper,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Future for PublishHeaderEntryFuture {
     type Output = HcResult<Address>;
 

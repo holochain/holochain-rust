@@ -14,7 +14,7 @@ use std::sync::Arc;
 
 const GET_TIMEOUT_MS: usize = 1000;
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 async fn all_chain_headers_before_header_dht(
     context: Arc<Context>,
     header: &ChainHeader,

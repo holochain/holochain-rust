@@ -31,7 +31,7 @@ pub struct PassphraseManager {
     timeout_kill_switch: Sender<()>,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl PassphraseManager {
     pub fn new(passphrase_service: Arc<Mutex<dyn PassphraseService + Send>>) -> Self {
         let (kill_switch_tx, kill_switch_rx) = unbounded::<()>();

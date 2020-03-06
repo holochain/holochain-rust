@@ -29,7 +29,7 @@ pub enum QueryMethod {
     Link(GetLinksArgs, GetLinksNetworkQuery),
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn query(
     context: Arc<Context>,
     method: QueryMethod,
@@ -84,7 +84,7 @@ pub struct QueryFuture {
     key: QueryKey,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Future for QueryFuture {
     type Output = HcResult<NetworkQueryResult>;
 

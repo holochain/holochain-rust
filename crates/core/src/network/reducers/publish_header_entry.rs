@@ -21,7 +21,7 @@ use holochain_persistence_api::cas::content::{Address, AddressableContent};
 
 /// Send to network a request to publish a header entry alone
 /// This is similar to publishing a regular entry but it has its own special dummy header.
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn publish_header(
     network_state: &mut NetworkState,
     root_state: &State,
@@ -44,7 +44,7 @@ fn publish_header(
     )
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn reduce_publish_header_entry_inner(
     network_state: &mut NetworkState,
     root_state: &State,
@@ -55,7 +55,7 @@ fn reduce_publish_header_entry_inner(
     publish_header(network_state, root_state, entry_with_header.header)
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_publish_header_entry(
     network_state: &mut NetworkState,
     root_state: &State,

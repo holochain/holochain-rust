@@ -22,7 +22,8 @@ snowflake = "=1.3.0"
 [features]
 #default brings in no features
 default =[]
-
+#this sets a bypass for the locksmith
+bypass = []
 #this feature allows the compilation with backtraces involved
 backtraces = []
 

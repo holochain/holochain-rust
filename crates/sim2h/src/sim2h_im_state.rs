@@ -448,6 +448,7 @@ impl Space {
         }
     }
 
+    #[tracing::instrument(skip(self, check_gossip_data))]
     fn check_gossip(&mut self, space_hash: MonoSpaceHash, check_gossip_data: &mut CheckGossipData) {
         for con in self.connections.iter_mut() {
             if con.next_gossip_check.still_pending() {
@@ -463,6 +464,7 @@ impl Space {
 
             check_gossip_data.add_agent(space_hash.clone(), con.agent_id.clone());
         }
+        tracing::info!(?check_gossip_data);
     }
 }
 
@@ -685,10 +687,12 @@ impl Store {
             .agent_holds_aspects(&agent_id, &entry_hash, &aspects);
     }
 
+    #[tracing::instrument(skip(self, response))]
     fn check_gossip(&mut self, response: tokio::sync::oneshot::Sender<CheckGossipData>) {
         let mut check_gossip_data = CheckGossipData::new();
 
         let space_hashes = self.spaces.keys().cloned().collect::<Vec<_>>();
+        tracing::info!(?space_hashes);
         for space_hash in space_hashes {
             self.spaces
                 .get_mut(&space_hash)
@@ -985,6 +989,7 @@ impl StoreHandle {
         tokio::task::spawn(f);
     }
 
+    #[tracing::instrument(skip(self))]
     pub async fn check_gossip(&self) -> CheckGossipData {
         let (sender, receiver) = tokio::sync::oneshot::channel();
         let (sender_c, receiver_c) = tokio::sync::oneshot::channel();

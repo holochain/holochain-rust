@@ -614,7 +614,6 @@ impl Suite {
                 Box::new(SodiumCryptoSystem::new()),
                 Lib3hUri(url.into()),
                 DhtAlgorithm::FullSync,
-                None,
             );
             rt.block_on(async move {
                 tokio::task::spawn(async move {

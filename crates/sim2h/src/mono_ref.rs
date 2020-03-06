@@ -1,4 +1,5 @@
 use crate::*;
+use serde::Serialize;
 
 /// We could just use `Arc`s directly, but the newtype lets us override Debug
 /// in sim2h MonoRef lets us have multiple views into the same hashes

@@ -3,7 +3,6 @@ use crate::{
     context::Context,
     nucleus::{actions::get_entry::get_entry_from_agent_chain, ZomeFnCall, ZomeFnResult},
     wasm_engine::{self, WasmCallData},
-    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     dna::{capabilities::CapabilityRequest, wasm::DnaWasm},

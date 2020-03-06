@@ -33,7 +33,6 @@ function  doTest(url) {
         // call an RPC method with parameters
 
         await ws.call('ping', {"id": "my-player"}).then(function(result) {
-             result = JSON.parse(result)
              console.log(result)
         })
 
@@ -122,5 +121,44 @@ sim2h_url = "wss://localhost:9001"
 
         resolve()
     })
+    })
+}
+
+//doTestManager("ws://localhost:9000")  // uncomment to manually run manager test
+// instantiate Client and connect to an RPC server
+function  doTestManager(url) {
+    return new Promise( (resolve) => {
+        console.log("starting up at ",url)
+        var ws = new WebSocket(url)
+        ws.on('open', async function() {
+            console.log("making register call, expect: 'registered'")
+            // call an RPC method with parameters
+            await ws.call('register', {"url": "ws://localhost:9001"}).then(function(result) {
+                console.log(result)
+            })
+
+            console.log("making request call, expect: insufficient endpoints available")
+            // call an RPC method with parameters
+            await ws.call('request', {"count": 100}).then(function(result) {
+                console.log(result.error)
+            })
+
+            console.log("making request call, expect: registered node")
+            // call an RPC method with parameters
+            await ws.call('request', {"count": 1}).then(function(result) {
+                console.log(result)
+            })
+
+            console.log("making request call, expect: insufficient endpoints available")
+            // call an RPC method with parameters
+            await ws.call('request', {"count": 1}).then(function(result) {
+                console.log(result.error)
+            })
+
+            // close a websocket connection
+            ws.close()
+
+            resolve()
+        })
     })
 }

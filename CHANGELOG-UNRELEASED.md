@@ -16,5 +16,6 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Older rust-tracing traces.
 
 ### Fixed
+- Pagination option for get_links now retrieves entries before `from_time`, not after [PR#2144](https://github.com/holochain/holochain-rust/pull/2144)
 
 ### Security

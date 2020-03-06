@@ -17,7 +17,6 @@ holochain_dpki = { version = "=0.0.44-alpha3", path = "../dpki" }
 holochain_locksmith = { version = "=0.0.44-alpha3", path = "../locksmith" }
 holochain_tracing = "=0.0.22"
 holochain_tracing_macros = "=0.0.22"
-newrelic="0.2"
 sim2h = { version = "=0.0.44-alpha3", path = "../sim2h" }
 lib3h_crypto_api = "=0.0.39"
 in_stream = { version = "=0.0.44-alpha3", path = "../in_stream" }

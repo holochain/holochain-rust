@@ -21,7 +21,6 @@ tiny_http = "=0.6.2"
 lazy_static = "=1.4.0"
 ws = "=0.8.0"
 log = "=0.4.8"
-newrelic="0.2"
 
 [target.'cfg(unix)'.dependencies]
 signal-hook = "=0.1.10"

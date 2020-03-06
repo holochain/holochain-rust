@@ -58,7 +58,6 @@ rand = "=0.7.3"
 threadpool = "=1.7.1"
 im = { version = "=14.0.0", features = ["serde"] }
 itertools = "0.8.2"
-newrelic="0.2"
 
 [dev-dependencies]
 wabt = "=0.7.4"

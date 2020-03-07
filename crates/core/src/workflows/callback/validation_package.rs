@@ -23,9 +23,11 @@ pub fn get_validation_package_definition(
     context: Arc<Context>,
     entry: &Entry,
 ) -> Result<CallbackResult, HolochainError> {
+    println!("get_validation_package_definition");
     let dna = context.get_dna().expect("Callback called without DNA set!");
     let result: ValidationPackageDefinition = match entry.entry_type() {
         EntryType::App(app_entry_type) => {
+            println!("get_validation_package app entry");
             let zome_name = dna.get_zome_name_for_app_entry_type(&app_entry_type);
             if zome_name.is_none() {
                 return Ok(CallbackResult::NotImplemented(
@@ -41,6 +43,7 @@ pub fn get_validation_package_definition(
                 app_entry_type.clone(),
             );
             let call_data = WasmCallData::new_callback_call(context, call);
+            println!("get_validation_package app entry 1 {}", call_data.fn_name());
             holochain_wasmer_host::guest::call(
                 &mut call_data.instance()?,
                 &call_data.fn_name(),
@@ -121,6 +124,8 @@ pub fn get_validation_package_definition(
             "get_validation_package_definition/3".into(),
         ))?,
     };
+
+    println!("get_validation_package result {:?}", &result);
 
     Ok(CallbackResult::ValidationPackageDefinition(result))
 }

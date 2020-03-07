@@ -8,6 +8,7 @@ use crate::{
 };
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
+use holochain_json_api::json::RawString;
 use holochain_logging::prelude::*;
 use holochain_wasm_types::{ZomeFnCallArgs, THIS_INSTANCE, WasmError};
 use jsonrpc_lite::JsonRpc;
@@ -15,6 +16,8 @@ use snowflake::ProcessUniqueId;
 use std::sync::Arc;
 use crate::wasm_engine::runtime::WasmCallData;
 use crate::workflows::WorkflowResult;
+use holochain_wasm_types::WasmResult;
+use std::convert::TryFrom;
 
 // ZomeFnCallArgs to ZomeFnCall
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
@@ -45,7 +48,7 @@ impl ZomeFnCall {
 /// Waits for a ZomeFnResult
 /// Returns an HcApiReturnCode as I64
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub async fn call_workflow(context: Arc<Context>, call_data: Arc<WasmCallData>, input: &ZomeFnCallArgs) -> WorkflowResult<JsonString> {
+pub async fn call_workflow(context: Arc<Context>, call_data: Arc<WasmCallData>, input: &ZomeFnCallArgs) -> WorkflowResult<WasmResult> {
     if input.instance_handle == THIS_INSTANCE {
         // ZomeFnCallArgs to ZomeFnCall
         let zome_call = ZomeFnCall::from_args(Arc::clone(&context), input.clone());
@@ -61,27 +64,33 @@ pub async fn call_workflow(context: Arc<Context>, call_data: Arc<WasmCallData>, 
             error
         })
     } else {
-        bridge_call_workflow(Arc::clone(&context), input.clone()).await.map_err(|error| {
-            log_error!(context, "bridge-call/[{:?}]: {:?}", input, error);
-            error
-        })
+        // bridge_call_workflow(Arc::clone(&context), input.clone()).await.map_err(|error| {
+        //     log_error!(context, "bridge-call/[{:?}]: {:?}", input, error);
+        //     error
+        // })
+        // @TODO
+        Ok(WasmResult::Ok(().into()))
     }
 }
 
 #[autotrace]
 // #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-async fn local_call_workflow(context: Arc<Context>, input: ZomeFnCallArgs) -> WorkflowResult<JsonString> {
+async fn local_call_workflow(context: Arc<Context>, input: ZomeFnCallArgs) -> WorkflowResult<WasmResult> {
     // ZomeFnCallArgs to ZomeFnCall
     let zome_call = ZomeFnCall::from_args(Arc::clone(&context), input.clone());
     log_debug!(context, "blocking on zome call: {:?}", input.clone());
-    let result = call_zome_function(Arc::clone(&context), zome_call).await;
+    let result = call_zome_function(Arc::clone(&context), zome_call).await?;
     log_debug!(
         context,
         "blocked on zome call: {:?} with result {:?}",
         input,
         result
     );
-    result
+
+    match WasmResult::try_from(result)? {
+        WasmResult::Ok(json) => Ok(WasmResult::Ok(JsonString::from(RawString::from(String::from(json))))),
+        WasmResult::Err(e) => Err(e)?,
+    }
 }
 
 #[autotrace]

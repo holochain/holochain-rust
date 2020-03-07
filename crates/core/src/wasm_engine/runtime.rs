@@ -40,6 +40,7 @@ use crate::workflows::call::call_workflow;
 use crate::workflows::link_entries::link_entries_workflow;
 use crate::workflows::crypto::decrypt_workflow;
 use crate::workflows::sign::sign_workflow;
+use holochain_wasm_types::WasmResult;
 
 #[derive(Clone)]
 pub struct ZomeCallData {
@@ -226,16 +227,23 @@ impl WasmCallData {
                 "hc_call" => func!({
                     let closure_arc = std::sync::Arc::clone(&arc);
                     move |ctx: &mut Ctx, guest_allocation_ptr: holochain_wasmer_host::AllocationPtr| -> ZomeApiResult {
+                        println!("hc_call invoke");
                         let guest_bytes = holochain_wasmer_host::guest::read_from_allocation_ptr(ctx, guest_allocation_ptr)?;
-                        let guest_json = JsonString::from(guest_bytes);
+                        let guest_json = JsonString::from_bytes(guest_bytes);
+                        println!("hc_call guest_json {:?}", &guest_json);
                         let context = std::sync::Arc::clone(&closure_arc.context().map_err(|_| WasmError::Unspecified )?);
 
                         invoke_workflow_trace!(context, "call_workflow", "ZomeFnCallArgs", guest_json);
                         let args = guest_json.try_into()?;
+                        println!("hc_call args {:?}", &args);
                         Ok(holochain_wasmer_host::json::to_allocation_ptr(
-                            context.block_on(
-                                call_workflow(Arc::clone(&context), Arc::clone(&closure_arc), &args)
-                            ).map_err(|e| WasmError::Zome(e.to_string()))?.into()
+                            {
+                                let result: WasmResult = context.block_on(
+                                    call_workflow(Arc::clone(&context), Arc::clone(&closure_arc), &args)
+                                ).map_err(|e| WasmError::Zome(e.to_string()))?;
+                                println!("hc_call r: {:?}", &result);
+                                JsonString::from(result)
+                            }
                         ))
                     }
                 }),

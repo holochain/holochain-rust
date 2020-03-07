@@ -429,16 +429,17 @@ fn handle_check_app_entry_address() -> ZomeApiResult<Address> {
 //     json!({"result": "FIXME"}).into()
 // }
 
-fn handle_check_call() -> ZomeApiResult<HashString> {
-    let empty_dumpty = JsonString::empty_object();
-    hdk::debug(format!("empty_dumpty = {:?}", empty_dumpty))?;
+fn handle_check_call_inner() -> ZomeApiResult<HashString> {
+    Ok(HashString::from("xyz"))
+}
 
+fn handle_check_call() -> ZomeApiResult<HashString> {
     let maybe_hash: ZomeApiResult<HashString> = hdk::call(
         hdk::THIS_INSTANCE,
         "test_zome",
         Address::from(hdk::PUBLIC_TOKEN.to_string()),
-        "check_app_entry_address",
-        empty_dumpty,
+        "check_call_inner",
+        (),
     );
     hdk::debug(format!("maybe_hash = {:?}", maybe_hash))?;
 
@@ -561,8 +562,6 @@ fn handle_sleep() -> ZomeApiResult<()> {
 
 pub fn handle_my_entries_by_tag(tag:Option<String>,maybe_status : Option<LinksStatusRequestKind>) -> ZomeApiResult<GetLinksResult> {
 
-
-
     let test_entry_to_create = Entry::App(
         "testEntryType".into(),
         TestEntryType {
@@ -654,6 +653,7 @@ define_zome! {
             },
 
             validation: |valida: hdk::EntryValidationData<TestEntryType>| {
+                hdk::debug(format!("entries validation {:?}", valida)).ok();
                 match valida
                 {
                     EntryValidationData::Create{entry:test_entry,validation_data:_} =>
@@ -967,6 +967,12 @@ define_zome! {
             inputs: |stuff1: String, stuff2: String,tag:String|,
             outputs: |result: ZomeApiResult<()>|,
             handler: handle_link_tag_validation
+        }
+
+        check_call_inner: {
+            inputs: | |,
+            outputs: |result: ZomeApiResult<HashString>|,
+            handler: handle_check_call_inner
         }
 
         check_call: {

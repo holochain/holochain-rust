@@ -11,7 +11,6 @@ use holochain_wasm_types::ZomeApiGlobals;
 
 use crate::init_globals::init_globals;
 
-mod bundle;
 mod call;
 mod capability;
 mod commit_entry;
@@ -35,7 +34,6 @@ mod update_remove;
 mod version;
 
 pub use self::{
-    bundle::{close_bundle, start_bundle},
     call::call,
     capability::{commit_capability_claim, commit_capability_grant},
     commit_entry::{commit_entry, commit_entry_result},

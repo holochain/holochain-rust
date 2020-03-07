@@ -311,6 +311,7 @@ pub fn spawn_zome_function(context: Arc<Context>, zome_call: ZomeFnCall) {
             let call_result: ZomeFnResult = match maybe_instance {
                 Err(e) => Err(e),
                 Ok(mut instance) => {
+                    println!("xx {:?}", zome_call.clone().parameters);
                     let call_result_hack: Result<CallResult, WasmError> = holochain_wasmer_host::guest::call(
                         &mut instance,
                         &call_data.fn_name(),

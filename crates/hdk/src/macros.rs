@@ -354,6 +354,13 @@ macro_rules! define_zome {
         $(
                 #[no_mangle]
                 pub extern "C" fn $zome_function_name(host_allocation_ptr: holochain_wasmer_guest::AllocationPtr) -> holochain_wasmer_guest::AllocationPtr {
+                    // Hack to detect empty params
+                    let mut params = false;
+                    $(
+                        let _ = stringify!($input_param_name);
+                        params = true;
+                    )*
+
                     // Macro'd InputStruct
                     #[derive(Deserialize, Serialize, Debug, $crate::holochain_json_derive::DefaultJson)]
                     struct InputStruct {
@@ -361,7 +368,18 @@ macro_rules! define_zome {
                     }
 
                     // Deserialize input
-                    let input: InputStruct = holochain_wasmer_guest::host_args!(host_allocation_ptr);
+                    let input: InputStruct = {
+                        if params {
+                            holochain_wasmer_guest::host_args!(host_allocation_ptr)
+                        } else {
+                            // hack to build an empty InputStruct when there are no input params
+                            match InputStruct::try_from(JsonString::from_json("{}")) {
+                                Ok(v) => v,
+                                // this should never happen
+                                Err(e) => ret_err!("failed to create an empty InputStruct from empty JsonString"),
+                            }
+                        }
+                    };
 
                     // Macro'd function body
                     fn execute (params: InputStruct) -> $( $output_param_type )* {

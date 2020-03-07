@@ -11,5 +11,4 @@ pub struct ZomeFnCallArgs {
     pub cap_token: Address,
     pub fn_name: String,
     pub fn_args: String,
-    // pub zome_call_data: ZomeCallData,
 }

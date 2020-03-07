@@ -361,30 +361,27 @@ fn can_check_sys_entry_address() {
 
 #[test]
 fn can_check_call() {
-    //let (mut hc, _) = start_holochain_instance("can_check_call", "alice");
+    let (mut hc, _, _) = start_holochain_instance("can_check_call", "alice");
 
-    //let result = make_test_call(&mut hc, "check_call", r#"{}"#);
-    //assert!(result.is_ok(), "result = {:?}", result);
+    let result = make_test_call(&mut hc, "check_call", r#"{}"#);
+    assert!(result.is_ok(), "result = {:?}", result);
+    let inner_expected: ZomeApiResult<HashString> = Ok(HashString::from(
+       "xyz".to_string(),
+    ));
 
-    //let inner_expected: ZomeApiResult<Address> = Ok(Address::from(
-    //    "QmSbNw63sRS4VEmuqFBd7kJT6V9pkEpMRMY2LWvjNAqPcJ",
-    //));
-    //let expected: ZomeApiResult<ZomeApiInternalResult> =
-    //    Ok(ZomeApiInternalResult::success(inner_expected));
-
-    //assert_eq!(result.unwrap(), JsonString::from(expected),);
+    assert_eq!(result.unwrap(), JsonString::from(inner_expected),);
 }
 
 #[test]
 fn can_check_call_with_args() {
-    //let (mut hc, _) = start_holochain_instance("can_check_call_with_args", "alice");
+    // let (mut hc, _, _) = start_holochain_instance("can_check_call_with_args", "alice");
 
-    //let result =make_test_call(&mut hc,
+    // let result = make_test_call(&mut hc,
     //    "check_call_with_args",
     //    &String::from(JsonString::empty_object()),
-    //);
-    //println!("\t result = {:?}", result);
-    //assert!(result.is_ok(), "\t result = {:?}", result);
+    // );
+    // println!("\t result = {:?}", result);
+    // assert!(result.is_ok(), "\t result = {:?}", result);
 
     //let expected_inner: ZomeApiResult<Address> = Ok(Address::from(
     //    "QmefcRdCAXM2kbgLW2pMzqWhUvKSDvwfFSVkvmwKvBQBHd",
@@ -457,7 +454,7 @@ fn show_env() {
     let dna_address_string = dna.address().to_string();
     let dna_address = dna_address_string.as_str();
     let format = format!(
-        r#"{{"Ok":{{"dna_name":"TestApp","dna_address":"{}","agent_id":"{{\"nick\":\"show_env\",\"pub_sign_key\":\"HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i\"}}","agent_address":"HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i","cap_request":{{"cap_token":"QmNa15k7quxkQFY18LHZFgBJjUKksBEeHdvKedbkc411jz","provenance":["HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i","FxhnQJzPu+TPqJHCtT2e5CNMky2YnnLXtABMJyNhx5SyztyeuKU/zxS4a1e8uKdPYT5N0ldCcLgpITeHfB7dAg=="]}},"properties":"{{}}"}}}}"#,
+        r#"{{"Ok":{{"dna_name":"TestApp","dna_address":"{}","agent_id":"{{\"nick\":\"show_env\",\"pub_sign_key\":\"HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i\"}}","agent_address":"HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i","cap_request":{{"cap_token":"QmacQtFc5wsprnWqRNxZKBaWjjqdj2Cyp9haU5y4qwKQLw","provenance":["HcSCIBgTFMzn8vz5ogz5eW87h9nf5eqpdsJOKJ47ZRDopz74HihmraGXio74e6i","FxhnQJzPu+TPqJHCtT2e5CNMky2YnnLXtABMJyNhx5SyztyeuKU/zxS4a1e8uKdPYT5N0ldCcLgpITeHfB7dAg=="]}},"properties":"{{}}"}}}}"#,
         dna_address
     );
     let json_result = Ok(JsonString::from_json(&format));

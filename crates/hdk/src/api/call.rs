@@ -1,11 +1,14 @@
 use holochain_json_api::json::JsonString;
+// use holochain_json_api::json::RawString;
 use holochain_persistence_api::cas::content::Address;
+// use holochain_persistence_api::hash::HashString;
 use holochain_wasm_types::call::ZomeFnCallArgs;
 use holochain_wasmer_guest::host_call;
 use crate::api::hc_call;
 use crate::error::ZomeApiResult;
 use crate::error::ZomeApiError;
 use std::convert::TryFrom;
+use holochain_wasm_types::WasmResult;
 
 /// Call an exposed function from another zome or another (bridged) instance running
 /// in the same conductor.
@@ -242,21 +245,36 @@ use std::convert::TryFrom;
 ///
 /// # }
 /// ```
-pub fn call<S: Into<String>, O: TryFrom<JsonString>> (
+pub fn call<S: Into<String>, I: Into<JsonString>, O: TryFrom<JsonString>> (
     instance_handle: S,
     zome_name: S,
     cap_token: Address,
     fn_name: S,
-    fn_args: JsonString,
+    fn_args: I,
 ) -> ZomeApiResult<O>
-where O::Error: ToString{
-    match host_call!(hc_call, ZomeFnCallArgs {
+where O::Error: ToString + std::fmt::Debug, O: std::fmt::Debug{
+    let args_json: JsonString = fn_args.into();
+    let wasm_result: WasmResult = match host_call!(hc_call, ZomeFnCallArgs {
         instance_handle: instance_handle.into(),
         zome_name: zome_name.into(),
         cap_token,
         fn_name: fn_name.into(),
-        fn_args: String::from(fn_args),
+        fn_args: String::from(args_json),
     }) {
+        Ok(v) => {
+            crate::debug(format!("v {:?}", v)).ok();
+            v
+        },
+        Err(e) => {
+            crate::debug(format!("e {:?}", e)).ok();
+            return Err(ZomeApiError::Internal("first call error".into()));
+        },
+    };
+    let json: JsonString = match wasm_result {
+        WasmResult::Ok(json) => json,
+        WasmResult::Err(e) => return Err(ZomeApiError::Internal(format!("{:?}", e))),
+    };
+    match O::try_from(json) {
         Ok(v) => Ok(v),
         Err(e) => Err(ZomeApiError::Internal(e.to_string())),
     }

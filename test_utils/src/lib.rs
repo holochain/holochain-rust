@@ -405,6 +405,7 @@ pub fn start_holochain_instance<T: Into<String>>(
         "check_query",
         "check_app_entry_address",
         "check_sys_entry_address",
+        "check_call_inner",
         "check_call",
         "check_call_with_args",
         "send_message",

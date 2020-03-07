@@ -55,8 +55,10 @@ extern "C" {
 }
 
 fn zome_definition() -> ZomeDefinition {
+    crate::debug("zome_definition 0").ok();
     let mut zd = ZomeDefinition::new();
     unsafe { zome_setup(&mut zd) };
+    crate::debug("zome definition 1").ok();
     zd
 }
 
@@ -64,15 +66,26 @@ fn zome_definition() -> ZomeDefinition {
 pub extern "C" fn __hdk_get_validation_package_for_entry_type(
     host_allocation_ptr: AllocationPtr,
 ) -> AllocationPtr {
-    let name = host_string!(host_allocation_ptr);
+    let name: RawString = host_args!(host_allocation_ptr);
+    let name = String::from(name);
+
+    crate::debug(format!("foo {:?}", name)).ok();
 
     match zome_definition()
         .entry_types
         .into_iter()
         .find(|ref validating_entry_type| {
-            validating_entry_type.name == EntryType::App(AppEntryType::from(name.clone()))
+            crate::debug(format!("vet {:?}", &validating_entry_type.name)).ok();
+            let b = validating_entry_type.name == EntryType::App(AppEntryType::from(name.clone()));
+            crate::debug(format!("vet b {}", &b)).ok();
+            b
         }) {
-        Some(mut entry_type_definition) => ret!((*entry_type_definition.package_creator)()),
+        Some(mut entry_type_definition) => {
+            crate::debug("zzz").ok();
+            let r = (*entry_type_definition.package_creator)();
+            crate::debug(format!("bar {:?}", r)).ok();
+            ret!(r);
+        },
         None => ret!(WasmResult::Err(WasmError::CallbackFailed)),
     };
 }

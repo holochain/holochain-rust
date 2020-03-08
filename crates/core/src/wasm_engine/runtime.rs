@@ -11,7 +11,6 @@ use holochain_wasmer_host::WasmError;
 use wasmer_runtime::Ctx;
 use crate::workflows::debug::debug_workflow;
 use holochain_wasm_types::ZomeApiResult;
-use std::convert::TryInto;
 use crate::workflows::get_links_count::get_link_result_count_workflow;
 use crate::workflows::commit::commit_app_entry_workflow;
 use crate::workflows::get_entry_result::get_entry_result_workflow;
@@ -171,15 +170,11 @@ impl WasmCallData {
             ( $trace_span:literal, $trace_tag:literal, $workflow:ident ) => {{
                 let closure_arc = std::sync::Arc::clone(&arc);
                 move |ctx: &mut Ctx, guest_allocation_ptr: holochain_wasmer_host::AllocationPtr| -> ZomeApiResult {
-                    let guest_bytes = holochain_wasmer_host::guest::read_from_allocation_ptr(ctx, guest_allocation_ptr)?;
-                    let guest_json = JsonString::from_bytes(guest_bytes);
-                    println!("invoke_workflow: {}", &guest_json);
                     let context = std::sync::Arc::clone(&closure_arc.context().map_err(|_| WasmError::Unspecified )?);
+                    let guest_data = holochain_wasmer_host::guest::from_allocation_ptr(ctx, guest_allocation_ptr)?;
 
-                    // in general we will have more luck tracing json than arbitrary structs
-                    invoke_workflow_trace!(context, $trace_span, $trace_tag, guest_json);
-                    let args = guest_json.try_into()?;
-                    invoke_workflow_block_and_allocate!($workflow, context, args)
+                    invoke_workflow_trace!(context, $trace_span, $trace_tag, guest_data);
+                    invoke_workflow_block_and_allocate!($workflow, context, guest_data)
                 }
             }}
         }
@@ -227,19 +222,15 @@ impl WasmCallData {
                 "hc_call" => func!({
                     let closure_arc = std::sync::Arc::clone(&arc);
                     move |ctx: &mut Ctx, guest_allocation_ptr: holochain_wasmer_host::AllocationPtr| -> ZomeApiResult {
-                        println!("hc_call invoke");
-                        let guest_bytes = holochain_wasmer_host::guest::read_from_allocation_ptr(ctx, guest_allocation_ptr)?;
-                        let guest_json = JsonString::from_bytes(guest_bytes);
-                        println!("hc_call guest_json {:?}", &guest_json);
                         let context = std::sync::Arc::clone(&closure_arc.context().map_err(|_| WasmError::Unspecified )?);
+                        let guest_data = holochain_wasmer_host::guest::from_allocation_ptr(ctx, guest_allocation_ptr)?;
+                        println!("hc_call guest_data {:?}", &guest_data);
 
-                        invoke_workflow_trace!(context, "call_workflow", "ZomeFnCallArgs", guest_json);
-                        let args = guest_json.try_into()?;
-                        println!("hc_call args {:?}", &args);
+                        invoke_workflow_trace!(context, "call_workflow", "ZomeFnCallArgs", guest_data);
                         Ok(holochain_wasmer_host::json::to_allocation_ptr(
                             {
                                 let result: WasmResult = context.block_on(
-                                    call_workflow(Arc::clone(&context), Arc::clone(&closure_arc), &args)
+                                    call_workflow(Arc::clone(&context), Arc::clone(&closure_arc), &guest_data)
                                 ).map_err(|e| WasmError::Zome(e.to_string()))?;
                                 println!("hc_call r: {:?}", &result);
                                 JsonString::from(result)

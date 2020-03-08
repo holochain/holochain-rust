@@ -18,4 +18,4 @@ serde_derive = "=1.0.104"
 serde = "=1.0.104"
 holochain_json_derive = "=0.0.23"
 serde_json = { version = "=1.0.47", features = ["preserve_order"] }
-holochain_wasmer_guest = "=0.0.15"
+holochain_wasmer_guest = "=0.0.17"

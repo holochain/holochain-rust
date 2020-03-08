@@ -7,12 +7,12 @@ use holochain_json_api::json::JsonString;
 use holochain_core_types::error::HolochainError;
 use std::{fmt, sync::Arc};
 use wasmer_runtime::{error::RuntimeError, Instance, imports, func, compile};
-use wasmer_runtime::cache::{Cache, WasmHash};
+use wasmer_runtime::cache::{WasmHash, Cache};
 use holochain_wasmer_host::WasmError;
 use wasmer_runtime::Ctx;
 use crate::workflows::debug::debug_workflow;
 use holochain_wasm_types::ZomeApiResult;
-use crate::wasm_engine::memory_cache::MemoryCache;
+use crate::wasm_engine::memory_cache::MemoryFallbackFileSystemCache;
 use crate::workflows::get_links_count::get_link_result_count_workflow;
 use crate::workflows::commit::commit_app_entry_workflow;
 use crate::workflows::get_entry_result::get_entry_result_workflow;
@@ -316,7 +316,7 @@ impl WasmCallData {
             let ni_start = Instant::now();
 
             // let mut _fs_cache = unsafe { FileSystemCache::new("/tmp/holochain-wasmer/cache")? };
-            let mut cache = MemoryCache::new();
+            let mut cache = MemoryFallbackFileSystemCache::new("/tmp/holochain-wasmer/cache")?;
             // let key = WasmHash::generate(wasm);
             let key = WasmHash::generate(cache_key_bytes);
 

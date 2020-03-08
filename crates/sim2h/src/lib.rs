@@ -39,11 +39,11 @@ use std::{
     io::prelude::*,
 };
 
-use holochain_common::new_relic_setup;
+//use holochain_common::new_relic_setup;
 use holochain_locksmith::Mutex;
 use holochain_metrics::{config::MetricPublisherConfig, Metric};
 use holochain_tracing as ht;
-use holochain_tracing_macros::{autotrace, newrelic_autotrace};
+//use holochain_tracing_macros::{autotrace, newrelic_autotrace};
 use ht::prelude::*;
 use lazy_static::lazy_static;
 use sim2h_im_state::{MonoAspectHash, MonoEntryHash, StoreRef};
@@ -82,7 +82,7 @@ lazy_static! {
 const MAX_LOCK_TIMEOUT: u64 = 20000;
 
 //set up license_key
-new_relic_setup!("NEW_RELIC_LICENSE_KEY");
+//new_relic_setup!("NEW_RELIC_LICENSE_KEY");
 
 /// extention trait for making sure deadlocks are fatal
 pub(crate) trait MutexExt<T> {
@@ -1157,8 +1157,8 @@ pub struct Sim2h {
     metric_gen: MetricsTimerGenerator,
 }
 
-#[autotrace]
-#[newrelic_autotrace(SIM2H)]
+//#[autotrace]
+//#[newrelic_autotrace(SIM2H)]
 impl Sim2h {
     /// create a new Sim2h server instance
     pub fn new(

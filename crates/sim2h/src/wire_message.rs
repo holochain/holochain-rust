@@ -1,7 +1,7 @@
 //! encapsulates lib3h ghostmessage for sim2h including security challenge
 use crate::error::Sim2hError;
 use holochain_tracing as ht;
-use holochain_tracing_macros::newrelic_autotrace;
+//use holochain_tracing_macros::newrelic_autotrace;
 use lib3h_protocol::{data_types::Opaque, protocol::*, types::SpaceHash};
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, convert::TryFrom};
@@ -51,7 +51,7 @@ pub enum WireMessage {
     DebugResponse(BTreeMap<SpaceHash, String>),
 }
 
-#[newrelic_autotrace(SIM2H)]
+//#[newrelic_autotrace(SIM2H)]
 impl WireMessage {
     pub fn message_type(&self) -> String {
         String::from(match self {

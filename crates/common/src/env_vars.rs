@@ -42,6 +42,7 @@ impl EnvVar {
     }
 }
 
+/*
 #[macro_export]
 macro_rules! new_relic_setup {
     ($x:expr) => {
@@ -50,7 +51,7 @@ macro_rules! new_relic_setup {
                 std::env::var_os($x).and_then(|s| s.into_string().ok());
         }
     };
-}
+}*/
 
 #[test]
 fn test_macro() {

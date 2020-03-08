@@ -1,6 +1,6 @@
 use crate::{cloudwatch::CloudWatchLogger, logger::LoggerMetricPublisher, MetricPublisher};
 use holochain_locksmith::RwLock;
-use holochain_tracing_macros::newrelic_autotrace;
+//use holochain_tracing_macros::newrelic_autotrace;
 use std::sync::Arc;
 
 /// Unifies all possible metric publisher configurations
@@ -30,7 +30,7 @@ impl Default for MetricPublisherConfig {
     }
 }
 
-#[newrelic_autotrace(HOLOCHAIN_METRICS)]
+//#[newrelic_autotrace(HOLOCHAIN_METRICS)]
 impl MetricPublisherConfig {
     /// Instantiates a new metric publisher given this configuration instance.
     pub fn create_metric_publisher(&self) -> Arc<RwLock<dyn MetricPublisher>> {

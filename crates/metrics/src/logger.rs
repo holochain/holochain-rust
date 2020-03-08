@@ -1,6 +1,6 @@
 use crate::{Metric, MetricPublisher};
 use chrono::prelude::*;
-use holochain_tracing_macros::newrelic_autotrace;
+//use holochain_tracing_macros::newrelic_autotrace;
 use regex::Regex;
 use std::{
     convert::{TryFrom, TryInto},
@@ -133,7 +133,7 @@ impl TryFrom<LogLine> for Metric {
 }
 
 /// Produces an iterator of metric data given a log file name.
-#[newrelic_autotrace(HOLOCHAIN_METRICS)]
+//#[newrelic_autotrace(HOLOCHAIN_METRICS)]
 pub fn metrics_from_file(log_file: PathBuf) -> std::io::Result<Box<dyn Iterator<Item = Metric>>> {
     let file = std::fs::File::open(log_file.clone())?;
     let reader = BufReader::new(file);

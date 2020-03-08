@@ -5,7 +5,7 @@ use crate::websocket::{
     WssSrvMidHandshake, WssStream,
 };
 use holochain_tracing::prelude::*;
-use holochain_tracing_macros::newrelic_autotrace;
+//use holochain_tracing_macros::newrelic_autotrace;
 
 use lib3h::transport::error::{TransportError, TransportResult};
 
@@ -92,7 +92,7 @@ pub struct StreamManager<T: Read + Write + std::fmt::Debug> {
     acceptor: TransportResult<Acceptor<T>>,
 }
 
-#[newrelic_autotrace(SIM2H)]
+//#[newrelic_autotrace(SIM2H)]
 impl<T: Read + Write + std::fmt::Debug> StreamManager<T> {
     pub fn new(stream_factory: StreamFactory<T>, bind: Bind<T>, tls_config: TlsConfig) -> Self {
         StreamManager {

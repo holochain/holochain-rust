@@ -1,6 +1,6 @@
 //! abstraction for working with Websocket connections
 //! TcpStream specific functions
-use holochain_tracing_macros::newrelic_autotrace;
+//use holochain_tracing_macros::newrelic_autotrace;
 use lib3h::transport::error::{ErrorKind, TransportError, TransportResult};
 
 use crate::websocket::{
@@ -13,7 +13,7 @@ use url2::prelude::*;
 
 use std::net::{TcpListener, TcpStream};
 
-#[newrelic_autotrace(SIM2H)]
+//#[newrelic_autotrace(SIM2H)]
 impl StreamManager<std::net::TcpStream> {
     /// convenience constructor for creating a websocket "Transport"
     /// instance that is based of the rust std TcpStream

@@ -7,8 +7,8 @@
 
 #[macro_use]
 extern crate failure;
-#[macro_use]
-extern crate holochain_common;
+//#[macro_use]
+//extern crate holochain_common;
 #[macro_use]
 pub extern crate holochain_json_derive;
 extern crate holochain_tracing as ht;
@@ -33,4 +33,4 @@ pub mod p2p_network;
 pub mod sim2h_worker;
 pub mod tweetlog;
 
-new_relic_setup!("NEW_RELIC_LICENSE_KEY");
+//new_relic_setup!("NEW_RELIC_LICENSE_KEY");

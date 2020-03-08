@@ -14,8 +14,8 @@ extern crate lazy_static;
 #[macro_use]
 extern crate serde_derive;
 
-#[macro_use]
-extern crate holochain_common;
+//#[macro_use]
+//extern crate holochain_common;
 
 pub mod cloudwatch;
 pub mod config;
@@ -26,4 +26,4 @@ pub mod stats;
 pub use cloudwatch::*;
 pub use config::*;
 pub use metrics::*;
-new_relic_setup!("NEW_RELIC_LICENSE_KEY");
+//new_relic_setup!("NEW_RELIC_LICENSE_KEY");

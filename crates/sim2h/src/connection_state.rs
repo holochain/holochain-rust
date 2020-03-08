@@ -4,7 +4,7 @@ use lib3h_protocol::types::{AgentPubKey, SpaceHash};
 pub type AgentId = AgentPubKey;
 
 use crate::error::*;
-use holochain_tracing_macros::newrelic_autotrace;
+//use holochain_tracing_macros::newrelic_autotrace;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ConnectionState {
@@ -13,7 +13,7 @@ pub enum ConnectionState {
     Joined(SpaceHash, AgentId),
 }
 
-#[newrelic_autotrace(SIM2H)]
+//#[newrelic_autotrace(SIM2H)]
 impl ConnectionState {
     pub fn new() -> ConnectionState {
         ConnectionState::Limbo(Box::new(Vec::new()))

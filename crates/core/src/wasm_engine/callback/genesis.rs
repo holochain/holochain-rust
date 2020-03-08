@@ -1,7 +1,7 @@
 use super::call;
 use crate::{
     context::Context,
-    nucleus::ribosome::callback::{Callback, CallbackParams, CallbackResult},NEW_RELIC_LICENSE_KEY
+    nucleus::ribosome::callback::{Callback, CallbackParams, CallbackResult},//NEW_RELIC_LICENSE_KEY
 };
 use std::sync::Arc;
 

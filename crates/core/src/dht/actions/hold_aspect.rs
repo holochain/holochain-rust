@@ -18,6 +18,7 @@ pub struct HoldAspectFuture {
     aspect: EntryAspect,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Future for HoldAspectFuture {
     type Output = Result<(), HolochainError>;
 

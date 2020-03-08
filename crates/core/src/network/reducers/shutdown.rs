@@ -10,6 +10,8 @@ use lib3h_protocol::{data_types::SpaceData, protocol_client::Lib3hClientProtocol
 use log::error;
 use std::{thread::sleep, time::Duration};
 
+#[autotrace]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_shutdown(
     state: &mut NetworkState,
     _root_state: &State,
@@ -35,7 +37,7 @@ pub fn reduce_shutdown(
     });
 
     if let Some(mut network) = state.network.take() {
-        let _ = network.send(json);
+        let _ = network.send(ht::top_follower("reduce_shutdown").wrap(json).into());
 
         sleep(Duration::from_secs(2));
 

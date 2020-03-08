@@ -1,14 +1,21 @@
+extern crate holochain_tracing as ht;
 extern crate lib3h_sodium;
+extern crate log;
+extern crate newrelic;
 extern crate structopt;
+#[macro_use(new_relic_setup)]
+extern crate holochain_common;
 
+use holochain_tracing::prelude::*;
 use lib3h_protocol::uri::Builder;
 use lib3h_sodium::SodiumCryptoSystem;
-use log::error;
-use sim2h::{DhtAlgorithm, Sim2h, MESSAGE_LOGGER};
-use std::{path::PathBuf, process::exit};
+use newrelic::{LogLevel, LogOutput, NewRelicConfig};
+use sim2h::{run_sim2h, DhtAlgorithm, MESSAGE_LOGGER};
+use std::path::PathBuf;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
+#[structopt(rename_all = "kebab-case")]
 struct Cli {
     #[structopt(
         long,
@@ -17,6 +24,7 @@ struct Cli {
         default_value = "9000"
     )]
     port: u16,
+
     #[structopt(
         long,
         short,
@@ -24,18 +32,46 @@ struct Cli {
         default_value = "50"
     )]
     sharding: u64,
+
     #[structopt(
         long,
         short,
         help = "CSV file to log all incoming and outgoing messages to"
     )]
     message_log_file: Option<PathBuf>,
+
+    #[structopt(
+        long,
+        short,
+        help = "The service name to use for Jaeger tracing spans. No tracing is done if not specified."
+    )]
+    tracing_name: Option<String>,
+
+    #[structopt(
+        long,
+        help = "Outputs structured json from logging:
+    - None: No logging at all (fastest)
+    - Log: Output logs to stdout with spans (human readable)
+    - Compact: Same as Log but with less information
+    - Json: Output logs as structured json (machine readable)
+    ",
+        default_value = "Log"
+    )]
+    structured: ht::structured::Output,
 }
 
+new_relic_setup!("NEW_RELIC_LICENSE_KEY");
+#[holochain_tracing_macros::newrelic_autotrace(SIM2H_SERVER)]
 fn main() {
-    env_logger::init();
-
+    //this set up new relic needs
+    NewRelicConfig::default()
+        .logging(LogLevel::Error, LogOutput::StdErr)
+        .init()
+        .unwrap_or_else(|_| warn!("Could not configure new relic daemon"));
     let args = Cli::from_args();
+
+    ht::structured::init_fmt(args.structured, args.tracing_name)
+        .expect("Failed to start structed tracing");
 
     let host = "ws://0.0.0.0/";
     let uri = Builder::with_raw_url(host)
@@ -47,29 +83,14 @@ fn main() {
         MESSAGE_LOGGER.lock().start();
     }
 
-    let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), uri);
-    if args.sharding > 0 {
-        sim2h.set_dht_algorithm(DhtAlgorithm::NaiveSharding {
+    let (mut rt, _) = run_sim2h(
+        Box::new(SodiumCryptoSystem::new()),
+        uri,
+        DhtAlgorithm::NaiveSharding {
             redundant_count: args.sharding,
-        });
-    }
+        },
+    );
 
-    loop {
-        let result = sim2h.process();
-        match result {
-            Err(e) => {
-                if e.to_string().contains("Bind error:") {
-                    println!("{:?}", e);
-                    exit(1)
-                } else {
-                    error!("{}", e.to_string())
-                }
-            }
-            Ok(false) => {
-                // if no work sleep a little
-                std::thread::sleep(std::time::Duration::from_millis(1));
-            }
-            _ => (),
-        }
-    }
+    // just park the main thread indefinitely...
+    rt.block_on(futures::future::pending::<()>());
 }

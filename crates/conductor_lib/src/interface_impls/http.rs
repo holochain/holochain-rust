@@ -22,6 +22,7 @@ impl HttpInterface {
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl Interface for HttpInterface {
     fn run(
         &mut self,

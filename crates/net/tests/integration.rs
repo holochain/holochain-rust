@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate url2;
+extern crate holochain_tracing as ht;
 
 use holochain_conductor_lib_api::ConductorApi;
 use holochain_locksmith::{Mutex, RwLock};
@@ -14,8 +15,61 @@ use lib3h_protocol::{
     uri::Lib3hUri,
 };
 use lib3h_sodium::SodiumCryptoSystem;
-use sim2h::Sim2h;
+use sim2h::{run_sim2h, DhtAlgorithm};
 use std::sync::Arc;
+
+struct Server {
+    pub bound_uri: Lib3hUri,
+    pub thread: Option<std::thread::JoinHandle<()>>,
+    pub cont: Arc<Mutex<bool>>,
+}
+
+impl Drop for Server {
+    fn drop(&mut self) {
+        *self.cont.lock().unwrap() = false;
+        self.thread.take().unwrap().join().unwrap();
+    }
+}
+
+impl Server {
+    pub fn new(url: &str) -> Self {
+        let url = url2!("{}", url);
+
+        let (snd, rcv) = crossbeam_channel::unbounded();
+
+        let cont = Arc::new(Mutex::new(true));
+
+        let srv_cont = cont.clone();
+        let thread = Some(std::thread::spawn(move || {
+            let (mut rt, binding) = run_sim2h(
+                Box::new(SodiumCryptoSystem::new()),
+                Lib3hUri(url.into()),
+                DhtAlgorithm::FullSync,
+            );
+            rt.block_on(async move {
+                tokio::task::spawn(async move {
+                    snd.send(binding.await.unwrap()).unwrap();
+                });
+
+                while *srv_cont.lock().unwrap() {
+                    tokio::time::delay_for(std::time::Duration::from_millis(1)).await;
+                }
+            });
+        }));
+
+        let bound_uri = rcv.recv().unwrap();
+
+        Self {
+            bound_uri,
+            thread,
+            cont,
+        }
+    }
+
+    pub fn bound_uri(&self) -> &Lib3hUri {
+        &self.bound_uri
+    }
+}
 
 #[test]
 fn sim2h_worker_talks_to_sim2h() {
@@ -30,27 +84,8 @@ fn sim2h_worker_talks_to_sim2h() {
     let enc = hcid::HcidEncoding::with_kind("hcs0").unwrap();
     let agent_id = enc.encode(&*pub_key).unwrap();
 
-    let (snd, rcv) = crossbeam_channel::unbounded();
-    let cont = Arc::new(Mutex::new(true));
-
-    let srv_cont = cont.clone();
-    let sim2h_join = std::thread::spawn(move || {
-        let url = url2!("ws://127.0.0.1:0");
-        let mut sim2h = Sim2h::new(Box::new(SodiumCryptoSystem::new()), Lib3hUri(url.into()));
-
-        snd.send(sim2h.bound_uri.clone().unwrap()).unwrap();
-        drop(snd);
-
-        while *srv_cont.lock().unwrap() {
-            if let Err(e) = sim2h.process() {
-                panic!("{:?}", e);
-            }
-
-            std::thread::yield_now();
-        }
-    });
-
-    let bound_uri = rcv.recv().unwrap();
+    let srv = Server::new("ws://127.0.0.1:0");
+    let bound_uri = srv.bound_uri().clone();
     println!("GOT BOUND: {:?}", bound_uri);
 
     // -- beg sim2h worker test -- //
@@ -119,7 +154,7 @@ fn sim2h_worker_talks_to_sim2h() {
     let result_data_worker = result_data.clone();
     let mut worker = Sim2hWorker::new(
         NetHandler::new(Box::new(move |msg| {
-            match msg.unwrap() {
+            match msg.unwrap().data {
                 Lib3hServerProtocol::HandleGetAuthoringEntryList(info) => {
                     println!("HANDLE A LIST: {:?}", info);
                     ResultData::as_mut(&result_data_worker).got_handle_a_list = true;
@@ -141,46 +176,63 @@ fn sim2h_worker_talks_to_sim2h() {
             Ok(())
         })),
         Sim2hConfig {
-            sim2h_url: bound_uri.as_str().to_string(),
+            sim2h_url: srv.bound_uri().as_str().to_string(),
         },
         agent_id.clone().into(),
         ConductorApi::new(io.clone()),
+        None,
     )
     .unwrap();
     worker.set_full_sync(true);
 
     worker
-        .receive(Lib3hClientProtocol::JoinSpace(SpaceData {
-            agent_id: agent_id.clone().into(),
-            request_id: "".to_string(),
-            space_address: "BLA".to_string().into(),
-        }))
-        .unwrap();
-
-    worker
-        .receive(Lib3hClientProtocol::PublishEntry(ProvidedEntryData {
-            space_address: "BLA".to_string().into(),
-            provider_agent_id: agent_id.clone().into(),
-            entry: EntryData {
-                entry_address: "BLA".to_string().into(),
-                aspect_list: vec![EntryAspectData {
-                    aspect_address: "BLA".to_string().into(),
-                    type_hint: "".to_string(),
-                    aspect: b"BLA".to_vec().into(),
-                    publish_ts: 0,
-                }],
+        .receive(ht::test_wrap_enc(Lib3hClientProtocol::JoinSpace(
+            SpaceData {
+                agent_id: agent_id.clone().into(),
+                request_id: "".to_string(),
+                space_address: "BLA".to_string().into(),
             },
-        }))
+        )))
+        .unwrap();
+
+    for _ in 0..5 {
+        std::thread::sleep(std::time::Duration::from_millis(25));
+
+        println!("tick: {:?}", worker.tick());
+    }
+
+    // now close the client connection (and set timing for reconnect)
+    // to prove out join space is properly re-sent
+    worker.test_close_connection_cause_reconnect();
+
+    worker
+        .receive(ht::test_wrap_enc(Lib3hClientProtocol::PublishEntry(
+            ProvidedEntryData {
+                space_address: "BLA".to_string().into(),
+                provider_agent_id: agent_id.clone().into(),
+                entry: EntryData {
+                    entry_address: "BLA".to_string().into(),
+                    aspect_list: vec![EntryAspectData {
+                        aspect_address: "BLA".to_string().into(),
+                        type_hint: "".to_string(),
+                        aspect: b"BLA".to_vec().into(),
+                        publish_ts: 0,
+                    }],
+                },
+            },
+        )))
         .unwrap();
 
     worker
-        .receive(Lib3hClientProtocol::SendDirectMessage(DirectMessageData {
-            space_address: "BLA".to_string().into(),
-            request_id: "".to_string(),
-            to_agent_id: agent_id.clone().into(),
-            from_agent_id: agent_id.clone().into(),
-            content: b"BLA".to_vec().into(),
-        }))
+        .receive(ht::test_wrap_enc(Lib3hClientProtocol::SendDirectMessage(
+            DirectMessageData {
+                space_address: "BLA".to_string().into(),
+                request_id: "".to_string(),
+                to_agent_id: agent_id.clone().into(),
+                from_agent_id: agent_id.clone().into(),
+                content: b"BLA".to_vec().into(),
+            },
+        )))
         .unwrap();
 
     for _ in 0..40 {
@@ -194,9 +246,6 @@ fn sim2h_worker_talks_to_sim2h() {
     }
 
     // -- end sim2h worker test -- //
-
-    *cont.lock().unwrap() = false;
-    sim2h_join.join().unwrap();
 
     assert!(ResultData::is_ok(&result_data));
 }

@@ -1,10 +1,8 @@
-extern crate native_tls;
-extern crate openssl;
-
 use crate::websocket::{FAKE_PASS, FAKE_PKCS12};
 
 use lib3h::transport::error::TransportResult;
 
+use holochain_tracing_macros::newrelic_autotrace;
 use openssl::{
     asn1::Asn1Time,
     bn::{BigNum, MsbOption},
@@ -14,6 +12,7 @@ use openssl::{
     x509::{self, X509Name, X509},
 };
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
+use serde::{Deserialize, Serialize};
 
 // Generates a key/cert pair
 fn generate_pair() -> (PKey<Private>, x509::X509) {
@@ -54,6 +53,7 @@ pub struct TlsCertificate {
     pub(in crate::websocket) passphrase: String,
 }
 
+#[newrelic_autotrace(SIM2H)]
 impl TlsCertificate {
     /// Creates a self-signed certificate with an entropy key and passphrase.
     /// This makes it possible to use a TLS encrypted connection securely between two
@@ -84,6 +84,7 @@ pub enum TlsConfig {
     SuppliedCertificate(TlsCertificate),
 }
 
+#[newrelic_autotrace(SIM2H)]
 impl TlsConfig {
     pub fn build_from_entropy() -> Self {
         TlsConfig::SuppliedCertificate(TlsCertificate::build_from_entropy())

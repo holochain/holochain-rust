@@ -1,4 +1,4 @@
-use crate::{sim1h_worker::Sim1hConfig, sim2h_worker::Sim2hConfig};
+use crate::sim2h_worker::Sim2hConfig;
 use holochain_json_api::{error::JsonError, json::JsonString};
 use lib3h::engine::{EngineConfig, GatewayId, TransportConfig};
 use lib3h_protocol::uri::Lib3hUri;
@@ -12,9 +12,7 @@ use url::Url;
 #[derive(Deserialize, Serialize, Clone, Debug, DefaultJson, PartialEq, Eq)]
 pub enum P2pBackendKind {
     GhostEngineMemory,
-    N3H,
     LIB3H,
-    SIM1H,
     SIM2H,
     LegacyInMemory,
 }
@@ -24,9 +22,7 @@ impl FromStr for P2pBackendKind {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "GhostEngineMemory" => Ok(P2pBackendKind::GhostEngineMemory),
-            "N3H" => Ok(P2pBackendKind::N3H),
             "LIB3H" => Ok(P2pBackendKind::LIB3H),
-            "SIM1H" => Ok(P2pBackendKind::SIM1H),
             "SIM2H" => Ok(P2pBackendKind::SIM2H),
             "LegacyInMemory" => Ok(P2pBackendKind::LegacyInMemory),
             _ => Err(()),
@@ -38,9 +34,7 @@ impl From<P2pBackendKind> for String {
     fn from(kind: P2pBackendKind) -> String {
         String::from(match kind {
             P2pBackendKind::GhostEngineMemory => "GhostEngineMemory",
-            P2pBackendKind::N3H => "N3H",
             P2pBackendKind::LIB3H => "LIB3H",
-            P2pBackendKind::SIM1H => "SIM1H",
             P2pBackendKind::SIM2H => "SIM2H",
             P2pBackendKind::LegacyInMemory => "LegacyInMemory",
         })
@@ -67,7 +61,6 @@ pub enum BackendConfig {
     Json(serde_json::Value),
     Lib3h(EngineConfig),
     Memory(EngineConfig),
-    Sim1h(Sim1hConfig),
     Sim2h(Sim2hConfig),
 }
 
@@ -94,6 +87,7 @@ impl P2pConfig {
 }
 
 // Constructors
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl P2pConfig {
     pub fn new(
         backend_kind: P2pBackendKind,
@@ -119,64 +113,10 @@ impl P2pConfig {
             .expect("Invalid backend_config json on P2pConfig creation.")
     }
 
-    pub fn default_ipc_spawn() -> Self {
-        P2pConfig::from_str(P2pConfig::DEFAULT_N3H_SPAWN_CONFIG)
-            .expect("Invalid backend_config json on P2pConfig creation.")
-    }
-
-    pub fn new_ipc_uri(
-        maybe_ipc_binding: Option<String>,
-        bootstrap_nodes: &Vec<String>,
-        maybe_end_user_config_filepath: Option<String>,
-    ) -> Self {
-        let backend_config = BackendConfig::Json(json!({
-            "socketType": "ws",
-            "blockConnect": false,
-            "bootstrapNodes": bootstrap_nodes,
-            "ipcUri": maybe_ipc_binding
-        }));
-        P2pConfig::new(
-            P2pBackendKind::N3H,
-            backend_config,
-            Some(P2pConfig::load_end_user_config(
-                maybe_end_user_config_filepath,
-            )),
-        )
-    }
-
-    pub fn default_ipc_uri(maybe_ipc_binding: Option<&str>) -> Self {
-        match maybe_ipc_binding {
-            None => P2pConfig::from_str(P2pConfig::DEFAULT_N3H_URI_CONFIG)
-                .expect("Invalid backend_config json on P2pConfig creation."),
-            Some(ipc_binding) => {
-                let backend_config = BackendConfig::Json(json!({
-                    "socketType": "ws",
-                    "blockConnect": false,
-                    "ipcUri": ipc_binding
-                }));
-                P2pConfig::new(
-                    P2pBackendKind::N3H,
-                    backend_config,
-                    Some(P2pConfig::default_end_user_config()),
-                )
-            }
-        }
-    }
-
     pub fn new_with_memory_backend(server_name: &str) -> Self {
         P2pConfig::new(
             P2pBackendKind::LegacyInMemory,
             BackendConfig::Json(Self::memory_backend_json(server_name)),
-            None,
-        )
-    }
-
-    pub fn new_with_sim1h_backend(dynamo_path: &str) -> Self {
-        P2pConfig::new(
-            P2pBackendKind::SIM1H,
-            BackendConfig::Sim1h(Sim1hConfig {
-                dynamo_url: dynamo_path.into(),
-            }),
             None,
         )
     }
@@ -251,6 +191,7 @@ impl P2pConfig {
 }
 
 /// end_user config
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl P2pConfig {
     pub fn default_end_user_config() -> serde_json::Value {
         json!({
@@ -295,7 +236,6 @@ impl P2pConfig {
             BackendConfig::Lib3h(config) => Some(config),
             BackendConfig::Memory(config) => Some(config),
             BackendConfig::Json(_) => None,
-            BackendConfig::Sim1h(_) => None,
             BackendConfig::Sim2h(_) => None,
         }
     }
@@ -309,32 +249,6 @@ impl P2pConfig {
       "backend_config": {
         "socketType": "ws",
         "logLevel": "i"
-      }
-    }"#;
-
-    pub const DEFAULT_N3H_SPAWN_CONFIG: &'static str = r#"
-    {
-      "backend_kind": "N3H",
-      "backend_config": {
-        "socketType": "ws",
-        "spawn": {
-          "cmd": "node",
-          "env": {
-            "N3H_MODE": "HACK",
-            "N3H_IPC_SOCKET": "tcp://127.0.0.1:*",
-            "N3H_LOG_LEVEL": "i"
-          }
-        }
-      }
-    }"#;
-
-    pub const DEFAULT_N3H_URI_CONFIG: &'static str = r#"
-    {
-      "backend_kind": "N3H",
-      "backend_config": {
-        "socketType": "ws",
-        "ipcUri": "tcp://127.0.0.1:0",
-        "blockConnect": false
       }
     }"#;
 }

@@ -10,6 +10,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 /// args: [0] encoded MemoryAllocation as u64
 /// Expected complex argument: GetLinksArgs
 /// Returns an HcApiReturnCode as I64
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
     // deserialize args
@@ -76,8 +77,8 @@ pub mod tests {
     ) -> Vec<u8> {
         let args = GetLinksArgs {
             entry_address: base.clone(),
-            link_type: link_type.to_regex_string().unwrap(),
-            tag: tag.to_regex_string().unwrap(),
+            link_type: link_type.into(),
+            tag: tag.into(),
             options: Default::default(),
         };
         println!("GetLinksArgs: {:?}", args);
@@ -435,7 +436,7 @@ pub mod tests {
         let expected = JsonString::from_json(
             &(format!(
                 r#"{{"ok":true,"value":"{{\"links\":[{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}},{{\"address\":\"{}\",\"headers\":[],\"tag\":\"{}\",\"status\":\"live\"}}]}}","error":"null"}}"#,
-                entry_addresses[1], "test-tag1", entry_addresses[1], "test-tag2",
+                entry_addresses[1], "test-tag2", entry_addresses[1], "test-tag1",
             ) + "\u{0}"),
         );
         assert_eq!(call_result, expected,);

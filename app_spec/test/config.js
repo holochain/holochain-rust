@@ -14,12 +14,6 @@ const network =
   : networkType === 'memory'
   ? Config.network('memory')
 
-  : networkType === 'sim1h'
-  ? {
-    type: 'sim1h',
-    dynamo_url: 'http://localhost:8000'
-  }
-
   : networkType === 'sim2h'
   ? {
     type: 'sim2h',
@@ -28,6 +22,11 @@ const network =
 
   : (() => {throw new Error(`Unsupported network type: ${networkType}`)})()
 )
+
+const networkOffline = {
+  type: 'sim2h',
+  sim2h_url: 'ws://bogus:666'
+}
 
 const logger = {
   type: 'debug',
@@ -66,13 +65,23 @@ const logger = {
   state_dump: true
 }
 
-const commonConfig = { logger, network }
+const tracing = ({playerName}) => ({
+  type: 'jaeger',
+  service_name: `holochain-${playerName}`
+})
+
+const commonConfig = { logger, network, tracing }
 
 module.exports = {
   one: Config.gen({
       app: dna
     },
     commonConfig
+  ),
+  oneOffline: Config.gen({
+        app: dna
+      },
+      { logger, network: networkOffline, tracing }
   ),
   two: Config.gen({
       app1: dna,

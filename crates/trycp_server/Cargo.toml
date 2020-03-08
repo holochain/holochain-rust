@@ -1,6 +1,6 @@
 [package]
 name = "trycp_server"
-version = "0.0.42-alpha5"
+version = "0.0.44-alpha3"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 description = "Conductor provisioner server for try-o-rama"
@@ -12,15 +12,20 @@ documentation = "https://github.com/holochain/holochain-rust"
 repository = "https://github.com/holochain/holochain-rust"
 
 [dependencies]
+in_stream = { version = "=0.0.44-alpha3", path = "../in_stream" }
 log = "0.4.8"
 env_logger = "0.7.0"
 structopt = "0.2.15"
 jsonrpc-core = "14.0"
 jsonrpc-ws-server = "14.0"
-serde_json = { version = "=1.0.39", features = ["preserve_order"] }
+serde_json = { version = "=1.0.47", features = ["preserve_order"] }
+serde_derive = "=1.0.104"
+serde = "=1.0.104"
 base64 = "=0.10.1"
 tempfile = "=3.0.7"
-lazy_static = "=1.2.0"
+lazy_static = "=1.4.0"
 nix = "=0.14.1"
 reqwest = "=0.9.11"
 regex = "=1.1.2"
+snowflake = "=1.3.0"
+url2 = "=0.0.4"

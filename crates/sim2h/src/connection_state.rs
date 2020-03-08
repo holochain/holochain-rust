@@ -4,14 +4,16 @@ use lib3h_protocol::types::{AgentPubKey, SpaceHash};
 pub type AgentId = AgentPubKey;
 
 use crate::error::*;
+use holochain_tracing_macros::newrelic_autotrace;
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ConnectionState {
     #[allow(clippy::all)]
     Limbo(Box<Vec<WireMessage>>),
     Joined(SpaceHash, AgentId),
 }
 
+#[newrelic_autotrace(SIM2H)]
 impl ConnectionState {
     pub fn new() -> ConnectionState {
         ConnectionState::Limbo(Box::new(Vec::new()))

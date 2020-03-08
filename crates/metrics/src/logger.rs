@@ -1,5 +1,6 @@
 use crate::{Metric, MetricPublisher};
 use chrono::prelude::*;
+use holochain_tracing_macros::newrelic_autotrace;
 use regex::Regex;
 use std::{
     convert::{TryFrom, TryInto},
@@ -132,6 +133,7 @@ impl TryFrom<LogLine> for Metric {
 }
 
 /// Produces an iterator of metric data given a log file name.
+#[newrelic_autotrace(HOLOCHAIN_METRICS)]
 pub fn metrics_from_file(log_file: PathBuf) -> std::io::Result<Box<dyn Iterator<Item = Metric>>> {
     let file = std::fs::File::open(log_file.clone())?;
     let reader = BufReader::new(file);
@@ -163,7 +165,7 @@ mod tests {
     #[test]
     fn can_convert_log_line_to_metric() {
         let line = format!(
-            "DEBUG 2019-10-30 10:34:44 [holochain_metrics::metrics] net_worker_thread/puid-4-2e crates/metrics/src/logger.rs:33 {} sim2h_worker.tick.latency 123", METRIC_TAG);
+            "DEBUG 2019-10-30 10:34:44 #[holochain_metrics::metrics] net_worker_thread/puid-4-2e crates/metrics/src/logger.rs:33 {} sim2h_worker.tick.latency 123", METRIC_TAG);
         let log_line = LogLine(line.to_string());
         let metric: Result<Metric, _> = log_line.try_into();
 

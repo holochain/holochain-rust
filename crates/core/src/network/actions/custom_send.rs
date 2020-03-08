@@ -14,6 +14,8 @@ use std::{pin::Pin, sync::Arc, time::SystemTime};
 /// SendDirectMessage Action Creator for custom (=app) messages
 /// This triggers the network module to open a synchronous node-to-node connection
 /// by sending the given CustomDirectMessage and preparing to receive a response.
+#[autotrace]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn custom_send(
     to_agent: Address,
     custom_direct_message: CustomDirectMessage,
@@ -48,6 +50,7 @@ pub struct SendResponseFuture {
     id: String,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Future for SendResponseFuture {
     type Output = Result<String, HolochainError>;
 

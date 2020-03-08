@@ -6,6 +6,9 @@
 #[macro_use]
 extern crate lazy_static;
 
+#[macro_use]
+extern crate holochain_common;
+
 pub const CONTEXT_SIZE: usize = 8;
 pub const SEED_SIZE: usize = 32;
 pub const AGENT_ID_CTX: [u8; 8] = *b"HCAGNTID";
@@ -24,3 +27,5 @@ pub mod keypair;
 pub mod password_encryption;
 pub mod seed;
 pub mod utils;
+
+new_relic_setup!("NEW_RELIC_LICENSE_KEY");

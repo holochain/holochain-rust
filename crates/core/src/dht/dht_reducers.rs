@@ -23,6 +23,7 @@ type DhtReducer = fn(&DhtStore, &ActionWrapper) -> Option<DhtStore>;
 
 /// DHT state-slice Reduce entry point.
 /// Note: Can't block when dispatching action here because we are inside the reduce's mutex
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce(old_store: Arc<DhtStore>, action_wrapper: &ActionWrapper) -> Arc<DhtStore> {
     // Get reducer
     let reducer = match resolve_reducer(action_wrapper) {
@@ -39,6 +40,7 @@ pub fn reduce(old_store: Arc<DhtStore>, action_wrapper: &ActionWrapper) -> Arc<D
 }
 
 /// Maps incoming action to the correct reducer
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
     match action_wrapper.action() {
         Action::Commit(_) => Some(reduce_commit_entry),
@@ -50,6 +52,7 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<DhtReducer> {
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn reduce_commit_entry(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
@@ -65,6 +68,7 @@ pub(crate) fn reduce_commit_entry(
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn reduce_hold_aspect(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
@@ -95,7 +99,7 @@ pub(crate) fn reduce_hold_aspect(
             let entry = Entry::LinkAdd(link_data.clone());
             match reduce_add_remove_link_inner(
                 &mut new_store,
-                link_data.link(),
+                link_data,
                 &entry.address(),
                 LinkModification::Add,
             ) {
@@ -110,10 +114,9 @@ pub(crate) fn reduce_hold_aspect(
             links_to_remove
                 .iter()
                 .fold(new_store, |mut store, link_addresses| {
-                    let link = link_data.link();
                     let _ = reduce_add_remove_link_inner(
                         &mut store,
-                        link,
+                        link_data,
                         link_addresses,
                         LinkModification::Remove,
                     );
@@ -147,6 +150,7 @@ pub(crate) fn reduce_hold_aspect(
 }
 
 #[allow(dead_code)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub(crate) fn reduce_get_links(
     _old_store: &DhtStore,
     _action_wrapper: &ActionWrapper,
@@ -157,12 +161,18 @@ pub(crate) fn reduce_get_links(
 
 #[allow(unknown_lints)]
 #[allow(clippy::needless_pass_by_value)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_queue_holding_workflow(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
     let action = action_wrapper.action();
     let (pending, maybe_delay) = unwrap_to!(action => Action::QueueHoldingWorkflow);
+
+    // TODO: TRACING: this is where we would include a Span, so that we can resume
+    // the trace when the workflow gets popped (see instance.rs), but we can't do that
+    // until we stop cloning the State, because Spans are not Cloneable.
+
     let entry_aspect = EntryAspect::from((**pending).clone());
     if old_store.get_holding_map().contains(&entry_aspect) {
         error!("Tried to add pending validation to queue which is already held!");
@@ -184,6 +194,7 @@ pub fn reduce_queue_holding_workflow(
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_prune(old_store: &DhtStore, _action_wrapper: &ActionWrapper) -> Option<DhtStore> {
     let pruned_queue = old_store
         .queued_holding_workflows
@@ -208,6 +219,7 @@ pub fn reduce_prune(old_store: &DhtStore, _action_wrapper: &ActionWrapper) -> Op
 
 #[allow(unknown_lints)]
 #[allow(clippy::needless_pass_by_value)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_remove_queued_holding_workflow(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
@@ -215,21 +227,7 @@ pub fn reduce_remove_queued_holding_workflow(
     let action = action_wrapper.action();
     let pending = unwrap_to!(action => Action::RemoveQueuedHoldingWorkflow);
     let mut new_store = (*old_store).clone();
-    if let Some(PendingValidationWithTimeout { pending: front, .. }) =
-        new_store.queued_holding_workflows.front()
-    {
-        if front == pending {
-            let _ = new_store.queued_holding_workflows.pop_front();
-        } else {
-            // The first item in the queue could be a delayed one which will result
-            // in the holding thread seeing another item as the next one.
-            // The holding thread will still try to pop that next item, so we need
-            // this else case where we just remove an item from some position inside the queue:
-            new_store
-                .queued_holding_workflows
-                .retain(|PendingValidationWithTimeout { pending: item, .. }| item != pending);
-        }
-    } else {
+    if let None = new_store.remove_holding_workflow(pending) {
         error!("Got Action::PopNextHoldingWorkflow on an empty holding queue!");
     }
 
@@ -338,8 +336,9 @@ pub mod tests {
 
         let new_dht_store = (*reduce(store.dht(), &action)).clone();
 
-        let get_links_query = create_get_links_eavi_query(entry.address(), test_link, test_tag)
-            .expect("supposed to create link query");
+        let get_links_query =
+            create_get_links_eavi_query(entry.address(), Some(test_link), Some(test_tag))
+                .expect("supposed to create link query");
         let fetched = new_dht_store.fetch_eavi(&get_links_query);
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();
@@ -402,9 +401,12 @@ pub mod tests {
         let new_dht_store = reduce(new_dht_store, &action_link_remove);
 
         //fetch from dht and when tombstone is found return tombstone
-        let get_links_query =
-            create_get_links_eavi_query(entry.address(), test_link.clone(), test_tag.clone())
-                .expect("supposed to create link query");
+        let get_links_query = create_get_links_eavi_query(
+            entry.address(),
+            Some(test_link.clone()),
+            Some(test_tag.clone()),
+        )
+        .expect("supposed to create link query");
         let fetched = new_dht_store.fetch_eavi(&get_links_query);
 
         //fetch call should be okay and remove_link tombstone should be the one that should be returned
@@ -428,9 +430,12 @@ pub mod tests {
         let new_dht_store = reduce(store.dht(), &action_link_add);
 
         //fetch from dht after link with same chain header is added
-        let get_links_query =
-            create_get_links_eavi_query(entry.address(), test_link.clone(), test_tag.clone())
-                .expect("supposed to create link query");
+        let get_links_query = create_get_links_eavi_query(
+            entry.address(),
+            Some(test_link.clone()),
+            Some(test_tag.clone()),
+        )
+        .expect("supposed to create link query");
         let fetched = new_dht_store.fetch_eavi(&get_links_query);
 
         //fetch call should be okay and remove_link tombstone should be the one that should be returned since tombstone is applied to target hashes that are the same
@@ -461,8 +466,9 @@ pub mod tests {
         let new_dht_store_2 = reduce(store.dht(), &action_link_add);
 
         //after new link has been added return from fetch and make sure tombstone and new link is added
-        let get_links_query = create_get_links_eavi_query(entry.address(), test_link, test_tag)
-            .expect("supposed to create link query");
+        let get_links_query =
+            create_get_links_eavi_query(entry.address(), Some(test_link), Some(test_tag))
+                .expect("supposed to create link query");
         let fetched = new_dht_store_2.fetch_eavi(&get_links_query);
 
         //two entries should be returned which is the new_link and the tombstone since the tombstone doesn't apply for the new link
@@ -506,8 +512,9 @@ pub mod tests {
 
         let new_dht_store = reduce(store.dht(), &action);
 
-        let get_links_query = create_get_links_eavi_query(entry.address(), test_link, test_tag)
-            .expect("supposed to create link query");
+        let get_links_query =
+            create_get_links_eavi_query(entry.address(), Some(test_link), Some(test_tag))
+                .expect("supposed to create link query");
         let fetched = new_dht_store.fetch_eavi(&get_links_query);
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();

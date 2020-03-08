@@ -28,6 +28,7 @@ pub struct Initialization {
     payload: Option<String>,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Initialization {
     pub fn new() -> Initialization {
         Initialization::default()
@@ -49,6 +50,8 @@ const INITIALIZATION_TIMEOUT: u64 = 60;
 /// the Dna error or errors from the init callback.
 ///
 /// Use futures::executor::block_on to wait for an initialized instance.
+#[autotrace]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn initialize_chain(
     dna: Dna,
     context: &Arc<Context>,
@@ -72,7 +75,7 @@ pub async fn initialize_chain(
     fn dispatch_error_result(context: &Arc<Context>, err: HolochainError) {
         context
             .action_channel()
-            .send(ActionWrapper::new(Action::ReturnInitializationResult(Err(
+            .send_wrapped(ActionWrapper::new(Action::ReturnInitializationResult(Err(
                 err.to_string(),
             ))))
             .expect("Action channel not usable in initialize_chain()");
@@ -171,7 +174,7 @@ pub async fn initialize_chain(
 
     context_clone
         .action_channel()
-        .send(ActionWrapper::new(Action::ReturnInitializationResult(
+        .send_wrapped(ActionWrapper::new(Action::ReturnInitializationResult(
             initialization_result,
         )))
         .expect("Action channel not usable in initialize_chain()");
@@ -188,6 +191,7 @@ pub struct InitializingFuture {
     context: Arc<Context>,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Future for InitializingFuture {
     type Output = Result<NucleusStatus, HolochainError>;
 
@@ -225,6 +229,7 @@ pub struct InitializationFuture {
     created_at: Instant,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Future for InitializationFuture {
     type Output = Result<NucleusStatus, HolochainError>;
 

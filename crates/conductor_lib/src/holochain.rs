@@ -123,6 +123,7 @@ pub struct Holochain {
     active: bool,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl Holochain {
     /// create a new Holochain instance.  Ensure that they are built w/ the same
     /// HDK Version, or log a warning.

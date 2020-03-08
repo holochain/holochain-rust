@@ -13,7 +13,9 @@ commands:
    - run:
       no_output_timeout: 45m
       command: ./docker/build << parameters.box >> $CIRCLE_BRANCH
-   - run: ./docker/push << parameters.box >> $CIRCLE_BRANCH
+   - run:
+      no_output_timeout: 20m
+      command: ./docker/push << parameters.box >> $CIRCLE_BRANCH
 
 jobs:
  # must be called build for local circle cli to work
@@ -27,6 +29,13 @@ jobs:
    - run:
       command: nix-shell --run hc-rust-test
       no_output_timeout: 20m
+
+ code-coverage:
+  machine: true
+  resource_class: xlarge
+  steps:
+   - checkout
+   - run: docker run --env CODECOV_TOKEN --rm --security-opt seccomp=unconfined -v $(pwd):/project holochain/holochain-rust:circle.build.develop sh -c "cd /project && nix-shell --run hc-rust-coverage-kcov"
 
  fmt:
   docker:
@@ -84,24 +93,6 @@ jobs:
           exit 1
         fi
 
- app-spec-tests-sim1h:
-  docker:
-   - image: holochain/holochain-rust:circle.sim1h.develop
-  resource_class: xlarge
-  steps:
-   - checkout
-   - run:
-       name: DynamoDB
-       command: nix-shell --run dynamodb
-       background: true
-   - run:
-      name: wait for dynamodb
-      command: nix-shell --run 'aws dynamodb list-tables --endpoint-url=http://localhost:8000'
-   - run:
-       name: app spec tests
-       command: nix-shell --run 'hc-test-app-spec app_spec sim1h'
-       no_output_timeout: 20m
-
  app-spec-tests-sim2h:
    docker:
      - image: holochain/holochain-rust:circle.sim2h.develop
@@ -118,24 +109,6 @@ jobs:
          command: nix-shell --run 'hc-test-app-spec app_spec sim2h'
          no_output_timeout: 20m
 
- stress-tests-sim1h:
-  docker:
-   - image: holochain/holochain-rust:circle.sim1h.develop
-  resource_class: xlarge
-  steps:
-   - checkout
-   - run:
-       name: DynamoDB
-       command: nix-shell --run dynamodb-memory
-       background: true
-   - run:
-      name: wait for dynamodb
-      command: nix-shell --run 'aws dynamodb list-tables --endpoint-url=http://localhost:8000'
-   - run:
-       name: stress tests
-       command: nix-shell --run hc-stress-test-sim1h
-       no_output_timeout: 20m
-
  stress-tests-sim2h:
    docker:
      - image: holochain/holochain-rust:circle.sim2h.develop
@@ -144,7 +117,7 @@ jobs:
      - checkout
      - run:
          name: sim2h server
-         command: nix-shell --run "hc-sim2h-server -p 9002"
+         command: nix-shell --run "hc-sim2h-server -p 9002 --structured None"
          background: true
          no_output_timeout: 20m
      - run:
@@ -187,6 +160,7 @@ jobs:
        nix-shell --run hc-release-github-binaries
 
  deploy-linux:
+  resource_class: xlarge
   docker:
    - image: holochain/holonix:ubuntu
   steps:
@@ -221,13 +195,6 @@ jobs:
   steps:
    - build-docker:
       box: circle.build
-
- docker-build-circle-sim1h:
-  resource_class: large
-  machine: true
-  steps:
-   - build-docker:
-      box: circle.sim1h
 
  docker-build-circle-sim2h:
   resource_class: large
@@ -285,18 +252,23 @@ workflows:
    - build
    - fmt
    # @todo flakey websocket connections
-   # - app-spec-tests-sim1h
-   # - stress-tests-sim1h
    - app-spec-tests-sim2h
    - stress-tests-sim2h
    - cli-tests
    - wasm-conductor-tests
 
+   - code-coverage:
+      filters:
+       branches:
+        only:
+         - develop
+         - test-kcov
+         # NOTE - add your branche here if working on coverage
+
    - docker-build-minimal:
       filters:
        branches:
         only:
-         - 2019-12-23-docker-aws-push
          - develop
          - final-exam
    - docker-build-trycp-server:
@@ -312,11 +284,7 @@ workflows:
         only:
          - develop
          - final-exam
-         - 2019-12-26-debug-cli-docker
    - docker-build-circle-build:
-      requires:
-       - docker-build-latest
-   - docker-build-circle-sim1h:
       requires:
        - docker-build-latest
    - docker-build-circle-sim2h:

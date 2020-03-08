@@ -4,9 +4,10 @@ description = "holochain core commons"
 license = "GPL-3.0-only"
 homepage = "https://github.com/holochain/holochain-rust"
 documentation = "https://github.com/holochain/holochain-rust"
-version = "0.0.42-alpha5"
+version = "0.0.44-alpha3"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
 [dependencies]
 directories = "=1.0.2"
+lazy_static = "=1.4.0"

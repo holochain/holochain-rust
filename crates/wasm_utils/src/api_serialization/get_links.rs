@@ -1,12 +1,17 @@
-use holochain_core_types::{chain_header::ChainHeader, crud_status::CrudStatus, time::Timeout};
+use holochain_core_types::{
+    chain_header::ChainHeader,
+    crud_status::CrudStatus,
+    network::query::{Pagination, SortOrder},
+    time::Timeout,
+};
 use holochain_json_api::{error::JsonError, json::*};
 use holochain_persistence_api::cas::content::Address;
 
 #[derive(Deserialize, Default, Debug, Serialize, Clone, PartialEq, Eq, Hash, DefaultJson)]
 pub struct GetLinksArgs {
     pub entry_address: Address,
-    pub link_type: String,
-    pub tag: String,
+    pub link_type: Option<String>,
+    pub tag: Option<String>,
     pub options: GetLinksOptions,
 }
 
@@ -16,26 +21,20 @@ pub enum LinksStatusRequestKind {
     Deleted,
     All,
 }
+
 impl Default for LinksStatusRequestKind {
     fn default() -> Self {
         LinksStatusRequestKind::Live
     }
 }
 
-#[derive(Deserialize, Debug, Serialize, DefaultJson, Clone, PartialEq, Hash, Eq)]
+#[derive(Deserialize, Default, Debug, Serialize, DefaultJson, Clone, PartialEq, Hash, Eq)]
 pub struct GetLinksOptions {
     pub status_request: LinksStatusRequestKind,
     pub headers: bool,
     pub timeout: Timeout,
-}
-impl Default for GetLinksOptions {
-    fn default() -> Self {
-        GetLinksOptions {
-            status_request: LinksStatusRequestKind::default(),
-            headers: false,
-            timeout: Default::default(),
-        }
-    }
+    pub pagination: Option<Pagination>,
+    pub sort_order: Option<SortOrder>,
 }
 
 #[derive(Deserialize, Clone, Serialize, Debug, DefaultJson, PartialEq)]
@@ -46,7 +45,7 @@ pub struct LinksResult {
     pub status: CrudStatus,
 }
 
-#[derive(Deserialize, Clone, Serialize, Debug, DefaultJson)]
+#[derive(Deserialize, Clone, Serialize, Debug, DefaultJson, PartialEq)]
 pub struct GetLinksResult {
     links: Vec<LinksResult>,
 }

@@ -1,8 +1,10 @@
 use crate::websocket::{mem_stream::*, streams::*, tls::TlsConfig, wss_info::WssInfo};
 use lib3h::transport::error::*;
 
+use holochain_tracing_macros::newrelic_autotrace;
 use url2::prelude::*;
 
+#[newrelic_autotrace(SIM2H)]
 impl StreamManager<MemStream> {
     pub fn with_mem_stream(tls_config: TlsConfig) -> Self {
         let bind: Bind<MemStream> = Box::new(move |url| Self::mem_bind(&Url2::from(url)));

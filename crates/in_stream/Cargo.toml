@@ -1,6 +1,6 @@
 [package]
 name = "in_stream"
-version = "0.0.42-alpha5"
+version = "0.0.44-alpha3"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 description = "trait system for facilitating non-blocking stream chaining with handshaking"
@@ -14,13 +14,16 @@ repository = "https://github.com/holochain/holochain-rust"
 [dependencies]
 crossbeam-channel = "0.3"
 env_logger = "0.6"
-lazy_static = "=1.2.0"
+lazy_static = "=1.4.0"
 log = "0.4"
 nanoid = "0.2"
 native-tls = "0.2"
 net2 = "0.2"
 openssl = "0.10"
 parking_lot = "0.9"
+serde = { version = "=1.0.104", features = ["rc"] }
+serde_json = { version = "=1.0.47", features = ["preserve_order"] }
+serde_derive = "=1.0.104"
 shrinkwraprs = "0.2"
 tungstenite = "0.9.2"
 url2 = "0.0.4"

@@ -12,12 +12,11 @@ use holochain_core_types::{
     },
     error::HolochainError,
     signature::{Provenance, Signature},
-    ugly::lax_send_sync,
 };
 
-use holochain_persistence_api::cas::content::{Address, AddressableContent};
-
 use holochain_json_api::json::JsonString;
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
+use holochain_tracing::channel::lax_send_wrapped;
 
 use holochain_dpki::utils::Verify;
 
@@ -33,6 +32,7 @@ pub struct ExecuteZomeFnResponse {
     result: ZomeFnResult,
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl ExecuteZomeFnResponse {
     pub fn new(call: ZomeFnCall, result: Result<JsonString, HolochainError>) -> Self {
         ExecuteZomeFnResponse { call, result }
@@ -62,6 +62,8 @@ impl ExecuteZomeFnResponse {
 /// the call result gets added there through the `RetunrZomeFunctionResult` action.
 ///
 /// Use Context::block_on to wait for the call result.
+#[autotrace]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn call_zome_function(
     zome_call: ZomeFnCall,
     context: Arc<Context>,
@@ -84,7 +86,7 @@ pub async fn call_zome_function(
     // Signal (currently mainly to the nodejs_waiter) that we are about to start a zome function:
     context
         .action_channel()
-        .send(ActionWrapper::new(Action::QueueZomeFunctionCall(
+        .send_wrapped(ActionWrapper::new(Action::QueueZomeFunctionCall(
             zome_call.clone(),
         )))
         .expect("action channel to be open");
@@ -105,6 +107,7 @@ pub async fn call_zome_function(
 }
 
 /// validates that a given zome function call specifies a correct zome function and capability grant
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn validate_call(
     context: Arc<Context>,
     fn_call: &ZomeFnCall,
@@ -142,10 +145,12 @@ pub fn validate_call(
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn is_token_the_agent(context: Arc<Context>, request: &CapabilityRequest) -> bool {
     context.agent_id.pub_sign_key == request.cap_token.to_string()
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn get_grant(context: &Arc<Context>, address: &Address) -> Option<CapTokenGrant> {
     match get_entry_from_agent_chain(context, address).ok()?? {
         Entry::CapTokenGrant(grant) => Some(grant),
@@ -155,6 +160,7 @@ fn get_grant(context: &Arc<Context>, address: &Address) -> Option<CapTokenGrant>
 
 /// checks to see if a given function call is allowable according to the capabilities
 /// that have been registered to callers by looking for grants in the chain.
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn check_capability(context: Arc<Context>, fn_call: &ZomeFnCall) -> bool {
     let maybe_grant = get_grant(&context.clone(), &fn_call.cap_token());
     match maybe_grant {
@@ -163,11 +169,13 @@ pub fn check_capability(context: Arc<Context>, fn_call: &ZomeFnCall) -> bool {
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn encode_call_data_for_signing<J: Into<JsonString>>(function: &str, parameters: J) -> String {
     base64::encode(&format!("{}:{}", function, parameters.into()))
 }
 
 // temporary function to create a mock signature of for a zome call cap request
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn make_call_sig<J: Into<JsonString>>(
     context: Arc<Context>,
     function: &str,
@@ -183,6 +191,7 @@ fn make_call_sig<J: Into<JsonString>>(
 }
 
 // temporary function to verify a mock signature of for a zome call cap request
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn verify_call_sig<J: Into<JsonString>>(
     provenance: &Provenance,
     function: &str,
@@ -193,6 +202,7 @@ pub fn verify_call_sig<J: Into<JsonString>>(
 }
 
 /// creates a capability request for a zome call by signing the function name and parameters
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn make_cap_request_for_call<J: Into<JsonString>>(
     callers_context: Arc<Context>,
     cap_token: Address,
@@ -207,6 +217,7 @@ pub fn make_cap_request_for_call<J: Into<JsonString>>(
 }
 
 /// verifies that this grant is valid for a given requester and token value
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &ZomeFnCall) -> bool {
     let cap_functions = grant.functions();
     let maybe_zome_grants = cap_functions.get(&fn_call.zome_name);
@@ -273,6 +284,7 @@ pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &Zome
     }
 }
 
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn spawn_zome_function(context: Arc<Context>, zome_call: ZomeFnCall) {
     std::thread::Builder::new()
         .name(format!("{:?}", zome_call))
@@ -293,7 +305,7 @@ pub fn spawn_zome_function(context: Arc<Context>, zome_call: ZomeFnCall) {
                 context,
                 "actions/call_zome_fn: sending ReturnZomeFunctionResult action."
             );
-            lax_send_sync(
+            lax_send_wrapped(
                 context.action_channel().clone(),
                 ActionWrapper::new(Action::ReturnZomeFunctionResult(response)),
                 "call_zome_function",
@@ -315,7 +327,7 @@ pub struct CallResultFuture {
 }
 
 impl Unpin for CallResultFuture {}
-
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Future for CallResultFuture {
     type Output = Result<JsonString, HolochainError>;
 

@@ -9,6 +9,7 @@ use crate::{
 /// otherwise set the failed message
 #[allow(unknown_lints)]
 #[allow(clippy::needless_pass_by_value)]
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_return_initialization_result(
     state: &mut NucleusState,
     _root_state: &State,
@@ -43,6 +44,7 @@ pub mod tests {
     };
     use crossbeam_channel::unbounded;
     use holochain_core_types::dna::Dna;
+    use holochain_tracing as ht;
     use std::sync::Arc;
 
     #[test]
@@ -51,9 +53,10 @@ pub mod tests {
         let dna = Dna::new();
         let action_wrapper = ActionWrapper::new(Action::InitializeChain(dna));
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
-        let (sender, _receiver) = unbounded::<ActionWrapper>();
+        let (sender, _receiver) = unbounded::<ht::SpanWrap<ActionWrapper>>();
         let (tx_observer, _observer) = unbounded::<Observer>();
-        let context = test_context_with_channels("jimmy", &sender, &tx_observer, None).clone();
+        let context =
+            test_context_with_channels("jimmy", &sender.into(), &tx_observer, None).clone();
         let root_state = test_store(context);
 
         // Reduce Init action

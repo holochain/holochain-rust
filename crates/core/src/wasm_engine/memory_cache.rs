@@ -28,6 +28,32 @@ impl MemoryFallbackFileSystemCache {
         })
     }
 
+    fn load_with_backend_mem(&self, key: WasmHash, backend: Backend) -> Result<Module, CacheError> {
+        let cache = HASHCACHE.lock().unwrap();
+        let backend_key = backend.to_string();
+        match cache.get(backend_key) {
+            Some(module_cache) => {
+                match module_cache.get(&key) {
+                    Some(module) => Ok(module.to_owned()),
+                    _ => Err(CacheError::InvalidatedCache),
+                }
+            },
+            _ => Err(CacheError::InvalidatedCache),
+        }
+    }
+
+    fn load_with_backend_fs(&self, key: WasmHash, backend: Backend) -> Result<Module, CacheError> {
+        // we did not find anything in memory so fallback to fs
+        match self.fs_fallback.load_with_backend(key, backend) {
+            Ok(module) => {
+                // update the memory cache so we load faster next time
+                self.store_mem(key, module.clone())?;
+                Ok(module)
+            },
+            Err(e) => Err(e),
+        }
+    }
+
     fn store_mem(&self, key: WasmHash, module: Module) -> Result<(), CacheError> {
         let mut cache = HASHCACHE.lock().unwrap();
         let backend_key = module.info().backend.to_string();
@@ -51,29 +77,11 @@ impl Cache for MemoryFallbackFileSystemCache {
     }
 
     fn load_with_backend(&self, key: WasmHash, backend: Backend) -> Result<Module, CacheError> {
-        // local scope to keep mutex happy
-        {
-            let cache = HASHCACHE.lock().unwrap();
-            let backend_key = backend.to_string();
-            match cache.get(backend_key) {
-                Some(module_cache) => {
-                    match module_cache.get(&key) {
-                        // short circuit with what we found in memory :D
-                        Some(module) => return Ok(module.to_owned()),
-                        _ => (),
-                    }
-                },
-                _ => (),
-            };
-        }
-        // we did not find anything in memory so fallback to fs
-        match self.fs_fallback.load_with_backend(key, backend) {
-            Ok(module) => {
-                // update the memory cache so we load faster next time
-                self.store_mem(key, module.clone())?;
-                Ok(module)
-            },
-            Err(e) => Err(e),
+        match self.load_with_backend_mem(key, backend) {
+            Ok(module) => Ok(module),
+            Err(_) => {
+                self.load_with_backend_fs(key, backend)
+            }
         }
     }
 

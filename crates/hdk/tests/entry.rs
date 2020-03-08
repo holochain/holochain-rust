@@ -372,30 +372,3 @@ fn can_commit_entry() {
         JsonString::from(example_valid_entry_address()),
     );
 }
-#[test]
-fn can_return_empty_string_as_validation_fail() {
-    let (mut hc, _, _) =
-        start_holochain_instance("can_return_empty_string_as_validation_fail", "alice");
-
-    // Call the exposed wasm function that calls the Commit API function
-    let result = make_test_call(
-        &mut hc,
-        "check_commit_entry",
-        &String::from(JsonString::from(empty_string_validation_fail_entry())),
-    );
-    let path = PathBuf::new()
-        .join("crates")
-        .join("core")
-        .join("src")
-        .join("wasm_engine")
-        .join("runtime.rs");
-    let path_string = path
-        .as_path()
-        .to_str()
-        .expect("path should have been created");
-    let formatted_path_string = path_string.replace("\\", &vec!["\\", "\\", "\\", "\\"].join(""));
-    let expected_substr = format!("{{\"Internal\":\"{{\\\"kind\\\":{{\\\"ValidationFailed\\\":\\\"\\\"}},\\\"file\\\":\\\"{}\\\"",formatted_path_string);
-    let result_str = result.unwrap().to_string();
-
-    assert!(result_str.contains(&expected_substr));
-}

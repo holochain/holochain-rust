@@ -315,25 +315,14 @@ impl WasmCallData {
         let new_instance = |cache_key_bytes: &[u8], wasm: &Vec<u8>| {
             let ni_start = Instant::now();
 
-            // let mut _fs_cache = unsafe { FileSystemCache::new("/tmp/holochain-wasmer/cache")? };
             let mut cache = MemoryFallbackFileSystemCache::new("/tmp/holochain-wasmer/cache")?;
-            // let key = WasmHash::generate(wasm);
             let key = WasmHash::generate(cache_key_bytes);
 
-            let duration = ni_start.elapsed();
-            println!("Time elapsed in instance() ni 0 is: {:?}", duration);
-
             let module = match cache.load(key) {
-                Ok(module) => {
-                    let duration = ni_start.elapsed();
-                    println!("Time elapsed in instance() ni !cached! is: {:?}", duration);
-                    module
-                },
+                Ok(module) => module,
                 Err(_) => {
                     let module = compile(wasm).map_err(|e| HolochainError::from(e.to_string()))?;
                     cache.store(key, module.clone()).expect("could not store compiled wasm");
-                    let duration = ni_start.elapsed();
-                    println!("Time elapsed in instance() ni !not-cached! is: {:?}", duration);
                     module
                 }
             };

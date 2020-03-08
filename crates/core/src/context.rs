@@ -222,7 +222,7 @@ impl Context {
         self.state = Some(state);
     }
 
-    #[autotrace]
+    //#[autotrace]
     pub fn state(&self) -> Option<StateWrapper> {
         self.state.as_ref().map(|s| {
             while self.redux_wants_write.load(Relaxed) {
@@ -236,7 +236,7 @@ impl Context {
     /// Returns immediately either with the lock or with None if the lock
     /// is occupied already.
     /// Also returns None if the context was not initialized with a state.
-    #[no_autotrace]
+    //#[no_autotrace]
     pub fn try_state(&self) -> Option<RwLockReadGuard<StateWrapper>> {
         if self.redux_wants_write.load(Relaxed) {
             None
@@ -252,7 +252,7 @@ impl Context {
         self.state().map(move |state| state.network())
     }
 
-    #[autotrace]
+    //#[autotrace]
     pub fn get_dna(&self) -> Option<Dna> {
         // In the case of init we encounter race conditions with regards to setting the DNA.
         // Init gets called asynchronously right after dispatching an action that sets the DNA in
@@ -284,7 +284,7 @@ impl Context {
         dna
     }
 
-    #[autotrace]
+    //#[autotrace]
     pub fn get_wasm(&self, zome: &str) -> Option<DnaWasm> {
         let dna = self.get_dna().expect("Callback called without DNA set!");
         dna.get_wasm_from_zome_name(zome)
@@ -353,7 +353,7 @@ impl Context {
     /// Custom future executor that enables nested futures and nested calls of `block_on`.
     /// This makes use of the redux action loop and the observers.
     /// The given future gets polled everytime the instance's state got changed.
-    #[autotrace]
+    //#[autotrace]
     pub fn block_on<F: Future>(&self, future: F) -> <F as Future>::Output {
         let tick_rx = self.create_observer();
         pin_utils::pin_mut!(future);
@@ -382,7 +382,7 @@ impl Context {
     }
 
     /// returns the public capability token (if any)
-    #[autotrace]
+    //#[autotrace]
     pub fn get_public_token(&self) -> Result<Address, HolochainError> {
         let state = self.state().ok_or("State uninitialized!")?;
         let top = state
@@ -440,7 +440,7 @@ impl Context {
     }
 }
 
-#[autotrace]
+//#[autotrace]
 pub async fn get_dna_and_agent(context: &Arc<Context>) -> HcResult<(Address, String)> {
     let state = context
         .state()

@@ -50,7 +50,7 @@ const INITIALIZATION_TIMEOUT: u64 = 60;
 /// the Dna error or errors from the init callback.
 ///
 /// Use futures::executor::block_on to wait for an initialized instance.
-#[autotrace]
+//#[autotrace]
 //#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn initialize_chain(
     dna: Dna,

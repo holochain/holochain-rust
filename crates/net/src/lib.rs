@@ -22,8 +22,8 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 
-#[macro_use]
-extern crate holochain_tracing_macros;
+//#[macro_use]
+//extern crate holochain_tracing_macros;
 pub mod connection;
 pub mod error;
 pub mod in_memory;

@@ -95,7 +95,7 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     runtime.store_result(result)
 }
 
-#[autotrace]
+//#[autotrace]
 //#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
     let context = runtime.context().map_err(|_| {
@@ -116,7 +116,7 @@ fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString
     result
 }
 
-#[autotrace]
+//#[autotrace]
 //#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
     let context = runtime.context().map_err(|_| {

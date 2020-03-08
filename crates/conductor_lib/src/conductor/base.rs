@@ -168,7 +168,7 @@ pub fn notify(msg: String) {
     println!("{}", msg);
 }
 
-#[autotrace]
+////#[autotrace]
 //#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl Conductor {
     pub fn from_config(config: Configuration) -> Self {

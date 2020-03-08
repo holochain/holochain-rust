@@ -39,7 +39,7 @@ pub struct AgentState {
     initial_agent_address: Address,
 }
 
-#[autotrace]
+//#[autotrace]
 //#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl AgentState {
     /// builds a new, empty AgentState

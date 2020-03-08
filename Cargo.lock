@@ -1101,7 +1101,6 @@ dependencies = [
  "holochain_persistence_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_persistence_file 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_tracing 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_tracing_macros 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_wasm_utils 0.0.44-alpha3",
  "ignore 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "in_stream 0.0.44-alpha3",
@@ -1219,7 +1218,6 @@ dependencies = [
  "holochain_core_types 0.0.44-alpha3",
  "holochain_locksmith 0.0.44-alpha3",
  "holochain_tracing 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_tracing_macros 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h_sodium 0.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1263,7 +1261,6 @@ dependencies = [
  "holochain_persistence_mem 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_persistence_pickle 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_tracing 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_tracing_macros 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_wasm_utils 0.0.44-alpha3",
  "hyper 0.12.25 (registry+https://github.com/rust-lang/crates.io-index)",
  "json-patch 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1304,7 +1301,6 @@ dependencies = [
  "holochain_common 0.0.44-alpha3",
  "holochain_core_types 0.0.44-alpha3",
  "holochain_locksmith 0.0.44-alpha3",
- "holochain_tracing_macros 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_wasm_utils 0.0.44-alpha3",
  "jsonrpc-core 14.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonrpc-lite 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1351,7 +1347,6 @@ dependencies = [
  "holochain_persistence_lmdb 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_persistence_mem 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_tracing 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_tracing_macros 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_wasm_utils 0.0.44-alpha3",
  "im 14.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "itertools 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1427,7 +1422,6 @@ dependencies = [
  "holochain_common 0.0.44-alpha3",
  "holochain_core_types 0.0.44-alpha3",
  "holochain_persistence_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_tracing_macros 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h_sodium 0.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1511,7 +1505,6 @@ dependencies = [
  "holochain_common 0.0.44-alpha3",
  "holochain_locksmith 0.0.44-alpha3",
  "holochain_logging 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_tracing_macros 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-derive 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1555,7 +1548,6 @@ dependencies = [
  "holochain_metrics 0.0.44-alpha3",
  "holochain_persistence_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_tracing 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_tracing_macros 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "in_stream 0.0.44-alpha3",
  "jsonrpc-core 14.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1732,21 +1724,6 @@ dependencies = [
  "tracing-core 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "tracing-serde 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tracing-subscriber 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "holochain_tracing_macros"
-version = "0.0.22"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_tracing 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "newrelic 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "proc-macro2 1.0.9 (registry+https://github.com/rust-lang/crates.io-index)",
- "quote 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "syn 1.0.16 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -2531,20 +2508,6 @@ dependencies = [
  "libc 0.2.66 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
-
-[[package]]
-name = "newrelic"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "newrelic-sys 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "newrelic-sys"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "nickel"
@@ -4037,7 +4000,6 @@ dependencies = [
  "holochain_metrics 0.0.44-alpha3",
  "holochain_persistence_api 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_tracing 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_tracing_macros 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "im 14.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "in_stream 0.0.44-alpha3",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -4077,7 +4039,6 @@ dependencies = [
  "futures 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_common 0.0.44-alpha3",
  "holochain_tracing 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
- "holochain_tracing_macros 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h 0.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h_protocol 0.0.39 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -5631,7 +5592,6 @@ dependencies = [
 "checksum holochain_persistence_mem 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)" = "bf45bd3a7d8e7a0b32ee78f1793d2a6c8b38e3c047a4622f896c5af5dbd21aec"
 "checksum holochain_persistence_pickle 0.0.17 (registry+https://github.com/rust-lang/crates.io-index)" = "dd09d8cefe9229380445dc616b15077f6ffe94d1afd6082ffd7b51cb11e911cb"
 "checksum holochain_tracing 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)" = "9172240b1df04a67e151ba7b9f71fa97e69f11dfc1aa88cd930d3edee642d8ba"
-"checksum holochain_tracing_macros 0.0.22 (registry+https://github.com/rust-lang/crates.io-index)" = "99f1f9a41d4218f9cdd855332b1ca8b4c1eefe67e1ee2267204236eeef699dd8"
 "checksum hostname 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)" = "21ceb46a83a85e824ef93669c8b390009623863b5c195d1ba747292c0c72f94e"
 "checksum http 0.1.21 (registry+https://github.com/rust-lang/crates.io-index)" = "d6ccf5ede3a895d8856620237b2f02972c1bbc78d2965ad7fe8838d4a0ed41f0"
 "checksum http_req 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "23fdb3445813f5f5e7fdb9d93df8f1c7e382237f2656b21c42e93e3a63e25c11"
@@ -5707,8 +5667,6 @@ dependencies = [
 "checksum nanoid 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ef553a0f07a7a45c731f0c5d83cf9ef9caddf7407e413142731db416504bfe0f"
 "checksum native-tls 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "4b2df1a4c22fd44a62147fd8f13dd0f95c9d8ca7b2610299b2a2f9cf8964274e"
 "checksum net2 0.2.33 (registry+https://github.com/rust-lang/crates.io-index)" = "42550d9fb7b6684a6d404d9fa7250c2eb2646df731d1c06afc06dcee9e1bcf88"
-"checksum newrelic 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "f7ec1eb312ccd33c2d88ff317d59164465a41014ad465ba8a67e2c062343e3a8"
-"checksum newrelic-sys 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "0a9b9030b5f433ac2afb956eeaf89020e07d3cb9b0561cd07f1737c97a4af93a"
 "checksum nickel 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e5061a832728db2dacb61cefe0ce303b58f85764ec680e71d9138229640a46d9"
 "checksum nix 0.14.1 (registry+https://github.com/rust-lang/crates.io-index)" = "6c722bee1037d430d0f8e687bbdbf222f27cc6e4e68d5caf630857bb2b6dbdce"
 "checksum nix 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3b2e0b4f3320ed72aaedb9a5ac838690a8047c7b275da22711fddff4f8a14229"

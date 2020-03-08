@@ -466,7 +466,7 @@ impl Sim2hWorker {
         }
     }
 
-    #[autotrace]
+    ////#[autotrace]
     fn self_store_authored_aspects(&mut self) {
         if !self.has_self_stored_authored_aspects
             && self.initial_gossiping_list.is_some()

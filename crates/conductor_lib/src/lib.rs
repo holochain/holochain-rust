@@ -89,8 +89,8 @@
 extern crate holochain_core;
 #[macro_use]
 extern crate holochain_json_derive;
-#[macro_use]
-extern crate holochain_tracing_macros;
+//#[macro_use]
+//extern crate holochain_tracing_macros;
 #[macro_use]
 extern crate log;
 #[macro_use]

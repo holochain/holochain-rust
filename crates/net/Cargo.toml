@@ -30,7 +30,7 @@ holochain_core_types = { version = "=0.0.44-alpha3", path = "../core_types" }
 holochain_locksmith = { version = "=0.0.44-alpha3", path = "../locksmith" }
 holochain_json_derive = "=0.0.23"
 holochain_json_api = "=0.0.23"
-holochain_tracing_macros = "=0.0.22"
+#holochain_tracing_macros = "=0.0.22"
 holochain_persistence_api = "=0.0.17"
 holochain_common = { version = "=0.0.44-alpha3", path = "../common" }
 in_stream = { version = "=0.0.44-alpha3", path = "../in_stream" }

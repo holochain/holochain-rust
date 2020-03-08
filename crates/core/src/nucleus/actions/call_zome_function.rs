@@ -62,7 +62,7 @@ impl ExecuteZomeFnResponse {
 /// the call result gets added there through the `RetunrZomeFunctionResult` action.
 ///
 /// Use Context::block_on to wait for the call result.
-#[autotrace]
+//#[autotrace]
 //#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn call_zome_function(
     zome_call: ZomeFnCall,

@@ -10,7 +10,7 @@ use holochain_persistence_api::cas::content::AddressableContent;
 use lib3h_protocol::{data_types::SpaceData, protocol_client::Lib3hClientProtocol, Address};
 use log::{debug, error, info};
 
-#[autotrace]
+//#[autotrace]
 //#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_init(state: &mut NetworkState, root_state: &State, action_wrapper: &ActionWrapper) {
     let action = action_wrapper.action();

@@ -1157,7 +1157,7 @@ pub struct Sim2h {
     metric_gen: MetricsTimerGenerator,
 }
 
-//#[autotrace]
+////#[autotrace]
 //#[newrelic_autotrace(SIM2H)]
 impl Sim2h {
     /// create a new Sim2h server instance

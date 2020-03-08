@@ -1,14 +1,14 @@
 use crate::{agent::state::create_entry_with_header_for_header, content_store::GetContent};
 use holochain_logging::prelude::*;
-#[autotrace]
+//#[autotrace]
 pub mod fetch;
-#[autotrace]
+//#[autotrace]
 pub mod lists;
-#[autotrace]
+//#[autotrace]
 pub mod query;
-#[autotrace]
+//#[autotrace]
 pub mod send;
-#[autotrace]
+//#[autotrace]
 pub mod store;
 
 use crate::{
@@ -112,7 +112,7 @@ MessageData {{
 }
 
 // TODO Implement a failure workflow?
-#[autotrace]
+//#[autotrace]
 fn handle_failure_result(
     context: &Arc<Context>,
     failure_data: GenericResultData,

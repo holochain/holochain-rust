@@ -17,7 +17,7 @@ use serde::{
 };
 use std::{collections::VecDeque, convert::TryFrom, fmt};
 
-#[autotrace]
+//#[autotrace]
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]
 pub enum NucleusStatus {
     New,

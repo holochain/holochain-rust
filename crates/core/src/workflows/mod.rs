@@ -1,26 +1,26 @@
-#[autotrace]
+//#[autotrace]
 pub mod application;
-#[autotrace]
+//#[autotrace]
 pub mod author_entry;
-#[autotrace]
+//#[autotrace]
 pub mod get_entry_result;
-#[autotrace]
+//#[autotrace]
 pub mod get_link_result;
-#[autotrace]
+//#[autotrace]
 pub mod get_links_count;
-#[autotrace]
+//#[autotrace]
 pub mod handle_custom_direct_message;
-#[autotrace]
+//#[autotrace]
 pub mod hold_entry;
-#[autotrace]
+//#[autotrace]
 pub mod hold_entry_remove;
-#[autotrace]
+//#[autotrace]
 pub mod hold_entry_update;
-#[autotrace]
+//#[autotrace]
 pub mod hold_link;
-#[autotrace]
+//#[autotrace]
 pub mod remove_link;
-#[autotrace]
+//#[autotrace]
 pub mod respond_validation_package_request;
 
 use crate::{
@@ -54,7 +54,7 @@ use std::sync::Arc;
 /// or build it locally if we are the source (one of the sources).
 /// Checks the DNA's validation package definition for the given entry type.
 /// Fails if this entry type needs more than just the header for validation.
-#[autotrace]
+//#[autotrace]
 pub(crate) async fn try_make_local_validation_package(
     entry_with_header: &EntryWithHeader,
     validation_package_definition: &ValidationPackageDefinition,
@@ -92,7 +92,7 @@ pub(crate) async fn try_make_local_validation_package(
 }
 
 /// Gets hold of the validation package for the given entry by trying several different methods.
-#[autotrace]
+//#[autotrace]
 async fn validation_package(
     entry_with_header: &EntryWithHeader,
     context: Arc<Context>,

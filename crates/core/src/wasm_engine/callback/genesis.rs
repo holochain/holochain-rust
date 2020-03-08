@@ -5,7 +5,7 @@ use crate::{
 };
 use std::sync::Arc;
 
-#[autotrace]
+//#[autotrace]
 //#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn init(
     context: Arc<Context>,

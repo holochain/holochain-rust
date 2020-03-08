@@ -234,7 +234,7 @@ fn detect_dupes<'a, I: Iterator<Item = &'a String>>(
     }
 }
 
-#[autotrace]
+////#[autotrace]
 //#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl Configuration {
     /// This function basically checks if self is a semantically valid configuration.

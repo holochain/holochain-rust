@@ -69,22 +69,14 @@ pub extern "C" fn __hdk_get_validation_package_for_entry_type(
     let name: RawString = host_args!(host_allocation_ptr);
     let name = String::from(name);
 
-    crate::debug(format!("foo {:?}", name)).ok();
-
     match zome_definition()
         .entry_types
         .into_iter()
         .find(|ref validating_entry_type| {
-            crate::debug(format!("vet {:?}", &validating_entry_type.name)).ok();
-            let b = validating_entry_type.name == EntryType::App(AppEntryType::from(name.clone()));
-            crate::debug(format!("vet b {}", &b)).ok();
-            b
+            validating_entry_type.name == EntryType::App(AppEntryType::from(name.clone()))
         }) {
         Some(mut entry_type_definition) => {
-            crate::debug("zzz").ok();
-            let r = (*entry_type_definition.package_creator)();
-            crate::debug(format!("bar {:?}", r)).ok();
-            ret!(r);
+            ret!((*entry_type_definition.package_creator)());
         },
         None => ret!(WasmResult::Err(WasmError::CallbackFailed)),
     };

@@ -51,10 +51,11 @@ macro_rules! new_relic_setup {
                 std::env::var_os($x).and_then(|s| s.into_string().ok());
         }
     };
-}*/
+}
 
 #[test]
 fn test_macro() {
     new_relic_setup!("NEW_RELIC_LICENSE_KEY");
     assert_eq!(*NEW_RELIC_LICENSE_KEY, None);
 }
+*/

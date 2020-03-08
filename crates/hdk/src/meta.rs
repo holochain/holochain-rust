@@ -55,10 +55,8 @@ extern "C" {
 }
 
 fn zome_definition() -> ZomeDefinition {
-    crate::debug("zome_definition 0").ok();
     let mut zd = ZomeDefinition::new();
     unsafe { zome_setup(&mut zd) };
-    crate::debug("zome definition 1").ok();
     zd
 }
 

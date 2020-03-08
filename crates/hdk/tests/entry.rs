@@ -23,9 +23,8 @@ use holochain_persistence_api::{
 };
 
 use holochain_wasm_types::get_entry::{GetEntryResult, StatusRequestKind};
-use std::path::PathBuf;
 use test_utils::{
-    empty_string_validation_fail_entry, example_valid_entry, example_valid_entry_address,
+    example_valid_entry, example_valid_entry_address,
     example_valid_entry_params, example_valid_entry_result, make_test_call,
     start_holochain_instance, wait_for_zome_result,
 };
@@ -365,10 +364,11 @@ fn can_commit_entry() {
         "check_commit_entry",
         &String::from(JsonString::from(example_valid_entry())),
     );
+    let expected: ZomeApiResult<Address> = Ok(example_valid_entry_address());
     println!("\t result = {:?}", result);
     assert!(result.is_ok(), "result = {:?}", result);
     assert_eq!(
         result.unwrap(),
-        JsonString::from(example_valid_entry_address()),
+        JsonString::from(expected),
     );
 }

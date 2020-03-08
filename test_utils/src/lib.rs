@@ -540,16 +540,6 @@ pub fn example_valid_entry() -> Entry {
     )
 }
 
-pub fn empty_string_validation_fail_entry() -> Entry {
-    Entry::App(
-        "empty_validation_response_tester".into(),
-        TestEntry {
-            stuff: "should fail with empty string".into(),
-        }
-        .into(),
-    )
-}
-
 pub fn example_valid_entry_result() -> GetEntryResult {
     let entry = example_valid_entry();
     let entry_with_meta = &EntryWithMeta {

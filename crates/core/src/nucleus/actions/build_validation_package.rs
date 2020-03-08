@@ -27,7 +27,6 @@ pub fn build_validation_package(
 ) -> Result<ValidationPackage, HolochainError> {
     match entry.entry_type() {
         EntryType::App(app_entry_type) => {
-            println!("build_validation_package {:?}", entry);
             if context
                 .state()
                 .expect("No state in build_validation_package")
@@ -105,8 +104,6 @@ pub fn build_validation_package(
         Some(entry_header) => entry_header,
     };
 
-    println!("build validationi 1");
-
     get_validation_package_definition(Arc::clone(&context), &entry)
         .and_then(|callback_result| match callback_result {
             CallbackResult::Fail(error_string) => Err(HolochainError::ErrorGeneric(error_string)),
@@ -119,7 +116,6 @@ pub fn build_validation_package(
             _ => unreachable!(),
         })
         .and_then(|package_definition| {
-            println!("validation package 2");
             Ok(match package_definition {
                 Entry => ValidationPackage::only_header(entry_header),
                 ChainEntries => {

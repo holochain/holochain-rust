@@ -42,7 +42,6 @@ use crate::workflows::link_entries::link_entries_workflow;
 use crate::workflows::crypto::decrypt_workflow;
 use crate::workflows::sign::sign_workflow;
 use holochain_wasm_types::WasmResult;
-use std::time::{Instant};
 
 #[derive(Clone)]
 pub struct ZomeCallData {
@@ -142,7 +141,6 @@ impl WasmCallData {
     }
 
     pub fn instance(&self) -> Result<Instance, HolochainError> {
-        let start = Instant::now();
         let arc = std::sync::Arc::new(self.clone());
 
         macro_rules! invoke_workflow_trace {
@@ -313,8 +311,6 @@ impl WasmCallData {
         };
 
         let new_instance = |cache_key_bytes: &[u8], wasm: &Vec<u8>| {
-            let ni_start = Instant::now();
-
             let mut cache = MemoryFallbackFileSystemCache::new("/tmp/holochain-wasmer/cache")?;
             let key = WasmHash::generate(cache_key_bytes);
 
@@ -326,23 +322,12 @@ impl WasmCallData {
                     module
                 }
             };
-
-            let duration = ni_start.elapsed();
-            println!("Time elapsed in instance() ni 1 is: {:?}", duration);
-
             let instance = module.instantiate(&wasm_imports).map_err(|e| HolochainError::from(e.to_string()))?;
-
-            let duration = ni_start.elapsed();
-            println!("Time elapsed in instance() ni 2 is: {:?}", duration);
 
             Ok(instance)
         };
 
-        let duration = start.elapsed();
-        println!("Time elapsed in instance() 1 is: {:?}", duration);
-
         let (context, zome_name) = if let WasmCallData::DirectCall(_, wasm) = self {
-            println!("direct call!");
             // wasm is the zome cache key as per normal wasmer
             return new_instance(&wasm, &wasm);
         } else {
@@ -353,8 +338,6 @@ impl WasmCallData {
             }
         };
 
-        let duration = start.elapsed();
-        println!("Time elapsed in instance() 2 is: {:?}", duration);
         let state_lock = context.state()?;
         // @TODO caching for wasm and/or modules, just reinstance them
         let wasm = state_lock
@@ -369,15 +352,8 @@ impl WasmCallData {
             .code
             .clone();
 
-        let duration = start.elapsed();
-        println!("Time elapsed in instance() 3 is: {:?}", duration);
-
         // cache the wasm under the zome name rather than the hashed wasm
-        println!("zome name {}", &zome_name);
-        let r = new_instance(&zome_name.into_bytes(), &wasm);
-        let duration = start.elapsed();
-        println!("Time elapsed in instance() 4 is: {:?}", duration);
-        r
+        new_instance(&zome_name.into_bytes(), &wasm)
     }
 }
 

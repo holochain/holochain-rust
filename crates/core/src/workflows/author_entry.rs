@@ -30,7 +30,6 @@ pub async fn author_entry(
     provenances: &Vec<Provenance>,
 ) -> Result<CommitEntryResult, HolochainError> {
     let address = entry.address();
-    println!("author 0");
     log_debug!(
         context,
         "workflow/authoring_entry: {} with content: {:?}",
@@ -46,16 +45,12 @@ pub async fn author_entry(
         get_link_entries(Arc::clone(&context), &link_data.link)?;
     }
 
-    println!("author 1");
-
     // 1. Build the context needed for validation of the entry
     let validation_package = build_validation_package(Arc::clone(&context), &entry, provenances)?;
     let validation_data = ValidationData {
         package: validation_package,
         lifecycle: EntryLifecycle::Chain,
     };
-
-    println!("author 2");
 
     // 2. Validate the entry
     log_debug!(
@@ -75,8 +70,6 @@ pub async fn author_entry(
     };
     log_debug!(context, "worflow/authoring_entry {}: is valid!", address);
 
-    println!("author 3");
-
     // 3. Commit the entry
     log_debug!(
         context,
@@ -85,8 +78,6 @@ pub async fn author_entry(
     );
     let addr = commit_entry(entry.clone(), maybe_link_update_delete, &context).await?;
     log_debug!(context, "workflow/authoring_entry/{}: committed", address);
-
-    println!("author 4");
 
     // 4. Publish the valid entry to DHT. This will call Hold to itself
     if entry.entry_type().can_publish(&context) {
@@ -104,8 +95,6 @@ pub async fn author_entry(
             address
         );
     }
-
-    println!("author 5");
 
     // 5. Publish the header for all types (including private entries)
     log_debug!(

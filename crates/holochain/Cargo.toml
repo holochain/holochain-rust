@@ -11,17 +11,21 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 crossbeam-channel = "=0.3.8"
 holochain_core_types = { version = "=0.0.44-alpha3", path = "../core_types" }
 holochain_conductor_lib = { version = "=0.0.44-alpha3", path = "../conductor_lib" }
-lib3h_sodium = "=0.0.39"
+lib3h_sodium = "=0.0.40"
 holochain_common = { version = "=0.0.44-alpha3", path = "../common" }
 holochain_locksmith = { version = "=0.0.44-alpha3", path = "../locksmith" }
-holochain_tracing = "=0.0.22"
-holochain_tracing_macros = "=0.0.22"
+holochain_tracing = "=0.0.23"
+holochain_tracing_macros = "=0.0.23"
 structopt = "=0.2.15"
 tiny_http = "=0.6.2"
 lazy_static = "=1.4.0"
 ws = "=0.8.0"
 log = "=0.4.8"
-newrelic="0.2"
+newrelic = { version = "=0.2.2", optional = true }
 
 [target.'cfg(unix)'.dependencies]
 signal-hook = "=0.1.10"
+
+[features]
+default = []
+newrelic-on = ["newrelic"]

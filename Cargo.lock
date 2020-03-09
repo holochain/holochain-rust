@@ -632,9 +632,9 @@ checksum = "891f5117f720f720924586e087b7eb385d816afb467a231c2fec64239de00986"
 
 [[package]]
 name = "detach"
-version = "0.0.39"
+version = "0.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2d499a5f50381cc039336f1ad5838f1543c2beb536ef7b0affd7b816301e295"
+checksum = "de3ad2ae8fe076756fc777663754943b0a1a145a5318728718f8a6f640726f97"
 
 [[package]]
 name = "deunicode"
@@ -1233,7 +1233,7 @@ dependencies = [
  "holochain_net",
  "holochain_persistence_api",
  "holochain_persistence_file",
- "holochain_tracing 0.0.23",
+ "holochain_tracing",
  "holochain_tracing_macros",
  "holochain_wasm_utils",
  "ignore",
@@ -1358,7 +1358,7 @@ dependencies = [
  "holochain_conductor_lib",
  "holochain_core_types",
  "holochain_locksmith",
- "holochain_tracing 0.0.23",
+ "holochain_tracing",
  "holochain_tracing_macros",
  "lazy_static",
  "lib3h_sodium",
@@ -1403,7 +1403,7 @@ dependencies = [
  "holochain_persistence_lmdb",
  "holochain_persistence_mem",
  "holochain_persistence_pickle",
- "holochain_tracing 0.0.23",
+ "holochain_tracing",
  "holochain_tracing_macros",
  "holochain_wasm_utils",
  "hyper 0.12.25",
@@ -1493,7 +1493,7 @@ dependencies = [
  "holochain_persistence_file",
  "holochain_persistence_lmdb",
  "holochain_persistence_mem",
- "holochain_tracing 0.0.23",
+ "holochain_tracing",
  "holochain_tracing_macros",
  "holochain_wasm_utils",
  "im",
@@ -1703,7 +1703,7 @@ dependencies = [
  "holochain_logging",
  "holochain_metrics",
  "holochain_persistence_api",
- "holochain_tracing 0.0.23",
+ "holochain_tracing",
  "holochain_tracing_macros",
  "in_stream",
  "jsonrpc-core",
@@ -1845,7 +1845,7 @@ dependencies = [
  "crossbeam-channel",
  "env_logger 0.6.1",
  "hcid",
- "holochain_tracing 0.0.23",
+ "holochain_tracing",
  "in_stream",
  "lib3h_crypto_api",
  "lib3h_protocol",
@@ -1863,31 +1863,6 @@ dependencies = [
  "tokio 0.2.11",
  "toml",
  "url2",
-]
-
-[[package]]
-name = "holochain_tracing"
-version = "0.0.22"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9172240b1df04a67e151ba7b9f71fa97e69f11dfc1aa88cd930d3edee642d8ba"
-dependencies = [
- "backtrace",
- "chrono",
- "crossbeam-channel",
- "lazy_static",
- "log 0.4.8",
- "opentelemetry",
- "opentelemetry-jaeger",
- "rustracing",
- "rustracing_jaeger",
- "serde",
- "serde_derive",
- "serde_json",
- "shrinkwraprs 0.3.0",
- "tracing",
- "tracing-core",
- "tracing-serde",
- "tracing-subscriber",
 ]
 
 [[package]]
@@ -1922,7 +1897,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "663c2a243a714b08362309097392dd907218ca7465f3248f16c7894bde9eb1ce"
 dependencies = [
  "crossbeam-channel",
- "holochain_tracing 0.0.23",
+ "holochain_tracing",
  "lazy_static",
  "log 0.4.8",
  "proc-macro2 1.0.9",
@@ -2303,16 +2278,16 @@ checksum = "b294d6fa9ee409a054354afc4352b0b9ef7ca222c69b8812cbea9e7d2bf3783f"
 
 [[package]]
 name = "lib3h"
-version = "0.0.39"
+version = "0.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3424523ed67034627737fc366dd43e0652c41b83e399d7a457092d06c0009e28"
+checksum = "91464c7e0aaeefe8d6c8b2e185486358b7283f8b598c254900f08af3c293097b"
 dependencies = [
  "backtrace",
- "detach 0.0.39",
+ "detach 0.0.40",
  "env_logger 0.6.1",
  "hcid",
  "holochain_persistence_api",
- "holochain_tracing 0.0.22",
+ "holochain_tracing",
  "lazy_static",
  "lib3h_crypto_api",
  "lib3h_mdns",
@@ -2337,9 +2312,9 @@ dependencies = [
 
 [[package]]
 name = "lib3h_crypto_api"
-version = "0.0.39"
+version = "0.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "96a276f3aff537551724afdbbc595d36e4522024dd6faf0f5b8b2c480468e492"
+checksum = "d75d3868cb44919474c68380b8b30d1b7c4d0f4898e9410b97811b53206d3951"
 dependencies = [
  "serde",
  "serde_derive",
@@ -2348,9 +2323,9 @@ dependencies = [
 
 [[package]]
 name = "lib3h_mdns"
-version = "0.0.39"
+version = "0.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "efeb969f8e490866337ed25725a7f406f510a58fdaafe350c36d0fc0f6cf212c"
+checksum = "389aaaf2790d3342b029dfb6be99773476cf853c739656c10cc2f77a30a5e4a8"
 dependencies = [
  "byteorder",
  "hostname",
@@ -2365,9 +2340,9 @@ dependencies = [
 
 [[package]]
 name = "lib3h_p2p_protocol"
-version = "0.0.39"
+version = "0.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "331186254d4bb15d50ea59fe677e6b60c790ff0f8f3e269467242a7bc2800e87"
+checksum = "90922370221579e48681c290c3628a60c3a31f38a197ef9d8113982c6e6bfd74"
 dependencies = [
  "capnp",
  "serde",
@@ -2377,9 +2352,9 @@ dependencies = [
 
 [[package]]
 name = "lib3h_protocol"
-version = "0.0.39"
+version = "0.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5365f2c6d9cf737c605be57cc6722608f308faeb3a9ba3809b0a35a3882972d8"
+checksum = "3108ff76be07c1bac03d44fbcd9ca01005bcc8209a7567b0cf07da9bc4235554"
 dependencies = [
  "backtrace",
  "base64 0.10.1",
@@ -2394,9 +2369,9 @@ dependencies = [
 
 [[package]]
 name = "lib3h_sodium"
-version = "0.0.39"
+version = "0.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dea4ae2b4404509da824fee503da6db7dccf686613a201e45f0e1d56365c19d2"
+checksum = "b202638d56824321831b23b832eab44949526c6ee3e79af8f5241c98b1012e65"
 dependencies = [
  "lazy_static",
  "lib3h_crypto_api",
@@ -2407,14 +2382,14 @@ dependencies = [
 
 [[package]]
 name = "lib3h_zombie_actor"
-version = "0.0.39"
+version = "0.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eecf9c13c2c140be7eebb20e25ba6340098981336d35e6699532581f8336ff5f"
+checksum = "3a46ede6acaf6adfa88d42e0c088721dc9013519b6e42f4166c75dda2ec691d9"
 dependencies = [
  "backtrace",
  "crossbeam-channel",
- "detach 0.0.39",
- "holochain_tracing 0.0.22",
+ "detach 0.0.40",
+ "holochain_tracing",
  "lazy_static",
  "lock_api 0.1.5",
  "log 0.4.8",
@@ -4449,7 +4424,7 @@ dependencies = [
  "holochain_locksmith",
  "holochain_metrics",
  "holochain_persistence_api",
- "holochain_tracing 0.0.23",
+ "holochain_tracing",
  "holochain_tracing_macros",
  "im",
  "in_stream",
@@ -4490,7 +4465,7 @@ dependencies = [
  "env_logger 0.7.1",
  "futures 0.3.2",
  "holochain_common",
- "holochain_tracing 0.0.23",
+ "holochain_tracing",
  "holochain_tracing_macros",
  "lazy_static",
  "lib3h",

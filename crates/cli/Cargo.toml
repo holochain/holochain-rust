@@ -15,7 +15,7 @@ holochain_conductor_lib = { version = "=0.0.43-alpha3", path = "../conductor_lib
 holochain_net = { version = "=0.0.43-alpha3", path = "../net" }
 holochain_dpki = { version = "=0.0.43-alpha3", path = "../dpki" }
 holochain_locksmith = { version = "=0.0.43-alpha3", path = "../locksmith" }
-holochain_wasmer_host = "=0.0.17"
+holochain_wasmer_host = "=0.0.18"
 holochain_tracing = "=0.0.19"
 holochain_tracing_macros = "=0.0.19"
 newrelic="0.2"

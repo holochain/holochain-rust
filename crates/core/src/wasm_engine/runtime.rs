@@ -6,13 +6,11 @@ use crate::{
 use holochain_json_api::json::JsonString;
 use holochain_core_types::error::HolochainError;
 use std::{fmt, sync::Arc};
-use wasmer_runtime::{error::RuntimeError, Instance, imports, func, compile};
-use wasmer_runtime::cache::{WasmHash, Cache};
+use wasmer_runtime::{error::RuntimeError, Instance, imports, func};
 use holochain_wasmer_host::WasmError;
 use wasmer_runtime::Ctx;
 use crate::workflows::debug::debug_workflow;
 use holochain_wasm_types::ZomeApiResult;
-use crate::wasm_engine::memory_cache::MemoryFallbackFileSystemCache;
 use crate::workflows::get_links_count::get_link_result_count_workflow;
 use crate::workflows::commit::commit_app_entry_workflow;
 use crate::workflows::get_entry_result::get_entry_result_workflow;
@@ -310,26 +308,9 @@ impl WasmCallData {
             },
         };
 
-        let new_instance = |cache_key_bytes: &[u8], wasm: &Vec<u8>| {
-            let mut cache = MemoryFallbackFileSystemCache::new("/tmp/holochain-wasmer/cache")?;
-            let key = WasmHash::generate(cache_key_bytes);
-
-            let module = match cache.load(key) {
-                Ok(module) => module,
-                Err(_) => {
-                    let module = compile(wasm).map_err(|e| HolochainError::from(e.to_string()))?;
-                    cache.store(key, module.clone()).expect("could not store compiled wasm");
-                    module
-                }
-            };
-            let instance = module.instantiate(&wasm_imports).map_err(|e| HolochainError::from(e.to_string()))?;
-
-            Ok(instance)
-        };
-
         let (context, zome_name) = if let WasmCallData::DirectCall(_, wasm) = self {
             // wasm is the zome cache key as per normal wasmer
-            return new_instance(&wasm, &wasm);
+            return holochain_wasmer_host::instantiate::instantiate(&wasm, &wasm, &wasm_imports).map_err(|e| HolochainError::Wasm(e));
         } else {
             match self {
                 WasmCallData::ZomeCall(d) => (d.context.clone(), d.call.zome_name.clone()),
@@ -353,7 +334,7 @@ impl WasmCallData {
             .clone();
 
         // cache the wasm under the zome name rather than the hashed wasm
-        new_instance(&zome_name.into_bytes(), &wasm)
+        holochain_wasmer_host::instantiate::instantiate(&zome_name.into_bytes(), &wasm, &wasm_imports).map_err(|e| HolochainError::Wasm(e))
     }
 }
 

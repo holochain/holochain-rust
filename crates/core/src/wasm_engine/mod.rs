@@ -3,7 +3,6 @@ pub mod runtime;
 pub use self::{runtime::*};
 pub mod callback;
 pub mod io;
-pub mod memory_cache;
 pub use holochain_wasmer_host::*;
 
 pub const MAX_ZOME_CALLS: usize = 10;

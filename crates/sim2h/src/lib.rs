@@ -306,7 +306,7 @@ impl Sim2hHandle {
         // The above follow span will not be reported to jaeger so it's helpful to create an inner follow
         let span = tracing::info_span!("inner_message_follow");
         let _g = span.enter();
-        tracing::info!(received = ?message);
+        tracing::debug!(received = ?message);
 
         // dispatch to correct handler
         let sim2h_handle = self.clone();
@@ -1505,7 +1505,7 @@ fn fetch_entry_data(
                 entry_address: (&**entry_hash).clone(),
                 aspect_address_list: Some(aspects.iter().map(|a| (&**a).clone()).collect()),
             };
-            tracing::info!(message = "wire_message", ?s.request_id, ?s.space_address);
+            tracing::debug!(message = "wire_message", ?s.request_id, ?s.space_address);
             ht::span_wrap_encode!(tracing::Level::INFO, Lib3hToClient::HandleFetchEntry(s)).into()
         });
 

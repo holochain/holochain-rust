@@ -464,7 +464,7 @@ impl Space {
 
             check_gossip_data.add_agent(space_hash.clone(), con.agent_id.clone());
         }
-        tracing::info!(?check_gossip_data);
+        tracing::debug!(?check_gossip_data);
     }
 }
 
@@ -692,7 +692,7 @@ impl Store {
         let mut check_gossip_data = CheckGossipData::new();
 
         let space_hashes = self.spaces.keys().cloned().collect::<Vec<_>>();
-        tracing::info!(?space_hashes);
+        tracing::debug!(?space_hashes);
         for space_hash in space_hashes {
             self.spaces
                 .get_mut(&space_hash)

@@ -15,9 +15,9 @@ repository = "https://github.com/holochain/sim2h"
 crossbeam-channel = "=0.3.8"
 sim2h = { version = "=0.0.44-alpha3", path = "../sim2h" }
 holochain_common = { version = "=0.0.44-alpha3", path = "../common" }
-holochain_tracing = "=0.0.22"
-holochain_tracing_macros = "=0.0.22"
-newrelic="0.2"
+holochain_tracing = "=0.0.23"
+holochain_tracing_macros = "=0.0.23"
+newrelic = { version = "=0.2.2", optional = true }
 detach = "=0.0.19"
 futures = "=0.3.2"
 lib3h = "=0.0.39"
@@ -28,3 +28,7 @@ log = "0.4.8"
 env_logger = "0.7.0"
 structopt = "=0.2.15"
 tracing-log = "=0.1.1"
+
+[features]
+default = []
+newrelic-on = ["newrelic"]

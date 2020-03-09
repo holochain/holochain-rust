@@ -1,14 +1,8 @@
-extern crate holochain_tracing as ht;
-extern crate lib3h_sodium;
-extern crate log;
-extern crate newrelic;
-extern crate structopt;
-#[macro_use(new_relic_setup)]
-extern crate holochain_common;
-
-use holochain_tracing::prelude::*;
+use holochain_common::new_relic_setup;
+use holochain_tracing as ht;
 use lib3h_protocol::uri::Builder;
 use lib3h_sodium::SodiumCryptoSystem;
+#[cfg(feature = "newrelic_on")]
 use newrelic::{LogLevel, LogOutput, NewRelicConfig};
 use sim2h::{run_sim2h, DhtAlgorithm, MESSAGE_LOGGER};
 use std::path::PathBuf;
@@ -63,11 +57,7 @@ struct Cli {
 new_relic_setup!("NEW_RELIC_LICENSE_KEY");
 #[holochain_tracing_macros::newrelic_autotrace(SIM2H_SERVER)]
 fn main() {
-    //this set up new relic needs
-    NewRelicConfig::default()
-        .logging(LogLevel::Error, LogOutput::StdErr)
-        .init()
-        .unwrap_or_else(|_| warn!("Could not configure new relic daemon"));
+    newrelic_setup();
     let args = Cli::from_args();
 
     ht::structured::init_fmt(args.structured, args.tracing_name)
@@ -93,4 +83,18 @@ fn main() {
 
     // just park the main thread indefinitely...
     rt.block_on(futures::future::pending::<()>());
+}
+
+#[cfg(feature = "newrelic_on")]
+//this set up new relic needs
+fn newrelic_setup() {
+    NewRelicConfig::default()
+        .logging(ht::LogLevel::Error, LogOutput::StdErr)
+        .init()
+        .unwrap_or_else(|_| warn!("Could not configure new relic daemon"));
+}
+
+#[cfg(not(feature = "newrelic_on"))]
+//this set up new relic needs
+fn newrelic_setup() {
 }

@@ -2,7 +2,6 @@ use crate::{
     action::{Action, ActionWrapper},
     nucleus::state::NucleusState,
     state::State,
-    NEW_RELIC_LICENSE_KEY,
 };
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]

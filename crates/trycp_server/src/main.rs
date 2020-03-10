@@ -5,6 +5,11 @@ extern crate serde_json;
 
 //use log::error;
 //use std::process::exit;
+use in_stream::{
+    json_rpc::{JsonRpcRequest, JsonRpcResponse},
+    *,
+};
+
 use self::tempfile::Builder;
 use jsonrpc_core::{IoHandler, Params, Value};
 use jsonrpc_ws_server::ServerBuilder;
@@ -24,6 +29,10 @@ use std::{
     sync::{Arc, RwLock},
 };
 use structopt::StructOpt;
+use url2::prelude::*;
+//use jsonrpc_lite::JsonRpc;
+//use snowflake::ProcessUniqueId;
+use serde_derive::Serialize;
 
 // NOTE: don't change without also changing in crates/holochain/src/main.rs
 const MAGIC_STRING: &str = "*** Done. All interfaces started.";
@@ -48,7 +57,7 @@ struct Cli {
     #[structopt(
         long = "port-range",
         short = "r",
-        help = "The port range to use for spawning new conductors (e.g. '9000-9150'"
+        help = "The port range to use for spawning new conductors (e.g. '9000-9150')"
     )]
     port_range_string: String,
     #[structopt(
@@ -58,6 +67,26 @@ struct Cli {
     )]
     /// allow changing the conductor
     allow_replace_conductor: bool,
+
+    #[structopt(long, short = "m", help = "Activate ability to runs as a manager")]
+    /// activates manager mode
+    manager: bool,
+
+    #[structopt(
+        long,
+        short = "e",
+        help = "Register with a manager (url + port, e.g. ws://final-exam:9000)"
+    )]
+    /// url of manager to register availability with
+    register: Option<String>,
+
+    #[structopt(
+        long,
+        short,
+        help = "The host name to use when registering with a manager",
+        default_value = "localhost"
+    )]
+    host: String,
 }
 
 type PortRange = (u16, u16);
@@ -82,12 +111,47 @@ fn parse_port_range(s: String) -> Result<PortRange, String> {
     }
 }
 
+// info about trycp_servers so that we can in the future request
+// characteristics and set up tests based on the nodes capacities
+#[derive(Serialize, Debug, PartialEq)]
+struct ServerInfo {
+    pub url: String,
+    pub ram: usize, // MB of ram
+}
+
+#[derive(Serialize, Debug, PartialEq)]
+struct ServerList {
+    servers: Vec<ServerInfo>,
+}
+
+impl ServerList {
+    pub fn new() -> Self {
+        ServerList {
+            servers: Vec::new(),
+        }
+    }
+    pub fn pop(&mut self) -> Option<ServerInfo> {
+        self.servers.pop()
+    }
+    pub fn remove(&mut self, url: String) {
+        self.servers.retain(|i| i.url != url);
+    }
+    pub fn insert(&mut self, info: ServerInfo) {
+        self.remove(info.url.clone());
+        self.servers.push(info);
+    }
+    pub fn len(&self) -> usize {
+        self.servers.len()
+    }
+}
+
 struct TrycpServer {
     // dir: tempfile::TempDir,
     dir: PathBuf,
     dna_dir: PathBuf,
     next_port: u16,
     port_range: PortRange,
+    registered: ServerList,
 }
 
 fn make_conductor_dir() -> Result<PathBuf, String> {
@@ -113,6 +177,7 @@ impl TrycpServer {
             dna_dir: make_dna_dir().expect("should create dna dir"),
             next_port: port_range.0,
             port_range,
+            registered: ServerList::new(),
         }
     }
 
@@ -161,6 +226,23 @@ fn get_as_string<T: Into<String>>(
         })?
         .to_string())
 }
+
+fn get_as_int<T: Into<String>>(
+    key: T,
+    params_map: &Map<String, Value>,
+) -> Result<i64, jsonrpc_core::Error> {
+    let key = key.into();
+    Ok(params_map
+        .get(&key)
+        .ok_or_else(|| {
+            jsonrpc_core::Error::invalid_params(format!("`{}` param not provided", &key))
+        })?
+        .as_i64()
+        .ok_or_else(|| {
+            jsonrpc_core::Error::invalid_params(format!("`{}` has to be an integer", &key))
+        })?)
+}
+
 fn get_as_bool<T: Into<String>>(
     key: T,
     params_map: &Map<String, Value>,
@@ -237,19 +319,24 @@ fn save_file(file_path: PathBuf, content: &[u8]) -> Result<(), jsonrpc_core::typ
     Ok(())
 }
 
-fn get_info_as_json() -> String {
-    let output = Command::new("holochain")
-        .args(&["-i"])
-        .output()
-        .expect("failed to execute process");
+fn get_info_as_json() -> Value {
+    let output = Command::new("holochain").args(&["-i"]).output();
+    if output.is_err() {
+        return Value::String("failed to execute holochain".into());
+    }
+    let output = output.unwrap();
     let info_str = String::from_utf8(output.stdout).unwrap();
 
-    // poor mans JSON convert
+    // poor man's JSON convert
     let re = Regex::new(r"(?P<key>[^:]+):\s+(?P<val>.*)\n").unwrap();
-    let result = re.replace_all(&info_str, "\"$key\": \"$val\",");
-    let mut result = format!("{}", result); // pop off the final comma
-    result.pop();
-    format!("{{{}}}", result)
+    let mut map: Map<String, Value> = Map::new();
+    for caps in re.captures_iter(&info_str) {
+        map.insert(
+            caps["key"].to_string(),
+            Value::String(caps["val"].to_string()),
+        );
+    }
+    Value::Object(map)
 }
 
 /// very dangerous, runs whatever strings come in from the internet directly in bash
@@ -268,6 +355,45 @@ fn os_eval(arbitrary_command: &str) -> String {
             String::from_utf8_lossy(response).trim_end().to_string()
         }
         Err(err) => format!("cmd err: {:?}", err),
+    }
+}
+
+fn send_json_rpc<S: Into<String>>(
+    uri: S,
+    method: &str,
+    params: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    let uri: String = uri.into();
+    let connection_uri = Url2::try_parse(uri.clone())
+        .map_err(|e| format!("unable to parse url:{} got error: {}", uri, e))?;
+    //        let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
+    let config = WssConnectConfig::new(TcpConnectConfig::default());
+    let mut connection: InStreamWss<InStreamTcp> =
+        InStreamWss::connect(&connection_uri, config).map_err(|e| format!("{}", e))?;
+
+    connection
+        .write(
+            serde_json::to_vec(&JsonRpcRequest::new("1", method, params))
+                .unwrap()
+                .into(),
+        )
+        .map_err(|e| format!("{}", e))?;
+    connection.flush().map_err(|e| format!("{}", e))?;
+
+    let mut res = WsFrame::default();
+    while let Err(e) = connection.read(&mut res) {
+        if e.would_block() {
+            std::thread::sleep(std::time::Duration::from_millis(1))
+        } else {
+            return Err(format!("{:?}", e));
+        }
+    }
+
+    let res: JsonRpcResponse = serde_json::from_slice(res.as_bytes()).unwrap();
+    if let Some(err) = res.error {
+        Err(format!("{:?}", err))
+    } else {
+        Ok(res.result.unwrap())
     }
 }
 
@@ -291,9 +417,82 @@ fn main() {
     let players_arc_reset = players_arc.clone();
     let players_arc_spawn = players_arc;
 
-    io.add_method("ping", |_params: Params| {
-        Ok(Value::String(get_info_as_json()))
-    });
+    if let Some(connection_uri) = args.register {
+        let result = send_json_rpc(
+            connection_uri.clone(),
+            "register",
+            json!({ "url": format!("ws://{}:{}", args.host, args.port) }),
+        );
+        if let Err(e) = result {
+            println!(
+                "error {:?} encountered while registering with {}",
+                e, connection_uri
+            );
+            return;
+        };
+
+        println!("{}", result.unwrap());
+    }
+
+    // if we are acting as a manger add the "register" and "request" commands
+    if args.manager {
+        let state_registered = state.clone();
+        let state_request = state.clone();
+
+        // command for other trycp server to register themselves as available
+        io.add_method("register", move |params: Params| {
+            let params_map = unwrap_params_map(params)?;
+            let url_str = get_as_string("url", &params_map)?;
+            let _url = Url::parse(&url_str).map_err(|e| {
+                invalid_request(format!("unable to parse url:{} got error: {}", url_str, e))
+            })?;
+            let ram = get_as_int("ram", &params_map).unwrap_or_default();
+            let ram = ram as usize;
+
+            let mut state = state_registered.write().expect("should_lock");
+            state.registered.insert(ServerInfo {
+                url: url_str.clone(),
+                ram,
+            });
+            Ok(Value::String(format!("registered {}", url_str)))
+        });
+
+        // command to request a list of available trycp_servers
+        io.add_method("request", move |params: Params| {
+            let params_map = unwrap_params_map(params)?;
+            let count = get_as_int("count", &params_map)?;
+            let mut count = count as usize;
+            let mut endpoints: Vec<ServerInfo> = Vec::new();
+            let mut state = state_request.write().expect("should_lock");
+
+            // build up a list of confirmed available endpoints
+            // TODO make confirmation happen anynchronosly so it's faster
+            if state.registered.len() >= count {
+                while count > 0 {
+                    match state.registered.pop() {
+                        Some(info) => {
+                            if check_url(&info.url) {
+                                endpoints.push(info)
+                            }
+                        }
+                        None => break,
+                    }
+                    count -= 1;
+                }
+            }
+            if count > 0 {
+                // add any nodes that got taken off the registered list that are still valid back on
+                for info in endpoints {
+                    state.registered.insert(info);
+                }
+                Ok(json!({"error": "insufficient endpoints available" }))
+            } else {
+                Ok(json!({ "endpoints": endpoints }))
+            }
+        });
+    }
+
+    io.add_method("ping", |_params: Params| Ok(get_info_as_json()));
 
     io.add_method("dna", move |params: Params| {
         let params_map = unwrap_params_map(params)?;
@@ -419,6 +618,7 @@ fn main() {
         let mut conductor = Command::new("holochain")
             .args(&["-c", &config_path])
             .env("RUST_BACKTRACE", "full")
+            .env("HC_IGNORE_SIM2H_URL_PROPERTY", "true")
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
@@ -483,8 +683,8 @@ fn main() {
     io.add_method("replace_conductor", move |params: Params| {
         if allow_replace_conductor {
             Ok(Value::String(os_eval(&format!("curl -L -k https://github.com/holochain/{}/releases/download/{}/{} -o holochain.tar.gz && tar -xzvf holochain.tar.gz && mv holochain /holochain/.cargo/bin/holochain && rm holochain.tar.gz",
-             get_as_string("repo", &unwrap_params_map(params.clone())?)?, 
-             get_as_string("tag", &unwrap_params_map(params.clone())?)?, 
+             get_as_string("repo", &unwrap_params_map(params.clone())?)?,
+             get_as_string("tag", &unwrap_params_map(params.clone())?)?,
              get_as_string("file_name", &unwrap_params_map(params)?)?))))
         } else {
             println!("replace not allowed (-c to enable)");
@@ -531,4 +731,15 @@ fn check_player_config(
         )));
     }
     Ok(())
+}
+
+fn check_url(url: &String) -> bool {
+    // send reset to Url to confirm that it's working, and ready.
+    let result = send_json_rpc(url, "reset", json!({}));
+
+    // if there is a successful reset, the the rpc call should return "reset"
+    match result {
+        Ok(r) => r == "reset",
+        _ => false,
+    }
 }

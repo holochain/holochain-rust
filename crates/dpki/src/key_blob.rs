@@ -6,7 +6,7 @@ use crate::{
     keypair::*,
     password_encryption::{self, pw_dec, pw_enc, pw_hash, EncryptedData, PwHashConfig},
     seed::*,
-    utils, NEW_RELIC_LICENSE_KEY, SEED_SIZE,
+    utils, SEED_SIZE,
 };
 use holochain_core_types::{
     agent::Base32,

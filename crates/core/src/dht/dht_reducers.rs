@@ -6,7 +6,6 @@ use crate::{
         dht_store::DhtStore,
         pending_validations::{PendingValidationWithTimeout, ValidationTimeout},
     },
-    NEW_RELIC_LICENSE_KEY,
 };
 use std::sync::Arc;
 
@@ -337,8 +336,9 @@ pub mod tests {
 
         let new_dht_store = (*reduce(store.dht(), &action)).clone();
 
-        let get_links_query = create_get_links_eavi_query(entry.address(), test_link, test_tag)
-            .expect("supposed to create link query");
+        let get_links_query =
+            create_get_links_eavi_query(entry.address(), Some(test_link), Some(test_tag))
+                .expect("supposed to create link query");
         let fetched = new_dht_store.fetch_eavi(&get_links_query);
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();
@@ -401,9 +401,12 @@ pub mod tests {
         let new_dht_store = reduce(new_dht_store, &action_link_remove);
 
         //fetch from dht and when tombstone is found return tombstone
-        let get_links_query =
-            create_get_links_eavi_query(entry.address(), test_link.clone(), test_tag.clone())
-                .expect("supposed to create link query");
+        let get_links_query = create_get_links_eavi_query(
+            entry.address(),
+            Some(test_link.clone()),
+            Some(test_tag.clone()),
+        )
+        .expect("supposed to create link query");
         let fetched = new_dht_store.fetch_eavi(&get_links_query);
 
         //fetch call should be okay and remove_link tombstone should be the one that should be returned
@@ -427,9 +430,12 @@ pub mod tests {
         let new_dht_store = reduce(store.dht(), &action_link_add);
 
         //fetch from dht after link with same chain header is added
-        let get_links_query =
-            create_get_links_eavi_query(entry.address(), test_link.clone(), test_tag.clone())
-                .expect("supposed to create link query");
+        let get_links_query = create_get_links_eavi_query(
+            entry.address(),
+            Some(test_link.clone()),
+            Some(test_tag.clone()),
+        )
+        .expect("supposed to create link query");
         let fetched = new_dht_store.fetch_eavi(&get_links_query);
 
         //fetch call should be okay and remove_link tombstone should be the one that should be returned since tombstone is applied to target hashes that are the same
@@ -460,8 +466,9 @@ pub mod tests {
         let new_dht_store_2 = reduce(store.dht(), &action_link_add);
 
         //after new link has been added return from fetch and make sure tombstone and new link is added
-        let get_links_query = create_get_links_eavi_query(entry.address(), test_link, test_tag)
-            .expect("supposed to create link query");
+        let get_links_query =
+            create_get_links_eavi_query(entry.address(), Some(test_link), Some(test_tag))
+                .expect("supposed to create link query");
         let fetched = new_dht_store_2.fetch_eavi(&get_links_query);
 
         //two entries should be returned which is the new_link and the tombstone since the tombstone doesn't apply for the new link
@@ -505,8 +512,9 @@ pub mod tests {
 
         let new_dht_store = reduce(store.dht(), &action);
 
-        let get_links_query = create_get_links_eavi_query(entry.address(), test_link, test_tag)
-            .expect("supposed to create link query");
+        let get_links_query =
+            create_get_links_eavi_query(entry.address(), Some(test_link), Some(test_tag))
+                .expect("supposed to create link query");
         let fetched = new_dht_store.fetch_eavi(&get_links_query);
         assert!(fetched.is_ok());
         let hash_set = fetched.unwrap();

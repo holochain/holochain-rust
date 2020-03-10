@@ -1,4 +1,4 @@
-use crate::NEW_RELIC_LICENSE_KEY;
+use holochain_tracing_macros::newrelic_autotrace;
 use lib3h::rrdht_util::*;
 use lib3h_crypto_api::CryptoSystem;
 use lib3h_protocol::types::EntryHash;
@@ -6,7 +6,7 @@ use lib3h_protocol::types::EntryHash;
 #[allow(clippy::borrowed_box)]
 /// ack - lib3h can only convert agent_ids to locations right now
 /// work around this in a dorky manner
-#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+#[newrelic_autotrace(SIM2H)]
 pub fn anything_to_location(crypto: &Box<dyn CryptoSystem>, anything: &str) -> Location {
     match calc_location_for_id(crypto, anything) {
         Ok(loc) => loc,
@@ -27,7 +27,7 @@ pub fn anything_to_location(crypto: &Box<dyn CryptoSystem>, anything: &str) -> L
 }
 
 #[allow(clippy::borrowed_box)]
-#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+#[newrelic_autotrace(SIM2H)]
 pub fn entry_location(crypto: &Box<dyn CryptoSystem>, entry_hash: &EntryHash) -> Location {
     let entry_hash_str: String = entry_hash.clone().into();
     anything_to_location(crypto, &entry_hash_str)
@@ -37,7 +37,7 @@ pub fn entry_location(crypto: &Box<dyn CryptoSystem>, entry_hash: &EntryHash) ->
 /// to distribute data when node counts go > 50
 // NOTE - don't decorate this function with tracing
 //        it gets called often enough that performance suffers
-//#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+#[newrelic_autotrace(SIM2H)]
 pub fn naive_sharding_should_store(
     agent_loc: Location,
     data_addr_loc: Location,
@@ -59,8 +59,8 @@ pub fn naive_sharding_should_store(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use holochain_tracing::prelude::*;
     use lib3h_sodium::SodiumCryptoSystem;
-    use log::*;
     const REDUNDANT_COUNT: u64 = 50;
 
     // generate a test agent id (HcS)

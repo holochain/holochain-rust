@@ -2,7 +2,6 @@ use crate::{
     action::{ActionWrapper, DirectMessageData},
     network::{reducers::send, state::NetworkState},
     state::State,
-    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;

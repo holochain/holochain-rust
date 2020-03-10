@@ -30,11 +30,11 @@ exclude = [
 ]
 
 [patch.crates-io]
-#lib3h = "=0.0.41"
-#lib3h_protocol = "=0.0.41"
-#lib3h_crypto_api = "=0.0.41"
-#lib3h_sodium = "=0.0.41"
-#lib3h_zombie_actor = "=0.0.41"
+#lib3h = "=0.0.42"
+#lib3h_protocol = "=0.0.42"
+#lib3h_crypto_api = "=0.0.42"
+#lib3h_sodium = "=0.0.42"
+#lib3h_zombie_actor = "=0.0.42"
 
 #lib3h = { git = "https://github.com/holochain/lib3h", branch ="bump_tracing" }
 #lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch ="bump_tracing" }

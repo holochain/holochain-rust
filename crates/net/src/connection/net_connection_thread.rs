@@ -34,8 +34,14 @@ pub struct NetConnectionThread {
 impl NetSend for NetConnectionThread {
     /// send a message to the worker within NetConnectionThread's child thread.
     fn send(&mut self, data: Lib3hClientProtocolWrapped) -> NetResult<()> {
-        self.send_channel.send(data)?;
-        Ok(())
+        debug!("in NetConnection thread");
+        match self.send_channel.send(data) {
+            Err(e) => {
+                debug!("in NetConnection thread {:?}", e);
+                return Err(e.into());
+            },
+            Ok(_) => return Ok(()),
+        }
     }
 }
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]

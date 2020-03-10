@@ -1469,6 +1469,7 @@ dependencies = [
 name = "holochain_core"
 version = "0.0.44-alpha3"
 dependencies = [
+ "backtrace",
  "base64 0.10.1",
  "bitflags",
  "boolinator",

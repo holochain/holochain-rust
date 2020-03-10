@@ -7,6 +7,7 @@ use newrelic::{LogLevel, LogOutput, NewRelicConfig};
 use sim2h::{run_sim2h, DhtAlgorithm, MESSAGE_LOGGER};
 use std::path::PathBuf;
 use structopt::StructOpt;
+use holochain_tracing::prelude::*;
 
 #[derive(StructOpt)]
 #[structopt(rename_all = "kebab-case")]
@@ -59,6 +60,10 @@ new_relic_setup!("NEW_RELIC_LICENSE_KEY");
 fn main() {
     newrelic_setup();
     let args = Cli::from_args();
+
+    debug!("IN MAIN");
+    info!("INFO MAIN");
+    println!("boink");
 
     ht::structured::init_fmt(args.structured, args.tracing_name)
         .expect("Failed to start structed tracing");

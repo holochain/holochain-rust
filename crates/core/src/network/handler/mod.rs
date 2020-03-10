@@ -488,12 +488,17 @@ fn get_meta_aspects_from_dht_eav(
                     Ok(EntryAspect::LinkAdd(link_data.clone(), header))
                 }
                 Attribute::RemovedLink(_, _) => {
-                    let (link_data, removed_link_entries) =
-                        unwrap_to!(value_entry.entry_with_meta.entry => Entry::LinkRemove);
-                    Ok(EntryAspect::LinkRemove(
-                        (link_data.clone(), removed_link_entries.clone()),
-                        header,
-                    ))
+                    match value_entry.entry_with_meta.entry {
+                        Entry::LinkRemove((link_data, removed_link_entries)) => {
+                            Ok(EntryAspect::LinkRemove(
+                                (link_data.clone(), removed_link_entries.clone()),
+                                header,
+                            ))
+                        },
+                        _ => {
+                            panic!("didn't get an expected LinkRemove, got: {:?}",value_entry)
+                        }
+                    }
                 }
                 Attribute::CrudLink => Ok(EntryAspect::Update(
                     value_entry.entry_with_meta.entry,

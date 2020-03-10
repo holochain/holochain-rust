@@ -44,10 +44,9 @@ use holochain_locksmith::Mutex;
 use holochain_metrics::{config::MetricPublisherConfig, Metric};
 use holochain_tracing as ht;
 use holochain_tracing_macros::{autotrace, newrelic_autotrace};
-use ht::prelude::*;
 use lazy_static::lazy_static;
 use sim2h_im_state::{MonoAspectHash, MonoEntryHash, StoreRef};
-use tracing::{instrument, Level};
+use tracing::*;
 use tracing_futures::Instrument;
 
 /// use the default 0 seed for xxHash
@@ -304,9 +303,9 @@ impl Sim2hHandle {
         let follow = ht::follow_span!(Level::INFO, context);
         let _g = follow.enter();
         // The above follow span will not be reported to jaeger so it's helpful to create an inner follow
-        let span = tracing::info_span!("inner_message_follow");
+        let span = debug_span!("inner_message_follow");
         let _g = span.enter();
-        tracing::info!(received = ?message);
+        debug!(received = ?message);
 
         // dispatch to correct handler
         let sim2h_handle = self.clone();
@@ -440,7 +439,7 @@ fn lib3h_to_client_response(
     signer: AgentId,
     space_hash: MonoRef<SpaceHash>,
 ) {
-    let span = tracing::info_span!("Lib3hToClientResponse");
+    let span = debug_span!("Lib3hToClientResponse");
     let _g = span.enter();
     match data {
         Lib3hToClientResponse::HandleSendDirectMessageResult(dm_data) => {
@@ -881,7 +880,7 @@ fn spawn_handle_message_authoring_entry_list(
                 sim2h_handle.send(signer, uri, &multi_send);
             }
         }
-        .instrument(tracing::info_span!("authoring_entry")),
+        .instrument(debug_span!("authoring_entry")),
     );
 }
 
@@ -959,7 +958,7 @@ fn spawn_handle_message_fetch_entry_result(
                 }
             }
         }
-        .instrument(tracing::info_span!(
+        .instrument(debug_span!(
             "spawn_handle_message_fetch_entry_result"
         )),
     );
@@ -1007,7 +1006,7 @@ fn spawn_handle_message_query_entry(
             );
             sim2h_handle.send((&*query_target).clone(), url.clone(), &query_message);
         }
-        .instrument(tracing::info_span!("message_query")),
+        .instrument(debug_span!("message_query")),
     );
 }
 
@@ -1047,7 +1046,7 @@ fn spawn_handle_message_query_entry_result(
             };
             sim2h_handle.send(req_agent_id, to_url.clone(), &msg_out);
         }
-        .instrument(tracing::info_span!("handle_message_query_entry_result")),
+        .instrument(debug_span!("handle_message_query_entry_result")),
     );
 }
 
@@ -1413,13 +1412,13 @@ impl Sim2h {
         }
 
         if self.missing_aspects_resync_schedule.should_proceed() {
-            let span = tracing::info_span!("missing aspect root", root = true);
+            let span = debug_span!("missing aspect root", root = true);
             let _g = span.enter();
             let schedule_guard = self.missing_aspects_resync_schedule.get_guard();
             let sim2h_handle = self.sim2h_handle.clone();
             tokio::task::spawn(
                 missing_aspects_resync(sim2h_handle, schedule_guard)
-                    .instrument(tracing::info_span!("missing aspect future")),
+                    .instrument(debug_span!("missing aspect future")),
             );
         }
 
@@ -1505,7 +1504,7 @@ fn fetch_entry_data(
                 entry_address: (&**entry_hash).clone(),
                 aspect_address_list: Some(aspects.iter().map(|a| (&**a).clone()).collect()),
             };
-            tracing::info!(message = "wire_message", ?s.request_id, ?s.space_address);
+            debug!(message = "wire_message", ?s.request_id, ?s.space_address);
             ht::span_wrap_encode!(tracing::Level::INFO, Lib3hToClient::HandleFetchEntry(s)).into()
         });
 

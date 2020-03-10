@@ -58,15 +58,10 @@ struct Cli {
 new_relic_setup!("NEW_RELIC_LICENSE_KEY");
 #[holochain_tracing_macros::newrelic_autotrace(SIM2H_SERVER)]
 fn main() {
-    newrelic_setup();
     let args = Cli::from_args();
-
-    debug!("IN MAIN");
-    info!("INFO MAIN");
-    println!("boink");
-
     ht::structured::init_fmt(args.structured, args.tracing_name)
         .expect("Failed to start structed tracing");
+    newrelic_setup();
 
     let host = "ws://0.0.0.0/";
     let uri = Builder::with_raw_url(host)

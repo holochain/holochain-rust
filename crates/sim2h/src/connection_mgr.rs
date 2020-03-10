@@ -72,7 +72,7 @@ fn process_control_cmds(cmd_info: &mut CmdInfo) -> Loop {
                 *did_work = true;
                 match cmd {
                     ConMgrCommand::SendData(_uri, frame) => {
-                        tracing::info!(message = "SendData", ?_uri);
+                        tracing::debug!(message = "SendData", ?_uri);
                         if let Err(e) = wss.write(frame) {
                             error!("socket write error {} {:?}", uri, e);
                             let _ =
@@ -194,7 +194,7 @@ async fn wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend, cmd_recv: CmdRe
 #[tracing::instrument]
 /// internal actually spawn the above wss_task into the tokio runtime
 fn spawn_wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend) -> CmdSend {
-    tracing::info!(?uri);
+    tracing::debug!(?uri);
     let (cmd_send, cmd_recv) = tokio::sync::mpsc::unbounded_channel();
     tokio::task::spawn(
         wss_task(uri, wss, evt_send, cmd_recv).instrument(tracing::info_span!("wss_task")),
@@ -275,7 +275,7 @@ impl ConnectionMgr {
     }
 
     fn handle_connect_data(&mut self, uri: Lib3hUri, wss: InStreamWss<InStreamTcp>) {
-        tracing::info!(?uri);
+        tracing::debug!(?uri);
         let cmd_send = spawn_wss_task(uri.clone(), wss, self.evt_send_from_children.clone());
         if let Some(old) = self.wss_map.insert(uri.clone(), cmd_send) {
             error!("REPLACING ACTIVE CONNECTION: {}", uri);
@@ -284,7 +284,7 @@ impl ConnectionMgr {
     }
 
     fn handle_send_data(&mut self, uri: Lib3hUri, frame: WsFrame) {
-        tracing::info!(?uri);
+        tracing::debug!(?uri);
         let mut remove = false;
         if let Some(cmd_send) = self.wss_map.get(&uri) {
             if let Err(_) = cmd_send.send(ConMgrCommand::SendData(uri.clone(), frame)) {
@@ -405,7 +405,7 @@ impl ConnectionMgr {
             tokio::task::spawn(
                 async move {
                     *connection_count.0.write().await = new_c_count;
-                    tracing::info!(?new_c_count);
+                    tracing::debug!(?new_c_count);
                 }
                 .instrument(tracing::info_span!("count")),
             );
@@ -447,7 +447,7 @@ impl ConnectionMgrHandle {
     #[tracing::instrument(skip(self))]
     /// send in a websocket connection to be managed
     pub fn connect(&self, uri: Lib3hUri, wss: TcpWss) {
-        tracing::info!(?uri);
+        tracing::debug!(?uri);
         if let Err(e) = self.send_cmd.send(ConMgrCommand::Connect(uri, wss)) {
             tracing::error!("failed to send on channel - shutting down? {:?}", e);
         }
@@ -456,7 +456,7 @@ impl ConnectionMgrHandle {
     #[tracing::instrument(skip(self, frame))]
     /// send data to a managed websocket connection
     pub fn send_data(&self, uri: Lib3hUri, frame: WsFrame) {
-        tracing::info!(?uri);
+        tracing::debug!(?uri);
         if let Err(e) = self.send_cmd.send(ConMgrCommand::SendData(uri, frame)) {
             error!("failed to send on channel - shutting down? {:?}", e);
         }
@@ -465,7 +465,7 @@ impl ConnectionMgrHandle {
     #[tracing::instrument(skip(self))]
     /// disconnect and forget about a managed websocket connection
     pub fn disconnect(&self, uri: Lib3hUri) {
-        tracing::info!(?uri);
+        tracing::debug!(?uri);
         if let Err(e) = self.send_cmd.send(ConMgrCommand::Disconnect(uri)) {
             error!("failed to send on channel - shutting down? {:?}", e);
         }

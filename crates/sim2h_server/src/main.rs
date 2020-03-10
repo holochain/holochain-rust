@@ -96,5 +96,4 @@ fn newrelic_setup() {
 
 #[cfg(not(feature = "newrelic_on"))]
 //this set up new relic needs
-fn newrelic_setup() {
-}
+fn newrelic_setup() {}

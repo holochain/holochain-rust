@@ -1,5 +1,6 @@
 use holochain_common::new_relic_setup;
 use holochain_tracing as ht;
+use holochain_tracing::prelude::*;
 use lib3h_protocol::uri::Builder;
 use lib3h_sodium::SodiumCryptoSystem;
 #[cfg(feature = "newrelic_on")]
@@ -7,7 +8,6 @@ use newrelic::{LogLevel, LogOutput, NewRelicConfig};
 use sim2h::{run_sim2h, DhtAlgorithm, MESSAGE_LOGGER};
 use std::path::PathBuf;
 use structopt::StructOpt;
-use holochain_tracing::prelude::*;
 
 #[derive(StructOpt)]
 #[structopt(rename_all = "kebab-case")]

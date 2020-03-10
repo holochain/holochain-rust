@@ -958,9 +958,7 @@ fn spawn_handle_message_fetch_entry_result(
                 }
             }
         }
-        .instrument(debug_span!(
-            "spawn_handle_message_fetch_entry_result"
-        )),
+        .instrument(debug_span!("spawn_handle_message_fetch_entry_result")),
     );
 }
 

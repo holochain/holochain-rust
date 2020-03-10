@@ -197,9 +197,7 @@ async fn wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend, cmd_recv: CmdRe
 fn spawn_wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend) -> CmdSend {
     debug!(?uri);
     let (cmd_send, cmd_recv) = tokio::sync::mpsc::unbounded_channel();
-    tokio::task::spawn(
-        wss_task(uri, wss, evt_send, cmd_recv).instrument(debug_span!("wss_task")),
-    );
+    tokio::task::spawn(wss_task(uri, wss, evt_send, cmd_recv).instrument(debug_span!("wss_task")));
     cmd_send
 }
 

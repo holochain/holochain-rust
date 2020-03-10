@@ -1,6 +1,5 @@
 use holochain_common::new_relic_setup;
 use holochain_tracing as ht;
-use holochain_tracing::prelude::*;
 use lib3h_protocol::uri::Builder;
 use lib3h_sodium::SodiumCryptoSystem;
 #[cfg(feature = "newrelic_on")]

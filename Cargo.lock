@@ -292,15 +292,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "c2-chacha"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "214238caa1bf3a496ec3392968969cab8549f96ff30652c9e56885329315f6bb"
-dependencies = [
- "ppv-lite86",
-]
-
-[[package]]
 name = "capnp"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1734,8 +1725,6 @@ dependencies = [
 [[package]]
 name = "holochain_persistence_api"
 version = "0.0.17"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3bdc67b118bad1256cf6bcff10f9915e59d06807272ad71c7c8359621e7a62c9"
 dependencies = [
  "arrayref",
  "base64 0.10.1",
@@ -1766,8 +1755,6 @@ dependencies = [
 [[package]]
 name = "holochain_persistence_file"
 version = "0.0.17"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e22ff6664eb52faa59d4a1b9aa8ea141a3c885ca86ce5d224b76e6a7fa20ef4"
 dependencies = [
  "glob 0.3.0",
  "holochain_json_api",
@@ -1783,8 +1770,6 @@ dependencies = [
 [[package]]
 name = "holochain_persistence_lmdb"
 version = "0.0.17"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d290f8d9fcbd6caaf993baa021abe9735a90f1fbae1bc721dcf96d9e97d763e"
 dependencies = [
  "bencher",
  "glob 0.3.0",
@@ -1806,8 +1791,6 @@ dependencies = [
 [[package]]
 name = "holochain_persistence_mem"
 version = "0.0.17"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf45bd3a7d8e7a0b32ee78f1793d2a6c8b38e3c047a4622f896c5af5dbd21aec"
 dependencies = [
  "glob 0.3.0",
  "holochain_json_api",
@@ -1823,8 +1806,6 @@ dependencies = [
 [[package]]
 name = "holochain_persistence_pickle"
 version = "0.0.17"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd09d8cefe9229380445dc616b15077f6ffe94d1afd6082ffd7b51cb11e911cb"
 dependencies = [
  "glob 0.3.0",
  "holochain_json_api",
@@ -2427,9 +2408,9 @@ checksum = "ae91b68aebc4ddb91978b11a1b02ddd8602a05ec19002801c5666000e05e0f83"
 
 [[package]]
 name = "lmdb-rkv"
-version = "0.12.3"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "605061e5465304475be2041f19967a900175ea1b6d8f47fbab84a84fb8c48452"
+checksum = "447a296f7aca299cfbb50f4e4f3d49451549af655fb7215d7f8c0c3d64bad42b"
 dependencies = [
  "bitflags",
  "byteorder",
@@ -2439,9 +2420,9 @@ dependencies = [
 
 [[package]]
 name = "lmdb-rkv-sys"
-version = "0.9.6"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7982ba0460e939e26a52ee12c8075deab0ebd44ed21881f656841b70e021b7c8"
+checksum = "b27470ac25167b3afdfb6af8fcd3bc1be67de50ffbdaf4073378cfded6ae24a5"
 dependencies = [
  "cc",
  "libc",
@@ -3594,7 +3575,7 @@ checksum = "6a6b1679d49b24bbfe0c803429aa1874472f50d9b363131f0e89fc356b544d03"
 dependencies = [
  "getrandom",
  "libc",
- "rand_chacha 0.2.1",
+ "rand_chacha 0.2.2",
  "rand_core 0.5.1",
  "rand_hc 0.2.0",
 ]
@@ -3611,11 +3592,11 @@ dependencies = [
 
 [[package]]
 name = "rand_chacha"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "03a2a90da8c7523f554344f921aa97283eadf6ac484a6d2a7d0212fa7f8d6853"
+checksum = "f4c8ed856279c9737206bf725bf36935d8666ead7aa69b52be55af369d193402"
 dependencies = [
- "c2-chacha",
+ "ppv-lite86",
  "rand_core 0.5.1",
 ]
 
@@ -3860,9 +3841,9 @@ dependencies = [
 
 [[package]]
 name = "rkv"
-version = "0.10.3"
+version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "115984dd49e17333cb27c54e2a64dfd85246cfebe079065a3e37654ead93619e"
+checksum = "30a3dbc1f4971372545ed4175f23ef206c81e5874cd574d153646e7ee78f6793"
 dependencies = [
  "arrayref",
  "bincode",
@@ -4481,9 +4462,9 @@ dependencies = [
 
 [[package]]
 name = "sized-chunks"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f59f81ec9833a580d2448e958d16bd872637798f3ab300b693c48f136fb76ff"
+checksum = "cfebcc1ad7f8439bff83ff95656c83bd9e4e832630bc9bb7c59774d0bc526b92"
 dependencies = [
  "bitmaps",
  "typenum",

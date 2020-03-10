@@ -34,9 +34,9 @@ lib3h_protocol = "=0.0.41"
 lib3h_sodium = "=0.0.41"
 holochain_json_derive = "=0.0.23"
 holochain_json_api = "=0.0.23"
-holochain_persistence_api = "=0.0.17"
-holochain_persistence_file = "=0.0.17"
-holochain_persistence_mem = "=0.0.17"
+holochain_persistence_api = { path = "../../../holochain-persistence/crates/holochain_persistence_api" }
+holochain_persistence_file = { path = "../../../holochain-persistence/crates/holochain_persistence_file" }
+holochain_persistence_mem = { path = "../../../holochain-persistence/crates/holochain_persistence_mem" }
 holochain_core_types = { version = "=0.0.44-alpha3", path = "../core_types" }
 holochain_dpki = { version = "=0.0.44-alpha3", path = "../dpki" }
 holochain_locksmith = { version = "=0.0.44-alpha3", path = "../locksmith" }
@@ -65,7 +65,7 @@ newrelic = { version = "=0.2.2", optional = true }
 wabt = "=0.7.4"
 test_utils = { version = "=0.0.44-alpha3", path = "../../test_utils" }
 tempfile = "=3.0.7"
-holochain_persistence_lmdb = "=0.0.17"
+holochain_persistence_lmdb = { path = "../../../holochain-persistence/crates/holochain_persistence_lmdb" }
 
 [features]
 default = []

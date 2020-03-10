@@ -24,8 +24,8 @@ in_stream = { version = "=0.0.44-alpha3", path = "../in_stream" }
 url2 = "=0.0.4"
 lib3h_sodium = "=0.0.41"
 holochain_json_api = "=0.0.23"
-holochain_persistence_api = "=0.0.17"
-holochain_persistence_file = "=0.0.17"
+holochain_persistence_api = { path = "../../../holochain-persistence/crates/holochain_persistence_api" }
+holochain_persistence_file = { path = "../../../holochain-persistence/crates/holochain_persistence_file" }
 holochain_wasm_utils = { path = "../wasm_utils" }
 crossbeam-channel = "=0.3.8"
 structopt = "=0.3.3"

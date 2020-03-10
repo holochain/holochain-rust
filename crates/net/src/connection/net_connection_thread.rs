@@ -81,13 +81,22 @@ impl NetConnectionThread {
                     thread::sleep(time::Duration::from_millis(TICK_SLEEP_STARTUP_RETRY_MS));
                 };
                 // Get endpoint and send it to owner (NetConnectionThread)
-                send_endpoint
-                    .send((worker.endpoint(), worker.p2p_endpoint()))
-                    .expect("Sending endpoint address should work.");
+                match send_endpoint
+                    .send((worker.endpoint(), worker.p2p_endpoint())) {
+                        Err(e) => {
+                            debug!("net_worker send_endpoint send fail: {:?}", e);
+                            panic!("boink");
+                        }
+                        Ok(()) => {
+                            debug!("net_worker send_endpoint sent");
+                        }
+                    };
+
                 drop(send_endpoint);
                 // Loop as long owner wants to
                 let mut sleep_duration_us = TICK_SLEEP_MIN_US;
                 while can_keep_running_child.load(Ordering::Relaxed) {
+                    debug!("-~-");
                     // Check if we received something from parent (NetConnectionThread::send())
                     let mut did_something = false;
                     recv_channel

@@ -27,7 +27,7 @@ hcid = "=0.0.6"
 rust-base58 = "=0.0.4"
 snowflake = "=1.3.0"
 objekt= "=0.1.2"
-holochain_persistence_api = "=0.0.17"
+holochain_persistence_api = { path = "../../../holochain-persistence/crates/holochain_persistence_api" }
 holochain_json_derive = "=0.0.23"
 holochain_json_api = "=0.0.23"
 holochain_locksmith = { version = "=0.0.44-alpha3", path = "../locksmith" }

@@ -40,8 +40,8 @@ holochain_core_types = { version = "=0.0.44-alpha3", path = "../core_types" }
 holochain_dpki = { version = "=0.0.44-alpha3", path = "../dpki" }
 holochain_locksmith = { version = "=0.0.44-alpha3", path = "../locksmith" }
 holochain_metrics = { version = "=0.0.44-alpha3", path = "../metrics" }
-holochain_tracing = "=0.0.23"
-holochain_tracing_macros = "=0.0.23"
+holochain_tracing = "=0.0.24"
+holochain_tracing_macros = "=0.0.24"
 log = "=0.4.8"
 holochain_logging = "=0.0.7"
 boolinator = "=2.4.0"

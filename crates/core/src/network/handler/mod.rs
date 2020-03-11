@@ -21,7 +21,7 @@ use crate::{
         handler::{
             fetch::*,
             lists::{handle_get_authoring_list, handle_get_gossip_list},
-            query::{get_links, *},
+            query::*,
             send::*,
             store::*,
         },
@@ -30,8 +30,7 @@ use crate::{
 };
 use boolinator::Boolinator;
 use holochain_core_types::{
-    chain_header::ChainHeader, crud_status::CrudStatus, eav::Attribute, entry::Entry,
-    error::HolochainError, network::query::GetLinksQueryConfiguration, time::Timeout,
+    chain_header::ChainHeader, eav::Attribute, entry::Entry, error::HolochainError, time::Timeout,
 };
 use holochain_json_api::json::JsonString;
 use holochain_net::connection::net_connection::NetHandler;
@@ -489,31 +488,20 @@ fn get_meta_aspects_from_dht_eav(
                     }
                     _ => Err(HolochainError::from("Invalid Entry Value for Link Add")),
                 },
-                Attribute::RemovedLink(link_type, link_tag) => {
+                Attribute::RemovedLink(_link_type, _link_tag) => {
                     match value_entry.entry_with_meta.entry {
                         Entry::LinkRemove((link_data, removed_link_entries)) => Ok(
                             EntryAspect::LinkRemove((link_data, removed_link_entries), header),
                         ),
                         Entry::LinkAdd(link_data) => {
-                            let links = get_links(
-                                &context,
-                                entry_address.clone(),
-                                Some(link_type),
-                                Some(link_tag),
-                                Some(CrudStatus::Live),
-                                GetLinksQueryConfiguration::default(),
-                            )?;
-
-                            //not very efficient but nice to fall back on
-                            let filtered_links = links
-                                .into_iter()
-                                .filter(|link_for_filter| {
-                                    &link_for_filter.target == link_data.link().target()
-                                })
-                                .map(|s| s.address)
-                                .collect::<Vec<_>>();
-
-                            Ok(EntryAspect::LinkRemove((link_data, filtered_links), header))
+                            // here we are manually building the entry aspect assuming
+                            // just one link being removed which is actually correct for holochain
+                            // but currently incorrect in this implementation and needs to be fixed
+                            // in hdk v3.
+                            Ok(EntryAspect::LinkRemove(
+                                (link_data.clone(), vec![eavi.value()]),
+                                header,
+                            ))
                         }
                         _ => Err(HolochainError::from("Invalid Entry Value for Remove Link")),
                     }

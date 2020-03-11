@@ -32,6 +32,10 @@ pub fn handle_add_seed(src_id: String, dst_id: String, index: u64) -> ZomeApiRes
     hdk::keystore_derive_seed(src_id, dst_id, "mycntext".to_string(), index, SeedType::OneShot)
 }
 
+pub fn handle_add_any_seed(src_id: String, dst_id: String, context: String, index: u64, seed_type: SeedType) -> ZomeApiResult<()> {
+    hdk::keystore_derive_seed(src_id, dst_id, context, index, seed_type)
+}
+
 pub fn handle_list_secrets() -> ZomeApiResult<Vec<String>> {
     hdk::keystore_list().map(|keystore_ids| keystore_ids.ids)
 }
@@ -64,6 +68,12 @@ define_zome! {
             inputs: |message: String, provenance: Provenance|,
             outputs: |result: ZomeApiResult<bool>|,
             handler: handle_verify_message
+        }
+
+        add_any_seed: {
+            inputs: |src_id: String, dst_id: String, context: String, index: u64, seed_type: SeedType|,
+            outputs: |result: ZomeApiResult<()>|,
+            handler: handle_add_any_seed
         }
 
         add_seed: {

@@ -490,7 +490,7 @@ fn get_meta_aspects_from_dht_eav(
                     }
                     _ => Err(HolochainError::from("Invalid Entry Value")),
                 },
-                Attribute::RemovedLink(link_tag, link_type) => {
+                Attribute::RemovedLink(link_type, link_tag) => {
                     match value_entry.entry_with_meta.entry {
                         Entry::LinkRemove((link_data, removed_link_entries)) => Ok(
                             EntryAspect::LinkRemove((link_data, removed_link_entries), header),
@@ -499,8 +499,8 @@ fn get_meta_aspects_from_dht_eav(
                             let links = get_links(
                                 &context,
                                 entry_address.clone(),
-                                Some(link_tag),
                                 Some(link_type),
+                                Some(link_tag),
                                 Some(CrudStatus::Live),
                                 GetLinksQueryConfiguration::default(),
                             )?;

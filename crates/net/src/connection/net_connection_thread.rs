@@ -2,7 +2,7 @@ use super::{
     net_connection::{NetHandler, NetSend, NetWorkerFactory},
     NetResult,
 };
-use crate::{p2p_network::Lib3hClientProtocolWrapped, NEW_RELIC_LICENSE_KEY};
+use crate::p2p_network::Lib3hClientProtocolWrapped;
 use failure::err_msg;
 use holochain_locksmith::Mutex;
 use holochain_logging::prelude::*;

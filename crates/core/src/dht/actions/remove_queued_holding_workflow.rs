@@ -3,7 +3,6 @@ use crate::{
     context::Context,
     dht::pending_validations::PendingValidation,
     instance::dispatch_action,
-    NEW_RELIC_LICENSE_KEY,
 };
 use futures::{future::Future, task::Poll};
 use std::{pin::Pin, sync::Arc};

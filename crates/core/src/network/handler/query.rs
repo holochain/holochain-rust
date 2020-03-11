@@ -8,7 +8,6 @@ use crate::{
     },
     nucleus,
     workflows::get_entry_result::get_entry_result_workflow,
-    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     crud_status::CrudStatus,
@@ -27,12 +26,11 @@ use std::{convert::TryInto, sync::Arc};
 
 pub type LinkTag = String;
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn get_links(
     context: &Arc<Context>,
     base: Address,
-    link_type: String,
-    tag: String,
+    link_type: Option<String>,
+    tag: Option<String>,
     crud_status: Option<CrudStatus>,
     query_configuration: GetLinksQueryConfiguration,
 ) -> Result<Vec<GetLinkData>, HolochainError> {

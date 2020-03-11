@@ -6,7 +6,6 @@ use crate::{
     persister::Persister,
     signal::{Signal, SignalSender},
     state::StateWrapper,
-    NEW_RELIC_LICENSE_KEY,
 };
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use futures::{

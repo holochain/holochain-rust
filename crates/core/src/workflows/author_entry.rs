@@ -6,7 +6,6 @@ use crate::{
     nucleus::{
         actions::build_validation_package::build_validation_package, validation::validate_entry,
     },
-    NEW_RELIC_LICENSE_KEY,
 };
 
 use holochain_core_types::{

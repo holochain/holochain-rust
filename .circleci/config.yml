@@ -14,7 +14,7 @@ commands:
       no_output_timeout: 45m
       command: ./docker/build << parameters.box >> $CIRCLE_BRANCH
    - run:
-      no_output_timeout: 20m
+      no_output_timeout: 30m
       command: ./docker/push << parameters.box >> $CIRCLE_BRANCH
 
 jobs:
@@ -28,7 +28,7 @@ jobs:
    - checkout
    - run:
       command: nix-shell --run hc-rust-test
-      no_output_timeout: 20m
+      no_output_timeout: 30m
 
  code-coverage:
   machine: true
@@ -44,10 +44,10 @@ jobs:
    - checkout
    - run:
       command: nix-shell --run hc-test-fmt
-      no_output_timeout: 20m
+      no_output_timeout: 30m
    - run:
       command: nix-shell --run hn-rust-clippy
-      no_output_timeout: 20m
+      no_output_timeout: 30m
    # don't allow unpinned deps
    - run:
       name: no unpinnned deps
@@ -103,11 +103,11 @@ jobs:
          name: sim2h server
          command: nix-shell --run hc-sim2h-server
          background: true
-         no_output_timeout: 20m
+         no_output_timeout: 30m
      - run:
          name: app spec tests
          command: nix-shell --run 'hc-test-app-spec app_spec sim2h'
-         no_output_timeout: 20m
+         no_output_timeout: 30m
 
  stress-tests-sim2h:
    docker:
@@ -117,13 +117,13 @@ jobs:
      - checkout
      - run:
          name: sim2h server
-         command: nix-shell --run "hc-sim2h-server -p 9002"
+         command: nix-shell --run "hc-sim2h-server -p 9002 --structured None"
          background: true
-         no_output_timeout: 20m
+         no_output_timeout: 30m
      - run:
          name: stress tests
          command: nix-shell --run hc-stress-test-sim2h
-         no_output_timeout: 20m
+         no_output_timeout: 30m
 
  cli-tests:
   docker:
@@ -134,7 +134,7 @@ jobs:
    - run:
       name: test cli
       command: nix-shell --run hc-cli-test
-      no_output_timeout: 20m
+      no_output_timeout: 30m
 
  wasm-conductor-tests:
   docker:
@@ -144,7 +144,7 @@ jobs:
    - run:
        name: wasm conductor tests
        command: nix-shell --run hc-conductor-wasm-test
-       no_output_timeout: 20m
+       no_output_timeout: 30m
 
  deploy-mac:
   macos:
@@ -153,13 +153,14 @@ jobs:
    - checkout
    - run:
       name: Deploy mac binaries
-      no_output_timeout: 20m
+      no_output_timeout: 30m
       command: |
        curl https://nixos.org/nix/install | sh
        . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
        nix-shell --run hc-release-github-binaries
 
  deploy-linux:
+  resource_class: xlarge
   docker:
    - image: holochain/holonix:ubuntu
   steps:
@@ -167,7 +168,7 @@ jobs:
    - checkout
    - run:
       name: Deploy linux binaries
-      no_output_timeout: 20m
+      no_output_timeout: 30m
       command: |
        . /home/docker/.nix-profile/etc/profile.d/nix.sh
        nix-shell --run hc-release-github-binaries
@@ -178,7 +179,7 @@ jobs:
   steps:
    - checkout
    - run:
-      no_output_timeout: 20m
+      no_output_timeout: 30m
       command: nix-shell --run hc-release-hook-publish
 
  docker-build-latest:
@@ -270,7 +271,6 @@ workflows:
         only:
          - develop
          - final-exam
-         - wire-message-receipts
    - docker-build-trycp-server:
       requires:
        - docker-build-minimal
@@ -284,7 +284,6 @@ workflows:
         only:
          - develop
          - final-exam
-         - wire-message-receipts
    - docker-build-circle-build:
       requires:
        - docker-build-latest

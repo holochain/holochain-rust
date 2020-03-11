@@ -481,7 +481,10 @@ fn get_meta_aspects_from_dht_eav(
                     Entry::LinkAdd(link_data) | Entry::LinkRemove((link_data, _)) => {
                         Ok(EntryAspect::LinkAdd(link_data, header))
                     }
-                    _ => Err(HolochainError::from("Invalid Entry Value for Link Add")),
+                    _ => Err(HolochainError::from(format!(
+                        "Invalid Entry Value for LinkTag: {:?}",
+                        value_entry
+                    ))),
                 },
                 Attribute::RemovedLink(_link_type, _link_tag) => {
                     match value_entry.entry_with_meta.entry {
@@ -498,14 +501,20 @@ fn get_meta_aspects_from_dht_eav(
                                 header,
                             ))
                         }
-                        _ => Err(HolochainError::from("Invalid Entry Value for Remove Link")),
+                        _ => Err(HolochainError::from(format!(
+                            "Invalid Entry Value for RemovedLink: {:?}",
+                            value_entry
+                        ))),
                     }
                 }
                 Attribute::CrudLink => Ok(EntryAspect::Update(
                     value_entry.entry_with_meta.entry,
                     header,
                 )),
-                _ => Err(HolochainError::from("Invalid Attribute in eavi")),
+                _ => Err(HolochainError::from(format!(
+                    "Invalid Attribute in eavi: {:?}",
+                    eavi.attribute()
+                ))),
             }
         })
         .partition(Result::is_ok);

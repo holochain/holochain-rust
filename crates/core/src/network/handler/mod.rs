@@ -21,7 +21,7 @@ use crate::{
         handler::{
             fetch::*,
             lists::{handle_get_authoring_list, handle_get_gossip_list},
-            query::*,
+            query::{get_links, *},
             send::*,
             store::*,
         },
@@ -30,7 +30,8 @@ use crate::{
 };
 use boolinator::Boolinator;
 use holochain_core_types::{
-    chain_header::ChainHeader, eav::Attribute, entry::Entry, error::HolochainError, time::Timeout,
+    chain_header::ChainHeader, crud_status::CrudStatus, eav::Attribute, entry::Entry,
+    error::HolochainError, network::query::GetLinksQueryConfiguration, time::Timeout,
 };
 use holochain_json_api::json::JsonString;
 use holochain_net::connection::net_connection::NetHandler;
@@ -483,30 +484,41 @@ fn get_meta_aspects_from_dht_eav(
             let header = value_entry.headers[0].to_owned();
 
             match eavi.attribute() {
-                Attribute::LinkTag(_, _) => {
-                    let link_data = unwrap_to!(value_entry.entry_with_meta.entry => Entry::LinkAdd);
-                    Ok(EntryAspect::LinkAdd(link_data.clone(), header))
-                }
-                Attribute::RemovedLink(_, _) => {
+                Attribute::LinkTag(_, _) => match value_entry.entry_with_meta.entry {
+                    Entry::LinkAdd(link_data) | Entry::LinkRemove((link_data, _)) => {
+                        Ok(EntryAspect::LinkAdd(link_data, header))
+                    }
+                    _ => Err(HolochainError::from("Invalid Entry Value")),
+                },
+                Attribute::RemovedLink(link_tag, link_type) => {
                     match value_entry.entry_with_meta.entry {
-                        Entry::LinkRemove((link_data, removed_link_entries)) => {
-                            Ok(EntryAspect::LinkRemove(
-                                (link_data.clone(), removed_link_entries.clone()),
-                                header,
-                            ))
-                        },
+                        Entry::LinkRemove((link_data, removed_link_entries)) => Ok(
+                            EntryAspect::LinkRemove((link_data, removed_link_entries), header),
+                        ),
                         Entry::LinkAdd(link_data) => {
-                            //bad = true;
-//                            debug!("didn't get an expected LinkRemove, got: {:?}",value_entry.clone());
-                            //                            Err(HolochainError::from("bad linkremove"))
-                            Ok(EntryAspect::LinkRemove(
-                                (link_data.clone(), vec![eavi.value()]),
-                                header,
-                            ))
-                        },
+                            let links = get_links(
+                                &context,
+                                entry_address.clone(),
+                                Some(link_tag),
+                                Some(link_type),
+                                Some(CrudStatus::Live),
+                                GetLinksQueryConfiguration::default(),
+                            )?;
+
+                            //not very efficient but nice to fall back on
+                            let filtered_links = links
+                                .into_iter()
+                                .filter(|link_for_filter| {
+                                    &link_for_filter.target == link_data.link().target()
+                                })
+                                .map(|s| s.address)
+                                .collect::<Vec<_>>();
+
+                            Ok(EntryAspect::LinkRemove((link_data, filtered_links), header))
+                        }
                         _ => {
                             bad = true;
-                            debug!("didn't get an expected value, got: {:?}",value_entry);
+                            debug!("didn't get an expected value, got: {:?}", value_entry);
                             Err(HolochainError::from("bad value"))
                         }
                     }
@@ -517,9 +529,13 @@ fn get_meta_aspects_from_dht_eav(
                 )),
                 _ => {
                     bad = true;
-                    debug!("didn't get an expected Attribute, got: {:?} for value {:?}", eavi.attribute(), value_entry);
+                    debug!(
+                        "didn't get an expected Attribute, got: {:?} for value {:?}",
+                        eavi.attribute(),
+                        value_entry
+                    );
                     Err(HolochainError::from("bad attribute"))
-                },
+                }
             }
         })
         .partition(Result::is_ok);

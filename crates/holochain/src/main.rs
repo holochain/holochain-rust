@@ -19,11 +19,11 @@ extern crate holochain_core_types;
 extern crate holochain_locksmith;
 #[macro_use]
 extern crate holochain_common;
+extern crate lazy_static;
 extern crate lib3h_sodium;
 #[cfg(unix)]
 extern crate signal_hook;
 extern crate structopt;
-extern crate lazy_static;
 
 use holochain_conductor_lib::{
     conductor::{mount_conductor_from_config, Conductor, CONDUCTOR},
@@ -33,11 +33,11 @@ use holochain_core_types::{
     error::HolochainError, hdk_version::HDK_VERSION, BUILD_DATE, GIT_BRANCH, GIT_HASH, HDK_HASH,
 };
 use holochain_locksmith::spawn_locksmith_guard_watcher;
+use lazy_static::lazy_static;
 #[cfg(unix)]
 use signal_hook::{iterator::Signals, SIGINT, SIGTERM};
 use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc};
 use structopt::StructOpt;
-use lazy_static::lazy_static;
 
 lazy_static! {
     static ref SET_THREAD_PANIC_FATAL2: bool = {

@@ -461,7 +461,7 @@ fn get_meta_aspects_from_dht_eav(
         .expect("Could not get state for handle_fetch_entry")
         .dht()
         .get_all_metas(entry_address)?;
-
+    let mut bad = false;
     let (aspects, errors): (Vec<_>, Vec<_>) = eavis
         .iter()
         .filter(|eavi| match eavi.attribute() {
@@ -495,8 +495,19 @@ fn get_meta_aspects_from_dht_eav(
                                 header,
                             ))
                         },
+                        Entry::LinkAdd(link_data) => {
+                            //bad = true;
+//                            debug!("didn't get an expected LinkRemove, got: {:?}",value_entry.clone());
+                            //                            Err(HolochainError::from("bad linkremove"))
+                            Ok(EntryAspect::LinkRemove(
+                                (link_data.clone(), vec![eavi.value()]),
+                                header,
+                            ))
+                        },
                         _ => {
-                            panic!("didn't get an expected LinkRemove, got: {:?}",value_entry)
+                            bad = true;
+                            debug!("didn't get an expected value, got: {:?}",value_entry);
+                            Err(HolochainError::from("bad value"))
                         }
                     }
                 }
@@ -504,10 +515,21 @@ fn get_meta_aspects_from_dht_eav(
                     value_entry.entry_with_meta.entry,
                     header,
                 )),
-                _ => unreachable!(),
+                _ => {
+                    bad = true;
+                    debug!("didn't get an expected Attribute, got: {:?} for value {:?}", eavi.attribute(), value_entry);
+                    Err(HolochainError::from("bad attribute"))
+                },
             }
         })
         .partition(Result::is_ok);
+
+    if bad {
+        debug!("EAVIS: {:?}", eavis);
+        debug!("ASPECTS: {:?}", aspects);
+        debug!("ERRORS: {:?}", errors);
+        panic!("bailing");
+    }
 
     if !errors.is_empty() {
         Err(errors[0].to_owned().err().unwrap())

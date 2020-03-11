@@ -89,7 +89,6 @@ impl Future for QueryFuture {
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         if let Some(err) = self.context.action_channel_error("GetEntryFuture") {
-            debug!("in query future action_channel_error");
             return Poll::Ready(Err(err));
         }
 

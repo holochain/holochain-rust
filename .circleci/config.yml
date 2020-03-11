@@ -271,6 +271,7 @@ workflows:
         only:
          - develop
          - final-exam
+         - ioerror-on-disconnect
    - docker-build-trycp-server:
       requires:
        - docker-build-minimal
@@ -284,6 +285,7 @@ workflows:
         only:
          - develop
          - final-exam
+         - ioerror-on-disconnect
    - docker-build-circle-build:
       requires:
        - docker-build-latest

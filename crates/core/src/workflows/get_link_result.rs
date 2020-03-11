@@ -27,6 +27,7 @@ pub async fn get_link_result_workflow<'a>(
     };
     let method = QueryMethod::Link(link_args.clone(), GetLinksNetworkQuery::Links(config));
     let response = query(context.clone(), method, link_args.options.timeout.clone()).await?;
+    
     let links_result = match response {
         NetworkQueryResult::Links(query, _, _) => Ok(query),
         _ => Err(HolochainError::ErrorGeneric(

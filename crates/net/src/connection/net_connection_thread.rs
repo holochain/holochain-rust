@@ -83,7 +83,7 @@ impl NetConnectionThread {
                 // Loop as long owner wants to
                 let mut sleep_duration_us = TICK_SLEEP_MIN_US;
                 while can_keep_running_child.load(Ordering::Relaxed) {
-                     // Check if we received something from parent (NetConnectionThread::send())
+                    // Check if we received something from parent (NetConnectionThread::send())
                     let mut did_something = false;
                     recv_channel
                         .try_recv() // TODO: can we use recv_timeout instead to reduce the poll interval?

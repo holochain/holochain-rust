@@ -14,6 +14,27 @@ use holochain_wasm_utils::api_serialization::get_entry::{
 };
 use std::sync::Arc;
 
+/// GenEntry locally
+pub fn get_entry_with_meta_workflow_local<'a>(
+    context: &'a Arc<Context>,
+    address: &'a Address,
+) -> Result<Option<EntryWithMetaAndHeader>, HolochainError> {
+    let maybe_entry_with_meta =
+        nucleus::actions::get_entry::get_entry_with_meta(context, address.clone())?;
+    let entry = maybe_entry_with_meta
+        .ok_or_else(|| HolochainError::ErrorGeneric("Could not get entry".to_string()))?;
+    context
+        .state()
+        .ok_or_else(|| HolochainError::ErrorGeneric("Could not get state".to_string()))?
+        .get_headers(address.clone())
+        .map(|headers| {
+            Some(EntryWithMetaAndHeader {
+                entry_with_meta: entry.clone(),
+                headers,
+            })
+        })
+}
+
 /// Get Entry workflow
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn get_entry_with_meta_workflow<'a>(

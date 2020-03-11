@@ -26,11 +26,11 @@ use crate::{
             store::*,
         },
     },
-    workflows::get_entry_result::get_entry_with_meta_workflow,
+    workflows::get_entry_result::get_entry_with_meta_workflow_local,
 };
 use boolinator::Boolinator;
 use holochain_core_types::{
-    chain_header::ChainHeader, eav::Attribute, entry::Entry, error::HolochainError, time::Timeout,
+    chain_header::ChainHeader, eav::Attribute, entry::Entry, error::HolochainError,
 };
 use holochain_json_api::json::JsonString;
 use holochain_net::connection::net_connection::NetHandler;
@@ -470,12 +470,7 @@ fn get_meta_aspects_from_dht_eav(
             _ => false,
         })
         .map(|eavi| {
-            let value_entry = context
-                .block_on(get_entry_with_meta_workflow(
-                    &context,
-                    &eavi.value(),
-                    &Timeout::default(),
-                ))?
+            let value_entry = get_entry_with_meta_workflow_local(&context, &eavi.value())?
                 .ok_or_else(|| {
                     HolochainError::from("Entry linked in EAV not found! This should never happen.")
                 })?;

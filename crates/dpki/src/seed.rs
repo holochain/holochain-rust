@@ -2,7 +2,7 @@ use crate::{
     key_bundle::KeyBundle,
     password_encryption::*,
     utils::{generate_derived_seed_buf, SeedContext},
-    AGENT_ID_CTX, AUTH_CTX, DEVICE_CTX, REVOKE_CTX, SEED_SIZE,
+    AGENT_ID_CTX, AUTH_CTX, REVOKE_CTX, SEED_SIZE,
 };
 use bip39::{Language, Mnemonic, MnemonicType};
 use holochain_core_types::error::{HcResult, HolochainError};
@@ -328,7 +328,7 @@ impl RevocationSeed {
     /// Generate a revocation key
     pub fn generate_revocation_key(&mut self, derivation_index: u64) -> HcResult<KeyBundle> {
         let mut ref_seed_buf = SecBuf::with_secure(SEED_SIZE);
-        let context = SeedContext::new(DEVICE_CTX);
+        let context = SeedContext::new(REVOKE_CTX);
         let mut context = context.to_sec_buf();
         kdf::derive(
             &mut ref_seed_buf,
@@ -369,7 +369,7 @@ impl AuthSeed {
     /// Generate a revocation key
     pub fn generate_auth_key(&mut self, derivation_index: u64) -> HcResult<KeyBundle> {
         let mut ref_seed_buf = SecBuf::with_secure(SEED_SIZE);
-        let context = SeedContext::new(DEVICE_CTX);
+        let context = SeedContext::new(AUTH_CTX);
         let mut context = context.to_sec_buf();
         kdf::derive(
             &mut ref_seed_buf,

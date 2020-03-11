@@ -499,7 +499,7 @@ fn get_meta_aspects_from_dht_eav(
                             // but currently incorrect in this implementation and needs to be fixed
                             // in hdk v3.
                             Ok(EntryAspect::LinkRemove(
-                                (link_data.clone(), vec![eavi.value()]),
+                                (link_data, vec![eavi.value()]),
                                 header,
                             ))
                         }

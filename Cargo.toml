@@ -47,8 +47,3 @@ exclude = [
 #holochain_tracing = { git = "https://github.com/holochain/holochain-tracing", branch ="tokio" }
 #holochain_tracing_macros = { git = "https://github.com/holochain/holochain-tracing", branch ="tokio" }
 
-#holochain_persistence_file = { path = "../holochain-persistence/crates/holochain_persistence_file" }
-#holochain_persistence_mem = { path = "../holochain-persistence/crates/holochain_persistence_mem" }
-#holochain_persistence_pickle = { path = "../holochain-persistence/crates/holochain_persistence_pickle" }
-#holochain_persistence_lmdb = { path = "../holochain-persistence/crates/holochain_persistence_lmdb" }
-#                           holochain_persistence_api = { path = "../holochain-persistence/crates/holochain_persistence_api" }

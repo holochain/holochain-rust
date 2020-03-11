@@ -462,7 +462,6 @@ fn get_meta_aspects_from_dht_eav(
         .expect("Could not get state for handle_fetch_entry")
         .dht()
         .get_all_metas(entry_address)?;
-    let mut bad = false;
     let (aspects, errors): (Vec<_>, Vec<_>) = eavis
         .iter()
         .filter(|eavi| match eavi.attribute() {
@@ -488,7 +487,7 @@ fn get_meta_aspects_from_dht_eav(
                     Entry::LinkAdd(link_data) | Entry::LinkRemove((link_data, _)) => {
                         Ok(EntryAspect::LinkAdd(link_data, header))
                     }
-                    _ => Err(HolochainError::from("Invalid Entry Value")),
+                    _ => Err(HolochainError::from("Invalid Entry Value for Link Add")),
                 },
                 Attribute::RemovedLink(link_type, link_tag) => {
                     match value_entry.entry_with_meta.entry {
@@ -516,37 +515,17 @@ fn get_meta_aspects_from_dht_eav(
 
                             Ok(EntryAspect::LinkRemove((link_data, filtered_links), header))
                         }
-                        _ => {
-                            bad = true;
-                            debug!("didn't get an expected value, got: {:?}", value_entry);
-                            Err(HolochainError::from("bad value"))
-                        }
+                        _ => Err(HolochainError::from("Invalid Entry Value for Remove Link")),
                     }
                 }
                 Attribute::CrudLink => Ok(EntryAspect::Update(
                     value_entry.entry_with_meta.entry,
                     header,
                 )),
-                _ => {
-                    bad = true;
-                    debug!(
-                        "didn't get an expected Attribute, got: {:?} for value {:?}",
-                        eavi.attribute(),
-                        value_entry
-                    );
-                    Err(HolochainError::from("bad attribute"))
-                }
+                _ => Err(HolochainError::from("Invalid Attribute in eavi")),
             }
         })
         .partition(Result::is_ok);
-
-    if bad {
-        debug!("EAVIS: {:?}", eavis);
-        debug!("ASPECTS: {:?}", aspects);
-        debug!("ERRORS: {:?}", errors);
-        panic!("bailing");
-    }
-
     if !errors.is_empty() {
         Err(errors[0].to_owned().err().unwrap())
     } else {

@@ -1322,7 +1322,6 @@ dependencies = [
 name = "holochain_core"
 version = "0.0.44-alpha3"
 dependencies = [
- "backtrace 0.3.27 (registry+https://github.com/rust-lang/crates.io-index)",
  "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "bitflags 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "boolinator 2.4.0 (registry+https://github.com/rust-lang/crates.io-index)",

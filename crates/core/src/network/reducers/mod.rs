@@ -129,10 +129,9 @@ pub fn send(
                 })
                 .into()
             });
-            network.send(span.wrap(msg).into()).map_err(|error| {
-                debug!("in query: network.send {:?}", error);
-                HolochainError::IoError(error.to_string())
-            })
+            network
+                .send(span.wrap(msg).into())
+                .map_err(|error| HolochainError::IoError(error.to_string()))
         })
         .ok_or_else(|| HolochainError::ErrorGeneric("Network not initialized".to_string()))?
 }

@@ -217,10 +217,7 @@ impl Runtime {
     ) -> ZomeApiResult {
         self.store_as_json_string(match result {
             Ok(value) => ZomeApiInternalResult::success(value),
-            Err(hc_err) => {
-                println!("{:?}", backtrace::Backtrace::new());
-                ZomeApiInternalResult::failure(core_error!(hc_err))
-            }
+            Err(hc_err) => ZomeApiInternalResult::failure(core_error!(hc_err)),
         })
     }
 }

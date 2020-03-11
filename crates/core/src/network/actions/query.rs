@@ -68,9 +68,7 @@ pub async fn query(
         Some((SystemTime::now(), timeout.into())),
     ));
     let action_wrapper = ActionWrapper::new(entry);
-    debug!("before dispatch");
     dispatch_action(context.action_channel(), action_wrapper.clone());
-    debug!("before Query Future");
     QueryFuture {
         context: context.clone(),
         key: key.clone(),
@@ -103,7 +101,6 @@ impl Future for QueryFuture {
 
         if let Some(state) = self.context.try_state() {
             if let Err(error) = state.network().initialized() {
-                debug!("in query future network initialized");
                 return Poll::Ready(Err(error));
             }
             match state.network().get_query_results.get(&self.key) {
@@ -112,9 +109,6 @@ impl Future for QueryFuture {
                         self.context.action_channel(),
                         ActionWrapper::new(Action::ClearQueryResult(self.key.clone())),
                     );
-                    if let Err(e) = &result {
-                        debug!("in query future get query results {:?}", e);
-                    }
                     Poll::Ready(result.clone())
                 }
                 _ => Poll::Pending,

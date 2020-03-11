@@ -34,14 +34,8 @@ pub struct NetConnectionThread {
 impl NetSend for NetConnectionThread {
     /// send a message to the worker within NetConnectionThread's child thread.
     fn send(&mut self, data: Lib3hClientProtocolWrapped) -> NetResult<()> {
-        debug!("in NetConnection thread");
-        match self.send_channel.send(data) {
-            Err(e) => {
-                debug!("in NetConnection thread {:?}", e);
-                return Err(e.into());
-            }
-            Ok(_) => return Ok(()),
-        }
+        self.send_channel.send(data)?;
+        Ok(())
     }
 }
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
@@ -81,22 +75,14 @@ impl NetConnectionThread {
                     thread::sleep(time::Duration::from_millis(TICK_SLEEP_STARTUP_RETRY_MS));
                 };
                 // Get endpoint and send it to owner (NetConnectionThread)
-                match send_endpoint.send((worker.endpoint(), worker.p2p_endpoint())) {
-                    Err(e) => {
-                        debug!("net_worker send_endpoint send fail: {:?}", e);
-                        panic!("boink");
-                    }
-                    Ok(()) => {
-                        debug!("net_worker send_endpoint sent");
-                    }
-                };
+                send_endpoint
+                    .send((worker.endpoint(), worker.p2p_endpoint()))
+                    .expect("Sending endpoint address should work.");
 
                 drop(send_endpoint);
                 // Loop as long owner wants to
                 let mut sleep_duration_us = TICK_SLEEP_MIN_US;
                 while can_keep_running_child.load(Ordering::Relaxed) {
-                    //                    debug!("-~-");
-                    // Check if we received something from parent (NetConnectionThread::send())
                     let mut did_something = false;
                     recv_channel
                         .try_recv() // TODO: can we use recv_timeout instead to reduce the poll interval?

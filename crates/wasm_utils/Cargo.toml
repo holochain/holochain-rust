@@ -15,6 +15,7 @@ holochain_core_types = { version = "=0.0.44-alpha3", path = "../core_types" }
 holochain_json_derive = "=0.0.23"
 holochain_persistence_api = "=0.0.18"
 holochain_json_api = "=0.0.23"
+backtrace = { version = "=0.3.27", features = [ "serialize-serde" ] }
 
 [dev-dependencies]
 test_utils = { version = "=0.0.44-alpha3", path = "../../test_utils" }

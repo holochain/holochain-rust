@@ -78,7 +78,7 @@ fn get_links(
                 .block_on(get_entry_result_workflow_inner(
                     &context.clone(),
                     &link_add_entry_args,
-                    true // local only please!
+                    true, // local only please!
                 ))
                 .map(|get_entry_result| match get_entry_result.result {
                     GetEntryResultType::Single(entry_with_meta_and_headers) => {

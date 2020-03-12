@@ -26,11 +26,11 @@ use crate::{
             store::*,
         },
     },
-    workflows::get_entry_result::get_entry_with_meta_workflow,
+    workflows::get_entry_result::get_entry_with_meta_workflow_local,
 };
 use boolinator::Boolinator;
 use holochain_core_types::{
-    chain_header::ChainHeader, eav::Attribute, entry::Entry, error::HolochainError, time::Timeout,
+    chain_header::ChainHeader, eav::Attribute, entry::Entry, error::HolochainError,
 };
 use holochain_json_api::json::JsonString;
 use holochain_net::connection::net_connection::NetHandler;
@@ -461,7 +461,6 @@ fn get_meta_aspects_from_dht_eav(
         .expect("Could not get state for handle_fetch_entry")
         .dht()
         .get_all_metas(entry_address)?;
-
     let (aspects, errors): (Vec<_>, Vec<_>) = eavis
         .iter()
         .filter(|eavi| match eavi.attribute() {
@@ -471,39 +470,54 @@ fn get_meta_aspects_from_dht_eav(
             _ => false,
         })
         .map(|eavi| {
-            let value_entry = context
-                .block_on(get_entry_with_meta_workflow(
-                    &context,
-                    &eavi.value(),
-                    &Timeout::default(),
-                ))?
+            let value_entry = get_entry_with_meta_workflow_local(&context, &eavi.value())?
                 .ok_or_else(|| {
                     HolochainError::from("Entry linked in EAV not found! This should never happen.")
                 })?;
             let header = value_entry.headers[0].to_owned();
 
             match eavi.attribute() {
-                Attribute::LinkTag(_, _) => {
-                    let link_data = unwrap_to!(value_entry.entry_with_meta.entry => Entry::LinkAdd);
-                    Ok(EntryAspect::LinkAdd(link_data.clone(), header))
-                }
-                Attribute::RemovedLink(_, _) => {
-                    let (link_data, removed_link_entries) =
-                        unwrap_to!(value_entry.entry_with_meta.entry => Entry::LinkRemove);
-                    Ok(EntryAspect::LinkRemove(
-                        (link_data.clone(), removed_link_entries.clone()),
-                        header,
-                    ))
+                Attribute::LinkTag(_, _) => match value_entry.entry_with_meta.entry {
+                    Entry::LinkAdd(link_data) | Entry::LinkRemove((link_data, _)) => {
+                        Ok(EntryAspect::LinkAdd(link_data, header))
+                    }
+                    _ => Err(HolochainError::from(format!(
+                        "Invalid Entry Value for LinkTag: {:?}",
+                        value_entry
+                    ))),
+                },
+                Attribute::RemovedLink(_link_type, _link_tag) => {
+                    match value_entry.entry_with_meta.entry {
+                        Entry::LinkRemove((link_data, removed_link_entries)) => Ok(
+                            EntryAspect::LinkRemove((link_data, removed_link_entries), header),
+                        ),
+                        Entry::LinkAdd(link_data) => {
+                            // here we are manually building the entry aspect assuming
+                            // just one link being removed which is actually correct for holochain
+                            // but currently incorrect in this implementation and needs to be fixed
+                            // in hdk v3.
+                            Ok(EntryAspect::LinkRemove(
+                                (link_data, vec![eavi.value()]),
+                                header,
+                            ))
+                        }
+                        _ => Err(HolochainError::from(format!(
+                            "Invalid Entry Value for RemovedLink: {:?}",
+                            value_entry
+                        ))),
+                    }
                 }
                 Attribute::CrudLink => Ok(EntryAspect::Update(
                     value_entry.entry_with_meta.entry,
                     header,
                 )),
-                _ => unreachable!(),
+                _ => Err(HolochainError::from(format!(
+                    "Invalid Attribute in eavi: {:?}",
+                    eavi.attribute()
+                ))),
             }
         })
         .partition(Result::is_ok);
-
     if !errors.is_empty() {
         Err(errors[0].to_owned().err().unwrap())
     } else {

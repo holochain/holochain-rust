@@ -94,9 +94,11 @@ mod tests {
 
         assert_eq!(
             maybe_reply,
-            Some(Err(HolochainError::Timeout(
-                "reduce_send_direct_message_timeout".to_string()
-            )))
+            Some(Err(HolochainError::Timeout(format!(
+                "{}:{}",
+                file!(),
+                line!()
+            ))))
         );
     }
 }

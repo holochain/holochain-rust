@@ -70,8 +70,10 @@ pub fn reduce_get_validation_package_timeout(
 
     network_state.get_validation_package_results.insert(
         address.clone(),
-        Some(Err(HolochainError::Timeout(
-            "reduce_get_validation_package".into(),
-        ))),
+        Some(Err(HolochainError::Timeout(format!(
+            "{}:{}",
+            file!(),
+            line!()
+        )))),
     );
 }

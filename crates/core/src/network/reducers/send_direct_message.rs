@@ -75,9 +75,7 @@ pub fn reduce_send_direct_message_timeout(
 
     network_state.custom_direct_message_replys.insert(
         id.clone(),
-        Err(HolochainError::Timeout(
-            "reduce_send_direct_message_timeout".into(),
-        )),
+        Err(HolochainError::Timeout(format!("{}:{}", file!(), line!()))),
     );
 }
 
@@ -150,9 +148,11 @@ mod tests {
 
         assert_eq!(
             maybe_reply,
-            Some(Err(HolochainError::Timeout(
-                "reduce_send_direct_message_timeout".to_string()
-            )))
+            Some(Err(HolochainError::Timeout(format!(
+                "{}:{}",
+                file!(),
+                line!()
+            ))))
         );
     }
 }

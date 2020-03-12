@@ -5,7 +5,7 @@ use crate::{
         net_connection::{NetHandler, NetWorker},
         NetResult,
     },
-    NEW_RELIC_LICENSE_KEY,
+    p2p_network::Lib3hClientProtocolWrapped,
 };
 use lib3h::{
     dht::mirror_dht::MirrorDht,
@@ -14,7 +14,6 @@ use lib3h::{
 };
 
 use holochain_tracing::Span;
-use lib3h_protocol::protocol_client::Lib3hClientProtocol;
 
 /// A worker that makes use of lib3h / NetworkEngine.
 /// It adapts the Worker interface with Lib3h's NetworkEngine's interface.
@@ -82,19 +81,21 @@ impl Lib3hWorker {
 impl NetWorker for Lib3hWorker {
     /// We got a message from core
     /// -> forward it to the NetworkEngine
-    fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
-        self.net_engine.post(data.clone())?;
+    fn receive(&mut self, data: Lib3hClientProtocolWrapped) -> NetResult<()> {
+        self.net_engine.post(data.data.clone())?;
         // Done
         Ok(())
     }
 
     /// Check for messages from our NetworkEngine
     fn tick(&mut self) -> NetResult<bool> {
+        let span = ht::with_top_or_null(|s| s.child("pre-send"));
         // Tick the NetworkEngine and check for incoming protocol messages.
         let (did_something, output) = self.net_engine.process()?;
         if did_something {
             for msg in output {
-                self.handler.handle(Ok(msg))?;
+                self.handler
+                    .handle(Ok(span.follower("inner").wrap(msg).into()))?;
             }
         }
         Ok(did_something)

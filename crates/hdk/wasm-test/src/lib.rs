@@ -644,7 +644,7 @@ pub fn handle_my_entries_by_tag(tag:Option<String>,maybe_status : Option<LinksSt
     if let Some(tag_matched) = tag
     {
         
-        hdk::get_links_with_options(&address, LinkMatch::Any, LinkMatch::Regex(&tag_matched),link_query_options)
+        hdk::get_links_with_options(&address, LinkMatch::Any, LinkMatch::Exactly(&tag_matched),link_query_options)
     } 
     else
     {

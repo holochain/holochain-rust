@@ -1,17 +1,17 @@
 [package]
 name = "blog"
-version = "0.0.43-alpha3"
+version = "0.0.44-alpha3"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 
 [dependencies]
-serde = "=1.0.100"
+serde = "=1.0.104"
 serde_json = { version = "=1.0.47", features = ["preserve_order"] }
 hdk = { path = "../../../../crates/hdk" }
 hdk-proc-macros = { path = "../../../../crates/hdk_v2" }
 
-holochain_json_derive = "=0.0.20"
-serde_derive = "=1.0.100"
+holochain_json_derive = "=0.0.23"
+serde_derive = "=1.0.104"
 boolinator = "=2.4.0"
 
 [lib]

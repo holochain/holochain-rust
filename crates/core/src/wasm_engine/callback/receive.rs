@@ -7,7 +7,6 @@ use crate::{
         runtime::WasmCallData,
         Defn,
     },
-    NEW_RELIC_LICENSE_KEY,
 };
 
 use holochain_json_api::{error::JsonError, json::JsonString};
@@ -16,6 +15,7 @@ use std::sync::Arc;
 #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 struct ReceiveReturnValue(Result<String, String>);
 
+#[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn receive(
     context: Arc<Context>,

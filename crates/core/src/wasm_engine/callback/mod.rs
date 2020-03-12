@@ -15,7 +15,6 @@ use crate::{
         runtime::WasmCallData,
         Defn,
     },
-    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     entry::Entry, error::RibosomeEncodedValue, validation::ValidationPackageDefinition,
@@ -188,6 +187,7 @@ pub(crate) fn run_callback(context: Arc<Context>, call: CallbackFnCall) -> Callb
     }
 }
 
+#[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn call(
     context: Arc<Context>,

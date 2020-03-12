@@ -1,3 +1,4 @@
+use crate::content_store::{AddContent, GetContent};
 ///
 /// Inner DHT reducers are not pure functions but rather functions designed to make the required
 /// mutations to a newly cloned DhtState object. Unlike the reducers they do not need a specific signature.
@@ -8,10 +9,6 @@
 /// It is up to the calling reducer function whether the new state object should be kept and what to do with the return value
 ///
 use crate::dht::dht_store::DhtStore;
-use crate::{
-    content_store::{AddContent, GetContent},
-    NEW_RELIC_LICENSE_KEY,
-};
 use holochain_core_types::{
     crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus},
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},

@@ -5,7 +5,6 @@ use crate::{
         memory::WasmPageManager,
         runtime::{Runtime, WasmCallData},
     },
-    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     dna::wasm::ModuleArc,
@@ -57,6 +56,7 @@ fn get_module(data: WasmCallData) -> Result<ModuleArc, HolochainError> {
 /// Executes an exposed zome function in a wasm binary.
 /// Multithreaded function
 /// panics if wasm binary isn't valid.
+#[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult {
     let wasm_module = get_module(data.clone())?;

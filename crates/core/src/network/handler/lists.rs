@@ -9,7 +9,6 @@ use crate::{
         entry_aspect::EntryAspect,
         handler::{entry_to_meta_aspect, get_content_aspect},
     },
-    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use im::HashSet;
@@ -19,6 +18,7 @@ use lib3h_protocol::{
 };
 use std::sync::Arc;
 
+#[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Context>) {
     let c = context.clone();

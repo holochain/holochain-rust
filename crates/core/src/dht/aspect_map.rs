@@ -1,7 +1,4 @@
-use crate::{
-    holochain_wasm_utils::holochain_persistence_api::cas::content::AddressableContent,
-    NEW_RELIC_LICENSE_KEY,
-};
+use crate::holochain_wasm_utils::holochain_persistence_api::cas::content::AddressableContent;
 use holochain_core_types::network::entry_aspect::EntryAspect;
 use im::{HashMap, HashSet};
 use lib3h_protocol::types::{AspectHash, EntryHash};

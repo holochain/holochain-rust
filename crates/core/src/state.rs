@@ -9,7 +9,6 @@ use crate::{
     dht::dht_store::DhtStore,
     network::state::NetworkState,
     nucleus::state::{NucleusState, NucleusStateSnapshot},
-    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_conductor_lib_api::ConductorApi;
 use holochain_core_types::{
@@ -55,6 +54,7 @@ impl<T> ActionResponse<T> {
 /// The Store of the Holochain instance Object, according to Redux pattern.
 /// It's composed of all sub-module's state slices.
 /// To plug in a new module, its state slice needs to be added here.
+#[autotrace]
 #[derive(Clone, PartialEq, Debug)]
 pub struct State {
     nucleus: Arc<NucleusState>,
@@ -149,7 +149,18 @@ impl State {
         }
     }
 
+    #[autotrace]
     pub fn reduce(&self, action_wrapper: ActionWrapper) -> Self {
+        let _span_guard = ht::push_span_with(|span| {
+            span.child_("reduce-inner", |s| {
+                s.tag(ht::Tag::new(
+                    "action_wrapper",
+                    format!("{:?}", action_wrapper),
+                ))
+                .start()
+            })
+            .into()
+        });
         State {
             nucleus: crate::nucleus::reduce(Arc::clone(&self.nucleus), &self, &action_wrapper),
             agent: crate::agent::state::reduce(Arc::clone(&self.agent), &self, &action_wrapper),
@@ -262,6 +273,7 @@ pub struct StateWrapper {
     state: Option<State>,
 }
 
+#[autotrace]
 impl StateWrapper {
     pub fn drop_inner_state(&mut self) {
         self.state = None;
@@ -293,6 +305,7 @@ impl StateWrapper {
         }
     }
 
+    #[autotrace]
     pub fn reduce(&self, action_wrapper: ActionWrapper) -> Self {
         StateWrapper {
             state: Some(

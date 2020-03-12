@@ -1,4 +1,4 @@
-use crate::{conductor::base::DnaLoader, logger::LogRules, NEW_RELIC_LICENSE_KEY};
+use crate::{conductor::base::DnaLoader, logger::LogRules};
 /// Conductor Configuration
 /// This module provides structs that represent the different aspects of how
 /// a conductor can be configured.
@@ -19,13 +19,12 @@ use holochain_core_types::{
     },
     error::{HcResult, HolochainError},
 };
-
 use holochain_json_api::json::JsonString;
+use holochain_metrics::MetricPublisherConfig;
+use holochain_net::sim2h_worker::Sim2hConfig;
 use holochain_persistence_api::cas::content::AddressableContent;
 use lib3h::engine::EngineConfig;
 
-use holochain_metrics::MetricPublisherConfig;
-use holochain_net::sim2h_worker::Sim2hConfig;
 use petgraph::{algo::toposort, graph::DiGraph, prelude::NodeIndex};
 use serde::Deserialize;
 use std::{
@@ -74,9 +73,15 @@ pub struct Configuration {
     /// Configures how logging should behave. Optional.
     #[serde(default)]
     pub logger: LoggerConfiguration,
+
+    /// Configures Jaeger tracing. Optional.
+    #[serde(default)]
+    pub tracing: Option<TracingConfiguration>,
+
     /// Configuration options for the network module. Optional.
     #[serde(default)]
     pub network: Option<NetworkConfig>,
+
     /// where to persist the config file and DNAs. Optional.
     #[serde(default = "default_persistence_dir")]
     pub persistence_dir: PathBuf,
@@ -187,6 +192,25 @@ impl Default for LoggerConfiguration {
     }
 }
 
+#[derive(Deserialize, Serialize, Clone, Debug)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum TracingConfiguration {
+    None,
+    Jaeger(JaegerTracingConfiguration),
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct JaegerTracingConfiguration {
+    pub service_name: String,
+    pub socket_address: Option<String>,
+}
+
+impl Default for TracingConfiguration {
+    fn default() -> Self {
+        TracingConfiguration::None
+    }
+}
+
 /// Check for duplicate items in a list of strings
 fn detect_dupes<'a, I: Iterator<Item = &'a String>>(
     name: &'static str,
@@ -210,6 +234,7 @@ fn detect_dupes<'a, I: Iterator<Item = &'a String>>(
     }
 }
 
+#[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl Configuration {
     /// This function basically checks if self is a semantically valid configuration.

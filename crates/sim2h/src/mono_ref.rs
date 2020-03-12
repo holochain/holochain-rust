@@ -1,9 +1,10 @@
 use crate::*;
+use serde::Serialize;
 
 /// We could just use `Arc`s directly, but the newtype lets us override Debug
 /// in sim2h MonoRef lets us have multiple views into the same hashes
 /// without exploding our memory footprint.
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 pub struct MonoRef<T>(std::sync::Arc<T>);
 
 impl std::fmt::Debug for MonoRef<AgentId> {

@@ -1,6 +1,4 @@
-use crate::{
-    context::Context, workflows::get_entry_result::get_entry_result_workflow, NEW_RELIC_LICENSE_KEY,
-};
+use crate::{context::Context, workflows::get_entry_result::get_entry_result_workflow};
 use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
@@ -10,6 +8,7 @@ use holochain_wasm_utils::api_serialization::{get_entry::*, validation::LinkDire
 use std::sync::Arc;
 
 /// Retrieves the base and target entries of the link and returns both.
+#[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn get_link_entries(
     link: &Link,

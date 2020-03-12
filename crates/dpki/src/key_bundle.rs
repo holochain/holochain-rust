@@ -5,7 +5,7 @@ use crate::{
     keypair::*,
     password_encryption::{self, EncryptedData, PwHashConfig},
     seed::{Seed, SeedType},
-    utils, NEW_RELIC_LICENSE_KEY, SEED_SIZE,
+    utils, SEED_SIZE,
 };
 use holochain_core_types::{agent::Base32, error::HcResult};
 use serde_json::json;

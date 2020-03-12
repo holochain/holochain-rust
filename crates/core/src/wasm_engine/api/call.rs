@@ -5,7 +5,6 @@ use crate::{
         ZomeFnCall,
     },
     wasm_engine::{api::ZomeApiResult, Runtime},
-    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
@@ -64,6 +63,14 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
         }
     };
 
+    let span = context
+        .tracer
+        .span("hdk invoke_call")
+        .tag(ht::Tag::new("ZomeFnCallArgs", format!("{:?}", input)))
+        .start()
+        .into();
+    let _spanguard = ht::push_span(span);
+
     let result = if input.instance_handle == THIS_INSTANCE {
         // ZomeFnCallArgs to ZomeFnCall
         let zome_call = ZomeFnCall::from_args(context.clone(), input.clone());
@@ -88,6 +95,7 @@ pub fn invoke_call(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     runtime.store_result(result)
 }
 
+#[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
     let context = runtime.context().map_err(|_| {
@@ -108,6 +116,7 @@ fn local_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString
     result
 }
 
+#[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn bridge_call(runtime: &mut Runtime, input: ZomeFnCallArgs) -> Result<JsonString, HolochainError> {
     let context = runtime.context().map_err(|_| {

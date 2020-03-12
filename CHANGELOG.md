@@ -2,6 +2,58 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.44-alpha3] - 2020-03-03
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.44-alpha2] - 2020-03-03
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.44-alpha1] - 2020-03-02
+
+### Added
+
+- Added command to sim2h wire protocol for getting live debug info [#2128](https://github.com/holochain/holochain-rust/pull/2128)
+- Added an environment variable (HC_IGNORE_SIM2H_URL_PROPERTY) which overrides DNA sim2h_url value for running conductors in test modes
+
+### Changed
+
+- Changed Pagination to have different types [#2110](https://github.com/holochain/holochain-rust/pull/2110)
+- Link matches are not based on regex anymore [#2133](https://github.com/holochain/holochain-rust/pull/2133)
+
+### Deprecated
+
+### Removed
+
+### Fixed
+- Fixes dropped join messages in sim2h that was blocking scaling [#2137](https://github.com/holochain/holochain-rust/pull/2137)
+- Make Holochain (i.e. Sim2hWorker) work offline again (that is without being connected to Sim2h) [#2119](https://github.com/holochain/holochain-rust/pull/2119)
+- Fixing wire message resilience to connection drops via receipts [#2120](https://github.com/holochain/holochain-rust/pull/2120)
+- Fixed `panic!("entry/aspect mismatch - corrupted data?")` [#2135](https://github.com/holochain/holochain-rust/pull/2135)
+
+### Security
+
 ## [0.0.43-alpha3] - 2020-02-10
 
 ### Added
@@ -204,7 +256,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 
-- Exchanged [vanilla thread-pool](https://docs.rs/threadpool/1.7.1/threadpool/) with the futures executor thread-pool [from the futures crate](https://docs.rs/futures/0.3.1/futures/executor/index.html). This enables M:N Future:Thread execution which is much less wasteful than having a thread per future. Number of threads in the pool is kept at the default (of that crate) of number of CPUs. [#1915](https://github.com/holochain/holochain-rust/pull/1915) 
+- Exchanged [vanilla thread-pool](https://docs.rs/threadpool/1.7.1/threadpool/) with the futures executor thread-pool [from the futures crate](https://docs.rs/futures/0.3.1/futures/executor/index.html). This enables M:N Future:Thread execution which is much less wasteful than having a thread per future. Number of threads in the pool is kept at the default (of that crate) of number of CPUs. [#1915](https://github.com/holochain/holochain-rust/pull/1915)
 - Replace naive timeout implementation (for network queries / direct messages) that uses a thread per timeout with a scheduled job that polls the State and sends timeout actions when needed (reduces number of used threads and thus memory footprint) [#1916](https://github.com/holochain/holochain-rust/pull/1916).
 - Use the [im crate](https://docs.rs/im/14.0.0/im/) for `HashMap`s and `HashSet`s used in the redux State. This makes cloning the state much cheaper and improves over-all performance. [#1923](https://github.com/holochain/holochain-rust/pull/1923)
 
@@ -274,7 +326,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   * Sim2h server will not just randomly pick a node to fill missing aspects, but it caches the information which aspects are missing for which node and will not ask a node about an aspect it doesn't have (gets rid of the `EntryNotFoundLocally` error).
   * In core's list responses: merge authoring list into the gossip list so sim2h has gossip sources that are the authors of entry aspects.
   * Clear sim2h server's caches about nodes when they disconnect. Also forget the whole space when the last node disconnectse.
-- `DhtStore::holding_list` which stored only the hashes of entries being held got changed to `DhtStore::holding_map` which is a map of entry address to set of aspect addresses so we know explicitly which aspects are held for each entry. This helps debugging (and already revealed a bug which is fixed in this version too) and enabled several simplifications in core logic. [1904](https://github.com/holochain/holochain-rust/pull/1904) 
+- `DhtStore::holding_list` which stored only the hashes of entries being held got changed to `DhtStore::holding_map` which is a map of entry address to set of aspect addresses so we know explicitly which aspects are held for each entry. This helps debugging (and already revealed a bug which is fixed in this version too) and enabled several simplifications in core logic. [1904](https://github.com/holochain/holochain-rust/pull/1904)
 
 ### Deprecated
 
@@ -409,7 +461,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [0.0.38-alpha4] - 2019-11-10
 
 ### Added
-* Adds instrumentation to measure and publish. performance. Introduces `hc-metrics` command to parse logs and generate statistics. [#1810](https://github.com/holochain/holochain-rust/pull/1810) 
+* Adds instrumentation to measure and publish. performance. Introduces `hc-metrics` command to parse logs and generate statistics. [#1810](https://github.com/holochain/holochain-rust/pull/1810)
 ### Changed
 
 ### Deprecated
@@ -437,10 +489,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [0.0.38-alpha1] - 2019-11-08
 
 ### Added
-* The sim2h switch-board server is now caching if a node is missing data and periodically checks back in. This makes it more resilient against unforseen problems like connection drops which otherwise could only be recovered through an explicit reconnection of the node. [#1834](https://github.com/holochain/holochain-rust/pull/1834) 
+* The sim2h switch-board server is now caching if a node is missing data and periodically checks back in. This makes it more resilient against unforseen problems like connection drops which otherwise could only be recovered through an explicit reconnection of the node. [#1834](https://github.com/holochain/holochain-rust/pull/1834)
 
 ### Changed
-* DNA is now checked for invalid zome artifacts. Validation callbacks that fail unexpectedly will now panic rather than fail validation. `hc package` `--strip-meta` flag is now `--include-meta`. [#1838](https://github.com/holochain/holochain-rust/pull/1838) 
+* DNA is now checked for invalid zome artifacts. Validation callbacks that fail unexpectedly will now panic rather than fail validation. `hc package` `--strip-meta` flag is now `--include-meta`. [#1838](https://github.com/holochain/holochain-rust/pull/1838)
 
 ### Deprecated
 
@@ -636,7 +688,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
-* Fixes handling if DNA properties during `hc package`. DNA properties mentioned in the DNA's JSON manifest are now included in the package. [PR#1828](https://github.com/holochain/holochain-rust/pull/1828)  
+* Fixes handling if DNA properties during `hc package`. DNA properties mentioned in the DNA's JSON manifest are now included in the package. [PR#1828](https://github.com/holochain/holochain-rust/pull/1828)
 
 ### Security
 
@@ -808,18 +860,18 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   - `hc-app-spec-test-sim1h`
   - `hc-app-spec-test-n3h`
   - `hc-app-spec-test-memory`
-  
+
   [#1725](https://github.com/holochain/holochain-rust/pull/1725)
-  
+
 * Adds nix-shell commands for running a local DynamoDB instance:
   - `dynamodb` and
   - `dynamodb-memory`
-  
+
   [#1725](https://github.com/holochain/holochain-rust/pull/1725)
 
 * Adds zome+function name to ConsistencyEvent::Hold representation for pending zome function call returns for better hachiko timeouts. [#1725](https://github.com/holochain/holochain-rust/pull/1725)
 
-* Adds `UUID` to DNA configs which will change the DNA when initializing an instance with it and sets the given UUID. This disables the hash check of the DNA if set. [#1724](https://github.com/holochain/holochain-rust/pull/1724) [#1725](https://github.com/holochain/holochain-rust/pull/1725) 
+* Adds `UUID` to DNA configs which will change the DNA when initializing an instance with it and sets the given UUID. This disables the hash check of the DNA if set. [#1724](https://github.com/holochain/holochain-rust/pull/1724) [#1725](https://github.com/holochain/holochain-rust/pull/1725)
 
 ### Changed
 * Converts app-spec tests to the new multi-conductor [try-o-rama](https://github.com/holochain/try-o-rama) [#1725](https://github.com/holochain/holochain-rust/pull/1725)
@@ -908,7 +960,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
-* Adds EncryptedSeed and seed.encrypt() allow for easy passphrase encrypting/decrypting of any of the existing seed types. Adds the MnemonicableSeed trait allows seeds to be converted to/from BIP39 mnemonics. [#1687](https://github.com/holochain/holochain-rust/pull/1687) 
+* Adds EncryptedSeed and seed.encrypt() allow for easy passphrase encrypting/decrypting of any of the existing seed types. Adds the MnemonicableSeed trait allows seeds to be converted to/from BIP39 mnemonics. [#1687](https://github.com/holochain/holochain-rust/pull/1687)
 * added nix for `hc-conductor-install` and `hc-conductor-uninstall` based on `cargo` [#1689](https://github.com/holochain/holochain-rust/pull/1689)
 * When loading a hand-written or generated conductor config containing a TestAgent (`test_agent = true`), rewrite the config file so that the test agent's `public_address` is correct, rather than the arbitrary value that was specified before the `public_address` was actually known. [#1692](https://github.com/holochain/holochain-rust/pull/1692)
 
@@ -942,12 +994,12 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
-* If there is an HDK mismatch in the zome, a warning is thrown.Also gives ability to get current HDK version in zomes[#1658](https://github.com/holochain/holochain-rust/pull/1658) 
-* Conductor API debug functions added: 
+* If there is an HDK mismatch in the zome, a warning is thrown.Also gives ability to get current HDK version in zomes[#1658](https://github.com/holochain/holochain-rust/pull/1658)
+* Conductor API debug functions added:
     * `debug/running_instances`: returns array of running instance IDs
     * `debug/state_dump`: returns a state dump for a given instance
     * `debug/fetch_cas`: returns the content for a given entry address and instance ID
-  
+
   Also added the source to the state dump.
   [#1661](https://github.com/holochain/holochain-rust/pull/1661)
 
@@ -965,7 +1017,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [0.0.28-alpha1] - 2019-08-18
 
 ### Added
-* Ability to provide passphrase to lock/unlock keystores via IPC unix domain socket added. [#1646](https://github.com/holochain/holochain-rust/pull/1646) 
+* Ability to provide passphrase to lock/unlock keystores via IPC unix domain socket added. [#1646](https://github.com/holochain/holochain-rust/pull/1646)
 
 * Documentation for our links ecosystem [#1628](https://github.com/holochain/holochain-rust/pull/1628)
 ### Changed
@@ -1191,7 +1243,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Fixed
 
 - Adding bridges dynamically via an admin interface works now without rebooting the conductor. [#1476](https://github.com/holochain/holochain-rust/pull/1476)
-- `hdk::query` results are filtered now to not contain DNA entries since they can easily be several MBs of size which breaks our current limitation of 640k of WASM memory. [#1490](https://github.com/holochain/holochain-rust/pull/1490)   
+- `hdk::query` results are filtered now to not contain DNA entries since they can easily be several MBs of size which breaks our current limitation of 640k of WASM memory. [#1490](https://github.com/holochain/holochain-rust/pull/1490)
 
 ### Security
 
@@ -1288,7 +1340,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Security
 
-## [0.0.14-alpha1] - 2019-05-02
+## [0.0.15-alpha1] - 2019-05-02
 
 ### Added
 

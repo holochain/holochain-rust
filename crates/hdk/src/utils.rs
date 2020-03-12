@@ -4,6 +4,7 @@ use crate::{
     holochain_core_types::entry::{AppEntryValue, Entry},
     holochain_persistence_api::cas::content::Address,
 };
+
 use holochain_core_types::link::LinkMatch;
 use std::convert::TryFrom;
 

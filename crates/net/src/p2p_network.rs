@@ -9,10 +9,9 @@ use crate::{
         NetResult,
     },
     in_memory::memory_worker::InMemoryWorker,
-    lib3h_worker::Lib3hWorker,
+    log_d, log_e,
     p2p_config::*,
     tweetlog::*,
-    NEW_RELIC_LICENSE_KEY,
 };
 use lib3h_protocol::{
     protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol, Address,
@@ -23,6 +22,9 @@ use crossbeam_channel;
 use holochain_conductor_lib_api::conductor_api::ConductorApi;
 use holochain_json_api::json::JsonString;
 use std::{convert::TryFrom, time::Duration};
+
+pub type Lib3hClientProtocolWrapped = ht::EncodedSpanWrap<Lib3hClientProtocol>;
+pub type Lib3hServerProtocolWrapped = ht::EncodedSpanWrap<Lib3hServerProtocol>;
 
 const P2P_READY_TIMEOUT_MS: u64 = 5000;
 
@@ -44,6 +46,7 @@ impl P2pNetwork {
         p2p_config: P2pConfig,
         agent_id: Option<Address>,
         conductor_api: Option<ConductorApi>,
+        tracer: Option<ht::Tracer>,
     ) -> NetResult<Self> {
         // Create Config struct
         let backend_config_str = match &p2p_config.backend_config {
@@ -58,28 +61,30 @@ impl P2pNetwork {
         let worker_factory: NetWorkerFactory = match &p2p_config.clone().backend_kind {
             // Create a Lib3hWorker
             P2pBackendKind::LIB3H => {
-                let backend_config = match &p2p_config.clone().backend_config {
-                    BackendConfig::Lib3h(config) => config.clone(),
-                    _ => return Err(format_err!("mismatch backend type, expecting lib3h")),
-                };
+                unimplemented!()
+                // let backend_config = match &p2p_config.clone().backend_config {
+                //     BackendConfig::Lib3h(config) => config.clone(),
+                //     _ => return Err(format_err!("mismatch backend type, expecting lib3h")),
+                // };
 
-                Box::new(move |h| {
-                    Ok(
-                        Box::new(Lib3hWorker::with_wss_transport(h, backend_config.clone())?)
-                            as Box<dyn NetWorker>,
-                    )
-                })
+                // Box::new(move |h| {
+                //     Ok(
+                //         Box::new(Lib3hWorker::with_wss_transport(h, backend_config.clone())?)
+                //             as Box<dyn NetWorker>,
+                //     )
+                // })
             }
             // Create an InMemoryWorker Ghost Engine Worker
-            P2pBackendKind::GhostEngineMemory => Box::new(move |h| {
-                let backend_config = match &p2p_config.clone().backend_config {
-                    BackendConfig::Memory(config) => config.clone(),
-                    _ => return Err(format_err!("mismatch backend type, expecting memory")),
-                };
-                Ok(Box::new(Lib3hWorker::with_memory_transport(
-                    h,
-                    backend_config.clone(),
-                )?) as Box<dyn NetWorker>)
+            P2pBackendKind::GhostEngineMemory => Box::new(move |_h| {
+                unimplemented!()
+                // let backend_config = match &p2p_config.clone().backend_config {
+                //     BackendConfig::Memory(config) => config.clone(),
+                //     _ => return Err(format_err!("mismatch backend type, expecting memory")),
+                // };
+                // Ok(Box::new(Lib3hWorker::with_memory_transport(
+                //     h,
+                //     backend_config.clone(),
+                // )?) as Box<dyn NetWorker>)
             }),
 
             // Create an InMemoryWorker
@@ -101,6 +106,7 @@ impl P2pNetwork {
                     conductor_api
                         .clone()
                         .expect("Can't construct Sim2hWorker without conductor API"),
+                    tracer.clone(),
                 )?) as Box<dyn NetWorker>)
             }),
         };
@@ -111,7 +117,7 @@ impl P2pNetwork {
             NetHandler::new(Box::new(move |message| {
                 let unwrapped = message.unwrap();
                 let message = unwrapped.clone();
-                match Lib3hServerProtocol::try_from(unwrapped.clone()) {
+                match Lib3hServerProtocol::try_from(unwrapped.data.clone()) {
                     Ok(Lib3hServerProtocol::P2pReady) => {
                         tx.send(Lib3hServerProtocol::P2pReady).ok();
                         log_d!("net/p2p_network: sent P2pReady event")
@@ -196,7 +202,7 @@ impl std::fmt::Debug for P2pNetwork {
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl NetSend for P2pNetwork {
     /// send a Protocol message to the p2p network instance
-    fn send(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
+    fn send(&mut self, data: Lib3hClientProtocolWrapped) -> NetResult<()> {
         self.connection.send(data)
     }
 }
@@ -210,7 +216,7 @@ mod tests {
     fn it_should_create_memory_network() {
         let p2p = P2pConfig::new_with_unique_memory_backend();
         let handler = NetHandler::new(Box::new(|_r| Ok(())));
-        let mut res = P2pNetwork::new(handler.clone(), p2p, None, None).unwrap();
+        let mut res = P2pNetwork::new(handler.clone(), p2p, None, None, None).unwrap();
         let connect_data = ConnectData {
             request_id: "memory_network_req_id".into(),
             peer_location: Lib3hUri::with_undefined(),
@@ -219,10 +225,16 @@ mod tests {
 
         handler
             .to_owned()
-            .handle(Ok(Lib3hServerProtocol::P2pReady))
+            .handle(Ok(ht::test_span()
+                .wrap(Lib3hServerProtocol::P2pReady)
+                .into()))
             .unwrap();
-        res.send(Lib3hClientProtocol::Connect(connect_data))
-            .unwrap();
+        res.send(
+            ht::test_span()
+                .wrap(Lib3hClientProtocol::Connect(connect_data))
+                .into(),
+        )
+        .unwrap();
         res.stop();
     }
 }

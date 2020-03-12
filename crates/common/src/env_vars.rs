@@ -47,7 +47,7 @@ macro_rules! new_relic_setup {
     ($x:expr) => {
         lazy_static::lazy_static! {
             static ref NEW_RELIC_LICENSE_KEY: Option<String> =
-                option_env!($x).map(|s| s.to_string());
+                std::env::var_os($x).and_then(|s| s.into_string().ok());
         }
     };
 }

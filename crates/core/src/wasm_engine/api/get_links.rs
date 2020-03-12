@@ -1,7 +1,6 @@
 use crate::{
     wasm_engine::{api::ZomeApiResult, Runtime},
     workflows::get_link_result::get_link_result_workflow,
-    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
 use std::convert::TryFrom;
@@ -78,8 +77,8 @@ pub mod tests {
     ) -> Vec<u8> {
         let args = GetLinksArgs {
             entry_address: base.clone(),
-            link_type: link_type.to_regex_string().unwrap(),
-            tag: tag.to_regex_string().unwrap(),
+            link_type: link_type.into(),
+            tag: tag.into(),
             options: Default::default(),
         };
         println!("GetLinksArgs: {:?}", args);

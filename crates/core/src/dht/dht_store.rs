@@ -4,7 +4,6 @@ use crate::{
         aspect_map::{AspectMap, AspectMapBare},
         pending_validations::{PendingValidationWithTimeout, ValidationTimeout},
     },
-    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
@@ -14,7 +13,7 @@ use holochain_core_types::{
     error::{HcResult, HolochainError},
     network::{
         entry_aspect::EntryAspect,
-        query::{GetLinksQueryConfiguration, SortOrder},
+        query::{GetLinksQueryConfiguration, Pagination, SortOrder},
     },
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
@@ -26,9 +25,9 @@ use holochain_persistence_api::{
     },
     eav::{EavFilter, EntityAttributeValueStorage, IndexFilter},
 };
-use regex::Regex;
 
 use crate::{dht::pending_validations::PendingValidation, state::StateWrapper};
+use chrono::{offset::FixedOffset, DateTime};
 use holochain_json_api::error::JsonResult;
 use holochain_persistence_api::error::PersistenceResult;
 use std::{
@@ -69,7 +68,7 @@ impl PartialEq for DhtStore {
 #[derive(Clone, Debug, Deserialize, Serialize, DefaultJson)]
 pub struct DhtStoreSnapshot {
     pub holding_map: AspectMapBare,
-    pub queued_holding_workflows: VecDeque<PendingValidationWithTimeout>,
+    queued_holding_workflows: VecDeque<PendingValidationWithTimeout>,
 }
 
 impl From<&StateWrapper> for DhtStoreSnapshot {
@@ -99,19 +98,22 @@ impl AddressableContent for DhtStoreSnapshot {
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn create_get_links_eavi_query<'a>(
     address: Address,
-    link_type: String,
-    tag: String,
+    link_type: Option<String>,
+    tag: Option<String>,
 ) -> Result<EaviQuery<'a>, HolochainError> {
-    let link_type_regex = Regex::new(&link_type)
-        .map_err(|_| HolochainError::from("Invalid regex passed for type"))?;
-    let tag_regex =
-        Regex::new(&tag).map_err(|_| HolochainError::from("Invalid regex passed for tag"))?;
     Ok(EaviQuery::new(
         Some(address).into(),
         EavFilter::predicate(move |attr: Attribute| match attr {
             Attribute::LinkTag(query_link_type, query_tag)
             | Attribute::RemovedLink(query_link_type, query_tag) => {
-                link_type_regex.is_match(&query_link_type) && tag_regex.is_match(&query_tag)
+                link_type
+                    .clone()
+                    .map(|link_type| link_type == query_link_type)
+                    .unwrap_or(true)
+                    && tag
+                        .clone()
+                        .map(|tag| tag.to_uppercase() == query_tag.to_uppercase())
+                        .unwrap_or(true)
             }
             _ => false,
         }),
@@ -163,8 +165,8 @@ impl DhtStore {
     pub fn get_links(
         &self,
         address: Address,
-        link_type: String,
-        tag: String,
+        link_type: Option<String>,
+        tag: Option<String>,
         crud_filter: Option<CrudStatus>,
         configuration: GetLinksQueryConfiguration,
     ) -> Result<Vec<(EntityAttributeValueIndex, CrudStatus)>, HolochainError> {
@@ -176,18 +178,31 @@ impl DhtStore {
                 SortOrder::Ascending => Box::new(filtered.into_iter()),
                 SortOrder::Descending => Box::new(filtered.into_iter().rev()),
             };
-        Ok(filter_with_sort_order
-            .skip(
-                pagination
-                    .clone()
-                    .map(|page| page.page_size * page.page_number)
-                    .unwrap_or(0),
-            )
-            .take(
-                pagination
-                    .map(|page| page.page_size)
-                    .unwrap_or(std::usize::MAX),
-            )
+        let filter_with_pagination: Box<dyn Iterator<Item = EntityAttributeValueIndex>> =
+            match pagination {
+                Some(paginate) => match paginate {
+                    Pagination::Time(time_pagination) => {
+                        let paginated_time = time_pagination.clone();
+                        Box::new(
+                            filter_with_sort_order
+                                .skip_while(move |eavi| {
+                                    let from_time: DateTime<FixedOffset> =
+                                        paginated_time.from_time.into();
+                                    from_time.timestamp_nanos() >= eavi.index()
+                                })
+                                .take(time_pagination.limit),
+                        )
+                    }
+                    Pagination::Size(size_pagination) => Box::new(
+                        filter_with_sort_order
+                            .skip(size_pagination.page_size * size_pagination.page_number)
+                            .take(size_pagination.page_size),
+                    ),
+                },
+                None => filter_with_sort_order,
+            };
+
+        Ok(filter_with_pagination
             .map(|s| match s.attribute() {
                 Attribute::LinkTag(_, _) => (s, CrudStatus::Live),
                 _ => (s, CrudStatus::Deleted),
@@ -345,6 +360,16 @@ impl DhtStore {
 
     pub(crate) fn queued_holding_workflows(&self) -> &VecDeque<PendingValidationWithTimeout> {
         &self.queued_holding_workflows
+    }
+
+    pub(crate) fn remove_holding_workflow(
+        &mut self,
+        item: &PendingValidation,
+    ) -> Option<PendingValidationWithTimeout> {
+        self.queued_holding_workflows()
+            .iter()
+            .position(|PendingValidationWithTimeout { pending, .. }| pending == item)
+            .and_then(|index| self.queued_holding_workflows.remove(index))
     }
 }
 

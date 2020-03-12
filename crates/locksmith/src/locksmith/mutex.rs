@@ -1,7 +1,9 @@
 use crate::{
-    common::LOCK_TIMEOUT,
     error::{LockType, LocksmithError, LocksmithErrorKind, LocksmithResult},
-    guard::{HcMutexGuard, HcRwLockReadGuard, HcRwLockWriteGuard},
+    locksmith::{
+        common::LOCK_TIMEOUT,
+        guard::{HcMutexGuard, HcRwLockReadGuard, HcRwLockWriteGuard},
+    },
 };
 use parking_lot::{Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use std::time::{Duration, Instant};

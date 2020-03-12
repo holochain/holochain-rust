@@ -2,10 +2,11 @@ use super::{
     net_connection::{NetHandler, NetSend, NetWorkerFactory},
     NetResult,
 };
-use crate::NEW_RELIC_LICENSE_KEY;
+use crate::p2p_network::Lib3hClientProtocolWrapped;
 use failure::err_msg;
 use holochain_locksmith::Mutex;
 use holochain_logging::prelude::*;
+use lib3h_protocol::protocol_client::Lib3hClientProtocol;
 use snowflake::ProcessUniqueId;
 use std::{
     sync::{
@@ -14,8 +15,6 @@ use std::{
     },
     thread, time,
 };
-
-use lib3h_protocol::protocol_client::Lib3hClientProtocol;
 
 const TICK_SLEEP_MIN_US: u64 = 100;
 const TICK_SLEEP_MAX_US: u64 = 10_000;
@@ -26,7 +25,7 @@ const TICK_SLEEP_STARTUP_RETRY_MS: u64 = 3_000;
 #[derive(Clone)]
 pub struct NetConnectionThread {
     can_keep_running: Arc<AtomicBool>,
-    send_channel: crossbeam_channel::Sender<Lib3hClientProtocol>,
+    send_channel: ht::channel::EncodedSpanSender<Lib3hClientProtocol>,
     thread: Arc<Mutex<Option<thread::JoinHandle<()>>>>,
     pub endpoint: String,
     pub p2p_endpoint: url::Url,
@@ -34,7 +33,7 @@ pub struct NetConnectionThread {
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_NET)]
 impl NetSend for NetConnectionThread {
     /// send a message to the worker within NetConnectionThread's child thread.
-    fn send(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
+    fn send(&mut self, data: Lib3hClientProtocolWrapped) -> NetResult<()> {
         self.send_channel.send(data)?;
         Ok(())
     }
@@ -143,7 +142,7 @@ impl NetConnectionThread {
         // Done
         Ok(NetConnectionThread {
             can_keep_running,
-            send_channel,
+            send_channel: send_channel.into(),
             thread: Arc::new(Mutex::new(Some(thread))),
             endpoint,
             p2p_endpoint,
@@ -179,6 +178,7 @@ impl NetConnectionThread {
 #[cfg(test)]
 mod tests {
     use super::{super::net_connection::NetWorker, *};
+    use crate::p2p_network::Lib3hServerProtocolWrapped;
     use crossbeam_channel::unbounded;
     use holochain_persistence_api::hash::HashString;
     use lib3h_protocol::{
@@ -195,22 +195,22 @@ mod tests {
         }
     }
 
-    fn success_server_result(result_info: &Vec<u8>) -> Lib3hServerProtocol {
-        Lib3hServerProtocol::SuccessResult(GenericResultData {
+    fn success_server_result(result_info: &Vec<u8>) -> Lib3hServerProtocolWrapped {
+        ht::test_wrap_enc(Lib3hServerProtocol::SuccessResult(GenericResultData {
             request_id: "test_req_id".into(),
             space_address: SpaceHash::from(HashString::from("test_space")),
             to_agent_id: AgentPubKey::from("test-agent"),
             result_info: result_info.clone().into(),
-        })
+        }))
     }
 
-    fn success_client_result(result_info: Vec<u8>) -> Lib3hClientProtocol {
-        Lib3hClientProtocol::SuccessResult(GenericResultData {
+    fn success_client_result(result_info: Vec<u8>) -> Lib3hClientProtocolWrapped {
+        ht::test_wrap_enc(Lib3hClientProtocol::SuccessResult(GenericResultData {
             request_id: "test_req_id".into(),
             space_address: SpaceHash::from(HashString::from("test_space")),
             to_agent_id: AgentPubKey::from("test-agent"),
             result_info: result_info.into(),
-        })
+        }))
     }
 
     #[test]
@@ -237,8 +237,8 @@ mod tests {
             Ok(true)
         }
 
-        fn receive(&mut self, data: Lib3hClientProtocol) -> NetResult<()> {
-            match data {
+        fn receive(&mut self, msg: Lib3hClientProtocolWrapped) -> NetResult<()> {
+            match msg.data {
                 Lib3hClientProtocol::SuccessResult(data) => self
                     .handler
                     .handle(Ok(success_server_result(&*data.result_info))),
@@ -272,7 +272,7 @@ mod tests {
         loop {
             let tmp = receiver.recv().unwrap();
 
-            match tmp {
+            match tmp.data {
                 Lib3hServerProtocol::SuccessResult(generic_data) => {
                     if generic_data.result_info == "tick".to_string().into_bytes().into() {
                         continue;
@@ -305,7 +305,7 @@ mod tests {
 
         let res = receiver.recv().unwrap();
 
-        match res {
+        match res.data {
             Lib3hServerProtocol::SuccessResult(generic_data) => {
                 assert_eq!("tick".to_string().into_bytes(), *generic_data.result_info)
             }

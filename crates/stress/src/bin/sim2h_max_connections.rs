@@ -1,5 +1,7 @@
 //! `cargo run --bin sim2h_max_connections`
 
+extern crate holochain_tracing as ht;
+
 use in_stream::*;
 use lib3h_crypto_api::CryptoSystem;
 use lib3h_protocol::{data_types::*, protocol::*, uri::Lib3hUri};
@@ -126,13 +128,15 @@ impl Job {
 
     /// join the space "abcd" : )
     pub fn join_space(&mut self) {
-        self.send_wire(WireMessage::ClientToLib3h(ClientToLib3h::JoinSpace(
-            SpaceData {
-                agent_id: self.agent_id.clone().into(),
-                request_id: "".to_string(),
-                space_address: "abcd".to_string().into(),
-            },
-        )));
+        self.send_wire(WireMessage::ClientToLib3h(
+            ht::noop("join_space")
+                .wrap(ClientToLib3h::JoinSpace(SpaceData {
+                    agent_id: self.agent_id.clone().into(),
+                    request_id: "".to_string(),
+                    space_address: "abcd".to_string().into(),
+                }))
+                .into(),
+        ));
     }
 
     /// send a ping message to sim2h
@@ -146,8 +150,14 @@ impl Job {
             WireMessage::Pong => {
                 self.last_pong = std::time::Instant::now();
             }
-            WireMessage::Lib3hToClient(Lib3hToClient::HandleGetAuthoringEntryList(_))
-            | WireMessage::Lib3hToClient(Lib3hToClient::HandleGetGossipingEntryList(_)) => {}
+            WireMessage::Lib3hToClient(ht::EncodedSpanWrap {
+                data: Lib3hToClient::HandleGetAuthoringEntryList(_),
+                ..
+            })
+            | WireMessage::Lib3hToClient(ht::EncodedSpanWrap {
+                data: Lib3hToClient::HandleGetGossipingEntryList(_),
+                ..
+            }) => {}
             e @ _ => panic!("unexpected: {:?}", e),
         }
     }

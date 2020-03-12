@@ -1,3 +1,5 @@
+console.log('# TEST_TIME(app_spec:start)', Date.now() / 1000)
+
 const { Orchestrator, tapeExecutor, singleConductor, localOnly, combine, callSync  } = require('@holochain/tryorama')
 
 // This constant serves as a check that we haven't accidentally disabled scenario tests.
@@ -28,7 +30,7 @@ const orchestrator = new Orchestrator({
   middleware,
   waiter: {
     softTimeout: 10000,
-    hardTimeout: 20000,
+    hardTimeout: 15000,
   }
 })
 
@@ -54,4 +56,5 @@ if (num < MIN_EXPECTED_SCENARIOS) {
 
 orchestrator.run().then(stats => {
   console.log('All done.')
+  console.log('# TEST_TIME(app_spec:end)', Date.now() / 1000)
 })

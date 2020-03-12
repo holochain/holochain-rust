@@ -2,23 +2,29 @@ const { one, two } = require('../config')
 const sleep = require('sleep')
 
 module.exports = scenario => {
-  scenario('delete_post', async (s, t) => {
+  scenario.only('delete_post', async (s, t) => {
+    console.log('# TEST_TIME(delete_post:start)', Date.now() / 1000)
     const { alice, bob } = await s.players({ alice: one, bob: one }, true)
+    console.log('# TEST_TIME(await players complete)', Date.now() / 1000)
 
     // creates a simple link with alice as author with initial chain header
     await alice.callSync('app', 'simple', 'create_link',
       { base: alice.info('app').agentAddress, target: 'Posty' }
     )
+    console.log('# TEST_TIME(created link 1)', Date.now() / 1000)
 
     // creates a simple link with bob as author with different chain header
     await bob.callSync('app', 'simple', 'create_link',
       { base: alice.info('app').agentAddress, target: 'Posty' }
     )
+    console.log('# TEST_TIME(created link 2)', Date.now() / 1000)
 
     // get all created links so far alice
+    // TODO - we're calling bob here, should this be alice?!?
     const alice_posts = await bob.call('app', 'simple', 'get_my_links',
       { base: alice.info('app').agentAddress, status_request: 'Live' }
     )
+    console.log('# TEST_TIME(bob get_my_links 1 done)', Date.now() / 1000)
 
     // expect two links from alice
     t.ok(alice_posts.Ok)
@@ -28,6 +34,7 @@ module.exports = scenario => {
     const bob_posts = await bob.call('app', 'simple', 'get_my_links',
       { base: alice.info('app').agentAddress, status_request: 'Live' }
     )
+    console.log('# TEST_TIME(bob get_my_links 2 done)', Date.now() / 1000)
 
     // expected two links from bob
     t.ok(bob_posts.Ok)
@@ -35,11 +42,14 @@ module.exports = scenario => {
 
     // alice removes both links
     await alice.callSync('app', 'simple', 'delete_link', { base: alice.info('app').agentAddress, target: 'Posty' })
+    console.log('# TEST_TIME(alice delete_link done)', Date.now() / 1000)
 
     // get links from bob
     const bob_agent_posts_expect_empty = await bob.call('app', 'simple', 'get_my_links', { base: alice.info('app').agentAddress, status_request: 'Live' })
+    console.log('# TEST_TIME(bob get_my_links 3 done)', Date.now() / 1000)
     // get links from alice
     const alice_agent_posts_expect_empty = await alice.call('app', 'simple', 'get_my_links', { base: alice.info('app').agentAddress, status_request: 'Live' })
+    console.log('# TEST_TIME(alice get_my_links 1 done)', Date.now() / 1000)
 
     // bob expects zero links
     t.ok(bob_agent_posts_expect_empty.Ok)
@@ -50,16 +60,20 @@ module.exports = scenario => {
 
     // different chain hash up to this point so we should be able to create a link with the same data
     await alice.callSync('app', 'simple', 'create_link', { base: alice.info('app').agentAddress, target: 'Posty' })
+    console.log('# TEST_TIME(alice create link done)', Date.now() / 1000)
 
     // get posts as Alice and as Bob
     const alice_posts_not_empty = await alice.call('app', 'simple', 'get_my_links', { base: alice.info('app').agentAddress, status_request: 'Live' })
+    console.log('# TEST_TIME(alice get_my_links done)', Date.now() / 1000)
     const bob_posts_not_empty = await bob.call('app', 'simple', 'get_my_links', { base: alice.info('app').agentAddress, status_request: 'Live' })
+    console.log('# TEST_TIME(bob get_my_links done)', Date.now() / 1000)
 
     // expect 1 post
     t.ok(alice_posts_not_empty.Ok)
     t.equal(alice_posts_not_empty.Ok.links.length, 1)
     t.ok(bob_posts_not_empty.Ok)
     t.equal(bob_posts_not_empty.Ok.links.length, 1) // #!# fails with expected: 1 actual: 2
+    console.log('# TEST_TIME(delete_post:end)', Date.now() / 1000)
   })
 
   scenario('delete_post_with_bad_link', async (s, t) => {

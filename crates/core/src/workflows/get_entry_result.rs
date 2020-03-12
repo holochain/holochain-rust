@@ -94,6 +94,16 @@ pub async fn get_entry_result_workflow<'a>(
     context: &'a Arc<Context>,
     args: &'a GetEntryArgs,
 ) -> Result<GetEntryResult, HolochainError> {
+    get_entry_result_workflow_inner(context, args, false).await
+}
+
+/// Get GetEntryResult workflow
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+pub async fn get_entry_result_workflow_inner<'a>(
+    context: &'a Arc<Context>,
+    args: &'a GetEntryArgs,
+    local_only: bool,
+) -> Result<GetEntryResult, HolochainError> {
     // Setup
     let mut entry_result = GetEntryResult::new(args.options.status_request.clone(), None);
     let mut maybe_address = Some(args.address.clone());
@@ -103,8 +113,11 @@ pub async fn get_entry_result_workflow<'a>(
         let address = maybe_address.unwrap();
         maybe_address = None;
         // Try to get entry
-        let maybe_entry_with_meta_and_headers =
-            get_entry_with_meta_workflow(context, &address, &args.options.timeout).await?;
+        let maybe_entry_with_meta_and_headers = if local_only {
+            get_entry_with_meta_workflow_local(context, &address)
+        } else {
+            get_entry_with_meta_workflow(context, &address, &args.options.timeout).await
+        }?;
 
         // Entry found
         if let Some(entry_with_meta_and_headers) = maybe_entry_with_meta_and_headers {

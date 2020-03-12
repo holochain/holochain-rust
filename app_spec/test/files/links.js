@@ -2,7 +2,7 @@ const { one, two } = require('../config')
 const sleep = require('sleep')
 
 module.exports = scenario => {
-  scenario('delete_post', async (s, t) => {
+  scenario.only('delete_post', async (s, t) => {
     const { alice, bob } = await s.players({ alice: one, bob: one }, true)
 
     // creates a simple link with alice as author with initial chain header
@@ -104,7 +104,7 @@ module.exports = scenario => {
         pagesize: 3,
         pagenumber:0
       })
-    
+
       const alice_posts_live = await alice.call('app', 'simple', 'get_my_links_with_pagination',
       {
         base: alice.info('app').agentAddress,
@@ -123,7 +123,7 @@ module.exports = scenario => {
         pagesize: 3,
         pagenumber:1
       })
-    
+
       const alice_posts_live_2 = await alice.call('app', 'simple', 'get_my_links_with_pagination',
       {
         base: alice.info('app').agentAddress,

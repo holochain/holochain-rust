@@ -2,7 +2,7 @@ const { one, two } = require('../config')
 const sleep = require('sleep')
 
 module.exports = scenario => {
-  scenario.only('delete_post', async (s, t) => {
+  scenario('delete_post', async (s, t) => {
     const { alice, bob } = await s.players({ alice: one, bob: one }, true)
 
     // creates a simple link with alice as author with initial chain header

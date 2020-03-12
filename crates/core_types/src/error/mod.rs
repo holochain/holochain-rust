@@ -15,6 +15,7 @@ use holochain_locksmith::LocksmithError;
 use holochain_persistence_api::{error::PersistenceError, hash::HashString};
 use lib3h_crypto_api::CryptoError;
 
+use backtrace::Backtrace;
 use serde_json::Error as SerdeError;
 use std::{
     error::Error,
@@ -32,13 +33,12 @@ use std::{
 /// and back to the Holochain Instance via wasm memory.
 /// Follows the Error + ErrorKind pattern
 /// Holds extra debugging info for indicating where in code ther error occured.
-#[derive(Clone, Debug, Serialize, Deserialize, DefaultJson, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Serialize, Deserialize, DefaultJson)]
 pub struct CoreError {
     pub kind: HolochainError,
     pub file: String,
     pub line: String,
-    // TODO #395 - Add advance error debugging info
-    // pub stack_trace: Backtrace
+    pub backtrace: Backtrace,
 }
 
 // Error trait by using the inner Error
@@ -54,6 +54,7 @@ impl CoreError {
             kind: hc_err,
             file: String::new(),
             line: String::new(),
+            backtrace: Backtrace::new(),
         }
     }
 }
@@ -80,8 +81,8 @@ impl fmt::Display for CoreError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Holochain Core error: {}\n  --> {}:{}\n",
-            self.kind, self.file, self.line,
+            "Holochain Core error: {}\n  --> {}:{}\nbacktrace: {:?}",
+            self.kind, self.file, self.line, self.backtrace
         )
     }
 }
@@ -435,6 +436,7 @@ mod tests {
             kind: error.clone(),
             file: file!().to_string(),
             line: line!().to_string(),
+            backtrace: Backtrace::new(),
         };
 
         assert_ne!(
@@ -443,6 +445,7 @@ mod tests {
                 kind: error,
                 file: file!().to_string(),
                 line: line!().to_string(),
+                backtrace: Backtrace::new(),
             }
             .to_string(),
         );

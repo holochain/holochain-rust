@@ -41,6 +41,7 @@ macro_rules! core_error {
             kind: $hc_err,
             file: file!().to_string(),
             line: line!().to_string(),
+            backtrace: backtrace::Backtrace::new(),
         }
     };
 }
@@ -53,6 +54,7 @@ macro_rules! core_error_generic {
             kind: $crate::holochain_core_types::error::HolochainError::ErrorGeneric($msg),
             file: file!().to_string(),
             line: line!().to_string(),
+            backtrace: backtrace::Backtrace::new(),
         }
     };
 }

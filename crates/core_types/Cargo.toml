@@ -14,7 +14,7 @@ repository = "https://github.com/holochain/holochain-rust"
 futures = "=0.3.2"
 arrayref = "=0.3.5"
 base64 = "=0.10.1"
-backtrace = "=0.3.27"
+backtrace = { version = "=0.3.27", features = [ "serialize-serde" ] }
 chrono = "=0.4.6"
 serde = "=1.0.104"
 serde_derive = "=1.0.104"

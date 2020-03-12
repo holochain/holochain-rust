@@ -94,6 +94,8 @@ dependencies = [
  "cfg-if",
  "libc",
  "rustc-demangle",
+ "serde",
+ "serde_derive",
 ]
 
 [[package]]
@@ -1460,6 +1462,7 @@ dependencies = [
 name = "holochain_core"
 version = "0.0.44-alpha3"
 dependencies = [
+ "backtrace",
  "base64 0.10.1",
  "bitflags",
  "boolinator",
@@ -1900,6 +1903,7 @@ dependencies = [
 name = "holochain_wasm_utils"
 version = "0.0.44-alpha3"
 dependencies = [
+ "backtrace",
  "holochain_conductor_lib",
  "holochain_core",
  "holochain_core_types",
@@ -4471,9 +4475,9 @@ dependencies = [
 
 [[package]]
 name = "sized-chunks"
-version = "0.5.2"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cfebcc1ad7f8439bff83ff95656c83bd9e4e832630bc9bb7c59774d0bc526b92"
+checksum = "d59044ea371ad781ff976f7b06480b9f0180e834eda94114f2afb4afc12b7718"
 dependencies = [
  "bitmaps",
  "typenum",

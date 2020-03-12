@@ -59,6 +59,7 @@ threadpool = "=1.7.1"
 im = { version = "=14.0.0", features = ["serde"] }
 itertools = "0.8.2"
 newrelic = { version = "=0.2.2", optional = true }
+backtrace = { version = "=0.3.27", features = [ "serialize-serde" ] }
 
 [dev-dependencies]
 wabt = "=0.7.4"

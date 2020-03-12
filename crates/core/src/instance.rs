@@ -223,8 +223,8 @@ impl Instance {
                                         .filter(|observer| observer.ticker.send(()).is_ok())
                                         .collect();
                                 },
-                                Err(HolochainError::Timeout) => {
-                                    warn!("Instance::process_action() couldn't get lock on state. Trying again next loop.");
+                                Err(HolochainError::Timeout(s)) => {
+                                    warn!("Instance::process_action() couldn't get lock on state. Trying again next loop. Timeout string: {}", s);
                                     unprocessed_action = Some(action_wrapper);
                                 },
                                 Err(e) => {
@@ -276,7 +276,9 @@ impl Instance {
             let mut state = self
                 .state
                 .try_write_until(Instant::now().checked_add(Duration::from_secs(10)).unwrap())
-                .ok_or_else(|| HolochainError::Timeout)?;
+                .ok_or_else(|| {
+                    HolochainError::Timeout(format!("timeout src: {}:{}", file!(), line!()))
+                })?;
 
             new_state = state.reduce(action_wrapper.data.clone());
 

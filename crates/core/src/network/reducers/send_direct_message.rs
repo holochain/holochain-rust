@@ -73,9 +73,14 @@ pub fn reduce_send_direct_message_timeout(
         return;
     }
 
-    network_state
-        .custom_direct_message_replys
-        .insert(id.clone(), Err(HolochainError::Timeout));
+    network_state.custom_direct_message_replys.insert(
+        id.clone(),
+        Err(HolochainError::Timeout(format!(
+            "timeout src: {}:{}",
+            file!(),
+            line!()
+        ))),
+    );
 }
 
 #[cfg(test)]
@@ -145,6 +150,13 @@ mod tests {
             .get(&msg_id.clone())
             .cloned();
 
-        assert_eq!(maybe_reply, Some(Err(HolochainError::Timeout)));
+        assert_eq!(
+            maybe_reply,
+            Some(Err(HolochainError::Timeout(format!(
+                "timeout src: {}:{}",
+                file!(),
+                line!()
+            ))))
+        );
     }
 }

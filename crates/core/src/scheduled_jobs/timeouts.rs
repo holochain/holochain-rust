@@ -94,11 +94,9 @@ mod tests {
 
         assert_eq!(
             maybe_reply,
-            Some(Err(HolochainError::Timeout(format!(
-                "{}:{}",
-                file!(),
-                line!()
-            ))))
+            Some(Err(HolochainError::Timeout(
+                "crates/core/src/network/reducers/send_direct_message.rs:78".to_string()
+            )))
         );
     }
 }

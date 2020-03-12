@@ -276,7 +276,9 @@ impl Instance {
             let mut state = self
                 .state
                 .try_write_until(Instant::now().checked_add(Duration::from_secs(10)).unwrap())
-                .ok_or_else(|| HolochainError::Timeout(format!("{}:{}", file!(), line!())))?;
+                .ok_or_else(|| {
+                    HolochainError::Timeout(format!("timeout src: {}:{}", file!(), line!()))
+                })?;
 
             new_state = state.reduce(action_wrapper.data.clone());
 

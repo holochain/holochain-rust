@@ -95,11 +95,18 @@ impl EntryAspect {
     }
     /// NB: this is the inverse function of entry_to_meta_aspect,
     /// so it is very important that they agree!
-    pub fn entry_address(&self) -> &Address {
+    pub fn entry_address(&self) -> Address {
         match self {
-            EntryAspect::LinkAdd(link_data, _) => link_data.link.base(),
-            EntryAspect::LinkRemove((link_data, _), _) => link_data.link.base(),
-            _ => self.header().entry_address()
+            EntryAspect::Content(_, header) => match header.link_update_delete() {
+                Some(ref updated_entry) => updated_entry.clone(),
+                None => header.entry_address().clone(),
+            },
+            EntryAspect::LinkAdd(link_data, _) => link_data.link.base().clone(),
+            EntryAspect::LinkRemove((link_data, _), _) => link_data.link.base().clone(),
+            EntryAspect::Update(_, header) | EntryAspect::Deletion(header) => header
+                .link_update_delete()
+                .expect("no link_update_delete on Deletion entry header"),
+            EntryAspect::Header(header) => header.entry_address().clone(),
         }
     }
 }

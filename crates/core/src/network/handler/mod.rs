@@ -397,26 +397,20 @@ fn get_content_aspect(
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn entry_to_meta_aspect(entry: Entry, header: ChainHeader) -> Option<(Address, EntryAspect)> {
     match entry {
-        Entry::App(app_type, app_value) => header.link_update_delete().map(|updated_entry| {
-            (
-                updated_entry,
-                EntryAspect::Update(Entry::App(app_type, app_value), header),
-            )
+        Entry::App(app_type, app_value) => header.link_update_delete().map(|_| {
+            EntryAspect::Update(Entry::App(app_type, app_value), header)
         }),
-        Entry::LinkAdd(link_data) => Some((
-            link_data.link.base().clone(),
+        Entry::LinkAdd(link_data) => Some(
             EntryAspect::LinkAdd(link_data, header),
-        )),
-        Entry::LinkRemove((link_data, addresses)) => Some((
-            link_data.link.base().clone(),
+        ),
+        Entry::LinkRemove((link_data, addresses)) => Some(
             EntryAspect::LinkRemove((link_data, addresses), header),
-        )),
-        Entry::Deletion(_) => Some((
-            header.link_update_delete().expect(""),
+        ),
+        Entry::Deletion(_) => Some(
             EntryAspect::Deletion(header),
-        )),
+        ),
         _ => None,
-    }
+    }.map(|aspect| (aspect.entry_address().clone(), aspect))
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]

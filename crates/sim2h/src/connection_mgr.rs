@@ -192,7 +192,7 @@ async fn wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend, cmd_recv: CmdRe
     debug!("wss_task ENDING {}", cmd_info.uri);
 }
 
-#[tracing::instrument]
+#[tracing::instrument(skip(uri, wss, evt_send))]
 /// internal actually spawn the above wss_task into the tokio runtime
 fn spawn_wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend) -> CmdSend {
     debug!(?uri);

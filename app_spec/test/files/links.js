@@ -104,7 +104,7 @@ module.exports = scenario => {
         pagesize: 3,
         pagenumber:0
       })
-    
+
       const alice_posts_live = await alice.call('app', 'simple', 'get_my_links_with_pagination',
       {
         base: alice.info('app').agentAddress,
@@ -123,7 +123,7 @@ module.exports = scenario => {
         pagesize: 3,
         pagenumber:1
       })
-    
+
       const alice_posts_live_2 = await alice.call('app', 'simple', 'get_my_links_with_pagination',
       {
         base: alice.info('app').agentAddress,

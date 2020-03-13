@@ -78,6 +78,7 @@ impl NetConnectionThread {
                 send_endpoint
                     .send((worker.endpoint(), worker.p2p_endpoint()))
                     .expect("Sending endpoint address should work.");
+
                 drop(send_endpoint);
                 // Loop as long owner wants to
                 let mut sleep_duration_us = TICK_SLEEP_MIN_US;

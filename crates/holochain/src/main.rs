@@ -19,6 +19,7 @@ extern crate holochain_core_types;
 extern crate holochain_locksmith;
 #[macro_use]
 extern crate holochain_common;
+extern crate lazy_static;
 extern crate lib3h_sodium;
 #[cfg(unix)]
 extern crate signal_hook;
@@ -36,6 +37,21 @@ use holochain_locksmith::spawn_locksmith_guard_watcher;
 use signal_hook::{iterator::Signals, SIGINT, SIGTERM};
 use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc};
 use structopt::StructOpt;
+
+use lazy_static::lazy_static;
+
+lazy_static! {
+    static ref SET_THREAD_PANIC_FATAL2: bool = {
+        let orig_handler = std::panic::take_hook();
+        std::panic::set_hook(Box::new(move |panic_info| {
+            eprintln!("THREAD PANIC {:#?}", panic_info);
+            // invoke the default handler and exit the process
+            orig_handler(panic_info);
+            std::process::exit(1);
+        }));
+        true
+    };
+}
 
 new_relic_setup!("NEW_RELIC_LICENSE_KEY");
 
@@ -70,6 +86,7 @@ const MAGIC_STRING: &str = "*** Done. All interfaces started.";
 #[cfg_attr(tarpaulin, skip)]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR)]
 fn main() {
+    assert!(*SET_THREAD_PANIC_FATAL2);
     let _ = spawn_locksmith_guard_watcher();
 
     lib3h_sodium::check_init();

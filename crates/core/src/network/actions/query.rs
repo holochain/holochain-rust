@@ -69,7 +69,6 @@ pub async fn query(
     ));
     let action_wrapper = ActionWrapper::new(entry);
     dispatch_action(context.action_channel(), action_wrapper.clone());
-
     QueryFuture {
         context: context.clone(),
         key: key.clone(),

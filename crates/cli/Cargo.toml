@@ -4,28 +4,28 @@ description = "holochain app scaffolding tools"
 license = "GPL-3.0-only"
 homepage = "https://github.com/holochain/holochain-rust"
 documentation = "https://github.com/holochain/holochain-rust"
-version = "0.0.44-alpha3"
+version = "0.0.45-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
-holochain_core_types = { version = "=0.0.44-alpha3", path = "../core_types" }
-holochain_core = { version = "=0.0.44-alpha3", path = "../core" }
-holochain_common = { version = "=0.0.44-alpha3", path = "../common" }
-holochain_conductor_lib = { version = "=0.0.44-alpha3", path = "../conductor_lib" }
-holochain_net = { version = "=0.0.44-alpha3", path = "../net" }
-holochain_dpki = { version = "=0.0.44-alpha3", path = "../dpki" }
-holochain_locksmith = { version = "=0.0.44-alpha3", path = "../locksmith" }
-holochain_tracing = "=0.0.22"
-holochain_tracing_macros = "=0.0.22"
-newrelic="0.2"
-sim2h = { version = "=0.0.44-alpha3", path = "../sim2h" }
-lib3h_crypto_api = "=0.0.39"
-in_stream = { version = "=0.0.44-alpha3", path = "../in_stream" }
+holochain_core_types = { version = "=0.0.45-alpha1", path = "../core_types" }
+holochain_core = { version = "=0.0.45-alpha1", path = "../core" }
+holochain_common = { version = "=0.0.45-alpha1", path = "../common" }
+holochain_conductor_lib = { version = "=0.0.45-alpha1", path = "../conductor_lib" }
+holochain_net = { version = "=0.0.45-alpha1", path = "../net" }
+holochain_dpki = { version = "=0.0.45-alpha1", path = "../dpki" }
+holochain_locksmith = { version = "=0.0.45-alpha1", path = "../locksmith" }
+holochain_tracing = "=0.0.24"
+holochain_tracing_macros = "=0.0.24"
+newrelic = { version = "=0.2.2", optional = true }
+sim2h = { version = "=0.0.45-alpha1", path = "../sim2h" }
+lib3h_crypto_api = "=0.0.42"
+in_stream = { version = "=0.0.45-alpha1", path = "../in_stream" }
 url2 = "=0.0.4"
-lib3h_sodium = "=0.0.39"
+lib3h_sodium = "=0.0.42"
 holochain_json_api = "=0.0.23"
-holochain_persistence_api = "=0.0.17"
-holochain_persistence_file = "=0.0.17"
+holochain_persistence_api = "=0.0.18"
+holochain_persistence_file = "=0.0.18"
 holochain_wasm_utils = { path = "../wasm_utils" }
 crossbeam-channel = "=0.3.8"
 structopt = "=0.3.3"
@@ -45,14 +45,18 @@ rustyline = "=5.0.0"
 json-patch = "=0.2.2"
 reqwest = "=0.9.11"
 tempfile = "=3.0.7"
-lib3h_protocol = "=0.0.39"
+lib3h_protocol = "=0.0.42"
 tar = "=0.4.26"
 flate2 = "=1.0.12"
 log = "=0.4.8"
 dns-lookup = "=1.0.1"
 hcid = "=0.0.6"
 lazy_static = "=1.4.0"
-tracing-subscriber = "=0.2.1"
+tracing-subscriber = "=0.2.3"
 
 [dev-dependencies]
 assert_cmd = "=0.10.2"
+
+[features]
+default = []
+newrelic-on = ["newrelic"]

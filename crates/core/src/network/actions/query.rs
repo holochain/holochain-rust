@@ -50,6 +50,7 @@ pub async fn query(
                 tag: link_args.tag.clone(),
                 id: ProcessUniqueId::new().to_string(),
             };
+            tracing::trace!(%key.id);
             let crud_status = match link_args.options.status_request {
                 LinksStatusRequestKind::All => None,
                 LinksStatusRequestKind::Deleted => Some(CrudStatus::Deleted),

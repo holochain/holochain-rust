@@ -24,6 +24,7 @@ extern crate lib3h_sodium;
 #[cfg(unix)]
 extern crate signal_hook;
 extern crate structopt;
+extern crate holochain_tracing as ht;
 
 use holochain_conductor_lib::{
     conductor::{mount_conductor_from_config, Conductor, CONDUCTOR},
@@ -55,7 +56,7 @@ lazy_static! {
 
 new_relic_setup!("NEW_RELIC_LICENSE_KEY");
 
-#[derive(StructOpt, Debug)]
+#[derive(StructOpt)]
 #[structopt(name = "holochain")]
 struct Opt {
     /// Path to the toml configuration file for the conductor
@@ -63,6 +64,17 @@ struct Opt {
     config: Option<PathBuf>,
     #[structopt(short = "i", long = "info")]
     info: bool,
+    #[structopt(
+        long,
+        help = "Outputs structured json from logging:
+    - None: No logging at all (fastest)
+    - Log: Output logs to stdout with spans (human readable)
+    - Compact: Same as Log but with less information
+    - Json: Output logs as structured json (machine readable)
+    ",
+        default_value = "None"
+    )]
+    structured: ht::structured::Output,
 }
 
 pub enum SignalConfiguration {
@@ -91,6 +103,9 @@ fn main() {
 
     lib3h_sodium::check_init();
     let opt = Opt::from_args();
+
+    ht::structured::init_fmt(opt.structured, None)
+        .expect("Failed to start structed tracing");
 
     if opt.info {
         println!(

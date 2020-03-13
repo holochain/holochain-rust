@@ -113,6 +113,7 @@ type TraceReporterMap = HashMap<
 /// and also enable easier testing, a DnaLoader ()which is a closure that returns a
 /// Dna object for a given path string) has to be injected on creation.
 pub struct Conductor {
+    thread_pool: Arc<futures::executor::ThreadPool>,
     pub(in crate::conductor) instances: InstanceMap,
     instance_signal_receivers: Arc<RwLock<HashMap<String, Receiver<Signal>>>>,
     trace_reporters: Arc<RwLock<TraceReporterMap>>,
@@ -218,6 +219,9 @@ impl Conductor {
             };
 
         Conductor {
+            thread_pool: Arc::new(
+                futures::executor::ThreadPool::new().expect("can create thread pool executor"),
+            ),
             instances: HashMap::new(),
             instance_signal_receivers: Arc::new(RwLock::new(HashMap::new())),
             trace_reporters: Arc::new(RwLock::new(HashMap::new())),
@@ -892,7 +896,7 @@ impl Conductor {
                 };
 
                 // Spawn context
-                let context = context_builder.spawn();
+                let context = context_builder.spawn(self.thread_pool.clone());
 
                 // Get DNA
 

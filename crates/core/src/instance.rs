@@ -566,6 +566,7 @@ pub mod tests {
                 holochain_metrics::config::MetricPublisherConfig::default()
                     .create_metric_publisher(),
                 Arc::new(ht::null_tracer()),
+                Arc::new(futures::executor::ThreadPool::new().unwrap()),
             )),
             logger,
         )
@@ -619,6 +620,7 @@ pub mod tests {
                     holochain_metrics::DefaultMetricPublisher::default(),
                 )),
                 Arc::new(ht::null_tracer()),
+                Arc::new(futures::executor::ThreadPool::new().unwrap()),
             )
             .unwrap(),
         )
@@ -648,6 +650,7 @@ pub mod tests {
                 holochain_metrics::DefaultMetricPublisher::default(),
             )),
             Arc::new(ht::null_tracer()),
+            Arc::new(futures::executor::ThreadPool::new().unwrap()),
         );
         let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));
         context.set_state(global_state.clone());
@@ -678,6 +681,7 @@ pub mod tests {
                 holochain_metrics::DefaultMetricPublisher::default(),
             )),
             Arc::new(ht::null_tracer()),
+            Arc::new(futures::executor::ThreadPool::new().unwrap()),
         );
         let chain_store = ChainStore::new(cas.clone());
         let chain_header = test_chain_header();
@@ -974,6 +978,7 @@ pub mod tests {
                     holochain_metrics::DefaultMetricPublisher::default(),
                 )),
                 Arc::new(ht::null_tracer()),
+                Arc::new(futures::executor::ThreadPool::new().unwrap()),
             )),
             logger,
         )

@@ -1241,6 +1241,7 @@ dependencies = [
  "colored 1.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "fs_extra 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "futures 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_common 0.0.44-alpha3",
  "holochain_core 0.0.44-alpha3",
  "holochain_core_types 0.0.44-alpha3",
@@ -4358,6 +4359,7 @@ version = "0.0.44-alpha3"
 dependencies = [
  "base64 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam-channel 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "futures 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "hdk 0.0.44-alpha3",
  "holochain_conductor_lib 0.0.44-alpha3",
  "holochain_core 0.0.44-alpha3",

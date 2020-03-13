@@ -198,7 +198,7 @@ impl ContextBuilder {
     /// Actually creates the context.
     /// Defaults to memory storages, an in-memory network config and a fake agent called "alice".
     /// The persister gets set to SimplePersister based on the chain storage.
-    pub fn spawn(self) -> Context {
+    pub fn spawn(self, thread_pool: Arc<futures::executor::ThreadPool>) -> Context {
         let chain_storage = self
             .chain_storage
             .unwrap_or_else(|| Arc::new(RwLock::new(MemoryStorage::new())));
@@ -233,6 +233,7 @@ impl ContextBuilder {
                 self.tracer
                     .unwrap_or_else(|| holochain_tracing::null_tracer()),
             ),
+            thread_pool,
         )
     }
 }
@@ -241,16 +242,21 @@ impl ContextBuilder {
 mod tests {
     use self::tempfile::tempdir;
     use super::*;
+    use futures::executor::ThreadPool;
     use holochain_net::p2p_config::P2pBackendKind;
     use tempfile;
     use test_utils::mock_signing::mock_conductor_api;
+
+    fn tp() -> Arc<ThreadPool> {
+        Arc::new(ThreadPool::new().expect("can create ThreadPool executor"))
+    }
 
     #[test]
     fn vanilla() {
         let agent = AgentId::generate_fake("alice");
         let context = ContextBuilder::new()
             .with_conductor_api(mock_conductor_api(agent.clone()))
-            .spawn();
+            .spawn(tp());
         assert_eq!(context.agent_id, agent);
         assert_eq!(
             P2pBackendKind::LegacyInMemory,
@@ -264,7 +270,7 @@ mod tests {
         let context = ContextBuilder::new()
             .with_agent(agent.clone())
             .with_conductor_api(mock_conductor_api(agent.clone()))
-            .spawn();
+            .spawn(tp());
         assert_eq!(context.agent_id, agent);
     }
 
@@ -274,7 +280,7 @@ mod tests {
         let context = ContextBuilder::new()
             .with_p2p_config(net.clone())
             .with_conductor_api(mock_conductor_api(AgentId::generate_fake("alice")))
-            .spawn();
+            .spawn(tp());
         assert_eq!(context.p2p_config, net);
     }
 
@@ -283,13 +289,13 @@ mod tests {
         let _ = ContextBuilder::new()
             .with_memory_storage()
             .with_conductor_api(mock_conductor_api(AgentId::generate_fake("alice")))
-            .spawn();
+            .spawn(tp());
         let temp = tempdir().expect("test was supposed to create temp dir");
         let temp_path = String::from(temp.path().to_str().expect("temp dir could not be string"));
         let _ = ContextBuilder::new()
             .with_file_storage(temp_path)
             .expect("Filestorage should get instantiated with tempdir")
             .with_conductor_api(mock_conductor_api(AgentId::generate_fake("alice")))
-            .spawn();
+            .spawn(tp());
     }
 }

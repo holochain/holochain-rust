@@ -278,7 +278,7 @@ pub fn create_test_context_with_logger_and_signal(
                 };
                 builder = builder.with_p2p_config(config);
             }
-            builder.with_instance_name("test_context_instance").spawn()
+            builder.with_instance_name("test_context_instance").spawn(Arc::new(futures::executor::ThreadPool::new().expect("can create ThreadPool executor")))
         }),
         logger,
         recieve,
@@ -339,7 +339,7 @@ pub fn create_test_context(agent_name: &str) -> Arc<Context> {
             .expect("Tempdir must be accessible")
             .with_conductor_api(mock_signing::mock_conductor_api(agent))
             .with_instance_name("fake_instance_name")
-            .spawn(),
+            .spawn(Arc::new(futures::executor::ThreadPool::new().expect("can create ThreadPool executor"))),
     )
 }
 

@@ -143,6 +143,7 @@ pub mod test {
                 holochain_metrics::DefaultMetricPublisher::default(),
             )),
             Arc::new(ht::null_tracer()),
+            Arc::new(futures::executor::ThreadPool::new().unwrap()),
         );
 
         let global_state = Arc::new(RwLock::new(StateWrapper::new(Arc::new(context.clone()))));

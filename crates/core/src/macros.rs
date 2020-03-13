@@ -120,6 +120,7 @@ fn context_log_macro_test() {
             holochain_metrics::DefaultMetricPublisher::default(),
         )),
         Arc::new(ht::null_tracer()),
+        Arc::new(futures::executor::ThreadPool::new().unwrap()),
     );
 
     // Somehow we need to build our own logging instance for this test to show logs

@@ -102,7 +102,7 @@ pub struct Context {
     pub(crate) signal_tx: Option<Sender<Signal>>,
     pub(crate) instance_is_alive: Arc<AtomicBool>,
     pub state_dump_logging: bool,
-    thread_pool: ThreadPool,
+    thread_pool: Arc<ThreadPool>,
     pub redux_wants_write: Arc<AtomicBool>,
     pub metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
     pub tracer: Arc<ht::Tracer>,
@@ -150,6 +150,7 @@ impl Context {
         state_dump_logging: bool,
         metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
         tracer: Arc<ht::Tracer>,
+        thread_pool: Arc<ThreadPool>,
     ) -> Self {
         Context {
             instance_name: instance_name.to_owned(),
@@ -169,7 +170,7 @@ impl Context {
             )),
             instance_is_alive: Arc::new(AtomicBool::new(true)),
             state_dump_logging,
-            thread_pool: ThreadPool::new().expect("Could not create thread pool for futures"),
+            thread_pool,
             redux_wants_write: Arc::new(AtomicBool::new(false)),
             metric_publisher,
             tracer,
@@ -190,6 +191,7 @@ impl Context {
         state_dump_logging: bool,
         metric_publisher: Arc<RwLock<dyn MetricPublisher>>,
         tracer: Arc<ht::Tracer>,
+        thread_pool: Arc<ThreadPool>,
     ) -> Result<Context, HolochainError> {
         Ok(Context {
             instance_name: instance_name.to_owned(),
@@ -206,7 +208,7 @@ impl Context {
             conductor_api: ConductorApi::new(Self::test_check_conductor_api(None, agent_id)),
             instance_is_alive: Arc::new(AtomicBool::new(true)),
             state_dump_logging,
-            thread_pool: ThreadPool::new().expect("Could not create thread pool for futures"),
+            thread_pool,
             redux_wants_write: Arc::new(AtomicBool::new(false)),
             metric_publisher,
             tracer,
@@ -505,6 +507,7 @@ pub mod tests {
                 holochain_metrics::DefaultMetricPublisher::default(),
             )),
             Arc::new(ht::null_tracer()),
+            Arc::new(futures::executor::ThreadPool::new().unwrap()),
         );
 
         // Somehow we need to build our own logging instance for this test to show logs

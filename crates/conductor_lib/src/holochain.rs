@@ -68,7 +68,7 @@
 //!     .with_conductor_api(conductor_api)
 //!     .with_file_storage(storage_directory_path)
 //!     .expect("Tempdir should be accessible")
-//!     .spawn();
+//!     .spawn(Arc::new(futures::executor::ThreadPool::new().unwrap()));
 //!
 //! let mut hc = Holochain::new(dna,Arc::new(context)).unwrap();
 //!
@@ -315,6 +315,7 @@ mod tests {
     use self::tempfile::tempdir;
     use super::*;
     use crate::context_builder::ContextBuilder;
+    use futures::executor::ThreadPool;
     use holochain_core::{
         action::Action,
         context::Context,
@@ -335,6 +336,10 @@ mod tests {
         mock_signing::{mock_conductor_api, registered_test_agent},
     };
 
+    fn tp() -> Arc<ThreadPool> {
+        Arc::new(ThreadPool::new().expect("can create ThreadPool executor"))
+    }
+
     fn test_context(agent_name: &str) -> (Arc<Context>, Arc<Mutex<TestLogger>>, SignalReceiver) {
         let agent = registered_test_agent(agent_name);
         let (signal_tx, signal_rx) = signal_channel();
@@ -347,7 +352,7 @@ mod tests {
                     .with_conductor_api(mock_conductor_api(agent))
                     .with_file_storage(tempdir().unwrap().path().to_str().unwrap())
                     .unwrap()
-                    .spawn(),
+                    .spawn(tp()),
             ),
             logger,
             signal_rx,
@@ -425,7 +430,7 @@ mod tests {
                     .with_conductor_api(mock_conductor_api(agent.clone()))
                     .with_file_storage(temp_filestorage_dir)
                     .unwrap()
-                    .spawn(),
+                    .spawn(tp()),
             );
 
             let result = Holochain::new(dna.clone(), context_new.clone());
@@ -448,7 +453,7 @@ mod tests {
                 .with_conductor_api(mock_conductor_api(agent.clone()))
                 .with_file_storage(temp_filestorage_dir)
                 .unwrap()
-                .spawn(),
+                .spawn(tp()),
         );
 
         let result = Holochain::load(context_load.clone());

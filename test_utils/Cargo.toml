@@ -9,6 +9,7 @@ documentation = "https://github.com/holochain/holochain-rust"
 edition = "2018"
 
 [dependencies]
+futures = { version = "=0.3.2", features = [ "thread-pool" ] }
 hdk = { version = "=0.0.44-alpha3", path = "../crates/hdk" }
 holochain_net = { version = "=0.0.44-alpha3", path = "../crates/net" }
 holochain_core = { version = "=0.0.44-alpha3", path = "../crates/core" }

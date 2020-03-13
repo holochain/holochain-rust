@@ -95,7 +95,7 @@ mod tests {
         assert_eq!(
             maybe_reply,
             Some(Err(HolochainError::Timeout(
-                "timeout src: crates/core/src/network/reducers/send_direct_message.rs:158"
+                "timeout src: crates/core/src/network/reducers/send_direct_message.rs:81"
                     .to_string()
             )))
         );

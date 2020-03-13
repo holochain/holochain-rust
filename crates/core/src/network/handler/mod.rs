@@ -407,7 +407,7 @@ fn entry_to_meta_aspect(entry: Entry, header: ChainHeader) -> Option<(Address, E
         Entry::Deletion(_) => Some(EntryAspect::Deletion(header)),
         _ => None,
     }
-    .map(|aspect| (aspect.entry_address().clone(), aspect))
+    .map(|aspect| (aspect.entry_address(), aspect))
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]

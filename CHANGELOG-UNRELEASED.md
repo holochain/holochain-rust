@@ -16,5 +16,6 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Older rust-tracing traces.
 
 ### Fixed
+- Bug where EntryAspects were being associated with the wrong Entries
 
 ### Security

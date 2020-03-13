@@ -822,7 +822,7 @@ fn spawn_handle_message_list_data(
 
     for (entry_hash, aspects) in list_data.address_map {
         if aspects.is_empty() {
-            return;
+            continue;
         }
 
         sim2h_handle.state().spawn_agent_holds_aspects(

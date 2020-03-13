@@ -99,7 +99,7 @@ impl EntryAspect {
         match self {
             EntryAspect::LinkAdd(link_data, _) => link_data.link.base(),
             EntryAspect::LinkRemove((link_data, _), _) => link_data.link.base(),
-            _ => self.header().entry_address()
+            _ => self.header().entry_address(),
         }
     }
 }

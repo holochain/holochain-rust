@@ -152,11 +152,10 @@ mod tests {
 
         assert_eq!(
             maybe_reply,
-            Some(Err(HolochainError::Timeout(format!(
-                "timeout src: {}:{}",
-                file!(),
-                line!()
-            ))))
+            Some(Err(HolochainError::Timeout(
+                "timeout src: crates/core/src/network/reducers/send_direct_message.rs:81"
+                    .to_string()
+            )))
         );
     }
 }

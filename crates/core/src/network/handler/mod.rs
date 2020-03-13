@@ -391,6 +391,9 @@ fn get_content_aspect(
 /// base address to which it is meta, if the entry is the source entry of a meta aspect,
 /// i.e. a CRUD or link entry.
 /// If the entry is not that it returns None.
+///
+/// NB: this is the inverse function of EntryAspect::entry_address(), so it is very important
+/// that they agree!
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn entry_to_meta_aspect(entry: Entry, header: ChainHeader) -> Option<(Address, EntryAspect)> {
     match entry {

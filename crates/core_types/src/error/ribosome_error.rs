@@ -202,7 +202,7 @@ impl From<HolochainError> for RibosomeErrorCode {
             HolochainError::Ribosome(e) => e,
             HolochainError::RibosomeFailed(_) => RibosomeErrorCode::CallbackFailed,
             HolochainError::ConfigError(_) => RibosomeErrorCode::Unspecified,
-            HolochainError::Timeout => RibosomeErrorCode::Unspecified,
+            HolochainError::Timeout(_) => RibosomeErrorCode::Unspecified,
             HolochainError::InitializationFailed(_) => RibosomeErrorCode::Unspecified,
             HolochainError::LifecycleError(_) => RibosomeErrorCode::Unspecified,
             HolochainError::DnaHashMismatch(_, _) => RibosomeErrorCode::Unspecified,

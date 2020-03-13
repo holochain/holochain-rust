@@ -149,6 +149,67 @@ pub async fn get_entry_result_workflow<'a>(
     Ok(entry_result)
 }
 
+/// Get GetEntryResult workflow
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+pub fn get_entry_result_workflow_local<'a>(
+    context: &'a Arc<Context>,
+    args: &'a GetEntryArgs,
+) -> Result<GetEntryResult, HolochainError> {
+    // Setup
+    let mut entry_result = GetEntryResult::new(args.options.status_request.clone(), None);
+    let mut maybe_address = Some(args.address.clone());
+
+    // Accumulate entry history in a loop unless only request initial.
+    while maybe_address.is_some() {
+        let address = maybe_address.unwrap();
+        maybe_address = None;
+        // Try to get entry
+        let maybe_entry_with_meta_and_headers =
+            get_entry_with_meta_workflow_local(context, &address)?;
+
+        // Entry found
+        if let Some(entry_with_meta_and_headers) = maybe_entry_with_meta_and_headers {
+            // Erase history if request is for latest
+            if args.options.status_request == StatusRequestKind::Latest
+                && entry_with_meta_and_headers.entry_with_meta.crud_status == CrudStatus::Deleted
+            {
+                entry_result.clear();
+                break;
+            }
+
+            // Add entry
+            let headers: Vec<ChainHeader> = if args.options.headers {
+                entry_with_meta_and_headers.headers
+            } else {
+                Vec::new()
+            };
+            entry_result.push(&entry_with_meta_and_headers.entry_with_meta, headers);
+
+            if args.options.status_request == StatusRequestKind::Initial {
+                break;
+            }
+
+            // Follow crud-link if possible
+            if entry_with_meta_and_headers
+                .entry_with_meta
+                .maybe_link_update_delete
+                .is_some()
+                && entry_with_meta_and_headers.entry_with_meta.crud_status != CrudStatus::Deleted
+                && args.options.status_request != StatusRequestKind::Initial
+            {
+                maybe_address = Some(
+                    entry_with_meta_and_headers
+                        .entry_with_meta
+                        .maybe_link_update_delete
+                        .unwrap(),
+                );
+            }
+        }
+    }
+
+    Ok(entry_result)
+}
+
 //#[cfg(test)]
 //pub mod tests {
 //    use crate::instance::tests::test_context_with_state;

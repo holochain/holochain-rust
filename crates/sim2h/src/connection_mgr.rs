@@ -141,6 +141,7 @@ fn process_websocket_frames(cmd_info: &mut CmdInfo) -> Loop {
     return Loop::Continue;
 }
 
+#[instrument(skip(uri, wss, evt_send, cmd_recv))]
 /// internal websocket polling loop
 async fn wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend, cmd_recv: CmdRecv) {
     // TODO - this should be done with tokio tcp streams && selecting
@@ -157,13 +158,11 @@ async fn wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend, cmd_recv: CmdRe
         frame: None,
     };
     'wss_task_loop: loop {
-        let span = debug_span!("wss_task");
-        let _g = span.enter();
         cmd_info.did_work = false;
         cmd_info.cmd_count = 0;
         cmd_info.read_count = 0;
         cmd_info.frame = None;
-
+        trace!("start");
         let loop_start = std::time::Instant::now();
 
         // first, process a batch of control commands
@@ -187,8 +186,10 @@ async fn wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend, cmd_recv: CmdRe
         // if we did work we might have more work to do,
         // if not, let this task get parked for a time
         if cmd_info.did_work {
+            trace!("did work");
             tokio::task::yield_now().await;
         } else {
+            trace!("did no work");
             tokio::time::delay_for(std::time::Duration::from_millis(5)).await;
         }
     }

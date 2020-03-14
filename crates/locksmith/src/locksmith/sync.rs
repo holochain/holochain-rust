@@ -206,21 +206,23 @@ macro_rules! guard_struct {
         impl<'a, T: ?Sized> $HcGuard<'a, T> {
             pub fn new(inner: $Guard<'a, T>) -> Self {
                 let puid = ProcessUniqueId::new();
-                guards_guard().insert(puid, GuardTracker::new(puid, LockType::$lock_type));
+                //guards_guard().insert(puid, GuardTracker::new(puid, LockType::$lock_type));
                 Self { puid, inner }
             }
 
             pub fn annotate<S: Into<String>>(self, annotation: S) -> Self {
+                /*
                 guards_guard()
                         .entry(self.puid)
                         .and_modify(|g| g.annotation = Some(annotation.into()));
+                        */
                 self
             }
         }
 
         impl<'a, T: ?Sized> Drop for $HcGuard<'a, T> {
             fn drop(&mut self) {
-                guards_guard().remove(&self.puid);
+                //guards_guard().remove(&self.puid);
             }
         }
     };

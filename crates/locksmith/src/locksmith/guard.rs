@@ -1,7 +1,8 @@
 /*
 use crate::{
     error::LockType,
-    locksmith::{common::guards_guard, tracker::GuardTracker},
+    //locksmith::{common::guards_guard, tracker::GuardTracker},
+    locksmith::tracker::GuardTracker,
 };
 */
 use parking_lot::{MutexGuard, RwLockReadGuard, RwLockWriteGuard};
@@ -14,7 +15,7 @@ use std::{
 macro_rules! guard_struct {
     ($HcGuard:ident, $Guard:ident, $lock_type:ident) => {
         pub struct $HcGuard<'a, T: ?Sized> {
-            puid: ProcessUniqueId,
+            _puid: ProcessUniqueId,
             inner: Option<$Guard<'a, T>>,
             fair_unlocking: bool,
         }
@@ -23,8 +24,9 @@ macro_rules! guard_struct {
             pub fn new(inner: $Guard<'a, T>) -> Self {
                 let puid = ProcessUniqueId::new();
                 //guards_guard().insert(puid, GuardTracker::new(puid, LockType::$lock_type));
+                GuardTracker::new(puid, LockType::$lock_type);
                 Self {
-                    puid,
+                    _puid: puid,
                     inner: Some(inner),
                     fair_unlocking: false,
                 }
@@ -32,7 +34,7 @@ macro_rules! guard_struct {
 
             /// Add some context which will output in the case that this guard
             /// lives to be an immortal
-            pub fn annotate<S: Into<String>>(self, annotation: S) -> Self {
+            pub fn annotate<S: Into<String>>(self, _annotation: S) -> Self {
                 /*
                 guards_guard()
                     .entry(self.puid)

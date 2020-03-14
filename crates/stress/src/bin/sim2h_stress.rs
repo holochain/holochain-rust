@@ -544,7 +544,7 @@ impl StressJob for Job {
                 }
             }
             Err(e) if e.would_block() => (),
-            Err(e) => panic!(e),
+            Err(e) => panic!("{:?}", e),
         }
 
         if !self.got_ack {

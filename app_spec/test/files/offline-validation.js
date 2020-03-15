@@ -1,6 +1,6 @@
 const { one } = require('../config')
 
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms)) 
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 module.exports = scenario => {
 
@@ -8,7 +8,6 @@ module.exports = scenario => {
         const { alice, bob } = await s.players({ alice: one, bob: one })
         await alice.spawn()
         await bob.spawn()
-
         await s.consistency()
 
         // alice publishes a memo. This is private but should still publish a header
@@ -42,8 +41,65 @@ module.exports = scenario => {
         t.comment(JSON.stringify(chain_headers))
       })
 
+      scenario.only('Can retrieve header entries from agent that went offline via dht', async (s, t) => {
+        const { alice, bob, carol } = await s.players({ alice: one, bob: one, carol: one })
+        await alice.spawn()
+        await bob.spawn()
+        await carol.spawn()
+        await s.consistency()
+
+        // alice publishes a memo. This is private but should still publish a header
+        const create_result = await alice.call('app', "blog", "create_memo", { content: "private memo" })
+        t.comment(JSON.stringify(create_result))
+        t.equal(create_result.Ok.length, 46)
+        await s.consistency()
+
+        // get all the chain header hashes and check if they are retrievable
+        const maybe_chain_header_hashes = await alice.call('app', "blog", "get_chain_header_hashes", {})
+        t.ok(maybe_chain_header_hashes.Ok)
+        let chain_header_hashes = maybe_chain_header_hashes.Ok
+        t.equal(chain_header_hashes.length, 4) // dna, agentId, cap grant, memo
+
+        t.comment(JSON.stringify(chain_header_hashes))
+
+        await s.consistency()
+
+        // alice then goes offline
+        t.comment('waiting for alice to go offline')
+         await alice.kill()
+        t.comment('alice has gone offline')
+
+        // carol then comes online, will receive the entry via gossip from bob and need to validate
+        // Since alice is offline the validation package cannot come direct and must
+        // be regenerated from the published headers (which bob should hold)
+        t.comment('waiting for Carol to come online')
+        await carol.spawn()
+        t.comment('Carol is online')
+
+        t.comment('Waiting for Carol to get all data via gossip')
+        await s.consistency()
+        t.comment('consistency has been reached')
+
+        await delay(5000) // keep this until consistency works with dynamic starting agents
+
+        let chain_headers = []
+        for (let i=0; i< chain_header_hashes.length; i++) {
+            // can use get_post because it just returns a raw entry given a hash
+            let header_hash = chain_header_hashes[i]
+            t.comment(header_hash)
+
+            // check carol can retrieve alices header entries
+            let header_carol = await carol.call('app', "blog", "get_post", { post_address: header_hash })
+            t.ok(header_carol.Ok)
+
+            chain_headers.push(header_carol.Ok)
+        }
+        t.comment('headers carol got:')
+        t.comment(JSON.stringify(chain_headers))
+      })
+
       scenario('Can perform validation of an entry while the author is offline', async (s, t) => {
-        
+
         const { alice, bob, carol } = await s.players({alice: one, bob: one, carol: one})
         // alice and bob start online
         await alice.spawn()
@@ -68,7 +124,7 @@ module.exports = scenario => {
         const bob_result = await bob.call('app', "blog", "get_post", { post_address: create_result.Ok })
         t.ok(bob_result.Ok)
         t.equal(JSON.parse(bob_result.Ok.App[1]).content, initialContent)
-        
+
         // alice then goes offline
         t.comment('waiting for alice to go offline')
         await alice.kill()
@@ -85,7 +141,7 @@ module.exports = scenario => {
         await s.consistency()
         t.comment('consistency has been reached')
 
-        await delay(50000) // keep this until consistency works with dynamic starting agents
+        await delay(5000) // keep this until consistency works with dynamic starting agents
 
         // Bob now go offline to ensure the following get_post uses carols local store only
         t.comment('waiting for Bob to go offline')

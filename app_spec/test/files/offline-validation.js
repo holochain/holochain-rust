@@ -45,7 +45,6 @@ module.exports = scenario => {
         const { alice, bob, carol } = await s.players({ alice: one, bob: one, carol: one })
         await alice.spawn()
         await bob.spawn()
-        await carol.spawn()
         await s.consistency()
 
         // alice publishes a memo. This is private but should still publish a header

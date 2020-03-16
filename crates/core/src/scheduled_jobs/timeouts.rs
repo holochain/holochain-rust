@@ -33,6 +33,7 @@ pub fn check_network_processes_for_timeouts(context: Arc<Context>) {
     for (address, (time, duration)) in state.network().get_validation_package_timeouts.iter() {
         if let Ok(elapsed) = time.elapsed() {
             if elapsed > *duration {
+                tracing::debug!(timeout_found = %address);
                 dispatch_action(
                     context.action_channel(),
                     ActionWrapper::new(Action::GetValidationPackageTimeout(address.clone())),

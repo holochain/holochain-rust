@@ -23,6 +23,7 @@ pub fn reduce_clear_validation_package_result(
 ) {
     let action = action_wrapper.action();
     let address = unwrap_to!(action => Action::ClearValidationPackageResult);
+    tracing::debug!(ClearValidationPackageResult = %address);
 
     network_state.get_validation_package_results.remove(address);
 }

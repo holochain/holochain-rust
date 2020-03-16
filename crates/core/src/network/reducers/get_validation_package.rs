@@ -64,10 +64,12 @@ pub fn reduce_get_validation_package_timeout(
         .remove(address);
 
     if let Some(Some(_)) = network_state.get_validation_package_results.get(address) {
+        tracing::debug!(got_result_no_timeout = %address);
         // A result already came back from the network so don't overwrite it
         return;
     }
 
+    tracing::debug!(timeout = %address);
     network_state.get_validation_package_results.insert(
         address.clone(),
         Some(Err(HolochainError::Timeout(format!(

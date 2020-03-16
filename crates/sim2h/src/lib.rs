@@ -570,7 +570,8 @@ fn spawn_handle_message_debug(
                 error!("Could not create file {}!", filename)
             }
         }
-        let extra_data = "Extra!".to_string();
+        let connection_list = sim2h_handle.connection_mgr().list_connections().await;
+        let extra_data = format!("LIST_CONNECTION: {:#?}", connection_list);
         sim2h_handle.send(
             signer.clone(),
             uri.clone(),

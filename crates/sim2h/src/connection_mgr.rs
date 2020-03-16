@@ -141,6 +141,7 @@ fn process_websocket_frames(cmd_info: &mut CmdInfo) -> Loop {
     return Loop::Continue;
 }
 
+#[allow(clippy::complexity)]
 #[instrument(skip(uri, wss, evt_send, cmd_recv))]
 /// internal websocket polling loop
 async fn wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend, cmd_recv: CmdRecv) {

@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, convert::TryFrom};
 
 pub type WireMessageVersion = u32;
-pub const WIRE_VERSION: WireMessageVersion = 3;
+pub const WIRE_VERSION: WireMessageVersion = 4;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum WireError {

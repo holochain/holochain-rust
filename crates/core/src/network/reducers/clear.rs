@@ -22,9 +22,10 @@ pub fn reduce_clear_validation_package_result(
     action_wrapper: &ActionWrapper,
 ) {
     let action = action_wrapper.action();
-    let address = unwrap_to!(action => Action::ClearValidationPackageResult);
+    let key = unwrap_to!(action => Action::ClearValidationPackageResult);
 
-    network_state.get_validation_package_results.remove(address);
+    network_state.get_validation_package_results.remove(key);
+    network_state.get_validation_package_timeouts.remove(key);
 }
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_clear_custom_send_response(

@@ -64,7 +64,7 @@ impl From<Arc<Context>> for StateDump {
             .get_validation_package_results
             .into_iter()
             .filter(|(_, result)| result.is_none())
-            .map(|(address, _)| address)
+            .map(|(key, _)| key.address)
             .collect();
 
         let direct_message_flows: Vec<(String, DirectMessage)> = network

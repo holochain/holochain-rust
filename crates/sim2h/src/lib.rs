@@ -773,6 +773,11 @@ fn spawn_handle_message_publish_entry(
             });
             multi_message.push(ht::span_wrap_encode!(Level::INFO, data).into());
         }
+
+        if multi_message.is_empty() {
+            return;
+        }
+
         let multi_message = WireMessage::MultiSend(multi_message);
 
         let state = sim2h_handle.state().get_clone().await;
@@ -816,6 +821,10 @@ fn spawn_handle_message_list_data(
     // just iter/send we don't need a new task for this
 
     for (entry_hash, aspects) in list_data.address_map {
+        if aspects.is_empty() {
+            continue;
+        }
+
         sim2h_handle.state().spawn_agent_holds_aspects(
             (&*space_hash).clone(),
             signer.clone(),

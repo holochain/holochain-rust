@@ -68,6 +68,7 @@ impl Future for GetValidationPackageFuture {
 
             match state.get_validation_package_results.get(&self.address) {
                 Some(Some(result)) => {
+                    tracing::debug!(dispatch_clear = %self.address);
                     dispatch_action(
                         self.context.action_channel(),
                         ActionWrapper::new(Action::ClearValidationPackageResult(

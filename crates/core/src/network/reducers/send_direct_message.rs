@@ -76,9 +76,10 @@ pub fn reduce_send_direct_message_timeout(
     network_state.custom_direct_message_replys.insert(
         id.clone(),
         Err(HolochainError::Timeout(format!(
-            "timeout src: {}:{}",
+            "timeout src: {}:{}, request_id: {}",
             file!(),
-            line!()
+            line!(),
+            id
         ))),
     );
 }

@@ -570,10 +570,11 @@ fn spawn_handle_message_debug(
                 error!("Could not create file {}!", filename)
             }
         }
+        let extra_data = "Extra!".to_string();
         sim2h_handle.send(
             signer.clone(),
             uri.clone(),
-            &WireMessage::DebugResponse(response_map),
+            &WireMessage::DebugResponse((response_map, extra_data)),
         );
         sim2h_handle.send_receipt(&receipt, &signer, &uri);
     });

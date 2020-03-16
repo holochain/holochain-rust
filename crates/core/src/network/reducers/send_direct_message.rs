@@ -27,6 +27,8 @@ fn inner(
         content: content.into(),
     };
 
+    tracing::debug!(%data.request_id);
+
     let protocol_object = if direct_message_data.is_response {
         Lib3hClientProtocol::HandleSendDirectMessageResult(data)
     } else {
@@ -53,6 +55,7 @@ pub fn reduce_send_direct_message(
             .direct_message_timeouts
             .insert(dm_data.msg_id.clone(), timeout.clone());
     }
+    tracing::debug!(%dm_data.msg_id);
     if let Err(error) = inner(network_state, dm_data) {
         println!("err/net: Error sending direct message: {:?}", error);
     }

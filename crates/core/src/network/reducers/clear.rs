@@ -26,6 +26,7 @@ pub fn reduce_clear_validation_package_result(
     tracing::debug!(ClearValidationPackageResult = ?key);
 
     network_state.get_validation_package_results.remove(key);
+    network_state.get_validation_package_timeouts.remove(key);
 }
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_clear_custom_send_response(

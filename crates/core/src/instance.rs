@@ -216,6 +216,7 @@ impl Instance {
 
                                         ht::push_span(span)
                                     });
+                                    tracing::debug!(?action);
                                     sync_self.emit_signals(&sub_context, &action_wrapper);
                                     // Tick all observers and remove those that have lost their receiving part
                                     state_observers= state_observers
@@ -270,6 +271,7 @@ impl Instance {
         context.redux_wants_write.store(true, Relaxed);
         // Mutate state
         {
+            tracing::debug!(?action_wrapper);
             let new_state: StateWrapper;
 
             // Get write lock
@@ -280,11 +282,13 @@ impl Instance {
                     HolochainError::Timeout(format!("timeout src: {}:{}", file!(), line!()))
                 })?;
 
+            tracing::debug!(?action_wrapper);
             new_state = state.reduce(action_wrapper.data.clone());
 
             // Change the state
             *state = new_state;
 
+            tracing::debug!(?action_wrapper);
             if let Err(e) = self.save(&state) {
                 log_error!(
                     context,

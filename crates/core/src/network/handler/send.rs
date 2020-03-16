@@ -46,6 +46,7 @@ pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context
             let span =
                 ht::top_follower("into closure for handle_custom_direct_message".to_string());
             let closure = async move || {
+                tracing::debug!(%message_data.request_id);
                 if let Err(error) = handle_custom_direct_message(
                     message_data.from_agent_id.into(),
                     message_data.request_id,
@@ -65,6 +66,7 @@ pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context
             context.spawn_task({
                 let context = context.clone();
                 async move || {
+                    tracing::debug!(%message_data.request_id);
                     respond_validation_package_request(
                         message_data.from_agent_id.into(),
                         message_data.request_id,

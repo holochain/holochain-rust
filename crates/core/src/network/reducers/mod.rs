@@ -129,6 +129,7 @@ pub fn send(
                 })
                 .into()
             });
+            tracing::debug!(?msg);
             network
                 .send(span.wrap(msg).into())
                 .map_err(|error| HolochainError::IoError(error.to_string()))

@@ -608,6 +608,7 @@ impl NetWorker for Sim2hWorker {
     /// We got a message from core
     /// -> forward it to the NetworkEngine
     fn receive(&mut self, data: Lib3hClientProtocolWrapped) -> NetResult<()> {
+        tracing::debug!(?data);
         self.inbox.push(data);
         Ok(())
     }

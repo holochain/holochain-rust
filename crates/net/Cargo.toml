@@ -51,6 +51,7 @@ env_logger = "=0.6.1"
 holochain_logging = "=0.0.7"
 log = "0.4.8"
 newrelic = { version = "=0.2.2", optional = true }
+tracing = "=0.1.13"
 
 [features]
 default = []

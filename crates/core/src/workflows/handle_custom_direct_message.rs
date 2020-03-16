@@ -28,6 +28,7 @@ pub async fn handle_custom_direct_message(
         .payload
         .map_err(|error| format!("Got error in initial custom direct message: {}", error))?;
 
+    tracing::debug!(%msg_id);
     let result = receive(
         context.clone(),
         &zome,
@@ -49,11 +50,12 @@ pub async fn handle_custom_direct_message(
     let direct_message_data = DirectMessageData {
         address: from_agent_id,
         message: direct_message,
-        msg_id,
+        msg_id: msg_id.clone(),
         is_response: true,
     };
 
     let action_wrapper = ActionWrapper::new(Action::SendDirectMessage((direct_message_data, None)));
     dispatch_action(context.action_channel(), action_wrapper);
+    tracing::debug!(%msg_id);
     Ok(())
 }

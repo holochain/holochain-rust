@@ -233,6 +233,7 @@ impl Sim2hWorker {
             return false;
         }
         let buffered_message = self.outgoing_message_buffer.get_mut(0).unwrap();
+        tracing::debug!(?buffered_message.wire_message);
         if let Some(instant_last_sent) = buffered_message.last_sent {
             if instant_last_sent.elapsed() < Duration::from_millis(RESEND_WIRE_MESSAGE_MS) {
                 return false;
@@ -624,6 +625,7 @@ impl NetWorker for Sim2hWorker {
         }
 
         if self.connection_ready() {
+            tracing::debug!(connection_is_ready = true);
             self.reset_backoff();
             if self.try_send_from_outgoing_buffer() {
                 did_something = true;

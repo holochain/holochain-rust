@@ -10,7 +10,7 @@ pub fn reduce_handle_get_validation_package(
     let (address, maybe_validation_package) =
         unwrap_to!(action => crate::action::Action::HandleGetValidationPackage);
 
-    tracing::debug!(actual_result = %address);
+    tracing::debug!(actual_result = ?address);
     network_state
         .get_validation_package_results
         .insert(address.clone(), Some(Ok(maybe_validation_package.clone())));

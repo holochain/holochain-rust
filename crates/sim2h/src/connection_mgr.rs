@@ -14,6 +14,23 @@ impl ConnectionCount {
     }
 }
 
+#[derive(Clone)]
+pub struct ByteCount(Arc<std::sync::RwLock<u64>>);
+
+impl ByteCount {
+    pub fn new() -> Self {
+        Self(Arc::new(std::sync::RwLock::new(0)))
+    }
+
+    pub fn add(&self, add: u64) {
+        *self.0.write().unwrap() += add;
+    }
+
+    pub fn get(&self) -> u64 {
+        *self.0.read().unwrap()
+    }
+}
+
 /// incoming messages from websockets
 #[derive(Debug)]
 pub enum ConMgrEvent {
@@ -28,13 +45,19 @@ enum ConMgrCommand {
     Connect(Lib3hUri, TcpWss),
     SendData(Lib3hUri, WsFrame),
     Disconnect(Lib3hUri),
-    ListConnections(tokio::sync::oneshot::Sender<Vec<Lib3hUri>>),
+    ListConnections(tokio::sync::oneshot::Sender<Vec<(String, u64, u64)>>),
 }
 
 type EvtSend = tokio::sync::mpsc::UnboundedSender<ConMgrEvent>;
 type EvtRecv = tokio::sync::mpsc::UnboundedReceiver<ConMgrEvent>;
 type CmdSend = tokio::sync::mpsc::UnboundedSender<ConMgrCommand>;
 type CmdRecv = tokio::sync::mpsc::UnboundedReceiver<ConMgrCommand>;
+
+struct CmdRef {
+    cmd_send: CmdSend,
+    incoming_bytes: ByteCount,
+    outgoing_bytes: ByteCount,
+}
 
 pub type ConnectionMgrEventRecv = EvtRecv;
 
@@ -55,7 +78,7 @@ enum Loop {
 }
 
 // process a batch of control commands
-fn process_control_cmds(cmd_info: &mut CmdInfo) -> Loop {
+fn process_control_cmds(cmd_info: &mut CmdInfo, outgoing_bytes: &ByteCount) -> Loop {
     let CmdInfo {
         ref mut did_work,
         ref mut cmd_count,
@@ -73,6 +96,7 @@ fn process_control_cmds(cmd_info: &mut CmdInfo) -> Loop {
                 *did_work = true;
                 match cmd {
                     ConMgrCommand::SendData(_uri, frame) => {
+                        let outgoing_size = frame.as_bytes().len();
                         debug!(message = "SendData", ?_uri);
                         if let Err(e) = wss.write(frame) {
                             error!("socket write error {} {:?}", uri, e);
@@ -81,6 +105,7 @@ fn process_control_cmds(cmd_info: &mut CmdInfo) -> Loop {
                             // end task
                             return Loop::Break;
                         }
+                        outgoing_bytes.add(outgoing_size as u64);
                     }
                     ConMgrCommand::Disconnect(_uri) => {
                         debug!("disconnecting socket {}", uri);
@@ -105,7 +130,7 @@ fn process_control_cmds(cmd_info: &mut CmdInfo) -> Loop {
 }
 
 // process a batch of incoming websocket frames
-fn process_websocket_frames(cmd_info: &mut CmdInfo) -> Loop {
+fn process_websocket_frames(cmd_info: &mut CmdInfo, incoming_bytes: &ByteCount) -> Loop {
     let CmdInfo {
         ref mut did_work,
         ref evt_send,
@@ -125,6 +150,7 @@ fn process_websocket_frames(cmd_info: &mut CmdInfo) -> Loop {
                 *did_work = true;
                 let data = frame.take().unwrap();
                 debug!("socket {} read {} bytes", uri, len);
+                incoming_bytes.add(len as u64);
                 if let Err(_) = evt_send.send(ConMgrEvent::ReceiveData(uri.clone(), data)) {
                     debug!("socket evt channel closed {}", uri);
                     // end task
@@ -144,9 +170,9 @@ fn process_websocket_frames(cmd_info: &mut CmdInfo) -> Loop {
 }
 
 #[allow(clippy::complexity)]
-#[instrument(skip(uri, wss, evt_send, cmd_recv))]
+#[instrument(skip(uri, wss, evt_send, cmd_recv, incoming_bytes, outgoing_bytes))]
 /// internal websocket polling loop
-async fn wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend, cmd_recv: CmdRecv) {
+async fn wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend, cmd_recv: CmdRecv, incoming_bytes: ByteCount, outgoing_bytes: ByteCount) {
     // TODO - this should be done with tokio tcp streams && selecting
     //        for now, we're just pausing when no work happens
 
@@ -169,12 +195,12 @@ async fn wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend, cmd_recv: CmdRe
         let loop_start = std::time::Instant::now();
 
         // first, process a batch of control commands
-        if let Loop::Break = process_control_cmds(&mut cmd_info) {
+        if let Loop::Break = process_control_cmds(&mut cmd_info, &outgoing_bytes) {
             break 'wss_task_loop;
         }
 
         // next process a batch of incoming websocket frames
-        if let Loop::Break = process_websocket_frames(&mut cmd_info) {
+        if let Loop::Break = process_websocket_frames(&mut cmd_info, &incoming_bytes) {
             break 'wss_task_loop;
         }
 
@@ -202,11 +228,17 @@ async fn wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend, cmd_recv: CmdRe
 
 #[tracing::instrument(skip(uri, wss, evt_send))]
 /// internal actually spawn the above wss_task into the tokio runtime
-fn spawn_wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend) -> CmdSend {
+fn spawn_wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend) -> CmdRef {
     debug!(?uri);
+    let incoming_bytes = ByteCount::new();
+    let outgoing_bytes = ByteCount::new();
     let (cmd_send, cmd_recv) = tokio::sync::mpsc::unbounded_channel();
-    tokio::task::spawn(wss_task(uri, wss, evt_send, cmd_recv).instrument(debug_span!("wss_task")));
-    cmd_send
+    tokio::task::spawn(wss_task(uri, wss, evt_send, cmd_recv, incoming_bytes.clone(), outgoing_bytes.clone()).instrument(debug_span!("wss_task")));
+    CmdRef {
+        cmd_send,
+        incoming_bytes,
+        outgoing_bytes,
+    }
 }
 
 #[derive(Debug)]
@@ -244,7 +276,7 @@ pub struct ConnectionMgr {
     evt_send_from_children: EvtSend,
     evt_recv_from_children: EvtRecv,
     connection_count: ConnectionCount,
-    wss_map: std::collections::HashMap<Lib3hUri, CmdSend>,
+    wss_map: std::collections::HashMap<Lib3hUri, CmdRef>,
 }
 
 impl ConnectionMgr {
@@ -286,7 +318,7 @@ impl ConnectionMgr {
         let cmd_send = spawn_wss_task(uri.clone(), wss, self.evt_send_from_children.clone());
         if let Some(old) = self.wss_map.insert(uri.clone(), cmd_send) {
             error!("REPLACING ACTIVE CONNECTION: {}", uri);
-            let _ = old.send(ConMgrCommand::Disconnect(uri));
+            let _ = old.cmd_send.send(ConMgrCommand::Disconnect(uri));
         }
     }
 
@@ -294,7 +326,7 @@ impl ConnectionMgr {
         debug!(?uri);
         let mut remove = false;
         if let Some(cmd_send) = self.wss_map.get(&uri) {
-            if let Err(_) = cmd_send.send(ConMgrCommand::SendData(uri.clone(), frame)) {
+            if let Err(_) = cmd_send.cmd_send.send(ConMgrCommand::SendData(uri.clone(), frame)) {
                 tracing::error!(?uri);
                 remove = true;
             }
@@ -319,14 +351,25 @@ impl ConnectionMgr {
                         ConMgrCommand::Disconnect(uri) => {
                             if let Some(cmd_send) = self.wss_map.remove(&uri) {
                                 tracing::error!(?uri);
-                                let _ = cmd_send.send(ConMgrCommand::Disconnect(uri));
+                                let _ = cmd_send.cmd_send.send(ConMgrCommand::Disconnect(uri));
                             }
                         }
                         ConMgrCommand::Connect(uri, wss) => {
                             self.handle_connect_data(uri, wss);
                         }
                         ConMgrCommand::ListConnections(respond) => {
-                            let _ = respond.send(self.wss_map.keys().cloned().collect());
+                            let _ = respond.send(self
+                                .wss_map
+                                .iter()
+                                .map(|(k, v)| {
+                                    (
+                                        k.to_string(),
+                                        v.incoming_bytes.get(),
+                                        v.outgoing_bytes.get(),
+                                    )
+                                })
+                                .collect()
+                            );
                         }
                     }
                 }
@@ -354,7 +397,7 @@ impl ConnectionMgr {
                     match evt {
                         ConMgrEvent::Disconnect(uri, maybe_err) => {
                             if let Some(cmd_send) = self.wss_map.remove(&uri) {
-                                let _ = cmd_send.send(ConMgrCommand::Disconnect(uri.clone()));
+                                let _ = cmd_send.cmd_send.send(ConMgrCommand::Disconnect(uri.clone()));
                             }
                             if let Err(_) = self
                                 .evt_send_to_parent
@@ -485,7 +528,7 @@ impl ConnectionMgrHandle {
 
     #[tracing::instrument(skip(self))]
     /// disconnect and forget about a managed websocket connection
-    pub async fn list_connections(&self) -> Vec<Lib3hUri> {
+    pub async fn list_connections(&self) -> Vec<(String, u64, u64)> {
         let (s, r) = tokio::sync::oneshot::channel();
         if let Err(e) = self.send_cmd.send(ConMgrCommand::ListConnections(s)) {
             error!("failed to send on channel - shutting down? {:?}", e);

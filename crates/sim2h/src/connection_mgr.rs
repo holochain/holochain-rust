@@ -28,6 +28,7 @@ enum ConMgrCommand {
     Connect(Lib3hUri, TcpWss),
     SendData(Lib3hUri, WsFrame),
     Disconnect(Lib3hUri),
+    ListConnections(tokio::sync::oneshot::Sender<Vec<Lib3hUri>>),
 }
 
 type EvtSend = tokio::sync::mpsc::UnboundedSender<ConMgrEvent>;
@@ -88,6 +89,7 @@ fn process_control_cmds(cmd_info: &mut CmdInfo) -> Loop {
                         return Loop::Break;
                     }
                     ConMgrCommand::Connect(_, _) => unreachable!(),
+                    ConMgrCommand::ListConnections(_) => unreachable!(),
                 }
             }
             Err(tokio::sync::mpsc::error::TryRecvError::Empty) => break,
@@ -323,6 +325,9 @@ impl ConnectionMgr {
                         ConMgrCommand::Connect(uri, wss) => {
                             self.handle_connect_data(uri, wss);
                         }
+                        ConMgrCommand::ListConnections(respond) => {
+                            let _ = respond.send(self.wss_map.keys().cloned().collect());
+                        }
                     }
                 }
                 Err(tokio::sync::mpsc::error::TryRecvError::Empty) => break,
@@ -475,6 +480,23 @@ impl ConnectionMgrHandle {
         debug!(?uri);
         if let Err(e) = self.send_cmd.send(ConMgrCommand::Disconnect(uri)) {
             error!("failed to send on channel - shutting down? {:?}", e);
+        }
+    }
+
+    #[tracing::instrument(skip(self))]
+    /// disconnect and forget about a managed websocket connection
+    pub async fn list_connections(&self) -> Vec<Lib3hUri> {
+        let (s, r) = tokio::sync::oneshot::channel();
+        if let Err(e) = self.send_cmd.send(ConMgrCommand::ListConnections(s)) {
+            error!("failed to send on channel - shutting down? {:?}", e);
+            return vec![];
+        }
+        match r.await {
+            Ok(v) => v,
+            Err(e) => {
+                tracing::error!("{:?}", e);
+                vec![]
+            }
         }
     }
 }

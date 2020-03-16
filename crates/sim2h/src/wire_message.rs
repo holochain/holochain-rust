@@ -48,7 +48,7 @@ pub enum WireMessage {
     StatusResponse(StatusData),
     Ack(u64),
     Debug,
-    DebugResponse(BTreeMap<SpaceHash, String>),
+    DebugResponse((BTreeMap<SpaceHash, String>, String)),
 }
 
 #[newrelic_autotrace(SIM2H)]

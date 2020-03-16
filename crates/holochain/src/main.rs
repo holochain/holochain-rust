@@ -19,12 +19,13 @@ extern crate holochain_core_types;
 extern crate holochain_locksmith;
 #[macro_use]
 extern crate holochain_common;
+extern crate holochain_tracing as ht;
 extern crate lazy_static;
 extern crate lib3h_sodium;
 #[cfg(unix)]
 extern crate signal_hook;
 extern crate structopt;
-extern crate holochain_tracing as ht;
+extern crate tracing_log;
 
 use holochain_conductor_lib::{
     conductor::{mount_conductor_from_config, Conductor, CONDUCTOR},
@@ -40,6 +41,7 @@ use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc};
 use structopt::StructOpt;
 
 use lazy_static::lazy_static;
+use tracing_log::LogTracer;
 
 lazy_static! {
     static ref SET_THREAD_PANIC_FATAL2: bool = {
@@ -104,8 +106,14 @@ fn main() {
     lib3h_sodium::check_init();
     let opt = Opt::from_args();
 
-    ht::structured::init_fmt(opt.structured, None)
-        .expect("Failed to start structed tracing");
+    match opt.structured {
+        ht::structured::Output::None => (),
+        _ => {
+            ht::structured::init_fmt(opt.structured, None)
+                .expect("Failed to start structed tracing");
+            LogTracer::init().expect("Failed to capture logs in tracing")
+        }
+    }
 
     if opt.info {
         println!(

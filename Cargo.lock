@@ -1220,6 +1220,7 @@ dependencies = [
  "signal-hook 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "structopt 0.2.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "tiny_http 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tracing-log 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "ws 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

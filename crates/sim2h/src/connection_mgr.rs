@@ -164,6 +164,7 @@ async fn wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend, cmd_recv: CmdRe
         cmd_info.cmd_count = 0;
         cmd_info.read_count = 0;
         cmd_info.frame = None;
+
         let loop_start = std::time::Instant::now();
 
         // first, process a batch of control commands
@@ -187,10 +188,8 @@ async fn wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend, cmd_recv: CmdRe
         // if we did work we might have more work to do,
         // if not, let this task get parked for a time
         if cmd_info.did_work {
-            trace!("did work");
             tokio::task::yield_now().await;
         } else {
-            trace!("did no work");
             tokio::time::delay_for(std::time::Duration::from_millis(5)).await;
         }
     }

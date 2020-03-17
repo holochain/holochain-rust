@@ -103,9 +103,12 @@ impl EntryAspect {
             },
             EntryAspect::LinkAdd(link_data, _) => link_data.link.base().clone(),
             EntryAspect::LinkRemove((link_data, _), _) => link_data.link.base().clone(),
-            EntryAspect::Update(_, header) | EntryAspect::Deletion(header) => header
-                .link_update_delete()
-                .expect("no link_update_delete on Deletion entry header"),
+            EntryAspect::Update(_, header) | EntryAspect::Deletion(header) => {
+                header.link_update_delete().expect(&format!(
+                    "no link_update_delete on Deletion entry header. Header: {:?}",
+                    header
+                ))
+            }
             EntryAspect::Header(header) => header.entry_address().clone(),
         }
     }

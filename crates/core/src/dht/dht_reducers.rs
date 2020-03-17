@@ -237,7 +237,8 @@ pub fn reduce_remove_queued_holding_workflow(
 #[cfg(test)]
 pub mod tests {
 
-    use crate::{
+    use holochain_persistence_api::cas::content::Address;
+use crate::{
         action::{Action, ActionWrapper},
         content_store::{AddContent, GetContent},
         dht::{
@@ -255,7 +256,7 @@ pub mod tests {
     use bitflags::_core::time::Duration;
     use holochain_core_types::{
         agent::{test_agent_id, test_agent_id_with_name},
-        chain_header::test_chain_header,
+        chain_header::{test_chain_header_with_sig, test_chain_header},
         eav::Attribute,
         entry::{test_entry, test_sys_entry, Entry},
         link::{link_data::LinkData, Link, LinkActionKind},
@@ -548,10 +549,10 @@ pub mod tests {
         assert_eq!(&entry, &result_entry,);
     }
 
-    fn create_pending_validation(entry: Entry, workflow: ValidatingWorkflow) -> PendingValidation {
+    fn create_pending_validation(entry: Entry, workflow: ValidatingWorkflow, link_update_delete: Option<Address>) -> PendingValidation {
         let entry_with_header = EntryWithHeader {
             entry: entry.clone(),
-            header: test_chain_header(),
+            header: test_chain_header_with_sig("sig", link_update_delete),
         };
 
         Arc::new(PendingValidationStruct::new(entry_with_header, workflow))
@@ -564,7 +565,8 @@ pub mod tests {
         assert_eq!(store.queued_holding_workflows().len(), 0);
 
         let test_entry = test_entry();
-        let hold = create_pending_validation(test_entry.clone(), ValidatingWorkflow::HoldEntry);
+        let hold = create_pending_validation(test_entry.clone(), ValidatingWorkflow::HoldEntry, None);
+        let hold_header = hold.entry_with_header.header.clone();
         let action = ActionWrapper::new(Action::QueueHoldingWorkflow((
             hold.clone(),
             Some((SystemTime::now(), Duration::from_secs(10000))),
@@ -590,7 +592,7 @@ pub mod tests {
         );
 
         let link_entry = Entry::LinkAdd(link_data.clone());
-        let hold_link = create_pending_validation(link_entry, ValidatingWorkflow::HoldLink);
+        let hold_link = create_pending_validation(link_entry, ValidatingWorkflow::HoldLink, None);
         let action = ActionWrapper::new(Action::QueueHoldingWorkflow((hold_link.clone(), None)));
         let store = reduce_queue_holding_workflow(&store, &action).unwrap();
 
@@ -604,7 +606,7 @@ pub mod tests {
         let (next_pending, _) = store.next_queued_holding_workflow().unwrap();
         assert_eq!(hold_link, next_pending);
 
-        let update = create_pending_validation(test_entry.clone(), ValidatingWorkflow::UpdateEntry);
+        let update = create_pending_validation(test_entry.clone(), ValidatingWorkflow::UpdateEntry, Some(hold_header.address()));
         let action = ActionWrapper::new(Action::QueueHoldingWorkflow((update.clone(), None)));
         let store = reduce_queue_holding_workflow(&store, &action).unwrap();
 

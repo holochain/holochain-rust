@@ -108,7 +108,7 @@ impl EntryAspect {
             EntryAspect::Update(_, header) | EntryAspect::Deletion(header) => {
                 header.link_update_delete().ok_or_else(|| {
                     HolochainError::ErrorGeneric(format!(
-                        "no link_update_delete on Deletion entry header. Header: {:?}",
+                        "no link_update_delete on Update/Deletion entry header. Header: {:?}",
                         header
                     ))
                 })?

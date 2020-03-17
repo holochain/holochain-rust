@@ -6,6 +6,7 @@ use crate::{
         dht_store::DhtStore,
         pending_validations::{PendingValidationWithTimeout, ValidationTimeout},
     },
+    error::HolochainError,
 };
 use std::sync::Arc;
 
@@ -565,7 +566,7 @@ pub mod tests {
         entry: Entry,
         header: ChainHeader,
         workflow: ValidatingWorkflow,
-    ) -> PendingValidation {
+    ) -> Result<PendingValidation, HolochainError> {
         match HeaderWithItsEntry::try_from_header_and_entry(header.clone(), entry.clone()) {
             Ok(header_with_its_entry) => Arc::new(PendingValidationStruct::new(
                 header_with_its_entry,
@@ -580,7 +581,7 @@ pub mod tests {
                     "{}, entry:\n{:?}\nheader from test_chain_header():\n{:?}\n",
                     err_msg, entry, header
                 );
-                panic!(err_msg);
+                Err(err_msg)
             }
         }
     }

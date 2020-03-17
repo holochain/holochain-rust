@@ -29,6 +29,7 @@ use sim2h::{
     generate_ack_receipt_hash, TcpWss, WireError, WireMessage, WIRE_VERSION,
 };
 use std::{convert::TryFrom, time::Instant};
+use std::collections::{HashMap, VecDeque};
 
 use url::Url;
 use url2::prelude::*;
@@ -51,9 +52,10 @@ pub struct Sim2hConfig {
     pub sim2h_url: String,
 }
 
+#[derive(Clone)]
 struct BufferedMessage {
     pub wire_message: WireMessage,
-    pub hash: u64,
+    //pub hash: u64,
     pub last_sent: Option<Instant>,
 }
 
@@ -61,7 +63,7 @@ impl From<WireMessage> for BufferedMessage {
     fn from(wire_message: WireMessage) -> BufferedMessage {
         BufferedMessage {
             wire_message,
-            hash: 0,
+            //hash: 0,
             last_sent: None,
         }
     }
@@ -82,7 +84,8 @@ pub struct Sim2hWorker {
     connection_timeout_backoff: u64,
     reconnect_interval: Duration,
     metric_publisher: std::sync::Arc<std::sync::RwLock<dyn MetricPublisher>>,
-    outgoing_message_buffer: Vec<BufferedMessage>,
+    outgoing_message_buffer: VecDeque<BufferedMessage>,
+    outgoing_ack: HashMap<u64, BufferedMessage>,
     ws_frame: Option<WsFrame>,
     initial_authoring_list: Option<EntryListData>,
     initial_gossiping_list: Option<EntryListData>,
@@ -123,7 +126,8 @@ impl Sim2hWorker {
             metric_publisher: std::sync::Arc::new(std::sync::RwLock::new(
                 DefaultMetricPublisher::default(),
             )),
-            outgoing_message_buffer: Vec::new(),
+            outgoing_message_buffer: VecDeque::new(),
+            outgoing_ack: HashMap::new(),
             ws_frame: None,
             initial_authoring_list: None,
             initial_gossiping_list: None,
@@ -225,6 +229,17 @@ impl Sim2hWorker {
         }
     }
 
+    fn check_resend(&mut self) {
+        for msg in self.outgoing_ack.values_mut() {
+            if let Some(instant_last_sent) = msg.last_sent {
+                if instant_last_sent.elapsed() < Duration::from_millis(RESEND_WIRE_MESSAGE_MS) {
+                    msg.last_sent = None;
+                    self.outgoing_message_buffer.push_back(msg.clone());
+                }
+            }
+        }
+    }
+
     /// if we have queued wire messages and our connection is ready,
     /// try to send one
     /// return if we did something
@@ -232,6 +247,7 @@ impl Sim2hWorker {
         if self.outgoing_message_buffer.is_empty() || !self.connection_ready() {
             return false;
         }
+        /*
         let len = self.outgoing_message_buffer.len();
         let buffered_message = self.outgoing_message_buffer.get_mut(0).unwrap();
         tracing::debug!(?buffered_message.wire_message, len);
@@ -240,6 +256,9 @@ impl Sim2hWorker {
                 return false;
             }
         }
+        */
+        self.check_resend();
+        let mut buffered_message = self.outgoing_message_buffer.pop_front().unwrap();
         let message = &buffered_message.wire_message;
         debug!("WireMessage: preparing to send {:?}", message);
         let payload: String = message.clone().into();
@@ -274,8 +293,9 @@ impl Sim2hWorker {
             self.check_reconnect();
             return true;
         }
-        buffered_message.hash = generate_ack_receipt_hash(&payload);
+        let hash = generate_ack_receipt_hash(&payload);
         buffered_message.last_sent = Some(Instant::now());
+        self.outgoing_ack.insert(hash, buffered_message);
         true
     }
 
@@ -295,7 +315,7 @@ impl Sim2hWorker {
         // we always put messages in the outgoing buffer,
         // they'll be sent when the connection is ready
         debug!("WireMessage: queueing {:?}", message);
-        self.outgoing_message_buffer.push(message.into());
+        self.outgoing_message_buffer.push_back(message.into());
         Ok(())
     }
 
@@ -553,26 +573,19 @@ impl Sim2hWorker {
             }
             WireMessage::StatusResponse(_) => error!("Got a StatusResponse from the Sim2h server, weird! Ignoring (I use Hello not Status)"),
             WireMessage::Ack(hash) => {
-                if self.outgoing_message_buffer
-                    .first()
+                if self.outgoing_ack
+                    .remove(&hash)
                     .map(|buffered_message| {
                         tracing::debug!(got_ack = true, ?buffered_message.wire_message, ?buffered_message.last_sent);
                         buffered_message
                     })
-                    .and_then(|buffered_message| Some(buffered_message.hash == hash))
-                    .unwrap_or(false)
+                    .is_some()
                 {
                     debug!("WireMessage::Ack received => dequeuing sent message {:?}", message);
-                    // if we made it here, we successfully sent the first message
-                    // we can remove it from the outgoing buffer queue
-                    self.outgoing_message_buffer.remove(0);
                 } else {
                     warn!(
-                        "WireMessage::Ack received that came out of order! Got hash: {}, have top hash: {:?}",
-                        hash,
-                        self.outgoing_message_buffer
-                            .first()
-                            .map(|buffered_message| buffered_message.hash)
+                        "WireMessage::Ack received that came but wasn't held! Got hash: {}",
+                        hash
                     );
                 }
             }

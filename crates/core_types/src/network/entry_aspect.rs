@@ -1,4 +1,6 @@
-use crate::{chain_header::ChainHeader, entry::Entry, link::link_data::LinkData};
+use crate::{
+    chain_header::ChainHeader, entry::Entry, error::HolochainError, link::link_data::LinkData,
+};
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
 use std::{
@@ -95,8 +97,8 @@ impl EntryAspect {
     }
     /// NB: this is the inverse function of entry_to_meta_aspect,
     /// so it is very important that they agree!
-    pub fn entry_address(&self) -> Address {
-        match self {
+    pub fn entry_address(&self) -> Result<Address, HolochainError> {
+        Ok(match self {
             EntryAspect::Content(_, header) => match header.link_update_delete() {
                 Some(ref updated_entry) => updated_entry.clone(),
                 None => header.entry_address().clone(),
@@ -104,13 +106,15 @@ impl EntryAspect {
             EntryAspect::LinkAdd(link_data, _) => link_data.link.base().clone(),
             EntryAspect::LinkRemove((link_data, _), _) => link_data.link.base().clone(),
             EntryAspect::Update(_, header) | EntryAspect::Deletion(header) => {
-                header.link_update_delete().expect(&format!(
-                    "no link_update_delete on Deletion entry header. Header: {:?}",
-                    header
-                ))
+                header.link_update_delete().ok_or_else(|| {
+                    HolochainError::ErrorGeneric(format!(
+                        "no link_update_delete on Deletion entry header. Header: {:?}",
+                        header
+                    ))
+                })?
             }
             EntryAspect::Header(header) => header.entry_address().clone(),
-        }
+        })
     }
 }
 

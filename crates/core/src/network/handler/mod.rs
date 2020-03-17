@@ -395,8 +395,11 @@ fn get_content_aspect(
 /// NB: this is the inverse function of EntryAspect::entry_address(), so it is very important
 /// that they agree!
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-fn entry_to_meta_aspect(entry: Entry, header: ChainHeader) -> Option<(Address, EntryAspect)> {
-    match entry {
+fn entry_to_meta_aspect(
+    entry: Entry,
+    header: ChainHeader,
+) -> Result<Option<(Address, EntryAspect)>, HolochainError> {
+    let maybe_aspect = match entry {
         Entry::App(app_type, app_value) => header
             .link_update_delete()
             .map(|_| EntryAspect::Update(Entry::App(app_type, app_value), header)),
@@ -406,8 +409,12 @@ fn entry_to_meta_aspect(entry: Entry, header: ChainHeader) -> Option<(Address, E
         }
         Entry::Deletion(_) => Some(EntryAspect::Deletion(header)),
         _ => None,
+    };
+    if let Some(aspect) = maybe_aspect {
+        Ok(Some((aspect.entry_address()?, aspect)))
+    } else {
+        Ok(None)
     }
-    .map(|aspect| (aspect.entry_address(), aspect))
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
@@ -431,6 +438,7 @@ fn get_meta_aspects_from_chain(
                     let entry = maybe_entry
                         .expect("Could not find entry in chain CAS, but header is chain");
                     entry_to_meta_aspect(entry, header)
+                        .expect("Couldn't derive meta aspect from entry")
                 }
                 Err(_) => None,
             },

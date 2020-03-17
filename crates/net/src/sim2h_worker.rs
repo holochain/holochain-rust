@@ -625,7 +625,6 @@ impl NetWorker for Sim2hWorker {
         }
 
         if self.connection_ready() {
-            tracing::debug!(connection_is_ready = true);
             self.reset_backoff();
             if self.try_send_from_outgoing_buffer() {
                 did_something = true;

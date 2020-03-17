@@ -11,9 +11,6 @@ let
   # cargo-make coverage only really works for individual crates so we futz
   # with the CARGO_TARGET_DIR - also we just blanket install cargo-make
 
-  # using cargo-make for executing kcov
-  cargo install cargo-make
-
   # some tests require compiled wasm
   hc-rust-wasm-compile
 
@@ -56,5 +53,5 @@ let
   '';
 in
 {
- buildInputs = [ pkgs.kcov pkgs.curl hc-rust-test hc-rust-coverage-kcov ];
+ buildInputs = if pkgs.stdenv.isLinux then [ hc-rust-test hc-rust-coverage-kcov ] else [ hc-rust-test ];
 }

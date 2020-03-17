@@ -93,8 +93,14 @@ impl EntryAspect {
             EntryAspect::Deletion(header) => header,
         }
     }
+    /// NB: this is the inverse function of entry_to_meta_aspect,
+    /// so it is very important that they agree!
     pub fn entry_address(&self) -> &Address {
-        self.header().entry_address()
+        match self {
+            EntryAspect::LinkAdd(link_data, _) => link_data.link.base(),
+            EntryAspect::LinkRemove((link_data, _), _) => link_data.link.base(),
+            _ => self.header().entry_address(),
+        }
     }
 }
 
@@ -156,7 +162,7 @@ impl fmt::Debug for EntryAspect {
 // the entry addresses which is part of all. QED.
 impl Hash for EntryAspect {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        let address: String = self.header().entry_address().to_owned().into();
-        state.write(address.as_bytes());
+        self.header().hash(state);
+        self.type_hint().hash(state);
     }
 }

@@ -2,7 +2,6 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     instance::dispatch_action,
-    NEW_RELIC_LICENSE_KEY,
 };
 use std::sync::Arc;
 
@@ -93,6 +92,12 @@ mod tests {
             .get(&msg_id.clone())
             .cloned();
 
-        assert_eq!(maybe_reply, Some(Err(HolochainError::Timeout)));
+        assert_eq!(
+            maybe_reply,
+            Some(Err(HolochainError::Timeout(
+                "timeout src: crates/core/src/network/reducers/send_direct_message.rs:81"
+                    .to_string()
+            )))
+        );
     }
 }

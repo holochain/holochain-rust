@@ -2,7 +2,6 @@ use crate::{
     action::{ActionWrapper, QueryKey},
     network::{query::NetworkQuery, reducers::send, state::NetworkState},
     state::State,
-    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
@@ -78,9 +77,14 @@ pub fn reduce_query_timeout(
     }
 
     if network_state.get_query_results.get(key).unwrap().is_none() {
-        network_state
-            .get_query_results
-            .insert(key.clone(), Some(Err(HolochainError::Timeout)));
+        network_state.get_query_results.insert(
+            key.clone(),
+            Some(Err(HolochainError::Timeout(format!(
+                "timeout src: {}:{}",
+                file!(),
+                line!()
+            )))),
+        );
     }
 }
 
@@ -221,7 +225,7 @@ mod tests {
             .map(|result| result.clone());
         assert_eq!(
             maybe_get_entry_result,
-            Some(Some(Err(HolochainError::Timeout)))
+            Some(Some(Err(HolochainError::Timeout(_))))
         );
 
         // test that an existing result does not get overwritten by timeout signal
@@ -288,8 +292,8 @@ mod tests {
         let link_type = String::from("test-link");
         let key = GetLinksKey {
             base_address: entry.address(),
-            link_type,
-            tag: "link-tag".to_string(),
+            link_type: Some(link_type),
+            tag: Some("link-tag".to_string()),
             id: snowflake::ProcessUniqueId::new().to_string(),
         };
         let config = GetLinksQueryConfiguration::default();
@@ -407,7 +411,7 @@ mod tests {
 
         assert_eq!(
             maybe_get_entry_result,
-            Some(Some(Err(HolochainError::Timeout)))
+            Some(Some(Err(HolochainError::Timeout(_))))
         );
     }
 }

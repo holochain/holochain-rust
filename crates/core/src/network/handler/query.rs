@@ -7,8 +7,7 @@ use crate::{
         GetLinksNetworkQuery, GetLinksNetworkResult, NetworkQuery, NetworkQueryResult,
     },
     nucleus,
-    workflows::get_entry_result::get_entry_result_workflow,
-    NEW_RELIC_LICENSE_KEY,
+    workflows::get_entry_result::get_entry_result_workflow_local,
 };
 use holochain_core_types::{
     crud_status::CrudStatus,
@@ -27,12 +26,11 @@ use std::{convert::TryInto, sync::Arc};
 
 pub type LinkTag = String;
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn get_links(
     context: &Arc<Context>,
     base: Address,
-    link_type: String,
-    tag: String,
+    link_type: Option<String>,
+    tag: Option<String>,
     crud_status: Option<CrudStatus>,
     query_configuration: GetLinksQueryConfiguration,
 ) -> Result<Vec<GetLinkData>, HolochainError> {
@@ -76,11 +74,7 @@ fn get_links(
                 },
             };
 
-            context
-                .block_on(get_entry_result_workflow(
-                    &context.clone(),
-                    &link_add_entry_args,
-                ))
+            get_entry_result_workflow_local(&context.clone(), &link_add_entry_args)
                 .map(|get_entry_result| match get_entry_result.result {
                     GetEntryResultType::Single(entry_with_meta_and_headers) => {
                         let maybe_entry_headers = if query_configuration.headers {

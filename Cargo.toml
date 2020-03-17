@@ -30,8 +30,19 @@ exclude = [
 ]
 
 [patch.crates-io]
-#lib3h = "=0.0.38"
-#lib3h_protocol = "=0.0.38"
-#lib3h_crypto_api = "=0.0.38"
-#lib3h_sodium = "=0.0.38"
-#lib3h_zombie_actor = "=0.0.38"
+#lib3h = "=0.0.42"
+#lib3h_protocol = "=0.0.42"
+#lib3h_crypto_api = "=0.0.42"
+#lib3h_sodium = "=0.0.42"
+#lib3h_zombie_actor = "=0.0.42"
+
+#lib3h = { git = "https://github.com/holochain/lib3h", branch ="bump_tracing" }
+#lib3h_protocol = { git = "https://github.com/holochain/lib3h", branch ="bump_tracing" }
+#lib3h_crypto_api = { git = "https://github.com/holochain/lib3h", branch ="bump_tracing" }
+#lib3h_sodium = { git = "https://github.com/holochain/lib3h", branch ="bump_tracing" }
+#lib3h_zombie_actor = { git = "https://github.com/holochain/lib3h", branch ="bump_tracing" }
+
+#holochain_tracing = { path = "../holochain-tracing/crates/tracing" }
+#holochain_tracing_macros = { path = "../holochain-tracing/crates/tracing_macros" }
+#holochain_tracing = { git = "https://github.com/holochain/holochain-tracing", branch ="tokio" }
+#holochain_tracing_macros = { git = "https://github.com/holochain/holochain-tracing", branch ="tokio" }

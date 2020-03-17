@@ -2,6 +2,77 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.45-alpha1] - 2020-03-13
+
+### Added
+- Adds tokio tracing to sim2h_server. [Description](https://holo.hackmd.io/@c5lIpp4ET0OJJnDT3gzilA/SyRm2YoEU). Also check `sim2h_server --help` for usage instructions.
+- Adds the notion of a manager to trycp_server so that we can dynamically manage pools of available nodes for test runs in final-exam  [PR#2123](https://github.com/holochain/holochain-rust/pull/2123)
+
+### Changed
+- new_relic is behind a feature flag `new-relic`.
+### Deprecated
+
+### Removed
+- Older rust-tracing traces.
+
+### Fixed
+
+- Many bugs fixed to get_links [PR#2150](https://github.com/holochain/holochain-rust/pull/2150) [PR#2148](https://github.com/holochain/holochain-rust/pull/2148)
+
+### Security
+
+## [0.0.44-alpha3] - 2020-03-03
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.44-alpha2] - 2020-03-03
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.0.44-alpha1] - 2020-03-02
+
+### Added
+
+- Added command to sim2h wire protocol for getting live debug info [#2128](https://github.com/holochain/holochain-rust/pull/2128)
+- Added an environment variable (HC_IGNORE_SIM2H_URL_PROPERTY) which overrides DNA sim2h_url value for running conductors in test modes
+
+### Changed
+
+- Changed Pagination to have different types [#2110](https://github.com/holochain/holochain-rust/pull/2110)
+- Link matches are not based on regex anymore [#2133](https://github.com/holochain/holochain-rust/pull/2133)
+
+### Deprecated
+
+### Removed
+
+### Fixed
+- Fixes dropped join messages in sim2h that was blocking scaling [#2137](https://github.com/holochain/holochain-rust/pull/2137)
+- Make Holochain (i.e. Sim2hWorker) work offline again (that is without being connected to Sim2h) [#2119](https://github.com/holochain/holochain-rust/pull/2119)
+- Fixing wire message resilience to connection drops via receipts [#2120](https://github.com/holochain/holochain-rust/pull/2120)
+- Fixed `panic!("entry/aspect mismatch - corrupted data?")` [#2135](https://github.com/holochain/holochain-rust/pull/2135)
+
+### Security
+
 ## [0.0.43-alpha3] - 2020-02-10
 
 ### Added

@@ -8,7 +8,6 @@ use crate::{
     },
     wasm_engine::{api::ZomeApiResult, Runtime},
     workflows::author_entry::author_entry,
-    NEW_RELIC_LICENSE_KEY,
 };
 
 use holochain_core_types::{
@@ -69,8 +68,8 @@ pub fn invoke_remove_link(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiR
     );
     let get_links_args = GetLinksArgs {
         entry_address: link.base().clone(),
-        link_type: link.link_type().clone(),
-        tag: link.tag().clone(),
+        link_type: Some(link.link_type().clone()),
+        tag: Some(link.tag().clone()),
         options: GetLinksOptions::default(),
     };
     let config = GetLinksQueryConfiguration::default();

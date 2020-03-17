@@ -3,7 +3,6 @@
 use crate::{
     error::{Sim2hError, Sim2hResult},
     wire_message::WireMessage,
-    NEW_RELIC_LICENSE_KEY,
 };
 use hcid::*;
 pub use holochain_core_types::signature::Provenance;
@@ -14,6 +13,9 @@ use holochain_core_types::{
 use lib3h_protocol::{data_types::Opaque, types::AgentPubKey};
 use lib3h_sodium::{secbuf::SecBuf, sign};
 
+use holochain_tracing_macros::newrelic_autotrace;
+use lazy_static::lazy_static;
+use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -22,7 +24,7 @@ pub struct SignedWireMessage {
     pub payload: Opaque,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+#[newrelic_autotrace(SIM2H)]
 impl SignedWireMessage {
     pub fn new(payload: Opaque, provenance: Provenance) -> Self {
         SignedWireMessage {
@@ -107,7 +109,7 @@ lazy_static! {
 /// @param {Base32} pub_key_b32 - Public signing key to decode
 /// @param {HcidEncoding} codec - The configured HCID decoder to use
 /// @return {SecBuf} Resulting decoded key
-#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+#[newrelic_autotrace(SIM2H)]
 pub(crate) fn decode_pub_key(pub_key_b32: Base32, codec: &HcidEncoding) -> HcResult<SecBuf> {
     // Decode Base32 public key
     let pub_key = codec.decode(&pub_key_b32)?;
@@ -125,7 +127,7 @@ pub(crate) fn decode_pub_key(pub_key_b32: Base32, codec: &HcidEncoding) -> HcRes
 /// @param {HcidEncoding} codec - The configured HCID encoder to use
 /// @return {Base32} Resulting HCID encoded key
 #[allow(dead_code)] //used in test only
-#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+#[newrelic_autotrace(SIM2H)]
 pub(crate) fn encode_pub_key(pub_key_sec: &mut SecBuf, codec: &HcidEncoding) -> HcResult<Base32> {
     let locker = pub_key_sec.read_lock();
     Ok(codec.encode(&locker[0..SEED_SIZE])?)
@@ -136,7 +138,7 @@ pub(crate) fn encode_pub_key(pub_key_sec: &mut SecBuf, codec: &HcidEncoding) -> 
 /// @param {SecBuf} data - Data buffer to verify
 /// @param {SecBuf} signature - Candidate signature for that data buffer
 /// @return true if verification succeeded
-#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+#[newrelic_autotrace(SIM2H)]
 pub fn verify_bufs(
     pub_sign_key_b32: Base32,
     data: &mut SecBuf,
@@ -147,7 +149,7 @@ pub fn verify_bufs(
 }
 
 /// returns a random buf
-#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+#[newrelic_autotrace(SIM2H)]
 pub fn generate_random_buf(size: usize) -> SecBuf {
     let mut seed = SecBuf::with_insecure(size);
     seed.randomize();
@@ -155,7 +157,7 @@ pub fn generate_random_buf(size: usize) -> SecBuf {
 }
 
 /// returns a random seed buf
-#[holochain_tracing_macros::newrelic_autotrace(SIM2H)]
+#[newrelic_autotrace(SIM2H)]
 pub fn generate_random_seed_buf() -> SecBuf {
     generate_random_buf(SEED_SIZE)
 }

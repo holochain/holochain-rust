@@ -1,4 +1,4 @@
-use crate::{conductor::base::DnaLoader, logger::LogRules, NEW_RELIC_LICENSE_KEY};
+use crate::{conductor::base::DnaLoader, logger::LogRules};
 /// Conductor Configuration
 /// This module provides structs that represent the different aspects of how
 /// a conductor can be configured.

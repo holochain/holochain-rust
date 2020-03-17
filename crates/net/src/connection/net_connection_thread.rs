@@ -2,7 +2,7 @@ use super::{
     net_connection::{NetHandler, NetSend, NetWorkerFactory},
     NetResult,
 };
-use crate::{p2p_network::Lib3hClientProtocolWrapped, NEW_RELIC_LICENSE_KEY};
+use crate::p2p_network::Lib3hClientProtocolWrapped;
 use failure::err_msg;
 use holochain_locksmith::Mutex;
 use holochain_logging::prelude::*;
@@ -78,6 +78,7 @@ impl NetConnectionThread {
                 send_endpoint
                     .send((worker.endpoint(), worker.p2p_endpoint()))
                     .expect("Sending endpoint address should work.");
+
                 drop(send_endpoint);
                 // Loop as long owner wants to
                 let mut sleep_duration_us = TICK_SLEEP_MIN_US;

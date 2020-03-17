@@ -3,7 +3,6 @@ use crate::{
     context::Context,
     instance::dispatch_action,
     network::query::{GetLinksNetworkQuery, NetworkQueryResult},
-    NEW_RELIC_LICENSE_KEY,
 };
 use futures::{future::Future, task::Poll};
 
@@ -70,7 +69,6 @@ pub async fn query(
     ));
     let action_wrapper = ActionWrapper::new(entry);
     dispatch_action(context.action_channel(), action_wrapper.clone());
-
     QueryFuture {
         context: context.clone(),
         key: key.clone(),

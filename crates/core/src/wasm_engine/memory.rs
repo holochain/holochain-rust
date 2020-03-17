@@ -1,4 +1,3 @@
-use crate::NEW_RELIC_LICENSE_KEY;
 use holochain_wasm_utils::memory::{
     allocation::{AllocationError, AllocationResult, Length, WasmAllocation},
     stack::WasmStack,

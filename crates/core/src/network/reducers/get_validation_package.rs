@@ -2,7 +2,6 @@ use crate::{
     action::ActionWrapper,
     network::{direct_message::DirectMessage, reducers::send_message, state::NetworkState},
     state::State,
-    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{chain_header::ChainHeader, error::HolochainError};
 use std::time::{Duration, SystemTime};
@@ -69,7 +68,12 @@ pub fn reduce_get_validation_package_timeout(
         return;
     }
 
-    network_state
-        .get_validation_package_results
-        .insert(address.clone(), Some(Err(HolochainError::Timeout)));
+    network_state.get_validation_package_results.insert(
+        address.clone(),
+        Some(Err(HolochainError::Timeout(format!(
+            "timeout src: {}:{}",
+            file!(),
+            line!()
+        )))),
+    );
 }

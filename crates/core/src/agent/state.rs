@@ -3,7 +3,6 @@ use crate::{
     agent::chain_store::{ChainStore, ChainStoreIterator},
     network::entry_with_header::EntryWithHeader,
     state::State,
-    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_persistence_api::cas::content::{Address, AddressableContent, Content};
 

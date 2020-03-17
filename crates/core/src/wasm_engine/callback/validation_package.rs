@@ -6,7 +6,6 @@ use crate::{
         callback::{links_utils, CallbackResult},
         runtime::WasmCallData,
     },
-    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     entry::{entry_type::EntryType, Entry},

@@ -232,7 +232,7 @@ impl Sim2hWorker {
     fn check_resend(&mut self) {
         for msg in self.outgoing_ack.values_mut() {
             if let Some(instant_last_sent) = msg.last_sent {
-                if instant_last_sent.elapsed() < Duration::from_millis(RESEND_WIRE_MESSAGE_MS) {
+                if instant_last_sent.elapsed() >= Duration::from_millis(RESEND_WIRE_MESSAGE_MS) {
                     msg.last_sent = None;
                     self.outgoing_message_buffer.push_back(msg.clone());
                 }

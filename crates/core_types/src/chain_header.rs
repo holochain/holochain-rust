@@ -128,7 +128,10 @@ pub fn test_chain_header() -> ChainHeader {
 }
 
 /// returns a dummy header for use in tests
-pub fn test_chain_header_with_sig(sig: &'static str, link_update_delete: Option<Address>) -> ChainHeader {
+pub fn test_chain_header_with_sig(
+    sig: &'static str,
+    link_update_delete: Option<Address>,
+) -> ChainHeader {
     ChainHeader::new(
         &test_entry_type(),
         &test_entry().address(),

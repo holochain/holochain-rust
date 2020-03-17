@@ -237,8 +237,7 @@ pub fn reduce_remove_queued_holding_workflow(
 #[cfg(test)]
 pub mod tests {
 
-    use holochain_persistence_api::cas::content::Address;
-use crate::{
+    use crate::{
         action::{Action, ActionWrapper},
         content_store::{AddContent, GetContent},
         dht::{
@@ -256,13 +255,13 @@ use crate::{
     use bitflags::_core::time::Duration;
     use holochain_core_types::{
         agent::{test_agent_id, test_agent_id_with_name},
-        chain_header::{test_chain_header_with_sig, test_chain_header},
+        chain_header::{test_chain_header, test_chain_header_with_sig},
         eav::Attribute,
         entry::{test_entry, test_sys_entry, Entry},
         link::{link_data::LinkData, Link, LinkActionKind},
         network::entry_aspect::EntryAspect,
     };
-    use holochain_persistence_api::cas::content::AddressableContent;
+    use holochain_persistence_api::cas::content::{Address, AddressableContent};
     use std::{sync::Arc, time::SystemTime};
     // TODO do this for all crate tests somehow
     #[allow(dead_code)]
@@ -549,7 +548,11 @@ use crate::{
         assert_eq!(&entry, &result_entry,);
     }
 
-    fn create_pending_validation(entry: Entry, workflow: ValidatingWorkflow, link_update_delete: Option<Address>) -> PendingValidation {
+    fn create_pending_validation(
+        entry: Entry,
+        workflow: ValidatingWorkflow,
+        link_update_delete: Option<Address>,
+    ) -> PendingValidation {
         let entry_with_header = EntryWithHeader {
             entry: entry.clone(),
             header: test_chain_header_with_sig("sig", link_update_delete),
@@ -565,7 +568,8 @@ use crate::{
         assert_eq!(store.queued_holding_workflows().len(), 0);
 
         let test_entry = test_entry();
-        let hold = create_pending_validation(test_entry.clone(), ValidatingWorkflow::HoldEntry, None);
+        let hold =
+            create_pending_validation(test_entry.clone(), ValidatingWorkflow::HoldEntry, None);
         let hold_header = hold.entry_with_header.header.clone();
         let action = ActionWrapper::new(Action::QueueHoldingWorkflow((
             hold.clone(),
@@ -606,7 +610,11 @@ use crate::{
         let (next_pending, _) = store.next_queued_holding_workflow().unwrap();
         assert_eq!(hold_link, next_pending);
 
-        let update = create_pending_validation(test_entry.clone(), ValidatingWorkflow::UpdateEntry, Some(hold_header.address()));
+        let update = create_pending_validation(
+            test_entry.clone(),
+            ValidatingWorkflow::UpdateEntry,
+            Some(hold_header.address()),
+        );
         let action = ActionWrapper::new(Action::QueueHoldingWorkflow((update.clone(), None)));
         let store = reduce_queue_holding_workflow(&store, &action).unwrap();
 

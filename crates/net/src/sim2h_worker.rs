@@ -555,6 +555,10 @@ impl Sim2hWorker {
             WireMessage::Ack(hash) => {
                 if self.outgoing_message_buffer
                     .first()
+                    .map(|buffered_message| {
+                        tracing::debug!(got_ack = true, ?buffered_message.wire_message, ?buffered_message.last_sent);
+                        buffered_message
+                    })
                     .and_then(|buffered_message| Some(buffered_message.hash == hash))
                     .unwrap_or(false)
                 {

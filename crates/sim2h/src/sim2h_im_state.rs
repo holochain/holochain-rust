@@ -191,6 +191,8 @@ pub struct Space {
     #[serde(skip)]
     pub crypto: Box<dyn CryptoSystem>,
     pub redundancy: u64,
+    /// Though unusual to have a map where the keys and values are identical,
+    /// this map provides a way to get the [MonoRef] for a given [AspectHash]
     pub all_aspects: im::HashMap<MonoAspectHash, MonoAspectHash>,
     pub entry_to_all_aspects: im::HashMap<MonoEntryHash, EntryInfo>,
     pub connections: im::HashMap<MonoAgentId, ConnectionState>,

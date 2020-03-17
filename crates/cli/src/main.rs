@@ -163,6 +163,10 @@ enum Cli {
         #[structopt(long, short = "m", default_value = "ping")]
         /// message to send to the sim2h server ('ping' or 'status')
         message: String,
+        #[structopt(long, short = "f")]
+        /// if set, write the debug log for each Space to a separate file
+        /// whose name is the space hash
+        files: bool,
     },
 }
 arg_enum! {
@@ -328,10 +332,8 @@ fn run() -> HolochainResult<()> {
             println!("DNA Hash: {}", dna_hash);
         }
 
-        Cli::Sim2hClient { url, message } => {
-            println!("url: {}", &url);
-            println!("message: {}", &message);
-            cli::sim2h_client(url, message)?;
+        Cli::Sim2hClient { url, message, files } => {
+            cli::sim2h_client(url, message, files)?;
         }
     }
 

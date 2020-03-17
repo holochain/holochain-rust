@@ -118,11 +118,11 @@ fn process_websocket_frames(cmd_info: &mut CmdInfo) -> Loop {
             *frame = Some(WsFrame::default());
         }
         match wss.read(frame.as_mut().unwrap()) {
-            Ok(_) => {
+            Ok(len) => {
                 *read_count += 1;
                 *did_work = true;
                 let data = frame.take().unwrap();
-                debug!("socket {} read {} bytes", uri, data.as_bytes().len());
+                debug!("socket {} read {} bytes", uri, len);
                 if let Err(_) = evt_send.send(ConMgrEvent::ReceiveData(uri.clone(), data)) {
                     debug!("socket evt channel closed {}", uri);
                     // end task
@@ -159,6 +159,10 @@ async fn wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend, cmd_recv: CmdRe
     'wss_task_loop: loop {
         let span = debug_span!("wss_task");
         let _g = span.enter();
+        cmd_info.did_work = false;
+        cmd_info.cmd_count = 0;
+        cmd_info.read_count = 0;
+        cmd_info.frame = None;
 
         let loop_start = std::time::Instant::now();
 

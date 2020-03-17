@@ -2,6 +2,25 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.45-alpha1] - 2020-03-13
+
+### Added
+- Adds tokio tracing to sim2h_server. [Description](https://holo.hackmd.io/@c5lIpp4ET0OJJnDT3gzilA/SyRm2YoEU). Also check `sim2h_server --help` for usage instructions.
+- Adds the notion of a manager to trycp_server so that we can dynamically manage pools of available nodes for test runs in final-exam  [PR#2123](https://github.com/holochain/holochain-rust/pull/2123)
+
+### Changed
+- new_relic is behind a feature flag `new-relic`.
+### Deprecated
+
+### Removed
+- Older rust-tracing traces.
+
+### Fixed
+
+- Many bugs fixed to get_links [PR#2150](https://github.com/holochain/holochain-rust/pull/2150) [PR#2148](https://github.com/holochain/holochain-rust/pull/2148)
+
+### Security
+
 ## [0.0.44-alpha3] - 2020-03-03
 
 ### Added

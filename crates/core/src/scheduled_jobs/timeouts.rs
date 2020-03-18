@@ -9,6 +9,7 @@ use std::sync::Arc;
 pub fn check_network_processes_for_timeouts(context: Arc<Context>) {
     let state = context.state().expect("Couldn't get state in timeout job");
     for (key, (time, duration)) in state.network().query_timeouts.iter() {
+        tracing::debug!(?key, elapsed = ?time.elapsed());
         if let Ok(elapsed) = time.elapsed() {
             if elapsed > *duration {
                 dispatch_action(

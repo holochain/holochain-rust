@@ -1007,6 +1007,7 @@ fn spawn_handle_message_query_entry(
                 }
                 Some(url) => url,
             };
+            debug!(%query_data.request_id);
             let query_message = WireMessage::Lib3hToClient(
                 ht::span_wrap_encode!(Level::INFO, Lib3hToClient::HandleQueryEntry(query_data))
                     .into(),
@@ -1035,6 +1036,7 @@ fn spawn_handle_message_query_entry_result(
 
     tokio::task::spawn(
         async move {
+            debug!(%query_result.request_id);
             let req_agent_id = query_result.requester_agent_id.clone();
             let msg_out = WireMessage::ClientToLib3hResponse(
                 ht::span_wrap_encode!(

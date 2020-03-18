@@ -38,6 +38,7 @@ use std::{
     hash::{Hash, Hasher},
     io::prelude::*,
 };
+use url2::prelude::*;
 
 use holochain_common::new_relic_setup;
 use holochain_locksmith::Mutex;
@@ -1401,8 +1402,11 @@ impl Sim2h {
                     sim2h_handle.metric_timer("sim2h-priv_check_incoming_connections-async-add");
 
                 for wss in wss_list.drain(..) {
-                    let url: Lib3hUri = url::Url::from(wss.remote_url()).into();
                     let uuid = nanoid::simple();
+
+                    let url: Lib3hUri =
+                        url::Url::from(url2!("{}#{}", wss.remote_url(), uuid)).into();
+
                     open_lifecycle("adding conn job", &uuid, &url);
 
                     sim2h_handle.connection_mgr().connect(url, wss);

@@ -14,6 +14,7 @@ pub fn reduce_clear_query_result(
     let query_key = unwrap_to!(action => Action::ClearQueryResult);
 
     network_state.get_query_results.remove(query_key);
+    network_state.query_timeouts.remove(query_key);
 }
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_clear_validation_package_result(

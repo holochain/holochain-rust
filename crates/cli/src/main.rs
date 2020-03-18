@@ -326,7 +326,11 @@ fn run() -> HolochainResult<()> {
                     .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
             }
         },
-        Cli::HashDna { path, property, uuid } => {
+        Cli::HashDna {
+            path,
+            property,
+            uuid,
+        } => {
             let dna_path = path
                 .unwrap_or(util::std_package_path(&project_path).map_err(HolochainError::Default)?);
 
@@ -335,7 +339,11 @@ fn run() -> HolochainResult<()> {
             println!("DNA Hash: {}", dna_hash);
         }
 
-        Cli::Sim2hClient { url, message, files } => {
+        Cli::Sim2hClient {
+            url,
+            message,
+            files,
+        } => {
             cli::sim2h_client(url, message, files)?;
         }
     }

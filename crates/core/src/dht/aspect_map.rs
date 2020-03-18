@@ -28,7 +28,10 @@ impl AspectMap {
     }
 
     pub fn contains(&self, aspect: &EntryAspect) -> bool {
-        let entry_address: EntryHash = aspect.entry_address().into();
+        let entry_address: EntryHash = aspect
+            .entry_address()
+            .expect("Could not get entry address from aspect")
+            .into();
         let entry_aspect_address = aspect.address();
         self.0
             .get(&entry_address)
@@ -37,7 +40,10 @@ impl AspectMap {
     }
 
     pub fn add(&mut self, aspect: &EntryAspect) {
-        let entry_address = aspect.entry_address().into();
+        let entry_address = aspect
+            .entry_address()
+            .expect("Could not get entry address from aspect")
+            .into();
         let entry_aspect_address = aspect.address().into();
 
         self.0

@@ -62,7 +62,8 @@ fn create_authoring_map(context: Arc<Context>) -> AspectMap {
 
         // And then we deduce the according base entry and meta aspect from that entry
         // and its header:
-        let maybe_meta_aspect = entry_to_meta_aspect(entry, header);
+        let maybe_meta_aspect =
+            entry_to_meta_aspect(entry, header).expect("Couldn't derive meta aspect from entry");
 
         if let Some((base_address, meta_aspect)) = maybe_meta_aspect {
             address_map

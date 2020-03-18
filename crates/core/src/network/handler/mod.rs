@@ -395,28 +395,26 @@ fn get_content_aspect(
 ///
 /// NB: this is the inverse function of EntryAspect::entry_address(), so it is very important
 /// that they agree!
-//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-fn entry_to_meta_aspect(entry: Entry, header: ChainHeader) -> Option<(Address, EntryAspect)> {
-    match entry {
-        Entry::App(app_type, app_value) => header.link_update_delete().map(|updated_entry| {
-            (
-                updated_entry,
-                EntryAspect::Update(Entry::App(app_type, app_value), header),
-            )
-        }),
-        Entry::LinkAdd(link_data) => Some((
-            link_data.link.base().clone(),
-            EntryAspect::LinkAdd(link_data, header),
-        )),
-        Entry::LinkRemove((link_data, addresses)) => Some((
-            link_data.link.base().clone(),
-            EntryAspect::LinkRemove((link_data, addresses), header),
-        )),
-        Entry::Deletion(_) => Some((
-            header.link_update_delete().expect(""),
-            EntryAspect::Deletion(header),
-        )),
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+fn entry_to_meta_aspect(
+    entry: Entry,
+    header: ChainHeader,
+) -> Result<Option<(Address, EntryAspect)>, HolochainError> {
+    let maybe_aspect = match entry {
+        Entry::App(app_type, app_value) => header
+            .link_update_delete()
+            .map(|_| EntryAspect::Update(Entry::App(app_type, app_value), header)),
+        Entry::LinkAdd(link_data) => Some(EntryAspect::LinkAdd(link_data, header)),
+        Entry::LinkRemove((link_data, addresses)) => {
+            Some(EntryAspect::LinkRemove((link_data, addresses), header))
+        }
+        Entry::Deletion(_) => Some(EntryAspect::Deletion(header)),
         _ => None,
+    };
+    if let Some(aspect) = maybe_aspect {
+        Ok(Some((aspect.entry_address()?, aspect)))
+    } else {
+        Ok(None)
     }
 }
 
@@ -441,6 +439,7 @@ fn get_meta_aspects_from_chain(
                     let entry = maybe_entry
                         .expect("Could not find entry in chain CAS, but header is chain");
                     entry_to_meta_aspect(entry, header)
+                        .expect("Couldn't derive meta aspect from entry")
                 }
                 Err(_) => None,
             },

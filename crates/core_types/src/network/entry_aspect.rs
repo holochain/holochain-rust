@@ -115,7 +115,7 @@ impl EntryAspect {
             }
             // EntryAspect::Header is currently unused,
             // but this is what it will be when we do use it
-            EntryAspect::Header(header) => header.address().clone(),
+            EntryAspect::Header(header) => header.address(),
         })
     }
 }

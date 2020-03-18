@@ -54,7 +54,7 @@ impl<T> ActionResponse<T> {
 /// The Store of the Holochain instance Object, according to Redux pattern.
 /// It's composed of all sub-module's state slices.
 /// To plug in a new module, its state slice needs to be added here.
-#[autotrace]
+//#[autotrace]
 #[derive(Clone, PartialEq, Debug)]
 pub struct State {
     nucleus: Arc<NucleusState>,
@@ -64,7 +64,7 @@ pub struct State {
     pub conductor_api: ConductorApi,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl State {
     pub fn new(context: Arc<Context>) -> Self {
         // @TODO file table
@@ -149,7 +149,7 @@ impl State {
         }
     }
 
-    #[autotrace]
+    //#[autotrace]
     pub fn reduce(&self, action_wrapper: ActionWrapper) -> Self {
         let _span_guard = ht::push_span_with(|span| {
             span.child_("reduce-inner", |s| {
@@ -273,7 +273,7 @@ pub struct StateWrapper {
     state: Option<State>,
 }
 
-#[autotrace]
+//#[autotrace]
 impl StateWrapper {
     pub fn drop_inner_state(&mut self) {
         self.state = None;
@@ -305,7 +305,7 @@ impl StateWrapper {
         }
     }
 
-    #[autotrace]
+    //#[autotrace]
     pub fn reduce(&self, action_wrapper: ActionWrapper) -> Self {
         StateWrapper {
             state: Some(

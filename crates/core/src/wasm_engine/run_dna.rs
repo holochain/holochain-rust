@@ -25,7 +25,7 @@ use wasmi::RuntimeValue;
 /// inside the DirectCall specialisation for WasmCallData.
 ///
 /// For ZomeCalls and CallbackCalls it gets the according module from the DNA.
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn get_module(data: WasmCallData) -> Result<ModuleArc, HolochainError> {
     let (context, zome_name) = if let WasmCallData::DirectCall(_, wasm) = data {
         let transient_module = ModuleArc::new(wasm_module_factory(wasm)?);
@@ -56,8 +56,8 @@ fn get_module(data: WasmCallData) -> Result<ModuleArc, HolochainError> {
 /// Executes an exposed zome function in a wasm binary.
 /// Multithreaded function
 /// panics if wasm binary isn't valid.
-#[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[autotrace]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn run_dna(parameters: Option<Vec<u8>>, data: WasmCallData) -> ZomeFnResult {
     let wasm_module = get_module(data.clone())?;
     let wasm_instance = wasm_instance_factory(&wasm_module)?;

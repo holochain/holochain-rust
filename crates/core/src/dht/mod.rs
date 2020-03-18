@@ -1,12 +1,12 @@
 //! DHT is the module that handles the agent's local shard of data and p2p communications
 
-#[autotrace]
+//#[autotrace]
 pub mod actions;
 pub mod aspect_map;
 pub mod dht_reducers;
-#[autotrace]
+//#[autotrace]
 pub mod dht_store;
 pub mod pending_validations;
 
-#[autotrace]
+//#[autotrace]
 mod dht_inner_reducers;

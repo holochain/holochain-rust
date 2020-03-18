@@ -15,7 +15,7 @@ use wasmi::RuntimeArgs;
 /// args: [0] encoded MemoryAllocation as u64
 /// Not expecting any complex input
 /// Returns an HcApiReturnCode as I64
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn invoke_init_globals(runtime: &mut Runtime, _args: &RuntimeArgs) -> ZomeApiResult {
     let call_data = runtime.call_data()?;
     let dna = runtime

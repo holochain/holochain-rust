@@ -34,35 +34,35 @@ extern crate holochain_common;
 #[macro_use]
 pub mod macros;
 
-// #[autotrace]
+// //#[autotrace]
 pub mod action;
-// #[autotrace]
+// //#[autotrace]
 pub mod agent;
-// #[autotrace]
+// //#[autotrace]
 pub mod consistency;
-// #[autotrace]
+// //#[autotrace]
 pub mod content_store;
-// #[autotrace]
+// //#[autotrace]
 pub mod context;
 pub mod dht;
 pub mod entry;
-#[autotrace]
+//#[autotrace]
 pub mod instance;
 #[cfg(test)]
 pub mod link_tests;
 pub mod logger;
-// #[autotrace]
+// //#[autotrace]
 pub mod network;
-// #[autotrace]
+// //#[autotrace]
 pub mod nucleus;
-// #[autotrace]
+// //#[autotrace]
 pub mod persister;
 pub mod scheduled_jobs;
-// #[autotrace]
+// //#[autotrace]
 pub mod signal;
-// #[autotrace]
+// //#[autotrace]
 pub mod state;
-// #[autotrace]
+// //#[autotrace]
 pub mod state_dump;
 pub mod wasm_engine;
 pub mod workflows;

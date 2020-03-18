@@ -17,7 +17,7 @@ use serde::{
 };
 use std::{collections::VecDeque, convert::TryFrom, fmt};
 
-#[autotrace]
+//#[autotrace]
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]
 pub enum NucleusStatus {
     New,
@@ -107,7 +107,7 @@ pub struct NucleusState {
     pub zome_call_results: HashMap<ZomeFnCall, Result<JsonString, HolochainError>>,
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl NucleusState {
     pub fn new() -> Self {
         NucleusState {

@@ -36,7 +36,7 @@ pub fn get_entry_with_meta_workflow_local<'a>(
 }
 
 /// Get Entry workflow
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn get_entry_with_meta_workflow<'a>(
     context: &'a Arc<Context>,
     address: &'a Address,
@@ -89,7 +89,7 @@ pub async fn get_entry_with_meta_workflow<'a>(
 }
 
 /// Get GetEntryResult workflow
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn get_entry_result_workflow<'a>(
     context: &'a Arc<Context>,
     args: &'a GetEntryArgs,
@@ -150,7 +150,7 @@ pub async fn get_entry_result_workflow<'a>(
 }
 
 /// Get GetEntryResult workflow
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn get_entry_result_workflow_local<'a>(
     context: &'a Arc<Context>,
     args: &'a GetEntryArgs,

@@ -91,7 +91,7 @@ impl From<Arc<Context>> for StateDump {
     }
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn address_to_content_and_type(
     address: &Address,
     context: Arc<Context>,

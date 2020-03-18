@@ -18,8 +18,8 @@ use lib3h_protocol::{
 };
 use std::sync::Arc;
 
-#[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[autotrace]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Context>) {
     let c = context.clone();
     let closure = async move || {
@@ -38,7 +38,7 @@ pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Contex
     c.spawn_task(future);
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn create_authoring_map(context: Arc<Context>) -> AspectMap {
     let mut address_map: AspectMapBare = AspectMapBare::new();
     for entry_address in get_all_public_chain_entries(context.clone()) {
@@ -110,7 +110,7 @@ fn create_authoring_map(context: Arc<Context>) -> AspectMap {
     address_map.into()
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn get_all_public_chain_entries(context: Arc<Context>) -> Vec<Address> {
     let chain = context.state().unwrap().agent().iter_chain();
     chain
@@ -119,7 +119,7 @@ fn get_all_public_chain_entries(context: Arc<Context>) -> Vec<Address> {
         .collect()
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn handle_get_gossip_list(get_list_data: GetListData, context: Arc<Context>) {
     let c = context.clone();
     let closure = async move || {

@@ -61,6 +61,21 @@ macro_rules! log_info {
     )
 }
 
+/// Hacky helper macro for outputting some semblance of structured logging
+#[macro_export]
+macro_rules! log_json {
+    (target: $target:expr, $($arg:tt)+) => (
+        log!(target: $target, log::Level::Warn, "<SL<{}>SL>", ::serde_json::json!({
+            "time": chrono::offset::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+            "level": "WARN",
+            "file": file!(),
+            "line": line!(),
+            "module_path": $target,
+            "fields": ::serde_json::json!($($arg)+),
+        }));
+    );
+}
+
 /// Helper macro for the [`Warning`](log::Level::Warn) log verbosity level.
 #[macro_export]
 macro_rules! log_warn {

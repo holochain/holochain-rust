@@ -14,9 +14,19 @@ use std::{
 };
 
 /// The network requests us to store (i.e. hold) the given entry aspect data.
-#[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[autotrace]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
+    log_json!(target: "network/handler/store.rs", {
+        "tag": "DEBUG_MSGS",
+        "dir": "CORE_IN",
+        "msg_type": "HandleStoreEntryAspect",
+        "request_id": dht_data.request_id,
+        "entry_address": dht_data.entry_address,
+        "from_agent_id": dht_data.provider_agent_id,
+        "data": format!("{:?}", dht_data.entry_aspect),
+    });
+
     let aspect_json =
         JsonString::from_json(std::str::from_utf8(&*dht_data.entry_aspect.aspect).unwrap());
     let maybe_aspect: Result<EntryAspect, _> = aspect_json.clone().try_into();

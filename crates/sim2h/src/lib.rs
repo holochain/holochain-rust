@@ -1199,8 +1199,8 @@ impl Sim2h {
         let config = TcpBindConfig::default();
         //        let config = TlsBindConfig::new(config).dev_certificate();
 
-        // if we don't get any messages in 5 seconds from a connection,
-        // the connectino will throw a timeout error and disconnect.
+        // if we don't get any messages within a timeframe from a connection,
+        // the connection will throw a timeout error and disconnect.
         let config = WssBindConfig::new(config)
             .disconnect_on_slow_pong_ms(Some(NO_MESSAGE_CONNECTION_TIMEOUT_MS));
         let url = url::Url::from(bind_spec).into();
@@ -1410,6 +1410,17 @@ impl Sim2h {
                     } else {
                         tokio::time::delay_for(std::time::Duration::from_millis(10)).await;
                     }
+                }
+            });
+
+            // spawn a task to periodically check for disconnects
+            // due to connections being replaced in the sim2h_im_state
+            let sim2h_handle = self.sim2h_handle.clone();
+            tokio::task::spawn(async move {
+                loop {
+                    tokio::time::delay_for(std::time::Duration::from_millis(500)).await;
+                    let disconnect_uri = sim2h_handle.state().check_disconnected().await;
+                    sim2h_handle.disconnect(disconnect_uri);
                 }
             });
         }

@@ -74,8 +74,7 @@ impl SignedWireMessage {
             self.provenance.source().to_string(),
             &mut message_buf,
             &mut signature_buf,
-        )?;
-        Ok(true)
+        )
     }
 }
 

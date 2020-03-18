@@ -148,8 +148,8 @@ module.exports = scenario => {
         limit:3
       })
 
-      t.equal(0, bob_posts_live_time.Ok.links.length)
-      t.equal(0, alice_posts_live_time.Ok.links.length)
+      t.equal(3, bob_posts_live_time.Ok.links.length)
+      t.equal(3, alice_posts_live_time.Ok.links.length)
 
       const bob_posts_time_2 = await bob.call('app', 'simple', 'get_my_links_with_time_pagination',
       {
@@ -165,8 +165,8 @@ module.exports = scenario => {
         limit:3
       })
 
-      t.equal(3, bob_posts_time_2.Ok.links.length)
-      t.equal(3, alice_posts_time_2.Ok.links.length)
+      t.equal(0, bob_posts_time_2.Ok.links.length)
+      t.equal(0, alice_posts_time_2.Ok.links.length)
   })
 
   scenario('get_links_crud', async (s, t) => {

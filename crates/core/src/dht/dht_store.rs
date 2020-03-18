@@ -188,7 +188,7 @@ impl DhtStore {
                                 .skip_while(move |eavi| {
                                     let from_time: DateTime<FixedOffset> =
                                         paginated_time.from_time.into();
-                                    from_time.timestamp_nanos() >= eavi.index()
+                                    from_time.timestamp_nanos() <= eavi.index()
                                 })
                                 .take(time_pagination.limit),
                         )

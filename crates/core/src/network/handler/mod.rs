@@ -221,7 +221,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     &context,
                     &query_entry_result_data.requester_agent_id.to_string(),
                 ) {
-                    tracing::debug!(query_entry_result_data.request_id);
+                    tracing::debug!(%query_entry_result_data.request_id);
                     return Ok(());
                 }
                 log_debug!(

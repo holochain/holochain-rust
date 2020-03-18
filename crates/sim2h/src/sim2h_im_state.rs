@@ -52,20 +52,11 @@ enum AolEntry {
         uri: Lib3hUri,
     },
 
-    // we will no longer rely on this agent/connection (if con_incr is > cur)
-    // - mark connection as disconnected (tombstone)
+    // we need to be able to drop all connections across spaces based on
+    // the uri of the connected socket (i.e. in case of a socket read/write err)
     // - clear all `holding` aspects (to prepare for another connection
     // - remove the uri_to_connection entry
     // - if there are no more connections in the space, drop it too
-    DropConnection {
-        aol_idx: u64,
-        space_hash: SpaceHash,
-        agent_id: AgentId,
-    },
-
-    // we need to be able to drop all connections across spaces based on
-    // the uri of the connected socket (i.e. in case of a socket read/write err)
-    // (see DropConnection for drop workflow)
     DropConnectionByUri {
         aol_idx: u64,
         uri: Lib3hUri,
@@ -585,11 +576,6 @@ impl Store {
                 agent_id,
                 uri,
             } => self.new_connection(space_hash, agent_id, uri),
-            AolEntry::DropConnection {
-                aol_idx: _,
-                space_hash,
-                agent_id,
-            } => self.drop_connection(space_hash, agent_id),
             AolEntry::DropConnectionByUri { aol_idx: _, uri } => self.drop_connection_by_uri(uri),
             AolEntry::AgentHoldsAspects {
                 aol_idx: _,
@@ -654,14 +640,6 @@ impl Store {
         for space_hash in drop_spaces.drain(..) {
             self.spaces.remove(&space_hash);
         }
-    }
-
-    fn drop_connection(&mut self, space_hash: SpaceHash, agent_id: AgentId) {
-        let agent_id: MonoAgentId = agent_id.into();
-
-        let space = self.get_space_mut(space_hash);
-        Self::drop_connection_inner(space, agent_id);
-        self.check_drop_spaces();
     }
 
     fn drop_connection_by_uri(&mut self, uri: Lib3hUri) {

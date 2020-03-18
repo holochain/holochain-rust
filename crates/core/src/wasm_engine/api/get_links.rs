@@ -22,6 +22,7 @@ pub fn invoke_get_links(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiRes
                 "zome/get_links: invoke_get_links called with {:?}",
                 input,
             );
+            tracing::debug!(invoke_links = ?input);
             input
         }
         Err(_) => {

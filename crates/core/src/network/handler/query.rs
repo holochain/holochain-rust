@@ -172,9 +172,19 @@ fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAn
 
 /// The network has sent us a query for entry data, so we need to examine
 /// the query and create appropriate actions for the different variants
-#[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[autotrace]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn handle_query_entry_data(query_data: QueryEntryData, context: Arc<Context>) {
+    log_json!(target: "network::handler::query", {
+        "tag": "DEBUG_MSGS",
+        "dir": "CORE_IN",
+        "msg_type": "HandleQueryEntry",
+        "request_id": query_data.request_id,
+        "entry_address": query_data.entry_address,
+        "from_agent_id": query_data.requester_agent_id,
+        "data": String::from_utf8_lossy(&query_data.query),
+    });
+
     let query_json =
         JsonString::from_json(&std::str::from_utf8(&*query_data.query.clone()).unwrap());
     let action_wrapper = match query_json.clone().try_into() {

@@ -25,9 +25,19 @@ fn parse_direct_message(content: &[u8]) -> Result<DirectMessage, JsonError> {
 
 /// We got a ProtocolWrapper::SendMessage, this means somebody initiates message roundtrip
 /// -> we are being called
-#[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[autotrace]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context>) {
+    log_json!(target: "network::handler::send", {
+        "tag": "DEBUG_MSGS",
+        "dir": "CORE_IN",
+        "msg_type": "HandleSendDirectMessage",
+        "request_id": message_data.request_id,
+        "to_agent_id": message_data.to_agent_id,
+        "from_agent_id": message_data.from_agent_id,
+        "data": String::from_utf8_lossy(&message_data.content),
+    });
+
     let message = match parse_direct_message(&*message_data.content.clone()) {
         Ok(message) => message,
         Err(error) => {

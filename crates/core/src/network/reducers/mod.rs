@@ -93,13 +93,44 @@ fn resolve_reducer(action_wrapper: &ActionWrapper) -> Option<NetworkReduceFn> {
     }
 }
 
-#[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+lazy_static::lazy_static! {
+    static ref REDUCE_MAP: std::sync::Mutex<std::collections::HashMap<String, std::time::Instant>> = {
+        std::sync::Mutex::new(std::collections::HashMap::new())
+    };
+}
+
+//#[autotrace]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce(
     old_state: Arc<NetworkState>,
     root_state: &State,
     action_wrapper: &ActionWrapper,
 ) -> Arc<NetworkState> {
+    if let Some(agent_id) = &old_state.agent_id {
+        let mut g = REDUCE_MAP.lock().unwrap();
+        let now = std::time::Instant::now();
+        let time_diff = match g.entry(agent_id.clone()) {
+            std::collections::hash_map::Entry::Vacant(entry) => {
+                entry.insert(now);
+                0_u64
+            }
+            std::collections::hash_map::Entry::Occupied(mut entry) => {
+                let last_time = entry.get().clone();
+                entry.insert(now);
+                last_time.elapsed().as_millis() as u64
+            }
+        };
+        if time_diff > 1000 {
+            log_json!(target: "network::reducers", {
+                "tag": "DEBUG_MSGS",
+                "dir": "CORE",
+                "msg_type": "LongNetworkReduce",
+                "to_agent_id": old_state.agent_id,
+                "time_since_last": format!("{:.3}", time_diff as f64 / 1000.0),
+            });
+        }
+    }
+
     let handler = resolve_reducer(action_wrapper);
     match handler {
         Some(f) => {
@@ -119,6 +150,44 @@ pub fn send(
     network_state: &mut NetworkState,
     msg: Lib3hClientProtocol,
 ) -> Result<(), HolochainError> {
+    match &msg {
+        Lib3hClientProtocol::HandleFetchEntryResult(data) => {
+            log_json!(target: "network::reducers::send", {
+                "tag": "DEBUG_MSGS",
+                "dir": "CORE_OUT",
+                "msg_type": "HandleFetchEntryResult",
+                "request_id": data.request_id,
+                "entry_address": data.entry.entry_address,
+                "from_agent_id": data.provider_agent_id,
+                "data": format!("{:?}", data.entry.aspect_list),
+            });
+        }
+        Lib3hClientProtocol::HandleSendDirectMessageResult(data) => {
+            log_json!(target: "network::reducers::send", {
+                "tag": "DEBUG_MSGS",
+                "dir": "CORE_OUT",
+                "msg_type": "HandleSendDirectMessageResult",
+                "request_id": data.request_id,
+                "to_agent_id": data.to_agent_id,
+                "from_agent_id": data.from_agent_id,
+                "data": String::from_utf8_lossy(&data.content),
+            });
+        }
+        Lib3hClientProtocol::HandleQueryEntryResult(data) => {
+            log_json!(target: "network::reducers::send", {
+                "tag": "DEBUG_MSGS",
+                "dir": "CORE_OUT",
+                "msg_type": "HandleQueryEntryResult",
+                "request_id": data.request_id,
+                "entry_address": data.entry_address,
+                "to_agent_id": data.requester_agent_id,
+                "from_agent_id": data.responder_agent_id,
+                "data": String::from_utf8_lossy(&data.query_result),
+            });
+        }
+        _ => (),
+    }
+
     network_state
         .network
         .as_mut()

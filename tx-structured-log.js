@@ -70,6 +70,7 @@ function main() {
       time: data.time,
       time_diff: t,
       since_req_origin,
+      time_since_last: data.fields.time_since_last,
       level: data.level,
       tag: data.fields.tag,
       dir: data.fields.dir,

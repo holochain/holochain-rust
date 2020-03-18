@@ -17,7 +17,7 @@ use std::{
 //#[autotrace]
 //#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
-    log_json!(target: "network/handler/store.rs", {
+    log_json!(target: "network::handler::store", {
         "tag": "DEBUG_MSGS",
         "dir": "CORE_IN",
         "msg_type": "HandleStoreEntryAspect",

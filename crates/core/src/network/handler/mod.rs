@@ -210,7 +210,6 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                 handle_query_entry_data(query_entry_data, context.clone())
             }
             Lib3hServerProtocol::QueryEntryResult(query_entry_result_data) => {
-                /*
                 if !is_my_dna(
                     &my_dna_address,
                     &query_entry_result_data.space_address.to_string(),
@@ -225,10 +224,9 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     tracing::debug!(%query_entry_result_data.request_id);
                     return Ok(());
                 }
-                */
                 log_debug!(
                     context,
-                    "net/handle: HandleQueryEntryResult: {:?}",
+                    "net/handle: QueryEntryResult: {:?}",
                     query_entry_result_data
                 );
                 handle_query_entry_result(query_entry_result_data, context.clone())

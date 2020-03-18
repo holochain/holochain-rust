@@ -145,6 +145,7 @@ pub fn verify_bufs(
     signature: &mut SecBuf,
 ) -> HcResult<bool> {
     let mut pub_key = decode_pub_key(pub_sign_key_b32, &CODEC_HCS0)?;
+    tracing::debug!(?signature, ?data, ?pub_key);
     Ok(lib3h_sodium::sign::verify(signature, data, &mut pub_key))
 }
 

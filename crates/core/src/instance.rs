@@ -202,7 +202,6 @@ impl Instance {
                 let mut unprocessed_action: Option<ht::SpanWrap<ActionWrapper>> = None;
                 while kill_receiver.try_recv().is_err() {
                     if let Some(action_wrapper) = unprocessed_action.take().or_else(|| rx_action.recv_timeout(Duration::from_secs(1)).ok()) {
-                        tracing::debug!(spining = %thread_name);
                         // Add new observers
                         state_observers.extend(rx_observer.try_iter());
                         let action = action_wrapper.action();

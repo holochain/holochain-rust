@@ -217,6 +217,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     return Ok(());
                 }
                 // ignore if I'm not the requester
+                /*
                 if !is_my_id(
                     &context,
                     &query_entry_result_data.requester_agent_id.to_string(),
@@ -224,6 +225,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
                     tracing::debug!(%query_entry_result_data.request_id);
                     return Ok(());
                 }
+                */
                 log_debug!(
                     context,
                     "net/handle: HandleQueryEntryResult: {:?}",

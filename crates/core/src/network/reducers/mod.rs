@@ -119,6 +119,7 @@ pub fn send(
     network_state: &mut NetworkState,
     msg: Lib3hClientProtocol,
 ) -> Result<(), HolochainError> {
+    tracing::debug!(?msg);
     network_state
         .network
         .as_mut()

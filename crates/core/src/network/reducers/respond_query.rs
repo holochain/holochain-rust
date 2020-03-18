@@ -47,6 +47,7 @@ pub fn reduce_respond_query(
     let result = reduce_respond_query_inner(network_state, payload, query_data)
         .map(|_| Ok(()))
         .unwrap_or_else(|e| Err(HolochainError::ErrorGeneric(e.to_string())));
+    tracing::debug!(%query_data.request_id);
 
     network_state.actions.insert(
         action_wrapper.clone(),

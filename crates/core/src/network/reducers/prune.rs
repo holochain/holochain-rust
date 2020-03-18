@@ -19,6 +19,7 @@ pub fn reduce_prune(
         .filter(|(_, response)| {
             if let Ok(elapsed) = response.created_at.elapsed() {
                 if elapsed > Duration::from_millis(ACTION_PRUNE_MS) {
+                    tracing::debug!(?response);
                     return false;
                 }
             }

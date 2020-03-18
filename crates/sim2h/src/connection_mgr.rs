@@ -72,7 +72,7 @@ fn process_control_cmds(cmd_info: &mut CmdInfo) -> Loop {
                 *did_work = true;
                 match cmd {
                     ConMgrCommand::SendData(_uri, frame) => {
-                        debug!(message = "SendData", ?_uri);
+                        debug!(message = "SendData", ?_uri, ?frame);
                         if let Err(e) = wss.write(frame) {
                             error!("socket write error {} {:?}", uri, e);
                             let _ =

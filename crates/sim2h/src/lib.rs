@@ -218,6 +218,79 @@ use twox_hash::XxHash64;
 #[allow(dead_code)]
 mod sim2h_im_state;
 
+fn log_wire_out(uri: &Lib3hUri, msg: &Lib3hToClient) {
+    match msg {
+        Lib3hToClient::HandleStoreEntryAspect(data) => {
+            tracing::warn!(
+                tag = "DEBUG_MSGS",
+                dir = "OUT",
+                msg_type = "HandleStoreEntryAspect",
+                %uri,
+                request_id = %data.request_id,
+                entry_address = %data.entry_address,
+                from_agent_id = %data.provider_agent_id,
+                data = %format!("{:?}", data.entry_aspect),
+            );
+        }
+        Lib3hToClient::SendDirectMessageResult(data) => {
+            tracing::warn!(
+                tag = "DEBUG_MSGS",
+                dir = "OUT",
+                msg_type = "SendDirectMessageResult",
+                %uri,
+                request_id = %data.request_id,
+                to_agent_id = %data.to_agent_id,
+                from_agent_id = %data.from_agent_id,
+                data = %String::from_utf8_lossy(&data.content),
+            );
+        }
+        _ => (),
+    }
+}
+
+fn log_wire_out_rsp(uri: &Lib3hUri, msg: &ClientToLib3hResponse) {
+    match msg {
+        ClientToLib3hResponse::SendDirectMessageResult(data) => {
+            tracing::warn!(
+                tag = "DEBUG_MSGS",
+                dir = "OUT",
+                msg_type = "SendDirectMessageResult",
+                %uri,
+                request_id = %data.request_id,
+                to_agent_id = %data.to_agent_id,
+                from_agent_id = %data.from_agent_id,
+                data = %String::from_utf8_lossy(&data.content),
+            );
+        }
+        ClientToLib3hResponse::FetchEntryResult(data) => {
+            tracing::warn!(
+                tag = "DEBUG_MSGS",
+                dir = "OUT",
+                msg_type = "FetchEntryResult",
+                %uri,
+                request_id = %data.request_id,
+                entry_address = %data.entry.entry_address,
+                from_agent_id = %data.provider_agent_id,
+                data = %format!("{:?}", data.entry.aspect_list),
+            );
+        }
+        ClientToLib3hResponse::QueryEntryResult(data) => {
+            tracing::warn!(
+                tag = "DEBUG_MSGS",
+                dir = "OUT",
+                msg_type = "QueryEntryResult",
+                %uri,
+                request_id = %data.request_id,
+                entry_address = %data.entry_address,
+                to_agent_id = %data.requester_agent_id,
+                from_agent_id = %data.responder_agent_id,
+                data = %String::from_utf8_lossy(&data.query_result),
+            );
+        }
+        _ => (),
+    }
+}
+
 #[derive(Clone)]
 /// A clonable reference to our Sim2h instance that can be passed
 /// into `'static` async blocks && still be able to make sim2h calls
@@ -268,6 +341,33 @@ impl Sim2hHandle {
     /// send a message to another connected agent
     pub fn send(&self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) {
         debug!(">>OUT>> {} to {}", msg.message_type(), uri);
+        match msg {
+            WireMessage::Lib3hToClient(ht::EncodedSpanWrap {
+                data,
+                ..
+            }) => {
+                log_wire_out(&uri, data);
+            }
+            WireMessage::ClientToLib3hResponse(ht::EncodedSpanWrap {
+                data,
+                ..
+            }) => {
+                log_wire_out_rsp(&uri, data);
+            }
+            WireMessage::MultiSend(vec) => {
+                for msg in vec.iter() {
+                    match msg {
+                        ht::EncodedSpanWrap {
+                            data,
+                            ..
+                        } => {
+                            log_wire_out(&uri, data);
+                        }
+                    }
+                }
+            }
+            _ => (),
+        }
         MESSAGE_LOGGER
             .lock()
             .log_out(agent, uri.clone(), msg.clone());
@@ -332,6 +432,15 @@ impl Sim2hHandle {
                 data: ClientToLib3h::JoinSpace(data),
                 ..
             }) => {
+                tracing::warn!(
+                    tag = "DEBUG_MSGS",
+                    dir = "IN",
+                    msg_type = "JoinSpace",
+                    %uri,
+                    request_id = %data.request_id,
+                    from_agent_id = %data.agent_id,
+                    data = %data.space_address,
+                );
                 let _ = tokio::task::spawn(handle_message_join_space(
                     sim2h_handle,
                     uri,
@@ -411,12 +520,32 @@ fn client_to_lib3h(
             sim2h_handle.disconnect(vec![uri.clone()]);
         }
         ClientToLib3h::SendDirectMessage(dm_data) => {
+            tracing::warn!(
+                tag = "DEBUG_MSGS",
+                dir = "IN",
+                msg_type = "SendDirectMessage",
+                %uri,
+                request_id = %dm_data.request_id,
+                to_agent_id = %dm_data.to_agent_id,
+                from_agent_id = %dm_data.from_agent_id,
+                data = %String::from_utf8_lossy(&dm_data.content),
+            );
             return spawn_handle_message_send_dm(sim2h_handle, uri, signer, space_hash, dm_data);
         }
         ClientToLib3h::PublishEntry(data) => {
             return spawn_handle_message_publish_entry(sim2h_handle, uri, signer, space_hash, data);
         }
         ClientToLib3h::QueryEntry(query_data) => {
+            tracing::warn!(
+                tag = "DEBUG_MSGS",
+                dir = "IN",
+                msg_type = "QueryEntry",
+                %uri,
+                request_id = %query_data.request_id,
+                entry_address = %query_data.entry_address,
+                from_agent_id = %query_data.requester_agent_id,
+                data = %String::from_utf8_lossy(&query_data.query),
+            );
             return spawn_handle_message_query_entry(
                 sim2h_handle,
                 uri,
@@ -443,6 +572,16 @@ fn lib3h_to_client_response(
     let _g = span.enter();
     match data {
         Lib3hToClientResponse::HandleSendDirectMessageResult(dm_data) => {
+            tracing::warn!(
+                tag = "DEBUG_MSGS",
+                dir = "IN",
+                msg_type = "HandleSendDirectMessageResult",
+                %uri,
+                request_id = %dm_data.request_id,
+                to_agent_id = %dm_data.to_agent_id,
+                from_agent_id = %dm_data.from_agent_id,
+                data = %String::from_utf8_lossy(&dm_data.content),
+            );
             return spawn_handle_message_send_dm_result(
                 sim2h_handle,
                 uri,
@@ -478,6 +617,16 @@ fn lib3h_to_client_response(
             );
         }
         Lib3hToClientResponse::HandleFetchEntryResult(fetch_result) => {
+            tracing::warn!(
+                tag = "DEBUG_MSGS",
+                dir = "IN",
+                msg_type = "HandleFetchEntryResult",
+                %uri,
+                request_id = %fetch_result.request_id,
+                entry_address = %fetch_result.entry.entry_address,
+                from_agent_id = %fetch_result.provider_agent_id,
+                data = %format!("{:?}", fetch_result.entry.aspect_list),
+            );
             return spawn_handle_message_fetch_entry_result(
                 sim2h_handle,
                 uri,
@@ -487,6 +636,17 @@ fn lib3h_to_client_response(
             );
         }
         Lib3hToClientResponse::HandleQueryEntryResult(query_result) => {
+            tracing::warn!(
+                tag = "DEBUG_MSGS",
+                dir = "IN",
+                msg_type = "HandleQueryEntryResult",
+                %uri,
+                request_id = %query_result.request_id,
+                entry_address = %query_result.entry_address,
+                to_agent_id = %query_result.requester_agent_id,
+                from_agent_id = %query_result.responder_agent_id,
+                data = %String::from_utf8_lossy(&query_result.query_result),
+            );
             return spawn_handle_message_query_entry_result(
                 sim2h_handle,
                 uri,

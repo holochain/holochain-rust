@@ -23,7 +23,7 @@ use holochain_core_types::{
 use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
 use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::data_types::{EntryListData, FetchEntryData, QueryEntryData};
-use snowflake;
+//use snowflake;
 use std::{
     hash::{Hash, Hasher},
     time::{Duration, SystemTime},
@@ -39,7 +39,7 @@ use std::{
 #[derive(Clone, Debug, Serialize)]
 pub struct ActionWrapper {
     action: Action,
-    id: snowflake::ProcessUniqueId,
+    id: String, //snowflake::ProcessUniqueId,
 }
 
 impl ActionWrapper {
@@ -49,7 +49,7 @@ impl ActionWrapper {
         ActionWrapper {
             action: a,
             // auto generate id
-            id: snowflake::ProcessUniqueId::new(),
+            id: nanoid::simple(), //snowflake::ProcessUniqueId::new(),
         }
     }
 
@@ -59,7 +59,7 @@ impl ActionWrapper {
     }
 
     /// read only access to id
-    pub fn id(&self) -> &snowflake::ProcessUniqueId {
+    pub fn id(&self) -> &String { //snowflake::ProcessUniqueId {
         &self.id
     }
 }
@@ -102,7 +102,7 @@ pub enum QueryPayload {
 pub enum Action {
     /// Get rid of stale information that we should drop to not have the state grow infinitely.
     Prune,
-    ClearActionResponse(snowflake::ProcessUniqueId),
+    ClearActionResponse(String), //snowflake::ProcessUniqueId),
 
     // ----------------
     // Agent actions:
@@ -359,7 +359,7 @@ pub mod tests {
         ht::noop("test-noop".into()).wrap(ActionWrapper::new(Action::Query((
             QueryKey::Entry(GetEntryKey {
                 address: expected_entry_address(),
-                id: snowflake::ProcessUniqueId::new().to_string(),
+                id: nanoid::simple(), //snowflake::ProcessUniqueId::new().to_string(),
             }),
             QueryPayload::Entry,
             None,

@@ -156,6 +156,13 @@ async fn wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend, cmd_recv: CmdRe
         wss,
         frame: None,
     };
+
+    tracing::warn!(
+        tag = "DEBUG_MSGS",
+        msg_type = "Connect",
+        uri = %cmd_info.uri,
+    );
+
     'wss_task_loop: loop {
         let span = debug_span!("wss_task");
         let _g = span.enter();
@@ -192,6 +199,12 @@ async fn wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend, cmd_recv: CmdRe
             tokio::time::delay_for(std::time::Duration::from_millis(5)).await;
         }
     }
+
+    tracing::warn!(
+        tag = "DEBUG_MSGS",
+        msg_type = "Disconnect",
+        uri = %cmd_info.uri,
+    );
 
     debug!("wss_task ENDING {}", cmd_info.uri);
 }

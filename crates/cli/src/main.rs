@@ -155,6 +155,9 @@ enum Cli {
         #[structopt(long, short = "x")]
         /// Property (in the form 'name=value') that gets set/overwritten before calculating hash
         property: Option<Vec<String>>,
+        #[structopt(long, short)]
+        /// UUID that gets set/overwritten before calculating hash
+        uuid: Option<String>,
     },
     Sim2hClient {
         #[structopt(long, short = "u")]
@@ -323,11 +326,11 @@ fn run() -> HolochainResult<()> {
                     .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
             }
         },
-        Cli::HashDna { path, property } => {
+        Cli::HashDna { path, property, uuid } => {
             let dna_path = path
                 .unwrap_or(util::std_package_path(&project_path).map_err(HolochainError::Default)?);
 
-            let dna_hash = cli::hash_dna(&dna_path, property)
+            let dna_hash = cli::hash_dna(&dna_path, property, uuid)
                 .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
             println!("DNA Hash: {}", dna_hash);
         }

@@ -193,15 +193,15 @@ impl Instance {
         let instance_is_alive = sub_context.instance_is_alive.clone();
         instance_is_alive.store(true, Ordering::Relaxed);
 
+        let thread_name = format!("action_loop/{}", ProcessUniqueId::new().to_string());
         let _ = thread::Builder::new()
-            .name(format!(
-                "action_loop/{}",
-                ProcessUniqueId::new().to_string()
-            ))
+            .name(thread_name.clone()
+            )
             .spawn(move || {
                 let mut state_observers: Vec<Observer> = Vec::new();
                 let mut unprocessed_action: Option<ht::SpanWrap<ActionWrapper>> = None;
                 while kill_receiver.try_recv().is_err() {
+                    tracing::debug!(spining = %thread_name);
                     if let Some(action_wrapper) = unprocessed_action.take().or_else(|| rx_action.recv_timeout(Duration::from_secs(1)).ok()) {
                         // Add new observers
                         state_observers.extend(rx_observer.try_iter());
@@ -223,6 +223,7 @@ impl Instance {
                                         .into_iter()
                                         .filter(|observer| observer.ticker.send(()).is_ok())
                                         .collect();
+                                    tracing::debug!(?action);
                                 },
                                 Err(HolochainError::Timeout(s)) => {
                                     warn!("Instance::process_action() couldn't get lock on state. Trying again next loop. Timeout string: {}", s);

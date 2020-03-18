@@ -291,7 +291,7 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
 
                 handle_get_gossip_list(get_list_data, context.clone());
             }
-            _ => {}
+            _ => {tracing::warn!(?message.data);}
         }
         Ok(())
     }))

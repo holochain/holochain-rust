@@ -432,6 +432,7 @@ impl Instance {
     }
 
     pub fn state(&self) -> StateWrapper {
+        tracing::debug!("reading state");
         self.state
             .read()
             .expect("owners of the state RwLock shouldn't panic")

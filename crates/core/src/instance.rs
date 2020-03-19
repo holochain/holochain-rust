@@ -346,24 +346,23 @@ impl Instance {
                                     // If we couldn't run the validation due to unresolved dependencies,
                                     // we have to re-add this entry at the end of the queue:
                                     Err(HolochainError::ValidationPending) => {
-
                                         // THIS DELAY IS BROKEN BECAUSE VALIDATION ENTAILS SENDING
                                         // A DIRECT MESSAGE WHICH TIMES OUT ON THE DEFAULT 60 SECOND
                                         // TIMEOUT, THUS THESE ARE CONFLICTING TIMEOUTS
                                         // And with a delay so we are not trying to re-validate many times per second.
                                         /*
-                                        let mut delay = maybe_delay
-                                            .map(|old_delay| {
-                                                // Exponential back-off:
-                                                // If this was delayed before we double the delay.
-                                                old_delay * 2
-                                            })
-                                            .unwrap_or(RETRY_VALIDATION_DURATION_MIN);
+                                            let mut delay = maybe_delay
+                                                .map(|old_delay| {
+                                                    // Exponential back-off:
+                                                    // If this was delayed before we double the delay.
+                                                    old_delay * 2
+                                                })
+                                                .unwrap_or(RETRY_VALIDATION_DURATION_MIN);
 
-                                        // Cap delay with max duration
-                                        if delay > RETRY_VALIDATION_DURATION_MAX {
-                                            delay = RETRY_VALIDATION_DURATION_MAX
-                                    }*/
+                                            // Cap delay with max duration
+                                            if delay > RETRY_VALIDATION_DURATION_MAX {
+                                                delay = RETRY_VALIDATION_DURATION_MAX
+                                        }*/
 
                                         let delay = RETRY_VALIDATION_TIMEOUT_MS;
 

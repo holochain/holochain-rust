@@ -480,16 +480,13 @@ impl Drop for Instance {
 ///
 /// Panics if the channels passed are disconnected.
 //#[autotrace]
-pub fn dispatch_action(action_channel: &ActionSender, action_wrapper: ActionWrapper) {
-    action_channel
-        .send_timeout(action_wrapper, *CHANNEL_TIMEOUT)
-        .map_err(|e| {
-            if let cb_ch::SendTimeoutError::Timeout(ref a) = e {
-                tracing::error!("action_channel send channel timeout {:?}", a);
-            }
-            e
-        })
-        .ok();
+pub fn dispatch_action(action_channel: &ActionSender, mut action_wrapper: ActionWrapper) {
+    while let Err(cb_ch::SendTimeoutError::Timeout(aw)) =
+        action_channel.send_timeout(action_wrapper, *CHANNEL_TIMEOUT)
+    {
+        tracing::warn!("action_channel send channel timeout {:?}", aw);
+        action_wrapper = aw;
+    }
 }
 
 #[cfg(test)]

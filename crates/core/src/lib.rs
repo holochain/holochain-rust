@@ -70,6 +70,7 @@ pub mod wasm_engine;
 pub mod workflows;
 
 const CHANNEL_SIZE: usize = 1000;
+const ACTION_CHANNEL_SIZE: usize = 1;
 const CHANNEL_DEATH: usize = 10;
 
 use std::time::Duration;

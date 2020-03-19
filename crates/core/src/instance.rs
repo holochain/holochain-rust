@@ -12,7 +12,7 @@ use crate::{
     signal::Signal,
     state::{State, StateWrapper},
     workflows::{application, run_holding_workflow},
-    CHANNEL_DEATH, CHANNEL_SIZE, CHANNEL_TIMEOUT,
+    CHANNEL_DEATH, CHANNEL_SIZE, CHANNEL_TIMEOUT, ACTION_CHANNEL_SIZE,
 };
 #[cfg(test)]
 use crate::{
@@ -161,7 +161,7 @@ impl Instance {
 
     /// Returns recievers for actions and observers that get added to this instance
     fn initialize_channels(&mut self) -> (ActionReceiver, Receiver<Observer>) {
-        let (tx_action, rx_action) = bounded::<ActionWrapper>(CHANNEL_SIZE);
+        let (tx_action, rx_action) = bounded::<ActionWrapper>(ACTION_CHANNEL_SIZE);
         let (tx_observer, rx_observer) = bounded::<Observer>(CHANNEL_SIZE);
         self.action_channel = Some(tx_action.into());
         self.observer_channel = Some(tx_observer);

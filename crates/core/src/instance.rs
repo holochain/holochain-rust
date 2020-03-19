@@ -12,7 +12,7 @@ use crate::{
     signal::Signal,
     state::{State, StateWrapper},
     workflows::{application, run_holding_workflow},
-    CHANNEL_SIZE, CHANNEL_TIMEOUT,
+    CHANNEL_DEATH, CHANNEL_SIZE, CHANNEL_TIMEOUT,
 };
 #[cfg(test)]
 use crate::{
@@ -481,9 +481,15 @@ impl Drop for Instance {
 /// Panics if the channels passed are disconnected.
 //#[autotrace]
 pub fn dispatch_action(action_channel: &ActionSender, mut action_wrapper: ActionWrapper) {
+    let mut tries = 0;
     while let Err(cb_ch::SendTimeoutError::Timeout(aw)) =
         action_channel.send_timeout(action_wrapper, *CHANNEL_TIMEOUT)
     {
+        tries += 1;
+        if tries > CHANNEL_DEATH {
+            tracing::error!("action_channel stuck {:?}", aw);
+            return;
+        }
         tracing::warn!("action_channel send channel timeout {:?}", aw);
         action_wrapper = aw;
     }

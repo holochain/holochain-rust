@@ -15,6 +15,7 @@ use std::{
     },
     thread, time,
 };
+use crate::CHANNEL_SIZE;
 
 const TICK_SLEEP_MIN_US: u64 = 100;
 const TICK_SLEEP_MAX_US: u64 = 10_000;
@@ -48,8 +49,8 @@ impl NetConnectionThread {
         let can_keep_running = Arc::new(AtomicBool::new(true));
         let can_keep_running_child = can_keep_running.clone();
         // Create channels between self and spawned thread
-        let (send_channel, recv_channel) = crossbeam_channel::unbounded();
-        let (send_endpoint, recv_endpoint) = crossbeam_channel::unbounded();
+        let (send_channel, recv_channel) = crossbeam_channel::bounded(CHANNEL_SIZE);
+        let (send_endpoint, recv_endpoint) = crossbeam_channel::bounded(CHANNEL_SIZE);
 
         // Spawn worker thread
         let thread = thread::Builder::new()
@@ -180,7 +181,7 @@ impl NetConnectionThread {
 mod tests {
     use super::{super::net_connection::NetWorker, *};
     use crate::p2p_network::Lib3hServerProtocolWrapped;
-    use crossbeam_channel::unbounded;
+    use crossbeam_channel::bounded;
     use holochain_persistence_api::hash::HashString;
     use lib3h_protocol::{
         data_types::GenericResultData,
@@ -254,7 +255,7 @@ mod tests {
 
     #[test]
     fn it_invokes_connection_thread() {
-        let (sender, receiver) = unbounded();
+        let (sender, receiver) = bounded(CHANNEL_SIZE);
 
         let mut con = NetConnectionThread::new(
             NetHandler::new(Box::new(move |r| {
@@ -293,7 +294,7 @@ mod tests {
 
     #[test]
     fn it_can_tick() {
-        let (sender, receiver) = unbounded();
+        let (sender, receiver) = bounded(CHANNEL_SIZE);
 
         let mut con = NetConnectionThread::new(
             NetHandler::new(Box::new(move |r| {

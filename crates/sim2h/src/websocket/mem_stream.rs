@@ -6,6 +6,7 @@ use std::{
     io::{Read, Write},
 };
 use url2::prelude::*;
+use crate::CHANNEL_SIZE;
 
 // -- mem listener -- //
 
@@ -179,8 +180,8 @@ fn random_url(prefix: &str) -> Url2 {
 
 /// private stream pair constructor, these streams can message each other
 fn create_mem_stream_pair(url_a: Url2, url_b: Url2) -> (MemStream, MemStream) {
-    let (send1, recv1) = crossbeam_channel::unbounded();
-    let (send2, recv2) = crossbeam_channel::unbounded();
+    let (send1, recv1) = crossbeam_channel::bounded(CHANNEL_SIZE);
+    let (send2, recv2) = crossbeam_channel::bounded(CHANNEL_SIZE);
     (
         MemStream::priv_new(url_a, send1, recv2),
         MemStream::priv_new(url_b, send2, recv1),
@@ -231,7 +232,7 @@ impl MemManager {
             Entry::Occupied(_) => Err(std::io::ErrorKind::AddrInUse.into()),
             Entry::Vacant(e) => {
                 // the url is not in use, let's create a new listener
-                let (send, recv) = crossbeam_channel::unbounded();
+                let (send, recv) = crossbeam_channel::bounded(CHANNEL_SIZE);
                 e.insert(send);
                 Ok(MemListener::priv_new(new_url, recv))
             }

@@ -4,6 +4,7 @@ use holochain_locksmith::RwLock;
 /// Metric suppport for holochain. Provides metric representations to
 /// sample, publish, aggregate, and analyze metric data.
 use std::sync::Arc;
+use crate::CHANNEL_SIZE;
 
 /// Represents a single sample of a numerical metric determined by `name`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -68,7 +69,7 @@ pub struct ChannelPublisher {
 
 impl ChannelPublisher {
     pub fn new(mut metric_publisher: Box<dyn MetricPublisher>) -> Self {
-        let (sender, receiver) = unbounded();
+        let (sender, receiver) = bounded(CHANNEL_SIZE);
         let _join_handle: std::thread::JoinHandle<()> = std::thread::spawn(move || loop {
             match receiver.try_recv() {
                 Ok(metric) => metric_publisher.publish(&metric),

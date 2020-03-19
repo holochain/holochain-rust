@@ -6,7 +6,7 @@
 //! use url2::prelude::*;
 //! use in_stream::*;
 //!
-//! let (send_binding, recv_binding) = crossbeam_channel::unbounded();
+//! let (send_binding, recv_binding) = crossbeam_channel::bounded(CHANNEL_SIZE);
 //!
 //! let server_thread = std::thread::spawn(move || {
 //!     let config = TcpBindConfig::default();
@@ -94,3 +94,5 @@ pub use ws::*;
 
 pub mod json_rpc;
 pub use json_rpc::*;
+
+pub const CHANNEL_SIZE: usize = 1000;

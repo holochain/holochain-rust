@@ -12,7 +12,7 @@ use crate::{
     port_utils::{try_with_port, INTERFACE_CONNECT_ATTEMPTS_MAX},
     Holochain,
 };
-use crossbeam_channel::{unbounded, Receiver, Sender};
+use crossbeam_channel::{bounded, Receiver, Sender};
 use holochain_common::paths::DNA_EXTENSION;
 use holochain_core::{logger::Logger, signal::Signal};
 use holochain_core_types::{
@@ -60,6 +60,8 @@ use holochain_core_types::dna::bridges::BridgePresence;
 use holochain_net::p2p_config::{BackendConfig, P2pBackendKind, P2pConfig};
 
 pub const MAX_DYNAMIC_PORT: u16 = std::u16::MAX;
+
+use crate::CHANNEL_SIZE;
 
 /// Special string to be printed on stdout, which clients must parse
 /// in order to discover which port the interface bound to.
@@ -168,8 +170,6 @@ pub fn notify(msg: String) {
     println!("{}", msg);
 }
 
-#[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl Conductor {
     pub fn from_config(config: Configuration) -> Self {
         lib3h_sodium::check_init();
@@ -243,8 +243,8 @@ impl Conductor {
     pub fn spawn_stats_thread(&mut self) {
         self.stop_stats_thread();
         let instances = self.instances.clone();
-        let (kill_switch_tx, kill_switch_rx) = unbounded();
-        let (stats_tx, stats_rx) = unbounded();
+        let (kill_switch_tx, kill_switch_rx) = bounded(CHANNEL_SIZE);
+        let (stats_tx, stats_rx) = bounded(CHANNEL_SIZE);
         self.stats_thread_kill_switch = Some(kill_switch_tx);
         self.stats_signal_receiver = Some(stats_rx);
         thread::Builder::new()
@@ -314,7 +314,7 @@ impl Conductor {
         let instance_signal_receivers = self.instance_signal_receivers.clone();
         let signal_tx = self.signal_tx.clone();
         let config = self.config.clone();
-        let (kill_switch_tx, kill_switch_rx) = unbounded();
+        let (kill_switch_tx, kill_switch_rx) = bounded(CHANNEL_SIZE);
         self.signal_multiplexer_kill_switch = Some(kill_switch_tx);
         self.spawn_stats_thread();
         let stats_signal_receiver = self.stats_signal_receiver.clone().expect(
@@ -784,7 +784,7 @@ impl Conductor {
     )> {
         match self.config.tracing.clone().unwrap_or_default() {
             TracingConfiguration::Jaeger(jaeger_config) => {
-                let (span_tx, span_rx) = crossbeam_channel::unbounded();
+                let (span_tx, span_rx) = crossbeam_channel::bounded(CHANNEL_SIZE);
                 let service_name = format!("{}-{}", jaeger_config.service_name, id);
                 let mut reporter = ht::reporter::JaegerCompactReporter::new(&service_name).unwrap();
                 if let Some(s) = jaeger_config.socket_address {
@@ -834,7 +834,7 @@ impl Conductor {
                 context_builder = context_builder.with_p2p_config(self.get_p2p_config());
 
                 // Signal config:
-                let (sender, receiver) = unbounded();
+                let (sender, receiver) = bounded(CHANNEL_SIZE);
                 self.instance_signal_receivers
                 .write()
                 .unwrap()
@@ -1341,7 +1341,7 @@ impl Conductor {
     fn spawn_interface_thread(&self, interface_config: InterfaceConfiguration) -> Sender<()> {
         let dispatcher = self.make_interface_handler(&interface_config);
         // The "kill switch" is the channel which allows the interface to be stopped from outside its thread
-        let (kill_switch_tx, kill_switch_rx) = unbounded();
+        let (kill_switch_tx, kill_switch_rx) = bounded(CHANNEL_SIZE);
 
         let (broadcaster, _handle) = run_interface(&interface_config, dispatcher, kill_switch_rx)
             .map_err(|error| {

@@ -6,7 +6,7 @@ use std::sync::{
     atomic::{AtomicU64, Ordering},
     Arc,
 };
-use tokio::stream::StreamExt;
+use tokio::{stream::StreamExt};
 
 fn should_store(
     agent_loc: Location,
@@ -493,7 +493,7 @@ impl Store {
         redundancy: u64,
         gossip_interval: Option<u64>,
     ) -> StoreHandle {
-        let (send_mut, mut recv_mut) = tokio::sync::mpsc::unbounded_channel();
+        let (send_mut, mut recv_mut) = tokio::sync::mpsc::channel(CHANNEL_SIZE);
 
         let ref_dummy = Arc::new(());
 
@@ -828,7 +828,7 @@ pub struct StoreHandle {
     _ref_dummy: Arc<()>,
     // clone ref
     clone_ref: Arc<tokio::sync::RwLock<Store>>,
-    send_mut: tokio::sync::mpsc::UnboundedSender<StoreProto>,
+    send_mut: tokio::sync::mpsc::Sender<StoreProto>,
     con_incr: Arc<AtomicU64>,
 }
 
@@ -836,7 +836,7 @@ impl StoreHandle {
     fn new(
         ref_dummy: Arc<()>,
         clone_ref: Arc<tokio::sync::RwLock<Store>>,
-        send_mut: tokio::sync::mpsc::UnboundedSender<StoreProto>,
+        send_mut: tokio::sync::mpsc::Sender<StoreProto>,
         con_incr: Arc<AtomicU64>,
     ) -> Self {
         Self {
@@ -857,7 +857,7 @@ impl StoreHandle {
         space_hash: SpaceHash,
         agent_id: AgentId,
         uri: Lib3hUri,
-    ) -> BoxFuture<'static, ()> {
+    ) -> BoxFuture<()> {
         let (sender, receiver) = tokio::sync::oneshot::channel();
         let msg = StoreProto::Mutate(
             AolEntry::NewConnection {
@@ -868,12 +868,14 @@ impl StoreHandle {
             },
             sender,
         );
-        if let Err(_) = self.send_mut.send(msg) {
-            error!("failed to send im store message - shutting down?");
-            return async { () }.boxed();
-        }
+        let mut send_mut = self.send_mut.clone();
         async move {
-            let _ = receiver.await;
+            if let Err(_) = send_mut.send(msg).await {
+                error!("failed to send im store message - shutting down?");
+            //async { () }.boxed()
+            } else {
+                let _ = receiver.await;
+            }
         }
         .boxed()
     }
@@ -905,55 +907,57 @@ impl StoreHandle {
     */
 
     #[must_use]
-    pub fn drop_connection_by_uri(&self, uri: Lib3hUri) -> BoxFuture<'static, ()> {
-        let (sender, receiver) = tokio::sync::oneshot::channel();
-        if let Err(_) = self.send_mut.send(StoreProto::Mutate(
-            AolEntry::DropConnectionByUri {
-                aol_idx: self.con_incr.inc(),
-                uri,
-            },
-            sender,
-        )) {
-            error!("failed to send im store message - shutting down?");
-            return async { () }.boxed();
-        }
-        async move {
-            let _ = receiver.await;
-        }
-        .boxed()
-    }
-
-    pub fn spawn_drop_connection_by_uri(&self, uri: Lib3hUri) {
-        let f = self.drop_connection_by_uri(uri);
-        tokio::task::spawn(f);
-    }
-
-    #[must_use]
-    pub fn agent_holds_aspects(
-        &self,
+    pub async fn agent_holds_aspects(
+        mut self,
         space_hash: SpaceHash,
         agent_id: AgentId,
         entry_hash: EntryHash,
         aspects: im::HashSet<AspectHash>,
-    ) -> BoxFuture<'static, ()> {
+    ) {
         let (sender, receiver) = tokio::sync::oneshot::channel();
-        if let Err(_) = self.send_mut.send(StoreProto::Mutate(
-            AolEntry::AgentHoldsAspects {
-                aol_idx: self.con_incr.inc(),
-                space_hash,
-                agent_id,
-                entry_hash,
-                aspects,
-            },
-            sender,
-        )) {
+        if let Err(_) = self
+            .send_mut
+            .send(StoreProto::Mutate(
+                AolEntry::AgentHoldsAspects {
+                    aol_idx: self.con_incr.inc(),
+                    space_hash,
+                    agent_id,
+                    entry_hash,
+                    aspects,
+                },
+                sender,
+            ))
+            .await
+        {
             error!("failed to send im store message - shutting down?");
-            return async { () }.boxed();
+            return;
         }
-        async move {
-            let _ = receiver.await;
+        let _ = receiver.await;
+    }
+    #[must_use]
+    pub async fn drop_connection_by_uri(mut self, uri: Lib3hUri) {
+        let (sender, receiver) = tokio::sync::oneshot::channel();
+
+        if let Err(_) = self
+            .send_mut
+            .send(StoreProto::Mutate(
+                AolEntry::DropConnectionByUri {
+                    aol_idx: self.con_incr.inc(),
+                    uri,
+                },
+                sender,
+            ))
+            .await
+        {
+            error!("failed to send im store message - shutting down?");
+            return;
         }
-        .boxed()
+        let _ = receiver.await;
+    }
+    pub fn spawn_drop_connection_by_uri(&self, uri: Lib3hUri) {
+        let store_handle = self.clone();
+        let f = store_handle.drop_connection_by_uri(uri);
+        tokio::task::spawn(f);
     }
 
     pub fn spawn_agent_holds_aspects(
@@ -963,7 +967,8 @@ impl StoreHandle {
         entry_hash: EntryHash,
         aspects: im::HashSet<AspectHash>,
     ) {
-        let f = self.agent_holds_aspects(space_hash, agent_id, entry_hash, aspects);
+        let store_handle = self.clone();
+        let f = store_handle.agent_holds_aspects(space_hash, agent_id, entry_hash, aspects);
         tokio::task::spawn(f);
     }
 
@@ -971,13 +976,17 @@ impl StoreHandle {
     pub async fn check_gossip(&self) -> CheckGossipData {
         let (sender, receiver) = tokio::sync::oneshot::channel();
         let (sender_c, receiver_c) = tokio::sync::oneshot::channel();
-        if let Err(_) = self.send_mut.send(StoreProto::Mutate(
-            AolEntry::CheckGossip {
-                aol_idx: self.con_incr.inc(),
-                response: sender,
-            },
-            sender_c,
-        )) {
+        let mut send_mut = self.send_mut.clone();
+        if let Err(_) = send_mut
+            .send(StoreProto::Mutate(
+                AolEntry::CheckGossip {
+                    aol_idx: self.con_incr.inc(),
+                    response: sender,
+                },
+                sender_c,
+            ))
+            .await
+        {
             error!("failed to send im store message - shutting down?");
             // we're probably shutting down, prevent panic!s
             // note this future will never resolve - because it cannot
@@ -1059,6 +1068,7 @@ mod tests {
         debug!("GOT: {:#?}", store.get_clone().await);
 
         store
+            .clone()
             .agent_holds_aspects(
                 space_hash.clone(),
                 aid1.clone(),
@@ -1067,6 +1077,7 @@ mod tests {
             )
             .await;
         store
+            .clone()
             .agent_holds_aspects(
                 space_hash.clone(),
                 aid2.clone(),
@@ -1100,7 +1111,7 @@ mod tests {
         debug!("--- end check missing ---");
 
         //store.drop_connection(space_hash.clone(), aid1.clone());
-        store.drop_connection_by_uri(uri1.clone()).await;
+        store.clone().drop_connection_by_uri(uri1.clone()).await;
 
         debug!("GOT: {:#?}", store.get_clone().await);
     }
@@ -1131,6 +1142,7 @@ mod tests {
             .await;
 
         store
+            .clone()
             .agent_holds_aspects(
                 space_hash.clone(),
                 aid1.clone(),
@@ -1140,6 +1152,7 @@ mod tests {
             .await;
 
         store
+            .clone()
             .agent_holds_aspects(
                 space_hash.clone(),
                 aid1.clone(),
@@ -1190,6 +1203,7 @@ mod tests {
         debug!("GOT: {:#?}", store.get_clone().await);
 
         store
+            .clone()
             .agent_holds_aspects(
                 space_hash.clone(),
                 aid1.clone(),

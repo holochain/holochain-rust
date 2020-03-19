@@ -5,6 +5,7 @@ use chrono::Local;
 use crossbeam_channel;
 use holochain_locksmith::Mutex;
 use std::sync::Arc;
+use crate::CHANNEL_SIZE;
 
 /// trait that defines the logging functionality that holochain_core requires
 pub trait Logger: Send {
@@ -56,7 +57,7 @@ impl ChannelLogger {
         ChannelLogger { id, sender }
     }
     pub fn setup() -> (Sender, Receiver) {
-        crossbeam_channel::unbounded()
+        crossbeam_channel::bounded(CHANNEL_SIZE)
     }
 }
 pub fn default_handler(msg: String) {

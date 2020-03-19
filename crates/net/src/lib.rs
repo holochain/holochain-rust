@@ -33,4 +33,6 @@ pub mod p2p_network;
 pub mod sim2h_worker;
 pub mod tweetlog;
 
+const CHANNEL_SIZE: usize = 1000;
+
 new_relic_setup!("NEW_RELIC_LICENSE_KEY");

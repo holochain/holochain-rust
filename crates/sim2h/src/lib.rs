@@ -52,6 +52,7 @@ use tracing_futures::Instrument;
 
 /// use the default 0 seed for xxHash
 pub const RECEIPT_HASH_SEED: u64 = 0;
+pub const CHANNEL_SIZE: usize = 1000;
 
 /// Generates a u64 hash response for an `Ack` message given input bytes
 pub fn generate_ack_receipt_hash(payload: &Opaque) -> u64 {
@@ -127,12 +128,12 @@ fn open_lifecycle(desc: &str, uuid: &str, uri: &Lib3hUri) {
 
 #[derive(Clone)]
 struct MetricsTimerGenerator {
-    sender: tokio::sync::mpsc::UnboundedSender<(&'static str, f64)>,
+    sender: tokio::sync::mpsc::Sender<(&'static str, f64)>,
 }
 
 impl MetricsTimerGenerator {
     pub fn new() -> (Self, BoxFuture<'static, ()>) {
-        let (sender, mut recv) = tokio::sync::mpsc::unbounded_channel::<(&'static str, f64)>();
+        let (sender, mut recv) = tokio::sync::mpsc::channel::<(&'static str, f64)>(CHANNEL_SIZE);
         let out = async move {
             let metric_publisher = MetricPublisherConfig::default().create_metric_publisher();
             'metric_loop: loop {
@@ -161,14 +162,11 @@ impl MetricsTimerGenerator {
 struct MetricsTimer {
     tag: &'static str,
     create_time: std::time::Instant,
-    sender: tokio::sync::mpsc::UnboundedSender<(&'static str, f64)>,
+    sender: tokio::sync::mpsc::Sender<(&'static str, f64)>,
 }
 
 impl MetricsTimer {
-    pub fn new(
-        tag: &'static str,
-        sender: tokio::sync::mpsc::UnboundedSender<(&'static str, f64)>,
-    ) -> Self {
+    pub fn new(tag: &'static str, sender: tokio::sync::mpsc::Sender<(&'static str, f64)>) -> Self {
         Self {
             tag,
             create_time: std::time::Instant::now(),
@@ -187,7 +185,7 @@ impl Drop for MetricsTimer {
         } else if elapsed >= 10.0 {
             info!("metric - {} - {} ms", self.tag, elapsed);
         }
-        if let Err(e) = self.sender.send((self.tag, elapsed)) {
+        if let Err(e) = self.sender.try_send((self.tag, elapsed)) {
             error!(
                 "failed to send metric - shutting down? {} {:?}",
                 self.tag, e
@@ -267,14 +265,15 @@ impl Sim2hHandle {
     }
 
     /// send a message to another connected agent
-    pub fn send(&self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) {
+    pub async fn send(&self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) {
         debug!(">>OUT>> {} to {}", msg.message_type(), uri);
         MESSAGE_LOGGER
-            .lock()
-            .log_out(agent, uri.clone(), msg.clone());
+            .try_lock()
+            .map(|mut ml| ml.log_out(agent, uri.clone(), msg.clone()));
         let payload: Opaque = msg.clone().into();
         self.connection_mgr
-            .send_data(uri, payload.as_bytes().into());
+            .send_data(uri, payload.as_bytes().into())
+            .await
     }
 
     /// get access to our im_state object
@@ -284,8 +283,8 @@ impl Sim2hHandle {
 
     /// Notify core/sim2h_worker that we have processed the current message
     /// sufficiently, and are ready to receive another message.
-    pub fn send_receipt(&self, receipt: &WireMessage, source: &AgentId, url: &Lib3hUri) {
-        self.send(source.clone(), url.clone(), receipt);
+    pub async fn send_receipt(&self, receipt: &WireMessage, source: &AgentId, url: &Lib3hUri) {
+        self.send(source.clone(), url.clone(), receipt).await;
     }
 
     /// forward a message to be handled
@@ -359,7 +358,7 @@ impl Sim2hHandle {
                         uri,
                         message.message_type()
                     );
-                    sim2h_handle.disconnect(vec![uri.clone()]);
+                    sim2h_handle.disconnect(vec![uri.clone()]).await;
                     return;
                 }
             };
@@ -372,11 +371,11 @@ impl Sim2hHandle {
                 return;
             }
 
-            sim2h_handle.send_receipt(&receipt, &signer, &uri);
+            sim2h_handle.send_receipt(&receipt, &signer, &uri).await;
 
             match message {
                 WireMessage::ClientToLib3h(ht::EncodedSpanWrap { data, .. }) => {
-                    return client_to_lib3h(data, uri, sim2h_handle, signer, space_hash);
+                    return client_to_lib3h(data, uri, sim2h_handle, signer, space_hash).await;
                 }
                 WireMessage::Lib3hToClientResponse(ht::EncodedSpanWrap { data, .. }) => {
                     return lib3h_to_client_response(data, uri, sim2h_handle, signer, space_hash);
@@ -390,16 +389,16 @@ impl Sim2hHandle {
     }
 
     /// disconnect an active connection
-    pub fn disconnect(&self, disconnect: Vec<Lib3hUri>) {
+    pub async fn disconnect(&self, disconnect: Vec<Lib3hUri>) {
         for d in disconnect.iter() {
             self.state().spawn_drop_connection_by_uri(d.clone());
-            self.connection_mgr.disconnect(d.clone());
+            self.connection_mgr.disconnect(d.clone()).await;
         }
     }
 }
 
 #[instrument(skip(data, sim2h_handle))]
-fn client_to_lib3h(
+async fn client_to_lib3h(
     data: ClientToLib3h,
     uri: Lib3hUri,
     sim2h_handle: Sim2hHandle,
@@ -409,7 +408,7 @@ fn client_to_lib3h(
     match data {
         ClientToLib3h::LeaveSpace(_data) => {
             // for now, just disconnect on LeaveSpace
-            sim2h_handle.disconnect(vec![uri.clone()]);
+            sim2h_handle.disconnect(vec![uri.clone()]).await;
         }
         ClientToLib3h::SendDirectMessage(dm_data) => {
             return spawn_handle_message_send_dm(sim2h_handle, uri, signer, space_hash, dm_data);
@@ -509,14 +508,13 @@ fn spawn_handle_message_ping(
     signer: AgentId,
     receipt: WireMessage,
 ) {
-    /*
-    tokio::task::spawn(async move {
-    });
-    */
-    // no processing here, don't bother actually spawning
     debug!("Sending Pong in response to Ping");
-    sim2h_handle.send(signer.clone(), uri.clone(), &WireMessage::Pong);
-    sim2h_handle.send_receipt(&receipt, &signer, &uri);
+    tokio::task::spawn(async move {
+        sim2h_handle
+            .send(signer.clone(), uri.clone(), &WireMessage::Pong)
+            .await;
+        sim2h_handle.send_receipt(&receipt, &signer, &uri).await;
+    });
 }
 
 fn spawn_handle_message_status(
@@ -532,21 +530,23 @@ fn spawn_handle_message_status(
         for (_, space) in state.spaces.iter() {
             joined_connections += space.connections.len();
         }
-        sim2h_handle.send(
-            signer.clone(),
-            uri.clone(),
-            &WireMessage::StatusResponse(StatusData {
-                spaces: state.spaces_count(),
-                connections: sim2h_handle.connection_count.get().await,
-                joined_connections,
-                redundant_count: match sim2h_handle.dht_algorithm() {
-                    DhtAlgorithm::FullSync => 0,
-                    DhtAlgorithm::NaiveSharding { redundant_count } => *redundant_count,
-                },
-                version: WIRE_VERSION,
-            }),
-        );
-        sim2h_handle.send_receipt(&receipt, &signer, &uri);
+        sim2h_handle
+            .send(
+                signer.clone(),
+                uri.clone(),
+                &WireMessage::StatusResponse(StatusData {
+                    spaces: state.spaces_count(),
+                    connections: sim2h_handle.connection_count.get().await,
+                    joined_connections,
+                    redundant_count: match sim2h_handle.dht_algorithm() {
+                        DhtAlgorithm::FullSync => 0,
+                        DhtAlgorithm::NaiveSharding { redundant_count } => *redundant_count,
+                    },
+                    version: WIRE_VERSION,
+                }),
+            )
+            .await;
+        sim2h_handle.send_receipt(&receipt, &signer, &uri).await;
     });
 }
 
@@ -564,6 +564,7 @@ fn spawn_handle_message_debug(
             let json = serde_json::to_string(&space).expect("Space must be serializable");
             response_map.insert((**hash).clone(), json.clone());
             let filename = format!("{}.json", **hash);
+            // FIXME should be async file write
             if let Ok(mut file) = File::create(filename.clone()) {
                 file.write_all(json.into_bytes().as_slice())
                     .unwrap_or_else(|_| error!("Could not write to file {}!", filename))
@@ -571,12 +572,14 @@ fn spawn_handle_message_debug(
                 error!("Could not create file {}!", filename)
             }
         }
-        sim2h_handle.send(
-            signer.clone(),
-            uri.clone(),
-            &WireMessage::DebugResponse(response_map),
-        );
-        sim2h_handle.send_receipt(&receipt, &signer, &uri);
+        sim2h_handle
+            .send(
+                signer.clone(),
+                uri.clone(),
+                &WireMessage::DebugResponse(response_map),
+            )
+            .await;
+        sim2h_handle.send_receipt(&receipt, &signer, &uri).await;
     });
 }
 
@@ -587,33 +590,32 @@ fn spawn_handle_message_hello(
     version: u32,
     receipt: WireMessage,
 ) {
-    /*
-    tokio::task::spawn(async move {
-    });
-    */
-    // no processing here, don't bother actually spawning
     debug!("Sending HelloResponse in response to Hello({})", version);
-    sim2h_handle.send(
-        signer.clone(),
-        uri.clone(),
-        &WireMessage::HelloResponse(HelloData {
-            redundant_count: match sim2h_handle.dht_algorithm() {
-                DhtAlgorithm::FullSync => 0,
-                DhtAlgorithm::NaiveSharding { redundant_count } => *redundant_count,
-            },
-            version: WIRE_VERSION,
-            extra: None,
-        }),
-    );
-    sim2h_handle.send_receipt(&receipt, &signer, &uri);
-    // versions do not match - disconnect them
-    if version != WIRE_VERSION {
-        warn!(
+    tokio::task::spawn(async move {
+        sim2h_handle
+            .send(
+                signer.clone(),
+                uri.clone(),
+                &WireMessage::HelloResponse(HelloData {
+                    redundant_count: match sim2h_handle.dht_algorithm() {
+                        DhtAlgorithm::FullSync => 0,
+                        DhtAlgorithm::NaiveSharding { redundant_count } => *redundant_count,
+                    },
+                    version: WIRE_VERSION,
+                    extra: None,
+                }),
+            )
+            .await;
+        sim2h_handle.send_receipt(&receipt, &signer, &uri).await;
+        // versions do not match - disconnect them
+        if version != WIRE_VERSION {
+            warn!(
             "Disconnecting client for bad version this WIRE_VERSION = {}, client WIRE_VERSION = {}",
             WIRE_VERSION, version
         );
-        sim2h_handle.disconnect(vec![uri]);
-    }
+            sim2h_handle.disconnect(vec![uri]).await;
+        }
+    });
 }
 
 #[tracing::instrument(level = "info", skip(sim2h_handle))]
@@ -626,6 +628,7 @@ async fn handle_message_join_space(
 ) {
     sim2h_handle
         .state()
+        .clone()
         .new_connection(
             data.space_address.clone(),
             data.agent_id.clone(),
@@ -633,39 +636,43 @@ async fn handle_message_join_space(
         )
         .await;
 
-    sim2h_handle.send_receipt(&receipt, &signer, &uri);
+    sim2h_handle.send_receipt(&receipt, &signer, &uri).await;
 
-    sim2h_handle.send(
-        data.agent_id.clone(),
-        uri.clone(),
-        &WireMessage::Lib3hToClient(
-            ht::span_wrap_encode!(
-                Level::INFO,
-                Lib3hToClient::HandleGetGossipingEntryList(GetListData {
-                    request_id: "".into(),
-                    space_address: data.space_address.clone(),
-                    provider_agent_id: data.agent_id.clone(),
-                })
-            )
-            .into(),
-        ),
-    );
+    sim2h_handle
+        .send(
+            data.agent_id.clone(),
+            uri.clone(),
+            &WireMessage::Lib3hToClient(
+                ht::span_wrap_encode!(
+                    Level::INFO,
+                    Lib3hToClient::HandleGetGossipingEntryList(GetListData {
+                        request_id: "".into(),
+                        space_address: data.space_address.clone(),
+                        provider_agent_id: data.agent_id.clone(),
+                    })
+                )
+                .into(),
+            ),
+        )
+        .await;
 
-    sim2h_handle.send(
-        data.agent_id.clone(),
-        uri,
-        &WireMessage::Lib3hToClient(
-            ht::span_wrap_encode!(
-                Level::INFO,
-                Lib3hToClient::HandleGetAuthoringEntryList(GetListData {
-                    request_id: "".into(),
-                    space_address: data.space_address.clone(),
-                    provider_agent_id: data.agent_id,
-                })
-            )
-            .into(),
-        ),
-    );
+    sim2h_handle
+        .send(
+            data.agent_id.clone(),
+            uri,
+            &WireMessage::Lib3hToClient(
+                ht::span_wrap_encode!(
+                    Level::INFO,
+                    Lib3hToClient::HandleGetAuthoringEntryList(GetListData {
+                        request_id: "".into(),
+                        space_address: data.space_address.clone(),
+                        provider_agent_id: data.agent_id,
+                    })
+                )
+                .into(),
+            ),
+        )
+        .await;
 }
 
 fn inner_spawn_handle_message_send_dmx(
@@ -692,7 +699,9 @@ fn inner_spawn_handle_message_send_dmx(
                 return;
             }
         };
-        sim2h_handle.send(to_agent_id, to_url.clone(), &message);
+        sim2h_handle
+            .send(to_agent_id, to_url.clone(), &message)
+            .await;
     });
 }
 
@@ -790,7 +799,9 @@ fn spawn_handle_message_publish_entry(
 
         for agent_id in send_to {
             if let Some(uri) = state.lookup_joined(&space_hash, &agent_id) {
-                sim2h_handle.send((&*agent_id).clone(), uri.clone(), &multi_message);
+                sim2h_handle
+                    .send((&*agent_id).clone(), uri.clone(), &multi_message)
+                    .await;
             }
             sim2h_handle.state().spawn_agent_holds_aspects(
                 (&*space_hash).clone(),
@@ -887,7 +898,7 @@ fn spawn_handle_message_authoring_entry_list(
 
             if !multi_message.is_empty() {
                 let multi_send = WireMessage::MultiSend(multi_message);
-                sim2h_handle.send(signer, uri, &multi_send);
+                sim2h_handle.send(signer, uri, &multi_send).await;
             }
         }
         .instrument(debug_span!("authoring_entry")),
@@ -956,7 +967,9 @@ fn spawn_handle_message_fetch_entry_result(
 
                 let multi_send = WireMessage::MultiSend(multi_message);
 
-                sim2h_handle.send((&*agent_id).clone(), (&*uri).clone(), &multi_send);
+                sim2h_handle
+                    .send((&*agent_id).clone(), (&*uri).clone(), &multi_send)
+                    .await;
 
                 for (entry_hash, aspects) in holding.drain() {
                     sim2h_handle.state().spawn_agent_holds_aspects(
@@ -1013,7 +1026,9 @@ fn spawn_handle_message_query_entry(
                 ht::span_wrap_encode!(Level::INFO, Lib3hToClient::HandleQueryEntry(query_data))
                     .into(),
             );
-            sim2h_handle.send((&*query_target).clone(), url.clone(), &query_message);
+            sim2h_handle
+                .send((&*query_target).clone(), url.clone(), &query_message)
+                .await;
         }
         .instrument(debug_span!("message_query")),
     );
@@ -1054,7 +1069,9 @@ fn spawn_handle_message_query_entry_result(
                     return;
                 }
             };
-            sim2h_handle.send(req_agent_id, to_url.clone(), &msg_out);
+            sim2h_handle
+                .send(req_agent_id, to_url.clone(), &msg_out)
+                .await;
         }
         .instrument(debug_span!("handle_message_query_entry_result")),
     );
@@ -1182,7 +1199,7 @@ impl Sim2h {
 
         let (connection_mgr, connection_mgr_evt_recv, connection_count) = ConnectionMgr::new();
 
-        let (wss_send, wss_recv) = crossbeam_channel::unbounded();
+        let (wss_send, wss_recv) = crossbeam_channel::bounded(CHANNEL_SIZE);
         let sim2h_handle = Sim2hHandle::new(
             crypto.box_clone(),
             dht_algorithm,
@@ -1251,7 +1268,7 @@ impl Sim2h {
 
                     open_lifecycle("adding conn job", &uuid, &url);
 
-                    sim2h_handle.connection_mgr().connect(url, wss);
+                    sim2h_handle.connection_mgr().connect(url, wss).await;
                 }
             });
         }
@@ -1265,7 +1282,10 @@ impl Sim2h {
             "dropping connection to {} because of error: {:?}",
             uri, error,
         );
-        self.sim2h_handle.disconnect(vec![uri]);
+        let sim2h_handle = self.sim2h_handle.clone();
+        tokio::task::spawn(async move {
+            sim2h_handle.disconnect(vec![uri]).await;
+        });
     }
 
     /// if our connections sent us any data, process it
@@ -1301,7 +1321,10 @@ impl Sim2h {
         }
 
         if !disconnect.is_empty() {
-            self.sim2h_handle.disconnect(disconnect);
+            let sim2h_handle = self.sim2h_handle.clone();
+            tokio::task::spawn(async move {
+                sim2h_handle.disconnect(disconnect).await;
+            });
         }
 
         trace!(
@@ -1334,7 +1357,10 @@ impl Sim2h {
             WsFrame::Pong(_) => (),
             WsFrame::Close(c) => {
                 debug!("Disconnecting {} after connection reset {:?}", uri, c);
-                self.sim2h_handle.disconnect(vec![uri]);
+                let sim2h_handle = self.sim2h_handle.clone();
+                tokio::task::spawn(async move {
+                    sim2h_handle.disconnect(vec![uri]).await;
+                });
             }
         }
     }
@@ -1362,7 +1388,7 @@ impl Sim2h {
                         "Could not verify payload from {}!\nError: {:?}\nPayload was: {:?}",
                         url, error, payload
                     );
-                    sim2h_handle.disconnect(vec![url]);
+                    sim2h_handle.disconnect(vec![url]).await;
                 }
             }
         });
@@ -1521,6 +1547,15 @@ fn fetch_entry_data(
             ht::span_wrap_encode!(tracing::Level::INFO, Lib3hToClient::HandleFetchEntry(s)).into()
         });
 
-        sim2h_handle.send((&*query_agent).clone(), (&*uri).clone(), &wire_message);
+        tokio::task::spawn({
+            let sim2h_handle = sim2h_handle.clone();
+            let agent = (&*query_agent).clone();
+            let uri = (&*uri).clone();
+            async move {
+                sim2h_handle
+                    .send(agent, uri, &wire_message)
+                    .await;
+            }
+        });
     }
 }

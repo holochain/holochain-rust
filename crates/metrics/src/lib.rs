@@ -27,3 +27,5 @@ pub use cloudwatch::*;
 pub use config::*;
 pub use metrics::*;
 new_relic_setup!("NEW_RELIC_LICENSE_KEY");
+
+pub const CHANNEL_SIZE: usize = 1000;

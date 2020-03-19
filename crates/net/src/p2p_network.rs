@@ -22,6 +22,7 @@ use crossbeam_channel;
 use holochain_conductor_lib_api::conductor_api::ConductorApi;
 use holochain_json_api::json::JsonString;
 use std::{convert::TryFrom, time::Duration};
+use crate::CHANNEL_SIZE;
 
 pub type Lib3hClientProtocolWrapped = ht::EncodedSpanWrap<Lib3hClientProtocol>;
 pub type Lib3hServerProtocolWrapped = ht::EncodedSpanWrap<Lib3hServerProtocol>;
@@ -111,7 +112,7 @@ impl P2pNetwork {
             }),
         };
 
-        let (t, rx) = crossbeam_channel::unbounded();
+        let (t, rx) = crossbeam_channel::bounded(CHANNEL_SIZE);
         let tx = t.clone();
         let wrapped_handler = if Self::should_wait_for_p2p_ready(&p2p_config2.clone()) {
             NetHandler::new(Box::new(move |message| {

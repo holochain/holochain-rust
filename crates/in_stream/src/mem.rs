@@ -257,8 +257,8 @@ use in_stream_mem::random_url;
 
 /// private stream pair constructor, these streams can message each other
 fn create_mem_stream_pair(url_a: Url2, url_b: Url2) -> (InStreamMem, InStreamMem) {
-    let (send1, recv1) = crossbeam_channel::unbounded();
-    let (send2, recv2) = crossbeam_channel::unbounded();
+    let (send1, recv1) = crossbeam_channel::bounded(CHANNEL_SIZE);
+    let (send2, recv2) = crossbeam_channel::bounded(CHANNEL_SIZE);
     (
         InStreamMem::priv_new(url_a, send1, recv2),
         InStreamMem::priv_new(url_b, send2, recv1),
@@ -312,7 +312,7 @@ impl MemManager {
             Entry::Occupied(_) => Err(ErrorKind::AddrInUse.into()),
             Entry::Vacant(e) => {
                 // the url is not in use, let's create a new listener
-                let (send, recv) = crossbeam_channel::unbounded();
+                let (send, recv) = crossbeam_channel::bounded(CHANNEL_SIZE);
                 e.insert(send);
                 Ok(InStreamListenerMem::priv_new(new_url, recv))
             }
@@ -373,7 +373,7 @@ mod tests {
     fn mem_works() {
         use std::io::{Read, Write};
 
-        let (send_binding, recv_binding) = crossbeam_channel::unbounded();
+        let (send_binding, recv_binding) = crossbeam_channel::bounded(CHANNEL_SIZE);
 
         let server_thread = std::thread::spawn(move || {
             let mut listener =

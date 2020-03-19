@@ -16,7 +16,6 @@ use holochain_core_types::{
 
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
-use holochain_tracing::channel::lax_send_wrapped;
 
 use holochain_dpki::utils::Verify;
 
@@ -86,7 +85,7 @@ pub async fn call_zome_function(
     // Signal (currently mainly to the nodejs_waiter) that we are about to start a zome function:
     context
         .action_channel()
-        .send_wrapped(ActionWrapper::new(Action::QueueZomeFunctionCall(
+        .send(ActionWrapper::new(Action::QueueZomeFunctionCall(
             zome_call.clone(),
         )))
         .expect("action channel to be open");
@@ -305,11 +304,7 @@ pub fn spawn_zome_function(context: Arc<Context>, zome_call: ZomeFnCall) {
                 context,
                 "actions/call_zome_fn: sending ReturnZomeFunctionResult action."
             );
-            lax_send_wrapped(
-                context.action_channel().clone(),
-                ActionWrapper::new(Action::ReturnZomeFunctionResult(response)),
-                "call_zome_function",
-            );
+            context.action_channel().send(ActionWrapper::new(Action::ReturnZomeFunctionResult(response))).ok();
             log_debug!(
                 context,
                 "actions/call_zome_fn: sent ReturnZomeFunctionResult action."

@@ -13,6 +13,8 @@ use nickel::{
     Response, StaticFilesHandler,
 };
 
+use crate::CHANNEL_SIZE;
+
 pub struct NickelStaticServer {
     shutdown_signal: Option<Sender<()>>,
     config: UiInterfaceConfiguration,
@@ -38,7 +40,7 @@ impl ConductorStaticFileServer for NickelStaticServer {
     }
 
     fn start(&mut self) -> HolochainResult<()> {
-        let (tx, rx) = crossbeam_channel::unbounded();
+        let (tx, rx) = crossbeam_channel::bounded(CHANNEL_SIZE);
 
         self.shutdown_signal = Some(tx);
         self.running = true;

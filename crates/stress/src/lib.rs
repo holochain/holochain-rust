@@ -7,6 +7,8 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+const CHANNEL_SIZE: usize = 100;
+
 /// utitily for recording stress test metrics
 #[derive(Clone)]
 pub struct StressJobMetricLogger {
@@ -149,8 +151,8 @@ impl<S: StressSuite, J: StressJob> StressRunner<S, J> {
     /// private stress runner constructor
     #[allow(clippy::mutex_atomic)]
     fn priv_new(config: StressRunConfig<S, J>) -> Self {
-        let (job_send, job_recv) = crossbeam_channel::unbounded();
-        let (log_send, log_recv) = crossbeam_channel::unbounded();
+        let (job_send, job_recv) = crossbeam_channel::bounded(CHANNEL_SIZE);
+        let (log_send, log_recv) = crossbeam_channel::bounded(CHANNEL_SIZE);
 
         let warmup_target = std::time::Instant::now()
             .checked_add(std::time::Duration::from_millis(config.warm_time_ms))

@@ -75,7 +75,7 @@ pub async fn initialize_chain(
     fn dispatch_error_result(context: &Arc<Context>, err: HolochainError) {
         context
             .action_channel()
-            .send_wrapped(ActionWrapper::new(Action::ReturnInitializationResult(Err(
+            .send(ActionWrapper::new(Action::ReturnInitializationResult(Err(
                 err.to_string(),
             ))))
             .expect("Action channel not usable in initialize_chain()");
@@ -174,7 +174,7 @@ pub async fn initialize_chain(
 
     context_clone
         .action_channel()
-        .send_wrapped(ActionWrapper::new(Action::ReturnInitializationResult(
+        .send(ActionWrapper::new(Action::ReturnInitializationResult(
             initialization_result,
         )))
         .expect("Action channel not usable in initialize_chain()");

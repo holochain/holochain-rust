@@ -7,7 +7,7 @@ use crate::{
     signal::{Signal, SignalSender},
     state::StateWrapper,
 };
-use crossbeam_channel::{unbounded, Receiver, Sender};
+use crossbeam_channel::{bounded, Receiver, Sender};
 use futures::{
     executor::ThreadPool,
     task::{noop_waker_ref, Poll},
@@ -46,12 +46,13 @@ use std::{
     thread::sleep,
     time::Duration,
 };
+use crate::CHANNEL_SIZE;
 
 #[cfg(test)]
 use test_utils::mock_signing::mock_conductor_api;
 
-pub type ActionSender = ht::channel::SpanSender<ActionWrapper>;
-pub type ActionReceiver = ht::channel::SpanReceiver<ActionWrapper>;
+pub type ActionSender = crossbeam_channel::Sender<ActionWrapper>;
+pub type ActionReceiver = crossbeam_channel::Receiver<ActionWrapper>;
 
 pub struct P2pNetworkWrapper(Arc<Mutex<Option<P2pNetwork>>>);
 
@@ -306,13 +307,13 @@ impl Context {
     pub fn is_action_channel_open(&self) -> bool {
         self.action_channel
             .clone()
-            .map(|tx| tx.send_wrapped(ActionWrapper::new(Action::Ping)).is_ok())
+            .map(|tx| tx.send(ActionWrapper::new(Action::Ping)).is_ok())
             .unwrap_or(false)
     }
 
     pub fn action_channel_error(&self, msg: &str) -> Option<HolochainError> {
         match &self.action_channel {
-            Some(tx) => match tx.send_wrapped(ActionWrapper::new(Action::Ping)) {
+            Some(tx) => match tx.send(ActionWrapper::new(Action::Ping)) {
                 Ok(()) => None,
                 Err(_) => Some(HolochainError::LifecycleError(msg.into())),
             },
@@ -343,7 +344,7 @@ impl Context {
     /// got mutated.
     /// This enables blocking/parking the calling thread until the application state got changed.
     pub fn create_observer(&self) -> Receiver<()> {
-        let (tick_tx, tick_rx) = unbounded();
+        let (tick_tx, tick_rx) = bounded(CHANNEL_SIZE);
         self.observer_channel()
             .send(Observer { ticker: tick_tx })
             .expect("Observer channel not initialized");

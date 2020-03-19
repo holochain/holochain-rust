@@ -14,6 +14,7 @@ use holochain_persistence_api::{cas::content::Address, hash::HashString};
 use lib3h_protocol::{protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol};
 use std::collections::{hash_map::Entry, HashMap};
 
+use crate::CHANNEL_SIZE;
 /// a p2p worker for mocking in-memory scenario tests
 #[allow(non_snake_case)]
 pub struct InMemoryWorker {
@@ -47,7 +48,7 @@ impl NetWorker for InMemoryWorker {
                 match self.receiver_per_dna.entry(dna_address.clone()) {
                     Entry::Occupied(_) => (),
                     Entry::Vacant(e) => {
-                        let (tx, rx) = crossbeam_channel::unbounded();
+                        let (tx, rx) = crossbeam_channel::bounded(CHANNEL_SIZE);
                         println!("register_chain: {}::{}", dna_address, track_msg.agent_id);
                         server.register_chain(&dna_address, &track_msg.agent_id, tx)?;
                         e.insert(rx);
@@ -166,7 +167,7 @@ impl Drop for InMemoryWorker {
 mod tests {
     use super::*;
     use crate::p2p_config::P2pConfig;
-    use crossbeam_channel::unbounded;
+    use crossbeam_channel::bounded;
     use holochain_persistence_api::cas::content::Address;
     use lib3h_protocol::{data_types::SpaceData, types::AgentPubKey};
 
@@ -184,7 +185,7 @@ mod tests {
     fn can_memory_worker_double_track() {
         // setup client 1
         let memory_config = &JsonString::from(P2pConfig::unique_memory_backend_json());
-        let (handler_send_1, handler_recv_1) = unbounded::<Lib3hServerProtocol>();
+        let (handler_send_1, handler_recv_1) = bounded::<Lib3hServerProtocol>(CHANNEL_SIZE);
 
         let mut memory_worker_1 = Box::new(
             InMemoryWorker::new(

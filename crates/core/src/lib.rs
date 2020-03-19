@@ -67,4 +67,6 @@ pub mod state_dump;
 pub mod wasm_engine;
 pub mod workflows;
 
+const CHANNEL_SIZE: usize = 1000;
+
 new_relic_setup!("NEW_RELIC_LICENSE_KEY");

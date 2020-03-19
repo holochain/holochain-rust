@@ -162,7 +162,7 @@ impl Instance {
     fn initialize_channels(&mut self) -> (ActionReceiver, Receiver<Observer>) {
         let (tx_action, rx_action) = bounded::<ActionWrapper>(CHANNEL_SIZE);
         let (tx_observer, rx_observer) = bounded::<Observer>(CHANNEL_SIZE);
-        self.action_channel = Some(tx_action.into());
+        self.action_channel = Some(tx_action);
         self.observer_channel = Some(tx_observer);
 
         (rx_action, rx_observer)

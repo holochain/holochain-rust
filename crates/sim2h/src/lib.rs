@@ -267,9 +267,9 @@ impl Sim2hHandle {
     /// send a message to another connected agent
     pub async fn send(&self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) {
         debug!(">>OUT>> {} to {}", msg.message_type(), uri);
-        MESSAGE_LOGGER
-            .try_lock()
-            .map(|mut ml| ml.log_out(agent, uri.clone(), msg.clone()));
+        if let Some(mut m1) = MESSAGE_LOGGER.try_lock() {
+            m1.log_out(agent, uri.clone(), msg.clone());
+        }
         let payload: Opaque = msg.clone().into();
         self.connection_mgr
             .send_data(uri, payload.as_bytes().into())

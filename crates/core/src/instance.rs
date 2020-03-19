@@ -211,7 +211,6 @@ impl Instance {
                         if should_process {
                             match sync_self.process_action(&action_wrapper, &sub_context) {
                                 Ok(()) => {
-                                    tracing::debug!(?action);
                                     sync_self.emit_signals(&sub_context, &action_wrapper);
                                     // Tick all observers and remove those that have lost their receiving part
                                     state_observers= state_observers
@@ -265,7 +264,6 @@ impl Instance {
                     HolochainError::Timeout(format!("timeout src: {}:{}", file!(), line!()))
                 })?;
 
-            tracing::debug!(?action_wrapper);
             new_state = state.reduce(action_wrapper.clone());
 
             // Change the state

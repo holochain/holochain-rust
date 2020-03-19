@@ -30,6 +30,8 @@ extern crate holochain_tracing as ht;
 extern crate holochain_tracing_macros;
 #[macro_use]
 extern crate holochain_common;
+#[macro_use]
+extern crate lazy_static;
 
 #[macro_use]
 pub mod macros;
@@ -68,5 +70,11 @@ pub mod wasm_engine;
 pub mod workflows;
 
 const CHANNEL_SIZE: usize = 1000;
+
+use std::time::Duration;
+
+lazy_static!{
+    static ref CHANNEL_TIMEOUT: Duration = Duration::from_millis(3000);
+}
 
 new_relic_setup!("NEW_RELIC_LICENSE_KEY");

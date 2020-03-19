@@ -12,6 +12,7 @@ use crate::{
     signal::Signal,
     state::{State, StateWrapper},
     workflows::{application, run_holding_workflow},
+    CHANNEL_SIZE, CHANNEL_TIMEOUT,
 };
 #[cfg(test)]
 use crate::{
@@ -19,6 +20,7 @@ use crate::{
     nucleus::actions::initialize::initialize_chain,
 };
 use clokwerk::{ScheduleHandle, Scheduler, TimeUnits};
+use crossbeam_channel as cb_ch;
 use crossbeam_channel::{bounded, Receiver, Sender};
 use holochain_core_types::{
     dna::Dna,
@@ -36,7 +38,6 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
-use crate::CHANNEL_SIZE;
 
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 pub const RETRY_VALIDATION_DURATION_MIN: Duration = Duration::from_millis(500);
@@ -480,7 +481,15 @@ impl Drop for Instance {
 /// Panics if the channels passed are disconnected.
 //#[autotrace]
 pub fn dispatch_action(action_channel: &ActionSender, action_wrapper: ActionWrapper) {
-    action_channel.send(action_wrapper).ok();
+    action_channel
+        .send_timeout(action_wrapper, *CHANNEL_TIMEOUT)
+        .map_err(|e| {
+            if let cb_ch::SendTimeoutError::Timeout(ref a) = e {
+                tracing::error!("action_channel send channel timeout {:?}", a);
+            }
+            e
+        })
+        .ok();
 }
 
 #[cfg(test)]

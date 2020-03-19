@@ -51,11 +51,11 @@ use tracing::*;
 use tracing_futures::Instrument;
 
 /// If we don't receive any messages from the remote end of a websocket
-/// within 10 seconds, we assume the connection is dead, and clean it up.
+/// within 30 seconds, we assume the connection is dead, and clean it up.
 /// Note, this setting also causes in_stream to send out a Ping every
-/// 5 seconds (half the message timeout) just incase we don't have anything
+/// 15 seconds (half the message timeout) just incase we don't have anything
 /// else to say.
-const NO_MESSAGE_CONNECTION_TIMEOUT_MS: u64 = 10000;
+const NO_MESSAGE_CONNECTION_TIMEOUT_MS: u64 = 30000;
 
 /// use the default 0 seed for xxHash
 pub const RECEIPT_HASH_SEED: u64 = 0;

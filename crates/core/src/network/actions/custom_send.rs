@@ -65,6 +65,9 @@ impl Future for SendResponseFuture {
         //
         cx.waker().clone().wake();
 
+        if self.context.action_channel().is_full() {
+            return Poll::Pending;
+        }
         if let Some(state) = self.context.try_state() {
             let state = state.network();
             if let Err(error) = state.initialized() {
@@ -72,6 +75,9 @@ impl Future for SendResponseFuture {
             }
             match state.custom_direct_message_replys.get(&self.id) {
                 Some(result) => {
+                    if self.context.action_channel().is_full() {
+                        return Poll::Pending;
+                    }
                     dispatch_action(
                         self.context.action_channel(),
                         ActionWrapper::new(Action::ClearCustomSendResponse(self.id.clone())),

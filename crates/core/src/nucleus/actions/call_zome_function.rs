@@ -304,7 +304,12 @@ pub fn spawn_zome_function(context: Arc<Context>, zome_call: ZomeFnCall) {
                 context,
                 "actions/call_zome_fn: sending ReturnZomeFunctionResult action."
             );
-            context.action_channel().send(ActionWrapper::new(Action::ReturnZomeFunctionResult(response))).ok();
+            context
+                .action_channel()
+                .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(
+                    response,
+                )))
+                .ok();
             log_debug!(
                 context,
                 "actions/call_zome_fn: sent ReturnZomeFunctionResult action."
@@ -336,10 +341,16 @@ impl Future for CallResultFuture {
         // Leaving this in to be safe against running this future in another executor.
         cx.waker().clone().wake();
 
+        if self.context.action_channel().is_full() {
+            return Poll::Pending;
+        }
         if let Some(state) = self.context.clone().try_state() {
             if self.call_spawned {
                 match state.nucleus().zome_call_result(&self.zome_call) {
                     Some(result) => {
+                        if self.context.action_channel().is_full() {
+                            return Poll::Pending;
+                        }
                         dispatch_action(
                             self.context.action_channel(),
                             ActionWrapper::new(Action::ClearZomeFunctionCall(

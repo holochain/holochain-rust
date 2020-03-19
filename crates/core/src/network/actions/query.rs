@@ -99,12 +99,18 @@ impl Future for QueryFuture {
         //
         cx.waker().clone().wake();
 
+        if self.context.action_channel().is_full() {
+            return Poll::Pending;
+        }
         if let Some(state) = self.context.try_state() {
             if let Err(error) = state.network().initialized() {
                 return Poll::Ready(Err(error));
             }
             match state.network().get_query_results.get(&self.key) {
                 Some(Some(result)) => {
+                    if self.context.action_channel().is_full() {
+                        return Poll::Pending;
+                    }
                     dispatch_action(
                         self.context.action_channel(),
                         ActionWrapper::new(Action::ClearQueryResult(self.key.clone())),

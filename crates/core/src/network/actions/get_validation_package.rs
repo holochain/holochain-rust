@@ -23,7 +23,10 @@ pub async fn get_validation_package(
     context: &Arc<Context>,
 ) -> HcResult<Option<ValidationPackage>> {
     let entry_address = header.entry_address().clone();
-    let key = ValidationKey{ address: entry_address, id: snowflake::ProcessUniqueId::new().to_string() };
+    let key = ValidationKey {
+        address: entry_address,
+        id: snowflake::ProcessUniqueId::new().to_string(),
+    };
     let action_wrapper = ActionWrapper::new(Action::GetValidationPackage((key.clone(), header)));
     dispatch_action(context.action_channel(), action_wrapper.clone());
     GetValidationPackageFuture {
@@ -59,6 +62,9 @@ impl Future for GetValidationPackageFuture {
         //
         cx.waker().clone().wake();
 
+        if self.context.action_channel().is_full() {
+            return Poll::Pending;
+        }
         if let Some(state) = self.context.try_state() {
             let state = state.network();
             if let Err(error) = state.initialized() {
@@ -68,11 +74,12 @@ impl Future for GetValidationPackageFuture {
             match state.get_validation_package_results.get(&self.key) {
                 Some(Some(result)) => {
                     tracing::debug!(dispatch_clear = ?self.key);
+                    if self.context.action_channel().is_full() {
+                        return Poll::Pending;
+                    }
                     dispatch_action(
                         self.context.action_channel(),
-                        ActionWrapper::new(Action::ClearValidationPackageResult(
-                            self.key.clone(),
-                        )),
+                        ActionWrapper::new(Action::ClearValidationPackageResult(self.key.clone())),
                     );
                     Poll::Ready(result.clone())
                 }

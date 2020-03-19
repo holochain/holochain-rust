@@ -47,6 +47,9 @@ impl Future for PublishHeaderEntryFuture {
         //
         cx.waker().clone().wake();
 
+        if self.context.action_channel().is_full() {
+            return Poll::Pending;
+        }
         if let Some(state) = self.context.try_state() {
             let state = state.network();
             if let Err(error) = state.initialized() {
@@ -55,6 +58,9 @@ impl Future for PublishHeaderEntryFuture {
             match state.actions().get(&self.action) {
                 Some(r) => match r.response() {
                     NetworkActionResponse::PublishHeaderEntry(result) => {
+                        if self.context.action_channel().is_full() {
+                            return Poll::Pending;
+                        }
                         dispatch_action(
                             self.context.action_channel(),
                             ActionWrapper::new(Action::ClearActionResponse(*self.action.id())),

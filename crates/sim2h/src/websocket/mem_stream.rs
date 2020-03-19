@@ -1,3 +1,4 @@
+use crate::CHANNEL_SIZE;
 use holochain_tracing_macros::newrelic_autotrace;
 use lazy_static::lazy_static;
 use lib3h_zombie_actor::GhostMutex;
@@ -6,7 +7,6 @@ use std::{
     io::{Read, Write},
 };
 use url2::prelude::*;
-use crate::CHANNEL_SIZE;
 
 // -- mem listener -- //
 

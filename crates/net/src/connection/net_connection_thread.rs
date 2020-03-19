@@ -2,7 +2,7 @@ use super::{
     net_connection::{NetHandler, NetSend, NetWorkerFactory},
     NetResult,
 };
-use crate::p2p_network::Lib3hClientProtocolWrapped;
+use crate::{p2p_network::Lib3hClientProtocolWrapped, CHANNEL_SIZE};
 use failure::err_msg;
 use holochain_locksmith::Mutex;
 use holochain_logging::prelude::*;
@@ -15,7 +15,6 @@ use std::{
     },
     thread, time,
 };
-use crate::CHANNEL_SIZE;
 
 const TICK_SLEEP_MIN_US: u64 = 100;
 const TICK_SLEEP_MAX_US: u64 = 10_000;

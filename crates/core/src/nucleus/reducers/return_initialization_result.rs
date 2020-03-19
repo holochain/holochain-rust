@@ -41,11 +41,11 @@ pub mod tests {
             state::{NucleusState, NucleusStatus},
         },
         state::test_store,
+        CHANNEL_SIZE,
     };
     use crossbeam_channel::bounded;
     use holochain_core_types::dna::Dna;
     use std::sync::Arc;
-    use crate::CHANNEL_SIZE;
 
     #[test]
     /// test that we can initialize and send/receive result values from a nucleus
@@ -55,8 +55,7 @@ pub mod tests {
         let nucleus = Arc::new(NucleusState::new()); // initialize to bogus value
         let (sender, _receiver) = bounded::<ActionWrapper>(CHANNEL_SIZE);
         let (tx_observer, _observer) = bounded::<Observer>(CHANNEL_SIZE);
-        let context =
-            test_context_with_channels("jimmy", &sender, &tx_observer, None).clone();
+        let context = test_context_with_channels("jimmy", &sender, &tx_observer, None).clone();
         let root_state = test_store(context);
 
         // Reduce Init action

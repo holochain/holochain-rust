@@ -6,7 +6,7 @@ use std::sync::{
     atomic::{AtomicU64, Ordering},
     Arc,
 };
-use tokio::{stream::StreamExt};
+use tokio::stream::StreamExt;
 
 fn should_store(
     agent_loc: Location,

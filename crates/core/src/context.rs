@@ -6,6 +6,7 @@ use crate::{
     persister::Persister,
     signal::{Signal, SignalSender},
     state::StateWrapper,
+    CHANNEL_SIZE,
 };
 use crossbeam_channel::{bounded, Receiver, Sender};
 use futures::{
@@ -46,7 +47,6 @@ use std::{
     thread::sleep,
     time::Duration,
 };
-use crate::CHANNEL_SIZE;
 
 #[cfg(test)]
 use test_utils::mock_signing::mock_conductor_api;

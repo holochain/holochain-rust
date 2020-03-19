@@ -1550,9 +1550,7 @@ fn fetch_entry_data(
             let agent = (&*query_agent).clone();
             let uri = (&*uri).clone();
             async move {
-                sim2h_handle
-                    .send(agent, uri, &wire_message)
-                    .await;
+                sim2h_handle.send(agent, uri, &wire_message).await;
             }
         });
     }

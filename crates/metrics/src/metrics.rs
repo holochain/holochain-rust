@@ -1,10 +1,10 @@
+use crate::CHANNEL_SIZE;
 use chrono::prelude::*;
 use crossbeam_channel::*;
 use holochain_locksmith::RwLock;
 /// Metric suppport for holochain. Provides metric representations to
 /// sample, publish, aggregate, and analyze metric data.
 use std::sync::Arc;
-use crate::CHANNEL_SIZE;
 
 /// Represents a single sample of a numerical metric determined by `name`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

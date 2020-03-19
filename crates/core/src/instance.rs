@@ -12,6 +12,7 @@ use crate::{
     signal::Signal,
     state::{State, StateWrapper},
     workflows::{application, run_holding_workflow},
+    CHANNEL_SIZE,
 };
 #[cfg(test)]
 use crate::{
@@ -36,7 +37,6 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
-use crate::CHANNEL_SIZE;
 
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 pub const RETRY_VALIDATION_DURATION_MIN: Duration = Duration::from_millis(500);

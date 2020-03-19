@@ -304,7 +304,12 @@ pub fn spawn_zome_function(context: Arc<Context>, zome_call: ZomeFnCall) {
                 context,
                 "actions/call_zome_fn: sending ReturnZomeFunctionResult action."
             );
-            context.action_channel().send(ActionWrapper::new(Action::ReturnZomeFunctionResult(response))).ok();
+            context
+                .action_channel()
+                .send(ActionWrapper::new(Action::ReturnZomeFunctionResult(
+                    response,
+                )))
+                .ok();
             log_debug!(
                 context,
                 "actions/call_zome_fn: sent ReturnZomeFunctionResult action."

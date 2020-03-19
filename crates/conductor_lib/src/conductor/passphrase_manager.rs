@@ -11,11 +11,11 @@ use std::{
     time::{Duration, Instant},
 };
 
+use crate::CHANNEL_SIZE;
 #[cfg(unix)]
 use std::io::{BufRead, BufReader};
 #[cfg(unix)]
 use std::os::unix::net::{UnixListener, UnixStream};
-use crate::CHANNEL_SIZE;
 
 /// We are caching the passphrase for 10 minutes.
 const PASSPHRASE_CACHE_DURATION_SECS: u64 = 600;

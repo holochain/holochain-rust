@@ -506,7 +506,8 @@ impl ConnectionMgrHandle {
     /// disconnect and forget about a managed websocket connection
     pub async fn list_connections(&self) -> Vec<Lib3hUri> {
         let (s, r) = tokio::sync::oneshot::channel();
-        if let Err(e) = self.send_cmd.send(ConMgrCommand::ListConnections(s)) {
+        let mut send_cmd = self.send_cmd.clone();
+        if let Err(e) = send_cmd.send(ConMgrCommand::ListConnections(s)).await {
             error!("failed to send on channel - shutting down? {:?}", e);
             return vec![];
         }

@@ -242,6 +242,7 @@ impl Context {
         if self.redux_wants_write.load(Relaxed) {
             None
         } else {
+            tracing::debug!("wants state");
             self.state
                 .as_ref()
                 .and_then(|s| s.try_read())

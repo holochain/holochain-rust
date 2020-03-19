@@ -1045,13 +1045,17 @@ impl StoreHandle {
     pub async fn check_disconnected(&self) -> Vec<Lib3hUri> {
         let (sender, receiver) = tokio::sync::oneshot::channel();
         let (sender_c, receiver_c) = tokio::sync::oneshot::channel();
-        if let Err(_) = self.send_mut.send(StoreProto::Mutate(
-            AolEntry::CheckDisconnected {
-                aol_idx: self.con_incr.inc(),
-                response: sender,
-            },
-            sender_c,
-        )) {
+        let mut send_mut = self.send_mut.clone();
+        if let Err(_) = send_mut
+            .send(StoreProto::Mutate(
+                AolEntry::CheckDisconnected {
+                    aol_idx: self.con_incr.inc(),
+                    response: sender,
+                },
+                sender_c,
+            ))
+            .await
+        {
             error!("failed to send im store message - shutting down?");
             // we're probably shutting down, prevent panic!s
             // note this future will never resolve - because it cannot

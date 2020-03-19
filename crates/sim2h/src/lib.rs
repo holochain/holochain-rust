@@ -1446,7 +1446,7 @@ impl Sim2h {
                 loop {
                     tokio::time::delay_for(std::time::Duration::from_millis(500)).await;
                     let disconnect_uri = sim2h_handle.state().check_disconnected().await;
-                    sim2h_handle.disconnect(disconnect_uri);
+                    sim2h_handle.disconnect(disconnect_uri).await;
                 }
             });
         }

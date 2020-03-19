@@ -162,6 +162,30 @@ type TungsteniteSrvHandshakeResult<S> = std::result::Result<
     >,
 >;
 
+fn priv_write_wss_frame<S: InStreamStd>(
+    wss: &mut tungstenite::WebSocket<StdStreamAdapter<S>>,
+    frame: WsFrame,
+) -> Result<()> {
+    let res = wss.write_message(frame.into());
+    match res {
+        Ok(_) => Ok(()),
+        // ignore would-block errors on write
+        // tungstenite queues them in pending, they'll get sent
+        Err(tungstenite::error::Error::Io(e)) if e.would_block() => Ok(()),
+        Err(tungstenite::error::Error::Io(_)) => {
+            if let Err(tungstenite::error::Error::Io(e)) = res {
+                Err(e)
+            } else {
+                unreachable!();
+            }
+        }
+        Err(e) => Err(Error::new(
+            ErrorKind::Other,
+            format!("tungstenite error: {:?}", e),
+        )),
+    }
+}
+
 impl<Sub: InStreamStd> InStreamWss<Sub> {
     pub fn connect(url: &Url2, config: WssConnectConfig) -> Result<Self> {
         InStreamWss::raw_connect(url, config)
@@ -233,13 +257,13 @@ impl<Sub: InStreamStd> InStreamWss<Sub> {
             return Ok(());
         }
 
-        if let WssState::Ready(_) = self.state.as_mut().unwrap() {
+        if let WssState::Ready(wss) = self.state.as_mut().unwrap() {
             if let Some(pong_ms) = self.disconnect_on_slow_pong_ms {
                 // send out pings twice as frequently as we expect pongs
                 let ping_ms = pong_ms / 2;
                 if self.last_ping.elapsed().as_millis() as u64 > ping_ms {
-                    self.write_buf
-                        .push_back(WsFrame::Ping(Vec::with_capacity(0)));
+                    // skip our send queue
+                    priv_write_wss_frame(wss, WsFrame::Ping(Vec::with_capacity(0)))?;
                     self.last_ping = std::time::Instant::now();
                 }
             }
@@ -266,28 +290,7 @@ impl<Sub: InStreamStd> InStreamWss<Sub> {
                 None => return Err(ErrorKind::NotConnected.into()),
                 Some(state) => {
                     if let WssState::Ready(wss) = state {
-                        let res = wss.write_message(self.write_buf.pop_front().unwrap().into());
-                        match res {
-                            Ok(_) => (),
-                            // ignore would-block errors on write
-                            // tungstenite queues them in pending, they'll get sent
-                            Err(tungstenite::error::Error::Io(e)) if e.would_block() => {
-                                return Ok(())
-                            }
-                            Err(tungstenite::error::Error::Io(_)) => {
-                                if let Err(tungstenite::error::Error::Io(e)) = res {
-                                    return Err(e);
-                                } else {
-                                    unreachable!();
-                                }
-                            }
-                            Err(e) => {
-                                return Err(Error::new(
-                                    ErrorKind::Other,
-                                    format!("tungstenite error: {:?}", e),
-                                ))
-                            }
-                        }
+                        priv_write_wss_frame(wss, self.write_buf.pop_front().unwrap())?;
                     } else {
                         return Ok(());
                     }
@@ -343,12 +346,20 @@ impl<Sub: InStreamStd> InStream<&mut WsFrame, WsFrame> for InStreamWss<Sub> {
         match &mut self.state {
             None => Err(ErrorKind::NotConnected.into()),
             Some(state) => match state {
-                WssState::Ready(wss) => {
+                WssState::Ready(ref mut wss) => {
                     let r = wss.read_message();
                     log::trace!("read result from {}: {:?}", self.remote_url, r,);
                     match r {
                         Ok(msg) => {
                             data.assume(msg);
+
+                            // our custom message handling breaks tungstenite's
+                            // automatic pong responding - we need to inject
+                            // it manually - skip our send queue
+                            if let WsFrame::Ping(_) = &data {
+                                priv_write_wss_frame(wss, WsFrame::Pong(Vec::with_capacity(0)))?;
+                            }
+
                             // this is called last_pong - but really if
                             // we're receiving any messages, we know the
                             // connection is still open
@@ -581,5 +592,73 @@ mod tests {
         cli.flush().unwrap();
 
         server_thread.join().unwrap();
+    }
+
+    #[test]
+    fn no_wss_timout_on_active_receive() {
+        let mut url = in_stream_mem::random_url("test");
+        url.set_scheme(SCHEME).unwrap();
+        let config = MemBindConfig::default();
+        let config = TlsBindConfig::new(config).fake_certificate();
+        let config = WssBindConfig::new(config).disconnect_on_slow_pong_ms(Some(10));
+        let mut listener: InStreamListenerWss<InStreamListenerTls<InStreamListenerMem>> =
+            InStreamListenerWss::bind(&url, config).unwrap();
+        let binding = listener.binding();
+        println!("got binding: {}", binding);
+        let server_thread = std::thread::spawn(move || {
+            let mut srv = loop {
+                match listener.accept() {
+                    Ok(srv) => break srv,
+                    Err(e) if e.would_block() => std::thread::yield_now(),
+                    Err(e) => panic!("{:?}", e),
+                }
+            };
+
+            let mut frame = WsFrame::default();
+            loop {
+                match srv.read(&mut frame) {
+                    Ok(_) => (),
+                    Err(e) if e.would_block() => {
+                        std::thread::yield_now();
+                    }
+                    Err(e) => {
+                        assert_eq!(
+                            "Custom { kind: Other, error: \"tungstenite error: Protocol(\\\"Connection reset without closing handshake\\\")\" }",
+                            &format!("{:?}", e),
+                        );
+                        break;
+                    }
+                }
+            }
+        });
+
+        let mut cli: InStreamWss<InStreamTls<InStreamMem>> = InStreamWss::connect(
+            &binding,
+            WssConnectConfig::new(TlsConnectConfig::new(MemConnectConfig::default())),
+        )
+        .unwrap();
+
+        cli.write("hello from client".into()).unwrap();
+        cli.flush().unwrap();
+
+        let client_thread = std::thread::spawn(move || {
+            let mut frame = WsFrame::default();
+            let start = std::time::Instant::now();
+            loop {
+                match cli.read(&mut frame) {
+                    Ok(_) => (),
+                    Err(e) if e.would_block() => {
+                        std::thread::sleep(std::time::Duration::from_millis(2));
+                    }
+                    Err(e) => panic!("{:?}", e),
+                }
+                if start.elapsed().as_millis() > 30 {
+                    break;
+                }
+            }
+        });
+
+        server_thread.join().unwrap();
+        client_thread.join().unwrap();
     }
 }

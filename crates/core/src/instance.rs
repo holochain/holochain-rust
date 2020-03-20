@@ -39,8 +39,10 @@ use std::{
 };
 
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
-pub const RETRY_VALIDATION_DURATION_MIN: Duration = Duration::from_millis(500);
+/*pub const RETRY_VALIDATION_DURATION_MIN: Duration = Duration::from_millis(500);
 pub const RETRY_VALIDATION_DURATION_MAX: Duration = Duration::from_secs(60 * 60);
+ */
+pub const RETRY_VALIDATION_TIMEOUT_MS: Duration = Duration::from_millis(60000);
 
 /// Object representing a Holochain instance, i.e. a running holochain (DNA + DHT + source-chain)
 /// Holds the Event loop and processes it with the redux pattern.
@@ -327,7 +329,7 @@ impl Instance {
                             .expect("Couldn't get state in run_pending_validations")
                             .dht();
                         let maybe_holding_workflow = dht_store.next_queued_holding_workflow();
-                        if let Some((pending, maybe_delay)) = maybe_holding_workflow {
+                        if let Some((pending, _maybe_delay)) = maybe_holding_workflow {
                             log_debug!(context, "Found queued validation: {:?}", pending);
                             // NB: If for whatever reason we pop_next_holding_workflow anywhere else other than here,
                             // we can run into a race condition.
@@ -344,19 +346,25 @@ impl Instance {
                                     // If we couldn't run the validation due to unresolved dependencies,
                                     // we have to re-add this entry at the end of the queue:
                                     Err(HolochainError::ValidationPending) => {
+                                        // THIS DELAY IS BROKEN BECAUSE VALIDATION ENTAILS SENDING
+                                        // A DIRECT MESSAGE WHICH TIMES OUT ON THE DEFAULT 60 SECOND
+                                        // TIMEOUT, THUS THESE ARE CONFLICTING TIMEOUTS
                                         // And with a delay so we are not trying to re-validate many times per second.
-                                        let mut delay = maybe_delay
-                                            .map(|old_delay| {
-                                                // Exponential back-off:
-                                                // If this was delayed before we double the delay.
-                                                old_delay * 2
-                                            })
-                                            .unwrap_or(RETRY_VALIDATION_DURATION_MIN);
+                                        /*
+                                            let mut delay = maybe_delay
+                                                .map(|old_delay| {
+                                                    // Exponential back-off:
+                                                    // If this was delayed before we double the delay.
+                                                    old_delay * 2
+                                                })
+                                                .unwrap_or(RETRY_VALIDATION_DURATION_MIN);
 
-                                        // Cap delay with max duration
-                                        if delay > RETRY_VALIDATION_DURATION_MAX {
-                                            delay = RETRY_VALIDATION_DURATION_MAX
-                                        }
+                                            // Cap delay with max duration
+                                            if delay > RETRY_VALIDATION_DURATION_MAX {
+                                                delay = RETRY_VALIDATION_DURATION_MAX
+                                        }*/
+
+                                        let delay = RETRY_VALIDATION_TIMEOUT_MS;
 
                                         queue_holding_workflow(
                                             Arc::new(pending.same()),

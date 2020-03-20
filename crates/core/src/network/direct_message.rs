@@ -1,4 +1,4 @@
-use holochain_persistence_api::cas::content::Address;
+use crate::action::ValidationKey;
 
 use holochain_json_api::{error::JsonError, json::JsonString};
 
@@ -28,7 +28,7 @@ pub enum DirectMessage {
 
     /// This message is used to ask another node (which needs to
     /// be the author) for the validation package of a given entry.
-    RequestValidationPackage(Address),
+    RequestValidationPackage(ValidationKey),
 
     /// With this message an author is responding to a
     /// RequestValidationPackage message.

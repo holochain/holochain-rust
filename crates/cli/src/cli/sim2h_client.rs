@@ -69,7 +69,7 @@ pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), St
                             println!("Got response => {:?}", msg);
                             break;
                         }
-                        WireMessage::DebugResponse(debug_response_map) => {
+                        WireMessage::DebugResponse((debug_response_map, extra_debug_data)) => {
                             println!("Got DebugResponse for {} spaces.", debug_response_map.len());
                             for (space, json) in debug_response_map {
                                 let filename = format!("{}.json", space);
@@ -85,6 +85,7 @@ pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), St
                                     .write_all(json.into_bytes().as_slice())
                                     .expect("Could not write to file!");
                             }
+                            eprintln!("Extra Debug Data:\n{}", extra_debug_data);
                             break;
                         }
                         _ => println!("{:?}", msg),

@@ -1358,6 +1358,7 @@ dependencies = [
  "lib3h_protocol 0.0.42 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib3h_sodium 0.0.42 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "nanoid 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "newrelic 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-derive 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-traits 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",

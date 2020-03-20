@@ -7,7 +7,6 @@ use holochain_core_types::{error::HolochainError, validation::ValidationPackage}
 use holochain_net::p2p_network::P2pNetwork;
 use holochain_persistence_api::cas::content::Address;
 use im::HashMap;
-use snowflake;
 use std::time::{Duration, SystemTime};
 
 type Actions = HashMap<ActionWrapper, Response>;
@@ -48,7 +47,7 @@ pub struct NetworkState {
 
     pub custom_direct_message_replys: HashMap<String, Result<String, HolochainError>>,
 
-    id: snowflake::ProcessUniqueId,
+    id: String,
 }
 
 impl PartialEq for NetworkState {
@@ -73,7 +72,7 @@ impl NetworkState {
             direct_message_timeouts: HashMap::new(),
             custom_direct_message_replys: HashMap::new(),
 
-            id: snowflake::ProcessUniqueId::new(),
+            id: nanoid::simple(),
         }
     }
 

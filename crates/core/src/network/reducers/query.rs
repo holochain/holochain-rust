@@ -111,7 +111,7 @@ mod tests {
         let entry = test_entry();
         let key = GetEntryKey {
             address: entry.address(),
-            id: snowflake::ProcessUniqueId::new().to_string(),
+            id: nanoid::simple(),
         };
         let action = Action::Query((QueryKey::Entry(key.clone()), QueryPayload::Entry, None));
         let action_wrapper = ActionWrapper::new(action);
@@ -150,7 +150,7 @@ mod tests {
         let entry = test_entry();
         let key = GetEntryKey {
             address: entry.address(),
-            id: snowflake::ProcessUniqueId::new().to_string(),
+            id: nanoid::simple(),
         };
         let action_wrapper = ActionWrapper::new(Action::Query((
             QueryKey::Entry(key.clone()),
@@ -295,7 +295,7 @@ mod tests {
             base_address: entry.address(),
             link_type: Some(link_type),
             tag: Some("link-tag".to_string()),
-            id: snowflake::ProcessUniqueId::new().to_string(),
+            id: nanoid::simple(),
         };
         let config = GetLinksQueryConfiguration::default();
         let get_links_network_query = GetLinksNetworkQuery::Links(config);
@@ -339,7 +339,7 @@ mod tests {
         let key = GetLinksKey {
             base_address: entry.address(),
             link_type: link_type.clone(),
-            id: snowflake::ProcessUniqueId::new().to_string(),
+            id: nanoid::simple(),
         };
         let action_wrapper = ActionWrapper::new(Action::QueryLinks(key.clone()));
 
@@ -378,7 +378,7 @@ mod tests {
         let key = GetLinksKey {
             base_address: entry.address(),
             link_type: link_type.clone(),
-            id: snowflake::ProcessUniqueId::new().to_string(),
+            id: nanoid::simple(),
         };
         let action_wrapper = ActionWrapper::new(Action::QueryLinks(key.clone()));
 

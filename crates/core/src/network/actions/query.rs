@@ -12,8 +12,6 @@ use holochain_core_types::{crud_status::CrudStatus, error::HcResult, time::Timeo
 
 use std::{pin::Pin, sync::Arc};
 
-use snowflake::ProcessUniqueId;
-
 use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, LinksStatusRequestKind};
 use std::time::SystemTime;
 
@@ -39,7 +37,7 @@ pub async fn query(
         QueryMethod::Entry(address) => {
             let key = GetEntryKey {
                 address,
-                id: snowflake::ProcessUniqueId::new().to_string(),
+                id: nanoid::simple(),
             };
             (QueryKey::Entry(key), QueryPayload::Entry)
         }
@@ -48,7 +46,7 @@ pub async fn query(
                 base_address: link_args.entry_address.clone(),
                 link_type: link_args.link_type.clone(),
                 tag: link_args.tag.clone(),
-                id: ProcessUniqueId::new().to_string(),
+                id: nanoid::simple(),
             };
             tracing::debug!(%key.id);
             let crud_status = match link_args.options.status_request {

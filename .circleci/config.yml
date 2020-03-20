@@ -271,6 +271,7 @@ workflows:
         only:
          - develop
          - final-exam
+         - key-fixes-for-validation
    - docker-build-trycp-server:
       requires:
        - docker-build-minimal
@@ -284,6 +285,7 @@ workflows:
         only:
          - develop
          - final-exam
+         - key-fixes-for-validation
    - docker-build-circle-build:
       requires:
        - docker-build-latest

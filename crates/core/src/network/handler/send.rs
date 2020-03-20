@@ -61,14 +61,14 @@ pub fn handle_send_message(message_data: DirectMessageData, context: Arc<Context
             let future = closure();
             context.spawn_task(future);
         }
-        DirectMessage::RequestValidationPackage(address) => {
+        DirectMessage::RequestValidationPackage(key) => {
             context.spawn_task({
                 let context = context.clone();
                 async move || {
                     respond_validation_package_request(
                         message_data.from_agent_id.into(),
                         message_data.request_id,
-                        address,
+                        key.address,
                         context,
                         vec![],
                     );

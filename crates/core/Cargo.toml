@@ -57,6 +57,7 @@ env_logger = "=0.6.1"
 url = { version = "=2.1.0", features = ["serde"] }
 rand = "=0.7.3"
 threadpool = "=1.7.1"
+tracing = "=0.1.13"
 im = { version = "=14.0.0", features = ["serde"] }
 itertools = "0.8.2"
 newrelic = { version = "=0.2.2", optional = true }

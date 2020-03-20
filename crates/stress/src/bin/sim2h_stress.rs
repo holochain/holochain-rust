@@ -535,14 +535,16 @@ impl StressJob for Job {
     fn tick(&mut self, logger: &mut StressJobMetricLogger) -> StressJobTickResult {
         let mut frame = WsFrame::default();
         match self.connection.read(&mut frame) {
-            Ok(_) => {
-                if let WsFrame::Binary(b) = frame {
+            Ok(_) => match frame {
+                WsFrame::Binary(b) => {
                     let msg: WireMessage = serde_json::from_slice(&b).unwrap();
                     self.priv_handle_msg(logger, msg);
-                } else {
+                }
+                WsFrame::Ping(_) => (),
+                frame @ _ => {
                     panic!("unexpected {:?}", frame);
                 }
-            }
+            },
             Err(e) if e.would_block() => (),
             Err(e) => panic!("{:?}", e),
         }

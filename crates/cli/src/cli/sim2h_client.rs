@@ -76,7 +76,7 @@ pub fn sim2h_client(
                             eprintln!("Got response => {:?}", msg);
                             break;
                         }
-                        WireMessage::DebugResponse(debug_response_map) => {
+                        WireMessage::DebugResponse((debug_response_map, extra_debug_data)) => {
                             if to_files {
                                 eprintln!(
                                     "Got DebugResponse for {} spaces.",
@@ -103,6 +103,7 @@ pub fn sim2h_client(
                                 }
                                 println!("}}");
                             }
+                            eprintln!("Extra Debug Data:\n{}", extra_debug_data);
                             break;
                         }
                         _ => eprintln!("{:?}", msg),

@@ -85,7 +85,7 @@ pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), St
                                     .write_all(json.into_bytes().as_slice())
                                     .expect("Could not write to file!");
                             }
-                            println!("Extra Debug Data:\n{}", extra_debug_data);
+                            eprintln!("Extra Debug Data:\n{}", extra_debug_data);
                             break;
                         }
                         _ => println!("{:?}", msg),

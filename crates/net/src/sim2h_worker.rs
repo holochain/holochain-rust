@@ -638,22 +638,26 @@ impl NetWorker for Sim2hWorker {
                 Ok(_) => {
                     did_something = true;
                     let frame = self.ws_frame.take().unwrap();
-                    if let WsFrame::Binary(payload) = frame {
-                        let payload: Opaque = payload.into();
-                        match WireMessage::try_from(&payload) {
-                            Ok(wire_message) =>
-                                if let Err(error) = self.handle_server_message(wire_message) {
-                                    error!("Error handling server message in Sim2hWorker: {:?}", error);
-                                },
-                            Err(error) =>
-                                error!(
-                                    "Could not deserialize received payload into WireMessage!\nError: {:?}\nPayload was: {:?}",
-                                    error,
-                                    payload
-                                )
+                    match frame {
+                        WsFrame::Binary(payload) => {
+                            let payload: Opaque = payload.into();
+                            match WireMessage::try_from(&payload) {
+                                Ok(wire_message) =>
+                                    if let Err(error) = self.handle_server_message(wire_message) {
+                                        error!("Error handling server message in Sim2hWorker: {:?}", error);
+                                    },
+                                Err(error) =>
+                                    error!(
+                                        "Could not deserialize received payload into WireMessage!\nError: {:?}\nPayload was: {:?}",
+                                        error,
+                                        payload
+                                    )
+                            }
                         }
-                    } else {
-                        trace!("unhandled websocket message type: {:?}", frame);
+                        WsFrame::Ping(_) => (),
+                        frame @ _ => {
+                            trace!("unhandled websocket message type: {:?}", frame);
+                        }
                     }
                 }
                 Err(e) if e.would_block() => (),

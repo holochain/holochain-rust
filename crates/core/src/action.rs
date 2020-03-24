@@ -181,19 +181,19 @@ pub enum Action {
 
     /// Makes the network module DM the source of the given entry
     /// and prepare for receiveing an answer
-    GetValidationPackage(ChainHeader),
+    GetValidationPackage((ValidationKey, ChainHeader)),
 
     /// Makes the get validation request with the given ID timeout by adding an
     /// Err(HolochainError::Timeout) to NetworkState::get_validation_package_results.
-    GetValidationPackageTimeout(Address),
+    GetValidationPackageTimeout(ValidationKey),
 
     /// Updates the state to hold the response that we got for
     /// our previous request for a validation package.
     /// Triggered from the network handler when we get the response.
-    HandleGetValidationPackage((Address, Option<ValidationPackage>)),
+    HandleGetValidationPackage((ValidationKey, Option<ValidationPackage>)),
 
     /// Clean up the validation package result so the state doesn't grow indefinitely.
-    ClearValidationPackageResult(Address),
+    ClearValidationPackageResult(ValidationKey),
 
     /// Updates the state to hold the response that we got for
     /// our previous custom direct message.
@@ -269,6 +269,15 @@ pub struct GetLinksKey {
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Serialize)]
 pub struct GetEntryKey {
     /// The address of the entry to get
+    pub address: Address,
+
+    /// A unique ID that is used to pair the eventual result to this request
+    pub id: String,
+}
+
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Serialize, Deserialize)]
+pub struct ValidationKey {
+    /// The address of the entry to get the package for
     pub address: Address,
 
     /// A unique ID that is used to pair the eventual result to this request

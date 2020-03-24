@@ -147,6 +147,7 @@ impl Job {
 
     fn priv_handle_msg(&mut self, msg: WireMessage) {
         match msg {
+            WireMessage::Ack(_) => (),
             WireMessage::Pong => {
                 self.last_pong = std::time::Instant::now();
             }
@@ -166,14 +167,16 @@ impl Job {
     fn tick(&mut self) {
         let mut frame = WsFrame::default();
         match self.connection.read(&mut frame) {
-            Ok(_) => {
-                if let WsFrame::Binary(b) = frame {
+            Ok(_) => match frame {
+                WsFrame::Binary(b) => {
                     let msg: WireMessage = serde_json::from_slice(&b).unwrap();
                     self.priv_handle_msg(msg);
-                } else {
+                }
+                WsFrame::Ping(_) => (),
+                frame @ _ => {
                     panic!("unexpected {:?}", frame);
                 }
-            }
+            },
             Err(e) if e.would_block() => (),
             Err(e) => panic!(e),
         }

@@ -28,6 +28,7 @@ enum ConMgrCommand {
     Connect(Lib3hUri, TcpWss),
     SendData(Lib3hUri, WsFrame),
     Disconnect(Lib3hUri),
+    ListConnections(tokio::sync::oneshot::Sender<Vec<Lib3hUri>>),
 }
 
 type EvtSend = tokio::sync::mpsc::Sender<ConMgrEvent>;
@@ -88,6 +89,7 @@ fn process_control_cmds(cmd_info: &mut CmdInfo) -> Loop {
                         return Loop::Break;
                     }
                     ConMgrCommand::Connect(_, _) => unreachable!(),
+                    ConMgrCommand::ListConnections(_) => unreachable!(),
                 }
             }
             Err(tokio::sync::mpsc::error::TryRecvError::Empty) => break,
@@ -144,6 +146,8 @@ async fn process_websocket_frames(cmd_info: &mut CmdInfo) -> Loop {
     return Loop::Continue;
 }
 
+#[allow(clippy::complexity)]
+#[instrument(skip(uri, wss, evt_send, cmd_recv))]
 /// internal websocket polling loop
 async fn wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend, cmd_recv: CmdRecv) {
     // TODO - this should be done with tokio tcp streams && selecting
@@ -160,13 +164,11 @@ async fn wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend, cmd_recv: CmdRe
         frame: None,
     };
     'wss_task_loop: loop {
-        let span = debug_span!("wss_task");
-        let _g = span.enter();
         cmd_info.did_work = false;
         cmd_info.cmd_count = 0;
         cmd_info.read_count = 0;
         cmd_info.frame = None;
-
+        trace!("start");
         let loop_start = std::time::Instant::now();
 
         // first, process a batch of control commands
@@ -190,8 +192,10 @@ async fn wss_task(uri: Lib3hUri, wss: TcpWss, evt_send: EvtSend, cmd_recv: CmdRe
         // if we did work we might have more work to do,
         // if not, let this task get parked for a time
         if cmd_info.did_work {
+            trace!("did work");
             tokio::task::yield_now().await;
         } else {
+            trace!("did no work");
             tokio::time::delay_for(std::time::Duration::from_millis(5)).await;
         }
     }
@@ -328,6 +332,9 @@ impl ConnectionMgr {
                         }
                         ConMgrCommand::Connect(uri, wss) => {
                             self.handle_connect_data(uri, wss).await;
+                        }
+                        ConMgrCommand::ListConnections(respond) => {
+                            let _ = respond.send(self.wss_map.keys().cloned().collect());
                         }
                     }
                 }
@@ -492,6 +499,23 @@ impl ConnectionMgrHandle {
         let mut send_cmd = self.send_cmd.clone();
         if let Err(e) = send_cmd.send(ConMgrCommand::Disconnect(uri)).await {
             error!("failed to send on channel - shutting down? {:?}", e);
+        }
+    }
+
+    #[tracing::instrument(skip(self))]
+    /// disconnect and forget about a managed websocket connection
+    pub async fn list_connections(&self) -> Vec<Lib3hUri> {
+        let (s, r) = tokio::sync::oneshot::channel();
+        if let Err(e) = self.send_cmd.send(ConMgrCommand::ListConnections(s)) {
+            error!("failed to send on channel - shutting down? {:?}", e);
+            return vec![];
+        }
+        match r.await {
+            Ok(v) => v,
+            Err(e) => {
+                tracing::error!("{:?}", e);
+                vec![]
+            }
         }
     }
 }

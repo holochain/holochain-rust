@@ -155,6 +155,9 @@ enum Cli {
         #[structopt(long, short = "x")]
         /// Property (in the form 'name=value') that gets set/overwritten before calculating hash
         property: Option<Vec<String>>,
+        #[structopt(long, short)]
+        /// UUID that gets set/overwritten before calculating hash
+        uuid: Option<String>,
     },
     Sim2hClient {
         #[structopt(long, short = "u")]
@@ -163,6 +166,10 @@ enum Cli {
         #[structopt(long, short = "m", default_value = "ping")]
         /// message to send to the sim2h server ('ping' or 'status')
         message: String,
+        #[structopt(long, short = "f")]
+        /// if set, write the debug log for each Space to a separate file
+        /// whose name is the space hash
+        files: bool,
     },
 }
 arg_enum! {
@@ -319,19 +326,25 @@ fn run() -> HolochainResult<()> {
                     .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
             }
         },
-        Cli::HashDna { path, property } => {
+        Cli::HashDna {
+            path,
+            property,
+            uuid,
+        } => {
             let dna_path = path
                 .unwrap_or(util::std_package_path(&project_path).map_err(HolochainError::Default)?);
 
-            let dna_hash = cli::hash_dna(&dna_path, property)
+            let dna_hash = cli::hash_dna(&dna_path, property, uuid)
                 .map_err(|e| HolochainError::Default(format_err!("{}", e)))?;
             println!("DNA Hash: {}", dna_hash);
         }
 
-        Cli::Sim2hClient { url, message } => {
-            println!("url: {}", &url);
-            println!("message: {}", &message);
-            cli::sim2h_client(url, message)?;
+        Cli::Sim2hClient {
+            url,
+            message,
+            files,
+        } => {
+            cli::sim2h_client(url, message, files)?;
         }
     }
 

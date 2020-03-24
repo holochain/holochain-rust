@@ -1,5 +1,5 @@
 use crate::{
-    action::{ActionWrapper, QueryKey},
+    action::{ActionWrapper, QueryKey, ValidationKey},
     network::{actions::Response, direct_message::DirectMessage, query::NetworkQueryResult},
 };
 use boolinator::*;
@@ -37,8 +37,8 @@ pub struct NetworkState {
 
     /// Here we store the results of get validation package processes.
     /// None means that we are still waiting for a result from the network.
-    pub get_validation_package_results: HashMap<Address, GetValidationPackageResult>,
-    pub get_validation_package_timeouts: HashMap<Address, (SystemTime, Duration)>,
+    pub get_validation_package_results: HashMap<ValidationKey, GetValidationPackageResult>,
+    pub get_validation_package_timeouts: HashMap<ValidationKey, (SystemTime, Duration)>,
 
     /// This stores every open (= waiting for response) node-to-node messages.
     /// Entries get removed when we receive an answer through Action::ResolveDirectConnection.

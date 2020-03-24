@@ -1,11 +1,9 @@
 use crate::{
-    action::{Action, ActionWrapper},
+    action::{Action, ActionWrapper, ValidationKey},
     context::Context,
     instance::dispatch_action,
 };
 use futures::{future::Future, task::Poll};
-
-use holochain_persistence_api::cas::content::Address;
 
 use holochain_core_types::{
     chain_header::ChainHeader, error::HcResult, validation::ValidationPackage,
@@ -25,11 +23,15 @@ pub async fn get_validation_package(
     context: &Arc<Context>,
 ) -> HcResult<Option<ValidationPackage>> {
     let entry_address = header.entry_address().clone();
-    let action_wrapper = ActionWrapper::new(Action::GetValidationPackage(header));
+    let key = ValidationKey {
+        address: entry_address,
+        id: snowflake::ProcessUniqueId::new().to_string(),
+    };
+    let action_wrapper = ActionWrapper::new(Action::GetValidationPackage((key.clone(), header)));
     dispatch_action(context.action_channel(), action_wrapper.clone());
     GetValidationPackageFuture {
         context: context.clone(),
-        address: entry_address,
+        key,
     }
     .await
 }
@@ -39,7 +41,7 @@ pub async fn get_validation_package(
 /// is not the source.
 pub struct GetValidationPackageFuture {
     context: Arc<Context>,
-    address: Address,
+    key: ValidationKey,
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
@@ -66,13 +68,11 @@ impl Future for GetValidationPackageFuture {
                 return Poll::Ready(Err(error));
             }
 
-            match state.get_validation_package_results.get(&self.address) {
+            match state.get_validation_package_results.get(&self.key) {
                 Some(Some(result)) => {
                     dispatch_action(
                         self.context.action_channel(),
-                        ActionWrapper::new(Action::ClearValidationPackageResult(
-                            self.address.clone(),
-                        )),
+                        ActionWrapper::new(Action::ClearValidationPackageResult(self.key.clone())),
                     );
                     Poll::Ready(result.clone())
                 }

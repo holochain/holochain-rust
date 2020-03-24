@@ -575,7 +575,7 @@ impl Sim2hWorker {
                 if self.outgoing_ack
                     .remove(&hash)
                     .map(|buffered_message| {
-                        tracing::debug!(got_ack = true, ?buffered_message.wire_message, ?buffered_message.last_sent);
+                        debug!("got_ack {:?}, {:?}", buffered_message.wire_message, buffered_message.last_sent);
                         buffered_message
                     })
                     .is_some()

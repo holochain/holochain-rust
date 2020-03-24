@@ -28,8 +28,11 @@ use sim2h::{
     crypto::{Provenance, SignedWireMessage},
     generate_ack_receipt_hash, TcpWss, WireError, WireMessage, WIRE_VERSION,
 };
-use std::{convert::TryFrom, time::Instant};
-use std::collections::{HashMap, VecDeque};
+use std::{
+    collections::{HashMap, VecDeque},
+    convert::TryFrom,
+    time::Instant,
+};
 
 use url::Url;
 use url2::prelude::*;
@@ -232,7 +235,7 @@ impl Sim2hWorker {
     fn check_resend(&mut self) {
         for msg in self.outgoing_ack.values_mut() {
             if let Some(instant_last_sent) = msg.last_sent {
-                if instant_last_sent.elapsed() < Duration::from_millis(RESEND_WIRE_MESSAGE_MS) {
+                if instant_last_sent.elapsed() >= Duration::from_millis(RESEND_WIRE_MESSAGE_MS) {
                     msg.last_sent = None;
                     self.outgoing_message_buffer.push_back(msg.clone());
                 }

@@ -12,6 +12,7 @@ use crate::{
     signal::Signal,
     state::{State, StateWrapper},
     workflows::{application, run_holding_workflow},
+    CHANNEL_SIZE,
 };
 #[cfg(test)]
 use crate::{
@@ -36,7 +37,6 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
-use crate::CHANNEL_SIZE;
 
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 /*pub const RETRY_VALIDATION_DURATION_MIN: Duration = Duration::from_millis(500);
@@ -67,7 +67,6 @@ pub struct Observer {
 pub static DISPATCH_WITHOUT_CHANNELS: &str = "dispatch called without channels open";
 
 #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Instance {
     /// This is initializing and starting the redux action loop and adding channels to dispatch
     /// actions and observers to the context
@@ -164,7 +163,7 @@ impl Instance {
     fn initialize_channels(&mut self) -> (ActionReceiver, Receiver<Observer>) {
         let (tx_action, rx_action) = bounded::<ActionWrapper>(CHANNEL_SIZE);
         let (tx_observer, rx_observer) = bounded::<Observer>(CHANNEL_SIZE);
-        self.action_channel = Some(tx_action.into());
+        self.action_channel = Some(tx_action);
         self.observer_channel = Some(tx_observer);
 
         (rx_action, rx_observer)

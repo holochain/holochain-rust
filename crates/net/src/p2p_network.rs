@@ -17,12 +17,11 @@ use lib3h_protocol::{
     protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol, Address,
 };
 
-use crate::sim2h_worker::Sim2hWorker;
+use crate::{sim2h_worker::Sim2hWorker, CHANNEL_SIZE};
 use crossbeam_channel;
 use holochain_conductor_lib_api::conductor_api::ConductorApi;
 use holochain_json_api::json::JsonString;
 use std::{convert::TryFrom, time::Duration};
-use crate::CHANNEL_SIZE;
 
 pub type Lib3hClientProtocolWrapped = ht::EncodedSpanWrap<Lib3hClientProtocol>;
 pub type Lib3hServerProtocolWrapped = ht::EncodedSpanWrap<Lib3hServerProtocol>;

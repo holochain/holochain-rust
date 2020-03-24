@@ -46,9 +46,9 @@ pub mod tests {
             state::{NucleusState, NucleusStatus},
         },
         state::test_store,
+        CHANNEL_SIZE,
     };
     use crossbeam_channel::bounded;
-    use crate::CHANNEL_SIZE;
     use holochain_core_types::dna::Dna;
     use std::sync::Arc;
 

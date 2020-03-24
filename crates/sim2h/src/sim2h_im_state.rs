@@ -6,7 +6,7 @@ use std::sync::{
     atomic::{AtomicU64, Ordering},
     Arc,
 };
-use tokio::{stream::StreamExt};
+use tokio::stream::StreamExt;
 
 fn should_store(
     agent_loc: Location,
@@ -1048,13 +1048,16 @@ impl StoreHandle {
         let (sender, receiver) = tokio::sync::oneshot::channel();
         let (sender_c, receiver_c) = tokio::sync::oneshot::channel();
         let mut send_mut = self.send_mut.clone();
-        if let Err(_) = send_mut.send(StoreProto::Mutate(
-            AolEntry::CheckDisconnected {
-                aol_idx: self.con_incr.inc(),
-                response: sender,
-            },
-            sender_c,
-        )).await {
+        if let Err(_) = send_mut
+            .send(StoreProto::Mutate(
+                AolEntry::CheckDisconnected {
+                    aol_idx: self.con_incr.inc(),
+                    response: sender,
+                },
+                sender_c,
+            ))
+            .await
+        {
             error!("failed to send im store message - shutting down?");
             // we're probably shutting down, prevent panic!s
             // note this future will never resolve - because it cannot

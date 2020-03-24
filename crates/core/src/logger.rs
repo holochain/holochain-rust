@@ -1,11 +1,11 @@
 //! This logger is the logger that's attached to each Holochain application
 //! which is separate from standard logging via the log crate warn! info! debug! logging that
 //! gets emitted globaly from the conductor.
+use crate::CHANNEL_SIZE;
 use chrono::Local;
 use crossbeam_channel;
 use holochain_locksmith::Mutex;
 use std::sync::Arc;
-use crate::CHANNEL_SIZE;
 
 /// trait that defines the logging functionality that holochain_core requires
 pub trait Logger: Send {

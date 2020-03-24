@@ -274,9 +274,9 @@ impl Sim2hHandle {
     /// send a message to another connected agent
     pub async fn send(&self, agent: AgentId, uri: Lib3hUri, msg: &WireMessage) {
         debug!(">>OUT>> {} to {}", msg.message_type(), uri);
-        MESSAGE_LOGGER
-            .try_lock()
-            .map(|mut ml| ml.log_out(agent, uri.clone(), msg.clone()));
+        if let Some(mut ml) = MESSAGE_LOGGER.try_lock() {
+            ml.log_out(agent, uri.clone(), msg.clone());
+        }
         let payload: Opaque = msg.clone().into();
         self.connection_mgr
             .send_data(uri, payload.as_bytes().into())
@@ -581,11 +581,13 @@ fn spawn_handle_message_debug(
         }
         let connection_list = sim2h_handle.connection_mgr().list_connections().await;
         let extra_data = format!("LIST_CONNECTIONS: {:#?}", connection_list);
-        sim2h_handle.send(
-            signer.clone(),
-            uri.clone(),
-            &WireMessage::DebugResponse((response_map, extra_data)),
-        ).await;
+        sim2h_handle
+            .send(
+                signer.clone(),
+                uri.clone(),
+                &WireMessage::DebugResponse((response_map, extra_data)),
+            )
+            .await;
         sim2h_handle.send_receipt(&receipt, &signer, &uri).await;
     });
 }
@@ -1572,9 +1574,7 @@ fn fetch_entry_data(
             let agent = (&*query_agent).clone();
             let uri = (&*uri).clone();
             async move {
-                sim2h_handle
-                    .send(agent, uri, &wire_message)
-                    .await;
+                sim2h_handle.send(agent, uri, &wire_message).await;
             }
         });
     }

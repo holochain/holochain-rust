@@ -61,12 +61,12 @@ pub mod tests {
             },
             Defn,
         },
+        CHANNEL_SIZE,
     };
     use crossbeam_channel::bounded;
     use holochain_json_api::json::JsonString;
     use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
     use std::sync::Arc;
-    use crate::CHANNEL_SIZE;
 
     pub fn test_signal() -> UserSignal {
         UserSignal::from(test_args())

@@ -1,11 +1,10 @@
-use crate::{action::ActionWrapper, consistency::ConsistencySignal};
+use crate::{action::ActionWrapper, consistency::ConsistencySignal, CHANNEL_SIZE};
 use crossbeam_channel::{bounded, Receiver, Sender};
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
 use serde::{Deserialize, Deserializer};
 use snowflake::ProcessUniqueId;
 use std::thread;
-use crate::CHANNEL_SIZE;
 
 #[derive(Clone, Debug, Serialize, DefaultJson)]
 #[serde(tag = "signal_type")]

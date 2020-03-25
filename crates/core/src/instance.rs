@@ -40,9 +40,7 @@ use std::{
 
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 
-// Min is 61 seconds because the validation package direct message timeout is 60 seconds
-// so we don't want to try and requeue before that timeout has run its course.
-pub const RETRY_VALIDATION_DURATION_MIN: Duration = Duration::from_secs(61);
+pub const RETRY_VALIDATION_DURATION_MIN: Duration = Duration::from_millis(500);
 pub const RETRY_VALIDATION_DURATION_MAX: Duration = Duration::from_secs(60 * 60);
 
 /// Object representing a Holochain instance, i.e. a running holochain (DNA + DHT + source-chain)
@@ -360,7 +358,7 @@ impl Instance {
                                         if delay > RETRY_VALIDATION_DURATION_MAX {
                                             delay = RETRY_VALIDATION_DURATION_MAX
                                         }
-
+                                        log_debug!(c, "re-queuing pending validation for {:?} with a delay of {:?}", pending, delay);
                                         queue_holding_workflow(
                                             Arc::new(pending.same()),
                                             Some(delay),

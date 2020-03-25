@@ -379,7 +379,9 @@ impl Instance {
                                         pending,
                                         e,
                                     ),
-                                    Ok(()) => log_info!(c, "Successfully processed: {:?}", pending),
+                                    Ok(()) => {
+                                        log_debug!(c, "Successfully processed: {:?}", pending)
+                                    }
                                 }
                             };
                             let future = closure();

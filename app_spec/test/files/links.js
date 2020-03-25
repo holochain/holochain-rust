@@ -114,8 +114,8 @@ module.exports = scenario => {
 
     // make sure all our links are live and they are two of them
     console.log("alice posts live : " + JSON.stringify(alice_posts_live));
-    t.equal(3, alice_posts_live.Ok.links.length)
-    t.equal(3, bob_posts_live.Ok.links.length)
+    t.equal(alice_posts_live.Ok.links.length, 3)
+    t.equal(bob_posts_live.Ok.links.length, 3)
 
     const bob_posts_live_2 = await bob.call('app', 'simple', 'get_my_links_with_pagination',
       {
@@ -131,8 +131,8 @@ module.exports = scenario => {
         pagenumber:1
       })
 
-      t.equal(1, bob_posts_live_2.Ok.links.length)
-      t.equal(1, alice_posts_live_2.Ok.links.length)
+      t.equal(bob_posts_live_2.Ok.links.length, 1)
+      t.equal(alice_posts_live_2.Ok.links.length, 1)
       sleep.sleep(5);
       const bob_posts_live_time = await bob.call('app', 'simple', 'get_my_links_with_time_pagination',
       {
@@ -148,8 +148,8 @@ module.exports = scenario => {
         limit:3
       })
 
-      t.equal(0, bob_posts_live_time.Ok.links.length)
-      t.equal(0, alice_posts_live_time.Ok.links.length)
+      t.equal(bob_posts_live_time.Ok.links.length, 0)
+      t.equal(alice_posts_live_time.Ok.links.length, 0)
 
       const bob_posts_time_2 = await bob.call('app', 'simple', 'get_my_links_with_time_pagination',
       {
@@ -165,8 +165,8 @@ module.exports = scenario => {
         limit:3
       })
 
-      t.equal(3, bob_posts_time_2.Ok.links.length)
-      t.equal(3, alice_posts_time_2.Ok.links.length)
+      t.equal(bob_posts_time_2.Ok.links.length, 3)
+      t.equal(alice_posts_time_2.Ok.links.length, 3)
   })
 
   scenario('get_links_crud', async (s, t) => {
@@ -195,12 +195,12 @@ module.exports = scenario => {
       })
 
     // make sure all our links are live and they are two of them
-    t.equal(2, alice_posts_live.Ok.links.length)
-    t.equal('live', alice_posts_live.Ok.links[0].status)
-    t.equal('live', alice_posts_live.Ok.links[1].status)
-    t.equal(2, bob_posts_live.Ok.links.length)
-    t.equal('live', bob_posts_live.Ok.links[0].status)
-    t.equal('live', bob_posts_live.Ok.links[1].status)
+    t.equal(alice_posts_live.Ok.links.length, 2)
+    t.equal(alice_posts_live.Ok.links[0].status, 'live')
+    t.equal(alice_posts_live.Ok.links[1].status, 'live')
+    t.equal(bob_posts_live.Ok.links.length, 2)
+    t.equal(bob_posts_live.Ok.links[0].status, 'live')
+    t.equal(bob_posts_live.Ok.links[1].status, 'live')
 
     /// /delete the holo world post from the links alice created
     await alice.callSync('app', 'simple', 'delete_link',
@@ -224,10 +224,10 @@ module.exports = scenario => {
       })
 
     // make sure only 1 is returned and it has a status of deleted
-    t.equal(1, alice_posts_deleted.Ok.links.length)
-    t.equal(1, bob_posts_deleted.Ok.links.length)
-    t.equal('deleted', alice_posts_deleted.Ok.links[0].status)
-    t.equal('deleted', bob_posts_deleted.Ok.links[0].status)
+    t.equal(alice_posts_deleted.Ok.links.length, 1)
+    t.equal(bob_posts_deleted.Ok.links.length, 1)
+    t.equal(alice_posts_deleted.Ok.links[0].status, 'deleted')
+    t.equal(bob_posts_deleted.Ok.links[0].status, 'deleted')
 
     // get all posts from the agent
     const bob_posts_all = await bob.call('app', 'simple', 'get_my_links',
@@ -243,12 +243,12 @@ module.exports = scenario => {
       })
 
     // make sure we get two links with the first one being a deleted link and the second one being a live link since they are now sorted backwards
-    t.equal(2, alice_posts_all.Ok.links.length)
-    t.equal('deleted', alice_posts_all.Ok.links[0].status)
-    t.equal('live', alice_posts_all.Ok.links[1].status)
-    t.equal(2, bob_posts_all.Ok.links.length)
-    t.equal('deleted', bob_posts_all.Ok.links[0].status)
-    t.equal('live', bob_posts_all.Ok.links[1].status)
+    t.equal(alice_posts_all.Ok.links.length, 2)
+    t.equal(alice_posts_all.Ok.links[0].status, 'deleted')
+    t.equal(alice_posts_all.Ok.links[1].status, 'live')
+    t.equal(bob_posts_all.Ok.links.length, 2)
+    t.equal(bob_posts_all.Ok.links[0].status, 'deleted')
+    t.equal(bob_posts_all.Ok.links[1].status, 'live')
 
 
     const bob_posts_ascending = await bob.call('app', 'simple', 'get_my_links',
@@ -267,12 +267,12 @@ module.exports = scenario => {
 
 
     // make sure we get two links with the first one being a deleted link and the second one being a live link since they are now sorted backwards
-    t.equal(2, alice_posts_ascennding.Ok.links.length)
-    t.equal('live', alice_posts_ascennding.Ok.links[0].status)
-    t.equal('deleted', alice_posts_ascennding.Ok.links[1].status)
-    t.equal(2, bob_posts_ascending.Ok.links.length)
-    t.equal('live', bob_posts_ascending.Ok.links[0].status)
-    t.equal('deleted', bob_posts_ascending.Ok.links[1].status)
+    t.equal(alice_posts_ascennding.Ok.links.length, 2)
+    t.equal(alice_posts_ascennding.Ok.links[0].status, 'live')
+    t.equal(alice_posts_ascennding.Ok.links[1].status, 'deleted')
+    t.equal(bob_posts_ascending.Ok.links.length, 2)
+    t.equal(bob_posts_ascending.Ok.links[0].status, 'live')
+    t.equal(bob_posts_ascending.Ok.links[1].status, 'deleted')
   })
 
   scenario('get_links_crud_count', async (s, t) => {
@@ -308,8 +308,8 @@ module.exports = scenario => {
       })
 
     // make sure count equals to 2
-    t.equal(2, alice_posts_live.Ok.count)
-    t.equal(2, bob_posts_live.Ok.count)
+    t.equal(alice_posts_live.Ok.count, 2)
+    t.equal(bob_posts_live.Ok.count, 2)
 
     const bob_posts_live_diff_tag = await bob.call('app', 'simple', 'get_my_links_count',
       {
@@ -318,7 +318,7 @@ module.exports = scenario => {
         tag: 'differen'
       })
 
-    t.equal(1, bob_posts_live_diff_tag.Ok.count)
+    t.equal(bob_posts_live_diff_tag.Ok.count, 1)
 
     /// /delete the holo world post from the links alice created
     await alice.callSync('app', 'simple', 'delete_link_with_tag',
@@ -345,8 +345,8 @@ module.exports = scenario => {
       })
 
     // make sure count is equal to 1
-    t.equal(1, alice_posts_deleted.Ok.count)
-    t.equal(1, bob_posts_deleted.Ok.count)
+    t.equal(alice_posts_deleted.Ok.count, 1)
+    t.equal(bob_posts_deleted.Ok.count, 1)
 
     const bob_posts_deleted_diff_tag = await bob.call('app', 'simple', 'get_my_links_count',
       {
@@ -355,7 +355,7 @@ module.exports = scenario => {
         tag: 'differen'
       })
 
-    t.equal(1, bob_posts_deleted_diff_tag.Ok.count)
+    t.equal(bob_posts_deleted_diff_tag.Ok.count, 1)
   })
 
   scenario('get_sources_after_same_link', async (s, t) => {

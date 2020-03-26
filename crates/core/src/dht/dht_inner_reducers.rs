@@ -97,7 +97,7 @@ pub(crate) fn reduce_update_entry_inner(
 pub(crate) fn reduce_remove_entry_inner(
     store: &mut DhtStore,
     latest_deleted_address: &Address,
-    deletion_address: &Address,
+    _deletion_address: &Address,
 ) -> HcResult<Address> {
     let entry = store
         .get(latest_deleted_address)?
@@ -137,10 +137,11 @@ pub(crate) fn reduce_remove_entry_inner(
         .map_err(|_| HolochainError::ErrorGeneric("Could not create eav".into()))?;
     store.add_eavi(&new_status_eav)?;
 
+    // THIS IS WRONG THERE IS NEW ENTRY TO REDIRECT A GET TO WHEN YOU DELETE SOMETHING
     // Update crud-link
-    let crud_link_eav = create_crud_link_eav(latest_deleted_address, deletion_address)
-        .map_err(|_| HolochainError::ErrorGeneric(String::from("Could not create eav")))?;
-    store.add_eavi(&crud_link_eav)?;
+    //let crud_link_eav = create_crud_link_eav(latest_deleted_address, deletion_address)
+    //    .map_err(|_| HolochainError::ErrorGeneric(String::from("Could not create eav")))?;
+    //store.add_eavi(&crud_link_eav)?;
 
     Ok(latest_deleted_address.clone())
 }

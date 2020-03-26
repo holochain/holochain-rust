@@ -42,7 +42,7 @@ pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
             }
         }
         Err(get_content_error) => {
-            log_warn!(context, "net/handle_fetch_entry: Could not get content aspect of requested entry ({:?}), error: {:?}",
+            log_debug!(context, "net/handle_fetch_entry: Could not get content aspect of requested entry ({:?}), error: {:?}",
                 address,
                 get_content_error,
             );

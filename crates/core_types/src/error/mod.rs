@@ -111,7 +111,7 @@ pub enum HolochainError {
     Ribosome(RibosomeErrorCode),
     RibosomeFailed(String),
     ConfigError(String),
-    Timeout,
+    Timeout(String),
     InitializationFailed(String),
     LifecycleError(String),
     DnaHashMismatch(HashString, HashString),
@@ -154,7 +154,7 @@ impl fmt::Display for HolochainError {
             Ribosome(err_code) => write!(f, "{}", err_code.as_str()),
             RibosomeFailed(fail_msg) => write!(f, "{}", fail_msg),
             ConfigError(err_msg) => write!(f, "{}", err_msg),
-            Timeout => write!(f, "timeout"),
+            Timeout(s) => write!(f, "timeout {}", s),
             InitializationFailed(err_msg) => write!(f, "{}", err_msg),
             LifecycleError(err_msg) => write!(f, "{}", err_msg),
             DnaHashMismatch(hash1, hash2) => write!(
@@ -409,7 +409,7 @@ mod tests {
                 HolochainError::CapabilityCheckFailed,
                 "Caller does not have Capability to make that call",
             ),
-            (HolochainError::Timeout, "timeout"),
+            (HolochainError::Timeout("err".to_string()), "timeout err"),
             (
                 HolochainError::ValidationPending,
                 "Entry validation could not be completed",

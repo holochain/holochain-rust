@@ -2,7 +2,6 @@ use crate::{
     action::{Action, ActionWrapper},
     network::state::NetworkState,
     state::State,
-    NEW_RELIC_LICENSE_KEY,
 };
 
 use holochain_net::connection::net_connection::NetSend;
@@ -22,7 +21,7 @@ pub fn reduce_shutdown(
     assert_eq!(*action, Action::ShutdownNetwork);
 
     let json = Lib3hClientProtocol::LeaveSpace(SpaceData {
-        request_id: snowflake::ProcessUniqueId::new().to_string(),
+        request_id: nanoid::simple(),
         space_address: state
             .dna_address
             .as_ref()

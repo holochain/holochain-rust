@@ -12,7 +12,6 @@ use crate::{
     signal::Signal,
     state::{State, StateWrapper},
     workflows::{application, run_holding_workflow},
-    NEW_RELIC_LICENSE_KEY,
 };
 #[cfg(test)]
 use crate::{
@@ -40,6 +39,7 @@ use std::{
 };
 
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
+
 pub const RETRY_VALIDATION_DURATION_MIN: Duration = Duration::from_millis(500);
 pub const RETRY_VALIDATION_DURATION_MAX: Duration = Duration::from_secs(60 * 60);
 
@@ -224,8 +224,8 @@ impl Instance {
                                         .filter(|observer| observer.ticker.send(()).is_ok())
                                         .collect();
                                 },
-                                Err(HolochainError::Timeout) => {
-                                    warn!("Instance::process_action() couldn't get lock on state. Trying again next loop.");
+                                Err(HolochainError::Timeout(s)) => {
+                                    warn!("Instance::process_action() couldn't get lock on state. Trying again next loop. Timeout string: {}", s);
                                     unprocessed_action = Some(action_wrapper);
                                 },
                                 Err(e) => {
@@ -277,7 +277,9 @@ impl Instance {
             let mut state = self
                 .state
                 .try_write_until(Instant::now().checked_add(Duration::from_secs(10)).unwrap())
-                .ok_or_else(|| HolochainError::Timeout)?;
+                .ok_or_else(|| {
+                    HolochainError::Timeout(format!("timeout src: {}:{}", file!(), line!()))
+                })?;
 
             new_state = state.reduce(action_wrapper.data.clone());
 
@@ -343,7 +345,7 @@ impl Instance {
                                     // If we couldn't run the validation due to unresolved dependencies,
                                     // we have to re-add this entry at the end of the queue:
                                     Err(HolochainError::ValidationPending) => {
-                                        // And with a delay so we are not trying to re-validate many times per second.
+                                        // And with a delay so we are not trying to re-validate too often for nodes that have gone offline.
                                         let mut delay = maybe_delay
                                             .map(|old_delay| {
                                                 // Exponential back-off:
@@ -356,7 +358,7 @@ impl Instance {
                                         if delay > RETRY_VALIDATION_DURATION_MAX {
                                             delay = RETRY_VALIDATION_DURATION_MAX
                                         }
-
+                                        log_debug!(c, "re-queuing pending validation for {:?} with a delay of {:?}", pending, delay);
                                         queue_holding_workflow(
                                             Arc::new(pending.same()),
                                             Some(delay),
@@ -370,7 +372,9 @@ impl Instance {
                                         pending,
                                         e,
                                     ),
-                                    Ok(()) => log_info!(c, "Successfully processed: {:?}", pending),
+                                    Ok(()) => {
+                                        log_debug!(c, "Successfully processed: {:?}", pending)
+                                    }
                                 }
                             };
                             let future = closure();

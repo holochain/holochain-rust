@@ -3,7 +3,6 @@ use crate::{
     context::Context,
     instance::dispatch_action,
     network::actions::NetworkActionResponse,
-    NEW_RELIC_LICENSE_KEY,
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::error::HcResult;
@@ -58,7 +57,9 @@ impl Future for PublishHeaderEntryFuture {
                     NetworkActionResponse::PublishHeaderEntry(result) => {
                         dispatch_action(
                             self.context.action_channel(),
-                            ActionWrapper::new(Action::ClearActionResponse(*self.action.id())),
+                            ActionWrapper::new(Action::ClearActionResponse(
+                                self.action.id().to_string(),
+                            )),
                         );
                         Poll::Ready(result.clone())
                     }

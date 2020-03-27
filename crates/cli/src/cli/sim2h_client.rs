@@ -1,4 +1,3 @@
-use crate::NEW_RELIC_LICENSE_KEY;
 use dns_lookup::lookup_host;
 use in_stream::*;
 use lib3h_crypto_api::CryptoSystem;
@@ -15,8 +14,15 @@ use std::{
 };
 use url2::prelude::*;
 
+/// Issue commands to a running sim2h server.
+/// NOTE: general output should be on stderr, because at least one flag (-f)
+/// needs to print valid JSON to stdout
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
-pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), String> {
+pub fn sim2h_client(
+    url_string: String,
+    message_string: String,
+    to_files: bool,
+) -> Result<(), String> {
     let url = match Url2::try_parse(url_string.clone()) {
         Err(e) => Err(format!(
             "unable to parse url:{} got error: {}",
@@ -28,9 +34,9 @@ pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), St
     let ip = if host == "localhost" {
         "127.0.0.1".to_string()
     } else {
-        println!("looking up: {}", host);
+        eprintln!("looking up: {}", host);
         let ips: Vec<std::net::IpAddr> = lookup_host(&host).map_err(|e| format!("{}", e))?;
-        println!("resolved to: {}", ips[0]);
+        eprintln!("resolved to: {}", ips[0]);
         format!("{}", ips[0])
     };
     let maybe_port = url.port();
@@ -39,7 +45,7 @@ pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), St
     }
     let url = Url2::parse(format!("{}://{}:{}", url.scheme(), ip, maybe_port.unwrap()));
 
-    println!("connecting to: {}", url);
+    eprintln!("connecting to: {}", url);
     let mut job = Job::new(&url)?;
     job.send_wire(match message_string.as_ref() {
         "ping" => WireMessage::Ping,
@@ -67,28 +73,40 @@ pub fn sim2h_client(url_string: String, message_string: String) -> Result<(), St
                         WireMessage::Pong
                         | WireMessage::HelloResponse(_)
                         | WireMessage::StatusResponse(_) => {
-                            println!("Got response => {:?}", msg);
+                            eprintln!("Got response => {:?}", msg);
                             break;
                         }
-                        WireMessage::DebugResponse(debug_response_map) => {
-                            println!("Got DebugResponse for {} spaces.", debug_response_map.len());
-                            for (space, json) in debug_response_map {
-                                let filename = format!("{}.json", space);
-                                println!(
-                                    "Writing Sim2h state dump for space {} to file: {}",
-                                    space, filename
+                        WireMessage::DebugResponse((debug_response_map, extra_debug_data)) => {
+                            if to_files {
+                                eprintln!(
+                                    "Got DebugResponse for {} spaces.",
+                                    debug_response_map.len()
                                 );
+                                for (space, json) in debug_response_map {
+                                    let filename = format!("{}.json", space);
+                                    eprintln!(
+                                        "Writing Sim2h state dump for space {} to file: {}",
+                                        space, filename
+                                    );
 
-                                File::create(filename.clone())
-                                    .unwrap_or_else(|_| {
-                                        panic!("Could not create file {}!", filename)
-                                    })
-                                    .write_all(json.into_bytes().as_slice())
-                                    .expect("Could not write to file!");
+                                    File::create(filename.clone())
+                                        .unwrap_or_else(|_| {
+                                            panic!("Could not create file {}!", filename)
+                                        })
+                                        .write_all(json.into_bytes().as_slice())
+                                        .expect("Could not write to file!");
+                                }
+                            } else {
+                                print!("{{");
+                                for (space, json) in debug_response_map {
+                                    println!("\"{}\":{}", space, json);
+                                }
+                                println!("}}");
                             }
+                            eprintln!("Extra Debug Data:\n{}", extra_debug_data);
                             break;
                         }
-                        _ => println!("{:?}", msg),
+                        _ => eprintln!("{:?}", msg),
                     }
                 } else {
                     Err(format!("unexpected {:?}", frame))?;
@@ -128,10 +146,10 @@ impl Job {
         });
         let enc = hcid::HcidEncoding::with_kind("hcs0").map_err(|e| format!("{}", e))?;
         let agent_id = enc.encode(&*pub_key).unwrap();
-        println!("Generated agent id: {}", agent_id);
+        eprintln!("Generated agent id: {}", agent_id);
         let connection = await_in_stream_connect(connect_uri)
             .map_err(|e| format!("Error awaiting connection: {}", e))?;
-        println!("Await successfull");
+        eprintln!("Await successfull");
         let out = Self {
             agent_id,
             pub_key: Arc::new(Mutex::new(pub_key)),
@@ -144,7 +162,7 @@ impl Job {
 
     /// sign a message and send it to sim2h
     pub fn send_wire(&mut self, message: WireMessage) {
-        println!("Sending wire message to sim2h: {:?}", message);
+        eprintln!("Sending wire message to sim2h: {:?}", message);
         let payload: Opaque = message.into();
         let payload_buf: Box<dyn lib3h_crypto_api::Buffer> = Box::new(payload.clone().as_bytes());
         let sig = base64::encode(

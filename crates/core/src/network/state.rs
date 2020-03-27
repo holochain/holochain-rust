@@ -1,14 +1,12 @@
 use crate::{
-    action::{ActionWrapper, QueryKey},
+    action::{ActionWrapper, QueryKey, ValidationKey},
     network::{actions::Response, direct_message::DirectMessage, query::NetworkQueryResult},
-    NEW_RELIC_LICENSE_KEY,
 };
 use boolinator::*;
 use holochain_core_types::{error::HolochainError, validation::ValidationPackage};
 use holochain_net::p2p_network::P2pNetwork;
 use holochain_persistence_api::cas::content::Address;
 use im::HashMap;
-use snowflake;
 use std::time::{Duration, SystemTime};
 
 type Actions = HashMap<ActionWrapper, Response>;
@@ -39,8 +37,8 @@ pub struct NetworkState {
 
     /// Here we store the results of get validation package processes.
     /// None means that we are still waiting for a result from the network.
-    pub get_validation_package_results: HashMap<Address, GetValidationPackageResult>,
-    pub get_validation_package_timeouts: HashMap<Address, (SystemTime, Duration)>,
+    pub get_validation_package_results: HashMap<ValidationKey, GetValidationPackageResult>,
+    pub get_validation_package_timeouts: HashMap<ValidationKey, (SystemTime, Duration)>,
 
     /// This stores every open (= waiting for response) node-to-node messages.
     /// Entries get removed when we receive an answer through Action::ResolveDirectConnection.
@@ -49,7 +47,7 @@ pub struct NetworkState {
 
     pub custom_direct_message_replys: HashMap<String, Result<String, HolochainError>>,
 
-    id: snowflake::ProcessUniqueId,
+    id: String,
 }
 
 impl PartialEq for NetworkState {
@@ -74,7 +72,7 @@ impl NetworkState {
             direct_message_timeouts: HashMap::new(),
             custom_direct_message_replys: HashMap::new(),
 
-            id: snowflake::ProcessUniqueId::new(),
+            id: nanoid::simple(),
         }
     }
 

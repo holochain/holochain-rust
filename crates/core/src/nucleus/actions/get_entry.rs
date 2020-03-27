@@ -1,4 +1,4 @@
-use crate::{content_store::GetContent, context::Context, NEW_RELIC_LICENSE_KEY};
+use crate::{content_store::GetContent, context::Context};
 use holochain_core_types::{
     crud_status::CrudStatus,
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
@@ -86,12 +86,17 @@ pub(crate) fn get_entry_crud_meta_from_dht(
         IndexFilter::LatestByAttribute,
         None,
     ))?;
-    assert!(
-        link_eavs.len() <= 1,
-        "link_eavs.len() = {}",
-        link_eavs.len()
-    );
-    if link_eavs.len() == 1 {
+
+    if link_eavs.len() > 1 {
+        log_error!(
+            context,
+            "link_eavs > 1: {} for get_entry of {}",
+            link_eavs.len(),
+            address
+        );
+    }
+
+    if link_eavs.len() > 0 {
         maybe_link_update_delete = Some(link_eavs.iter().next().unwrap().value());
     }
     // Done

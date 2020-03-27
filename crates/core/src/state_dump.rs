@@ -4,7 +4,6 @@ use crate::{
     dht::{aspect_map::AspectMapBare, pending_validations::PendingValidationWithTimeout},
     network::direct_message::DirectMessage,
     nucleus::{ZomeFnCall, ZomeFnCallState},
-    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
 use holochain_json_api::json::JsonString;
@@ -65,7 +64,7 @@ impl From<Arc<Context>> for StateDump {
             .get_validation_package_results
             .into_iter()
             .filter(|(_, result)| result.is_none())
-            .map(|(address, _)| address)
+            .map(|(key, _)| key.address)
             .collect();
 
         let direct_message_flows: Vec<(String, DirectMessage)> = network

@@ -3,7 +3,6 @@ use crate::{
     agent::state::AgentActionResponse,
     context::Context,
     instance::dispatch_action,
-    NEW_RELIC_LICENSE_KEY,
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::{entry::Entry, error::HolochainError};
@@ -60,7 +59,9 @@ impl Future for CommitFuture {
                     AgentActionResponse::Commit(result) => {
                         dispatch_action(
                             self.context.action_channel(),
-                            ActionWrapper::new(Action::ClearActionResponse(*self.action.id())),
+                            ActionWrapper::new(Action::ClearActionResponse(
+                                self.action.id().to_string(),
+                            )),
                         );
                         Poll::Ready(result.clone())
                     }

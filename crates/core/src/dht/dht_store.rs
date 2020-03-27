@@ -4,7 +4,6 @@ use crate::{
         aspect_map::{AspectMap, AspectMapBare},
         pending_validations::{PendingValidationWithTimeout, ValidationTimeout},
     },
-    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
@@ -434,8 +433,8 @@ pub mod tests {
             Arc::new(RwLock::new(ExampleEntityAttributeValueStorage::new())),
         );
         let entry = test_entry();
-        let header1 = test_chain_header_with_sig("sig1");
-        let header2 = test_chain_header_with_sig("sig2");
+        let header1 = test_chain_header_with_sig("sig1", None);
+        let header2 = test_chain_header_with_sig("sig2", None);
         store.add_header_for_entry(&entry, &header1).unwrap();
         store.add_header_for_entry(&entry, &header2).unwrap();
         let headers = store.get_headers(entry.address()).unwrap();
@@ -446,7 +445,7 @@ pub mod tests {
         entry: Entry,
         dependencies: Vec<Address>,
     ) -> PendingValidationWithTimeout {
-        let header = test_chain_header_with_sig("sig1");
+        let header = test_chain_header_with_sig("sig1", None);
         let mut pending_struct = PendingValidationStruct::new(
             EntryWithHeader { entry, header },
             ValidatingWorkflow::HoldEntry,

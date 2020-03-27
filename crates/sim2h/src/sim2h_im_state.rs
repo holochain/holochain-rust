@@ -52,20 +52,11 @@ enum AolEntry {
         uri: Lib3hUri,
     },
 
-    // we will no longer rely on this agent/connection (if con_incr is > cur)
-    // - mark connection as disconnected (tombstone)
+    // we need to be able to drop all connections across spaces based on
+    // the uri of the connected socket (i.e. in case of a socket read/write err)
     // - clear all `holding` aspects (to prepare for another connection
     // - remove the uri_to_connection entry
     // - if there are no more connections in the space, drop it too
-    DropConnection {
-        aol_idx: u64,
-        space_hash: SpaceHash,
-        agent_id: AgentId,
-    },
-
-    // we need to be able to drop all connections across spaces based on
-    // the uri of the connected socket (i.e. in case of a socket read/write err)
-    // (see DropConnection for drop workflow)
     DropConnectionByUri {
         aol_idx: u64,
         uri: Lib3hUri,
@@ -87,6 +78,14 @@ enum AolEntry {
     CheckGossip {
         aol_idx: u64,
         response: tokio::sync::oneshot::Sender<CheckGossipData>,
+    },
+
+    // if we replaced any connections - we need our owner to know about it
+    // so they can close those replaced connections
+    // (after all, we won't be routing messages to them any more)
+    CheckDisconnected {
+        aol_idx: u64,
+        response: tokio::sync::oneshot::Sender<Vec<Lib3hUri>>,
     },
 }
 
@@ -200,10 +199,13 @@ pub struct Space {
     #[serde(skip)]
     pub crypto: Box<dyn CryptoSystem>,
     pub redundancy: u64,
+    /// Though unusual to have a map where the keys and values are identical,
+    /// this map provides a way to get the [MonoRef] for a given [AspectHash]
     pub all_aspects: im::HashMap<MonoAspectHash, MonoAspectHash>,
     pub entry_to_all_aspects: im::HashMap<MonoEntryHash, EntryInfo>,
     pub connections: im::HashMap<MonoAgentId, ConnectionState>,
     pub uri_to_connection: im::HashMap<MonoUri, MonoAgentId>,
+    pub disconnect_uri: im::Vector<MonoUri>,
     pub gossip_interval: u64,
 }
 
@@ -227,6 +229,7 @@ impl Clone for Space {
             entry_to_all_aspects: self.entry_to_all_aspects.clone(),
             connections: self.connections.clone(),
             uri_to_connection: self.uri_to_connection.clone(),
+            disconnect_uri: self.disconnect_uri.clone(),
             gossip_interval: self.gossip_interval,
         }
     }
@@ -241,6 +244,7 @@ impl Space {
             entry_to_all_aspects: im::HashMap::new(),
             connections: im::HashMap::new(),
             uri_to_connection: im::HashMap::new(),
+            disconnect_uri: im::Vector::new(),
             gossip_interval,
         }
     }
@@ -370,12 +374,15 @@ impl Space {
 
         let next_gossip_check = UpcomingInstant::new_ms_from_now(to_add);
 
+        let mut remove_old_uri = None;
+
         // - add the main connection entry
         match self.connections.entry(agent_id.clone()) {
             im::hashmap::Entry::Occupied(mut entry) => {
                 let entry = entry.get_mut();
                 entry.agent_id = agent_id.clone();
                 entry.agent_loc = agent_loc;
+                remove_old_uri = Some(entry.uri.clone());
                 entry.uri = uri.clone();
                 entry.next_gossip_check = next_gossip_check;
             }
@@ -387,6 +394,19 @@ impl Space {
                     next_gossip_check,
                 });
             }
+        }
+
+        if let Some(old_uri) = remove_old_uri {
+            tracing::error!(
+                message = "Replacing Connection in Sim2h State",
+                new_uri = %*uri,
+                old_uri = %*old_uri,
+                agent_id = %*agent_id,
+            );
+
+            // - remove an old `uri_to_connection` entry
+            self.uri_to_connection.remove(&old_uri);
+            self.disconnect_uri.push_back(old_uri);
         }
 
         // - add entry to `uri_to_connection`
@@ -448,6 +468,7 @@ impl Space {
         }
     }
 
+    #[tracing::instrument(skip(self, check_gossip_data))]
     fn check_gossip(&mut self, space_hash: MonoSpaceHash, check_gossip_data: &mut CheckGossipData) {
         for con in self.connections.iter_mut() {
             if con.next_gossip_check.still_pending() {
@@ -463,6 +484,7 @@ impl Space {
 
             check_gossip_data.add_agent(space_hash.clone(), con.agent_id.clone());
         }
+        tracing::debug!(?check_gossip_data);
     }
 }
 
@@ -583,11 +605,6 @@ impl Store {
                 agent_id,
                 uri,
             } => self.new_connection(space_hash, agent_id, uri),
-            AolEntry::DropConnection {
-                aol_idx: _,
-                space_hash,
-                agent_id,
-            } => self.drop_connection(space_hash, agent_id),
             AolEntry::DropConnectionByUri { aol_idx: _, uri } => self.drop_connection_by_uri(uri),
             AolEntry::AgentHoldsAspects {
                 aol_idx: _,
@@ -600,6 +617,10 @@ impl Store {
                 aol_idx: _,
                 response,
             } => self.check_gossip(response),
+            AolEntry::CheckDisconnected {
+                aol_idx: _,
+                response,
+            } => self.check_disconnected(response),
         }
     }
 
@@ -654,14 +675,6 @@ impl Store {
         }
     }
 
-    fn drop_connection(&mut self, space_hash: SpaceHash, agent_id: AgentId) {
-        let agent_id: MonoAgentId = agent_id.into();
-
-        let space = self.get_space_mut(space_hash);
-        Self::drop_connection_inner(space, agent_id);
-        self.check_drop_spaces();
-    }
-
     fn drop_connection_by_uri(&mut self, uri: Lib3hUri) {
         for space in self.spaces.iter_mut() {
             let agent_id = match space.uri_to_connection.get(&uri) {
@@ -685,10 +698,12 @@ impl Store {
             .agent_holds_aspects(&agent_id, &entry_hash, &aspects);
     }
 
+    #[tracing::instrument(skip(self, response))]
     fn check_gossip(&mut self, response: tokio::sync::oneshot::Sender<CheckGossipData>) {
         let mut check_gossip_data = CheckGossipData::new();
 
         let space_hashes = self.spaces.keys().cloned().collect::<Vec<_>>();
+        tracing::debug!(?space_hashes);
         for space_hash in space_hashes {
             self.spaces
                 .get_mut(&space_hash)
@@ -698,6 +713,21 @@ impl Store {
 
         if let Err(e) = response.send(check_gossip_data) {
             error!("Failed to send check gossip response! {:?}", e);
+        }
+    }
+
+    fn check_disconnected(&mut self, response: tokio::sync::oneshot::Sender<Vec<Lib3hUri>>) {
+        let mut out: Vec<Lib3hUri> = Vec::new();
+
+        for space in self.spaces.iter_mut() {
+            for uri in space.disconnect_uri.iter() {
+                out.push((**uri).clone());
+            }
+            space.disconnect_uri = im::Vector::new();
+        }
+
+        if let Err(e) = response.send(out) {
+            error!("Failed to send check disconnected response! {:?}", e);
         }
     }
 
@@ -985,11 +1015,31 @@ impl StoreHandle {
         tokio::task::spawn(f);
     }
 
+    #[tracing::instrument(skip(self))]
     pub async fn check_gossip(&self) -> CheckGossipData {
         let (sender, receiver) = tokio::sync::oneshot::channel();
         let (sender_c, receiver_c) = tokio::sync::oneshot::channel();
         if let Err(_) = self.send_mut.send(StoreProto::Mutate(
             AolEntry::CheckGossip {
+                aol_idx: self.con_incr.inc(),
+                response: sender,
+            },
+            sender_c,
+        )) {
+            error!("failed to send im store message - shutting down?");
+            // we're probably shutting down, prevent panic!s
+            // note this future will never resolve - because it cannot
+            return futures::future::pending().await;
+        }
+        let _ = receiver_c.await;
+        receiver.await.unwrap()
+    }
+
+    pub async fn check_disconnected(&self) -> Vec<Lib3hUri> {
+        let (sender, receiver) = tokio::sync::oneshot::channel();
+        let (sender_c, receiver_c) = tokio::sync::oneshot::channel();
+        if let Err(_) = self.send_mut.send(StoreProto::Mutate(
+            AolEntry::CheckDisconnected {
                 aol_idx: self.con_incr.inc(),
                 response: sender,
             },

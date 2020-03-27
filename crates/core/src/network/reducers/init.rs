@@ -2,7 +2,6 @@ use crate::{
     action::{Action, ActionWrapper},
     network::state::NetworkState,
     state::State,
-    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_net::{
     connection::net_connection::NetSend, p2p_config::BackendConfig, p2p_network::P2pNetwork,
@@ -85,7 +84,7 @@ pub fn reduce_init(state: &mut NetworkState, root_state: &State, action_wrapper:
     //    }
 
     let json = Lib3hClientProtocol::JoinSpace(SpaceData {
-        request_id: snowflake::ProcessUniqueId::new().to_string(),
+        request_id: nanoid::simple(),
         space_address: network_settings.dna_address.clone().into(),
         agent_id: network_settings.agent_id.clone().into(),
     });

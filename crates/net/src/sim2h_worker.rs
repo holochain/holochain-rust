@@ -6,7 +6,6 @@ use crate::{
         NetResult,
     },
     p2p_network::Lib3hClientProtocolWrapped,
-    NEW_RELIC_LICENSE_KEY,
 };
 use failure::_core::time::Duration;
 use holochain_conductor_lib_api::{ConductorApi, CryptoMethod};
@@ -27,15 +26,10 @@ use lib3h_protocol::{
 use log::*;
 use sim2h::{
     crypto::{Provenance, SignedWireMessage},
-    TcpWss, WireError, WireMessage, RECEIPT_HASH_SEED, WIRE_VERSION,
+    generate_ack_receipt_hash, TcpWss, WireError, WireMessage, WIRE_VERSION,
 };
-use std::{
-    convert::TryFrom,
-    hash::{Hash, Hasher},
-    time::Instant,
-};
+use std::{convert::TryFrom, time::Instant};
 
-use twox_hash::XxHash64;
 use url::Url;
 use url2::prelude::*;
 
@@ -278,9 +272,7 @@ impl Sim2hWorker {
             self.check_reconnect();
             return true;
         }
-        let mut hasher = XxHash64::with_seed(RECEIPT_HASH_SEED);
-        payload.hash(&mut hasher);
-        buffered_message.hash = hasher.finish();
+        buffered_message.hash = generate_ack_receipt_hash(&payload);
         buffered_message.last_sent = Some(Instant::now());
         true
     }
@@ -646,22 +638,26 @@ impl NetWorker for Sim2hWorker {
                 Ok(_) => {
                     did_something = true;
                     let frame = self.ws_frame.take().unwrap();
-                    if let WsFrame::Binary(payload) = frame {
-                        let payload: Opaque = payload.into();
-                        match WireMessage::try_from(&payload) {
-                            Ok(wire_message) =>
-                                if let Err(error) = self.handle_server_message(wire_message) {
-                                    error!("Error handling server message in Sim2hWorker: {:?}", error);
-                                },
-                            Err(error) =>
-                                error!(
-                                    "Could not deserialize received payload into WireMessage!\nError: {:?}\nPayload was: {:?}",
-                                    error,
-                                    payload
-                                )
+                    match frame {
+                        WsFrame::Binary(payload) => {
+                            let payload: Opaque = payload.into();
+                            match WireMessage::try_from(&payload) {
+                                Ok(wire_message) =>
+                                    if let Err(error) = self.handle_server_message(wire_message) {
+                                        error!("Error handling server message in Sim2hWorker: {:?}", error);
+                                    },
+                                Err(error) =>
+                                    error!(
+                                        "Could not deserialize received payload into WireMessage!\nError: {:?}\nPayload was: {:?}",
+                                        error,
+                                        payload
+                                    )
+                            }
                         }
-                    } else {
-                        trace!("unhandled websocket message type: {:?}", frame);
+                        WsFrame::Ping(_) => (),
+                        frame @ _ => {
+                            trace!("unhandled websocket message type: {:?}", frame);
+                        }
                     }
                 }
                 Err(e) if e.would_block() => (),

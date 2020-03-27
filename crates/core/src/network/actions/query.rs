@@ -3,7 +3,6 @@ use crate::{
     context::Context,
     instance::dispatch_action,
     network::query::{GetLinksNetworkQuery, NetworkQueryResult},
-    NEW_RELIC_LICENSE_KEY,
 };
 use futures::{future::Future, task::Poll};
 
@@ -12,8 +11,6 @@ use holochain_persistence_api::cas::content::Address;
 use holochain_core_types::{crud_status::CrudStatus, error::HcResult, time::Timeout};
 
 use std::{pin::Pin, sync::Arc};
-
-use snowflake::ProcessUniqueId;
 
 use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, LinksStatusRequestKind};
 use std::time::SystemTime;
@@ -40,7 +37,7 @@ pub async fn query(
         QueryMethod::Entry(address) => {
             let key = GetEntryKey {
                 address,
-                id: snowflake::ProcessUniqueId::new().to_string(),
+                id: nanoid::simple(),
             };
             (QueryKey::Entry(key), QueryPayload::Entry)
         }
@@ -49,7 +46,7 @@ pub async fn query(
                 base_address: link_args.entry_address.clone(),
                 link_type: link_args.link_type.clone(),
                 tag: link_args.tag.clone(),
-                id: ProcessUniqueId::new().to_string(),
+                id: nanoid::simple(),
             };
             let crud_status = match link_args.options.status_request {
                 LinksStatusRequestKind::All => None,
@@ -70,7 +67,6 @@ pub async fn query(
     ));
     let action_wrapper = ActionWrapper::new(entry);
     dispatch_action(context.action_channel(), action_wrapper.clone());
-
     QueryFuture {
         context: context.clone(),
         key: key.clone(),

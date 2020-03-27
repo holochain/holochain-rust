@@ -1,9 +1,9 @@
 use crate::{
-    common::{
+    error::LockType,
+    locksmith::common::{
         guards_guard, ACTIVE_GUARD_MIN_ELAPSED, ACTIVE_GUARD_NO_ACTIVITY_INTERVAL,
         GUARD_WATCHER_POLL_INTERVAL, IMMORTAL_TIMEOUT,
     },
-    error::LockType,
 };
 #[cfg(feature = "backtraces")]
 use backtrace::Backtrace;

@@ -1,7 +1,4 @@
-use crate::{
-    holochain_wasm_utils::holochain_persistence_api::cas::content::AddressableContent,
-    NEW_RELIC_LICENSE_KEY,
-};
+use crate::holochain_wasm_utils::holochain_persistence_api::cas::content::AddressableContent;
 use holochain_core_types::network::entry_aspect::EntryAspect;
 use im::{HashMap, HashSet};
 use lib3h_protocol::types::{AspectHash, EntryHash};
@@ -31,7 +28,10 @@ impl AspectMap {
     }
 
     pub fn contains(&self, aspect: &EntryAspect) -> bool {
-        let entry_address: EntryHash = aspect.entry_address().into();
+        let entry_address: EntryHash = aspect
+            .entry_address()
+            .expect("Could not get entry address from aspect")
+            .into();
         let entry_aspect_address = aspect.address();
         self.0
             .get(&entry_address)
@@ -40,7 +40,10 @@ impl AspectMap {
     }
 
     pub fn add(&mut self, aspect: &EntryAspect) {
-        let entry_address = aspect.entry_address().into();
+        let entry_address = aspect
+            .entry_address()
+            .expect("Could not get entry address from aspect")
+            .into();
         let entry_aspect_address = aspect.address().into();
 
         self.0

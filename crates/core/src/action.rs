@@ -23,7 +23,6 @@ use holochain_core_types::{
 use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
 use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::data_types::{EntryListData, FetchEntryData, QueryEntryData};
-use snowflake;
 use std::{
     hash::{Hash, Hasher},
     time::{Duration, SystemTime},
@@ -39,17 +38,17 @@ use std::{
 #[derive(Clone, Debug, Serialize)]
 pub struct ActionWrapper {
     action: Action,
-    id: snowflake::ProcessUniqueId,
+    id: String,
 }
 
 impl ActionWrapper {
     /// constructor from &Action
-    /// internal snowflake ID is automatically set
+    /// internal unique ID is automatically set
     pub fn new(a: Action) -> Self {
         ActionWrapper {
             action: a,
             // auto generate id
-            id: snowflake::ProcessUniqueId::new(),
+            id: nanoid::simple(),
         }
     }
 
@@ -59,7 +58,7 @@ impl ActionWrapper {
     }
 
     /// read only access to id
-    pub fn id(&self) -> &snowflake::ProcessUniqueId {
+    pub fn id(&self) -> &String {
         &self.id
     }
 }
@@ -73,9 +72,6 @@ impl PartialEq for ActionWrapper {
 impl Eq for ActionWrapper {}
 
 impl Hash for ActionWrapper {
-    /// @TODO dangerous when persisted!
-    /// snowflake only guarantees uniqueness per process
-    /// @see https://github.com/holochain/holochain-rust/issues/203
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.id.hash(state);
     }
@@ -102,7 +98,7 @@ pub enum QueryPayload {
 pub enum Action {
     /// Get rid of stale information that we should drop to not have the state grow infinitely.
     Prune,
-    ClearActionResponse(snowflake::ProcessUniqueId),
+    ClearActionResponse(String),
 
     // ----------------
     // Agent actions:
@@ -185,19 +181,19 @@ pub enum Action {
 
     /// Makes the network module DM the source of the given entry
     /// and prepare for receiveing an answer
-    GetValidationPackage(ChainHeader),
+    GetValidationPackage((ValidationKey, ChainHeader)),
 
     /// Makes the get validation request with the given ID timeout by adding an
     /// Err(HolochainError::Timeout) to NetworkState::get_validation_package_results.
-    GetValidationPackageTimeout(Address),
+    GetValidationPackageTimeout(ValidationKey),
 
     /// Updates the state to hold the response that we got for
     /// our previous request for a validation package.
     /// Triggered from the network handler when we get the response.
-    HandleGetValidationPackage((Address, Option<ValidationPackage>)),
+    HandleGetValidationPackage((ValidationKey, Option<ValidationPackage>)),
 
     /// Clean up the validation package result so the state doesn't grow indefinitely.
-    ClearValidationPackageResult(Address),
+    ClearValidationPackageResult(ValidationKey),
 
     /// Updates the state to hold the response that we got for
     /// our previous custom direct message.
@@ -273,6 +269,15 @@ pub struct GetLinksKey {
 #[derive(Clone, PartialEq, Eq, Hash, Debug, Serialize)]
 pub struct GetEntryKey {
     /// The address of the entry to get
+    pub address: Address,
+
+    /// A unique ID that is used to pair the eventual result to this request
+    pub id: String,
+}
+
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Serialize, Deserialize)]
+pub struct ValidationKey {
+    /// The address of the entry to get the package for
     pub address: Address,
 
     /// A unique ID that is used to pair the eventual result to this request
@@ -359,7 +364,7 @@ pub mod tests {
         ht::noop("test-noop".into()).wrap(ActionWrapper::new(Action::Query((
             QueryKey::Entry(GetEntryKey {
                 address: expected_entry_address(),
-                id: snowflake::ProcessUniqueId::new().to_string(),
+                id: nanoid::simple(),
             }),
             QueryPayload::Entry,
             None,
@@ -388,7 +393,6 @@ pub mod tests {
         let aw1 = test_action_wrapper();
         let aw2 = test_action_wrapper();
 
-        // snowflake enforces uniqueness
         assert_eq!(aw1.data, aw1.data);
         assert_ne!(aw1.data, aw2.data);
     }

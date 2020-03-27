@@ -7,8 +7,7 @@ use crate::{
         GetLinksNetworkQuery, GetLinksNetworkResult, NetworkQuery, NetworkQueryResult,
     },
     nucleus,
-    workflows::get_entry_result::get_entry_result_workflow,
-    NEW_RELIC_LICENSE_KEY,
+    workflows::get_entry_result::get_entry_result_workflow_local,
 };
 use holochain_core_types::{
     crud_status::CrudStatus,
@@ -75,11 +74,7 @@ fn get_links(
                 },
             };
 
-            context
-                .block_on(get_entry_result_workflow(
-                    &context.clone(),
-                    &link_add_entry_args,
-                ))
+            get_entry_result_workflow_local(&context.clone(), &link_add_entry_args)
                 .map(|get_entry_result| match get_entry_result.result {
                     GetEntryResultType::Single(entry_with_meta_and_headers) => {
                         let maybe_entry_headers = if query_configuration.headers {

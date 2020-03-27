@@ -4,7 +4,6 @@ use crate::{
     error::HolochainInstanceError,
     static_file_server::ConductorStaticFileServer,
     static_server_impls::NickelStaticServer as StaticServer,
-    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::error::HolochainError;
 use std::{path::PathBuf, sync::Arc};

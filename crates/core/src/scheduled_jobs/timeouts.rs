@@ -2,7 +2,6 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     instance::dispatch_action,
-    NEW_RELIC_LICENSE_KEY,
 };
 use std::sync::Arc;
 
@@ -31,12 +30,12 @@ pub fn check_network_processes_for_timeouts(context: Arc<Context>) {
         }
     }
 
-    for (address, (time, duration)) in state.network().get_validation_package_timeouts.iter() {
+    for (key, (time, duration)) in state.network().get_validation_package_timeouts.iter() {
         if let Ok(elapsed) = time.elapsed() {
             if elapsed > *duration {
                 dispatch_action(
                     context.action_channel(),
-                    ActionWrapper::new(Action::GetValidationPackageTimeout(address.clone())),
+                    ActionWrapper::new(Action::GetValidationPackageTimeout(key.clone())),
                 );
             }
         }
@@ -93,6 +92,12 @@ mod tests {
             .get(&msg_id.clone())
             .cloned();
 
-        assert_eq!(maybe_reply, Some(Err(HolochainError::Timeout)));
+        assert_eq!(
+            maybe_reply,
+            Some(Err(HolochainError::Timeout(
+                "timeout src: crates/core/src/network/reducers/send_direct_message.rs:81"
+                    .to_string()
+            )))
+        );
     }
 }

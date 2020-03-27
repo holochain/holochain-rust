@@ -1,14 +1,8 @@
-extern crate holochain_tracing as ht;
-extern crate lib3h_sodium;
-extern crate log;
-extern crate newrelic;
-extern crate structopt;
-#[macro_use(new_relic_setup)]
-extern crate holochain_common;
-
+use holochain_common::new_relic_setup;
+use holochain_tracing as ht;
 use lib3h_protocol::uri::Builder;
 use lib3h_sodium::SodiumCryptoSystem;
-use log::*;
+#[cfg(feature = "newrelic_on")]
 use newrelic::{LogLevel, LogOutput, NewRelicConfig};
 use sim2h::{run_sim2h, DhtAlgorithm, MESSAGE_LOGGER};
 use std::path::PathBuf;
@@ -46,35 +40,27 @@ struct Cli {
         help = "The service name to use for Jaeger tracing spans. No tracing is done if not specified."
     )]
     tracing_name: Option<String>,
+
+    #[structopt(
+        long,
+        help = "Outputs structured json from logging:
+    - None: No logging at all (fastest)
+    - Log: Output logs to stdout with spans (human readable)
+    - Compact: Same as Log but with less information
+    - Json: Output logs as structured json (machine readable)
+    ",
+        default_value = "Log"
+    )]
+    structured: ht::structured::Output,
 }
 
 new_relic_setup!("NEW_RELIC_LICENSE_KEY");
 #[holochain_tracing_macros::newrelic_autotrace(SIM2H_SERVER)]
 fn main() {
-    //this set up new relic needs
-    NewRelicConfig::default()
-        .logging(LogLevel::Error, LogOutput::StdErr)
-        .init()
-        .unwrap_or_else(|_| warn!("Could not configure new relic daemon"));
-    env_logger::init();
     let args = Cli::from_args();
-
-    let tracer = if let Some(service_name) = args.tracing_name {
-        let (span_tx, span_rx) = crossbeam_channel::unbounded();
-        let _ = std::thread::Builder::new()
-            .name("tracer_loop".to_string())
-            .spawn(move || {
-                info!("Tracer loop started.");
-                // TODO: killswitch
-                let reporter = ht::reporter::JaegerBinaryReporter::new(&service_name).unwrap();
-                for span in span_rx {
-                    reporter.report(&[span]).expect("could not report span");
-                }
-            });
-        Some(ht::Tracer::with_sender(ht::AllSampler, span_tx))
-    } else {
-        None
-    };
+    ht::structured::init_fmt(args.structured, args.tracing_name)
+        .expect("Failed to start structed tracing");
+    newrelic_setup();
 
     let host = "ws://0.0.0.0/";
     let uri = Builder::with_raw_url(host)
@@ -92,9 +78,21 @@ fn main() {
         DhtAlgorithm::NaiveSharding {
             redundant_count: args.sharding,
         },
-        tracer,
     );
 
     // just park the main thread indefinitely...
     rt.block_on(futures::future::pending::<()>());
 }
+
+#[cfg(feature = "newrelic_on")]
+//this set up new relic needs
+fn newrelic_setup() {
+    NewRelicConfig::default()
+        .logging(ht::LogLevel::Error, LogOutput::StdErr)
+        .init()
+        .unwrap_or_else(|_| warn!("Could not configure new relic daemon"));
+}
+
+#[cfg(not(feature = "newrelic_on"))]
+//this set up new relic needs
+fn newrelic_setup() {}

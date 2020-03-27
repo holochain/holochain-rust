@@ -2,7 +2,6 @@ use crate::{
     action::{ActionWrapper, QueryKey},
     network::{query::NetworkQuery, reducers::send, state::NetworkState},
     state::State,
-    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
@@ -78,9 +77,14 @@ pub fn reduce_query_timeout(
     }
 
     if network_state.get_query_results.get(key).unwrap().is_none() {
-        network_state
-            .get_query_results
-            .insert(key.clone(), Some(Err(HolochainError::Timeout)));
+        network_state.get_query_results.insert(
+            key.clone(),
+            Some(Err(HolochainError::Timeout(format!(
+                "timeout src: {}:{}",
+                file!(),
+                line!()
+            )))),
+        );
     }
 }
 
@@ -106,7 +110,7 @@ mod tests {
         let entry = test_entry();
         let key = GetEntryKey {
             address: entry.address(),
-            id: snowflake::ProcessUniqueId::new().to_string(),
+            id: nanoid::simple(),
         };
         let action = Action::Query((QueryKey::Entry(key.clone()), QueryPayload::Entry, None));
         let action_wrapper = ActionWrapper::new(action);
@@ -145,7 +149,7 @@ mod tests {
         let entry = test_entry();
         let key = GetEntryKey {
             address: entry.address(),
-            id: snowflake::ProcessUniqueId::new().to_string(),
+            id: nanoid::simple(),
         };
         let action_wrapper = ActionWrapper::new(Action::Query((
             QueryKey::Entry(key.clone()),
@@ -221,7 +225,7 @@ mod tests {
             .map(|result| result.clone());
         assert_eq!(
             maybe_get_entry_result,
-            Some(Some(Err(HolochainError::Timeout)))
+            Some(Some(Err(HolochainError::Timeout(_))))
         );
 
         // test that an existing result does not get overwritten by timeout signal
@@ -290,7 +294,7 @@ mod tests {
             base_address: entry.address(),
             link_type: Some(link_type),
             tag: Some("link-tag".to_string()),
-            id: snowflake::ProcessUniqueId::new().to_string(),
+            id: nanoid::simple(),
         };
         let config = GetLinksQueryConfiguration::default();
         let get_links_network_query = GetLinksNetworkQuery::Links(config);
@@ -334,7 +338,7 @@ mod tests {
         let key = GetLinksKey {
             base_address: entry.address(),
             link_type: link_type.clone(),
-            id: snowflake::ProcessUniqueId::new().to_string(),
+            id: nanoid::simple(),
         };
         let action_wrapper = ActionWrapper::new(Action::QueryLinks(key.clone()));
 
@@ -373,7 +377,7 @@ mod tests {
         let key = GetLinksKey {
             base_address: entry.address(),
             link_type: link_type.clone(),
-            id: snowflake::ProcessUniqueId::new().to_string(),
+            id: nanoid::simple(),
         };
         let action_wrapper = ActionWrapper::new(Action::QueryLinks(key.clone()));
 
@@ -407,7 +411,7 @@ mod tests {
 
         assert_eq!(
             maybe_get_entry_result,
-            Some(Some(Err(HolochainError::Timeout)))
+            Some(Some(Err(HolochainError::Timeout(_))))
         );
     }
 }

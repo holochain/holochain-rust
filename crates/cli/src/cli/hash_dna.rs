@@ -1,4 +1,3 @@
-use crate::NEW_RELIC_LICENSE_KEY;
 use error::DefaultResult;
 use failure::err_msg;
 use holochain_conductor_lib::conductor::Conductor;
@@ -10,6 +9,7 @@ use std::path::PathBuf;
 pub fn hash_dna(
     dna_file_path: &PathBuf,
     properties: Option<Vec<String>>,
+    uuid: Option<String>,
 ) -> DefaultResult<Address> {
     let mut dna = Conductor::load_dna(dna_file_path)?;
     if let Some(properties) = properties {
@@ -34,6 +34,9 @@ pub fn hash_dna(
             map.insert(name, serde_json::Value::String(value));
         }
         dna.properties = serde_json::Value::Object(map);
+    }
+    if let Some(uuid) = uuid {
+        dna.uuid = uuid;
     }
 
     Ok(dna.address())

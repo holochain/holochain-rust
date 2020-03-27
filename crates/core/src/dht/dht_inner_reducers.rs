@@ -1,3 +1,4 @@
+use crate::content_store::{AddContent, GetContent};
 ///
 /// Inner DHT reducers are not pure functions but rather functions designed to make the required
 /// mutations to a newly cloned DhtState object. Unlike the reducers they do not need a specific signature.
@@ -8,10 +9,6 @@
 /// It is up to the calling reducer function whether the new state object should be kept and what to do with the return value
 ///
 use crate::dht::dht_store::DhtStore;
-use crate::{
-    content_store::{AddContent, GetContent},
-    NEW_RELIC_LICENSE_KEY,
-};
 use holochain_core_types::{
     crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus},
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
@@ -100,7 +97,7 @@ pub(crate) fn reduce_update_entry_inner(
 pub(crate) fn reduce_remove_entry_inner(
     store: &mut DhtStore,
     latest_deleted_address: &Address,
-    deletion_address: &Address,
+    _deletion_address: &Address,
 ) -> HcResult<Address> {
     let entry = store
         .get(latest_deleted_address)?
@@ -140,10 +137,11 @@ pub(crate) fn reduce_remove_entry_inner(
         .map_err(|_| HolochainError::ErrorGeneric("Could not create eav".into()))?;
     store.add_eavi(&new_status_eav)?;
 
+    // THIS IS WRONG THERE IS NEW ENTRY TO REDIRECT A GET TO WHEN YOU DELETE SOMETHING
     // Update crud-link
-    let crud_link_eav = create_crud_link_eav(latest_deleted_address, deletion_address)
-        .map_err(|_| HolochainError::ErrorGeneric(String::from("Could not create eav")))?;
-    store.add_eavi(&crud_link_eav)?;
+    //let crud_link_eav = create_crud_link_eav(latest_deleted_address, deletion_address)
+    //    .map_err(|_| HolochainError::ErrorGeneric(String::from("Could not create eav")))?;
+    //store.add_eavi(&crud_link_eav)?;
 
     Ok(latest_deleted_address.clone())
 }

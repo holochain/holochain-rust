@@ -2,7 +2,6 @@ use crate::{
     action::{ActionWrapper, DirectMessageData},
     network::{reducers::send, state::NetworkState},
     state::State,
-    NEW_RELIC_LICENSE_KEY,
 };
 use holochain_core_types::error::HolochainError;
 use holochain_json_api::json::JsonString;
@@ -74,9 +73,14 @@ pub fn reduce_send_direct_message_timeout(
         return;
     }
 
-    network_state
-        .custom_direct_message_replys
-        .insert(id.clone(), Err(HolochainError::Timeout));
+    network_state.custom_direct_message_replys.insert(
+        id.clone(),
+        Err(HolochainError::Timeout(format!(
+            "timeout src: {}:{}",
+            file!(),
+            line!()
+        ))),
+    );
 }
 
 #[cfg(test)]
@@ -146,6 +150,12 @@ mod tests {
             .get(&msg_id.clone())
             .cloned();
 
-        assert_eq!(maybe_reply, Some(Err(HolochainError::Timeout)));
+        assert_eq!(
+            maybe_reply,
+            Some(Err(HolochainError::Timeout(
+                "timeout src: crates/core/src/network/reducers/send_direct_message.rs:81"
+                    .to_string()
+            )))
+        );
     }
 }

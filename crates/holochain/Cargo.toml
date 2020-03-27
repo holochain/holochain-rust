@@ -1,6 +1,6 @@
 [package]
 name = "holochain"
-version = "0.0.45-alpha1"
+version = "0.0.46-alpha1"
 description = "holochain"
 license = "GPL-3.0-only"
 homepage = "https://github.com/holochain/holochain-rust"
@@ -9,11 +9,11 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [dependencies]
 crossbeam-channel = "=0.3.8"
-holochain_core_types = { version = "=0.0.45-alpha1", path = "../core_types" }
-holochain_conductor_lib = { version = "=0.0.45-alpha1", path = "../conductor_lib" }
+holochain_core_types = { version = "=0.0.46-alpha1", path = "../core_types" }
+holochain_conductor_lib = { version = "=0.0.46-alpha1", path = "../conductor_lib" }
 lib3h_sodium = "=0.0.42"
-holochain_common = { version = "=0.0.45-alpha1", path = "../common" }
-holochain_locksmith = { version = "=0.0.45-alpha1", path = "../locksmith" }
+holochain_common = { version = "=0.0.46-alpha1", path = "../common" }
+holochain_locksmith = { version = "=0.0.46-alpha1", path = "../locksmith" }
 holochain_tracing = "=0.0.24"
 holochain_tracing_macros = "=0.0.24"
 structopt = "=0.2.15"

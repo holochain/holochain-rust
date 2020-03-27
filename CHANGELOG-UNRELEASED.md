@@ -16,7 +16,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Removed
 
 ### Fixed
-- Bug where EntryAspects were being associated with the wrong Entries
+- Log made a big more quiet by shifting errors into Debug log level
+- IOError bug on handle_fetch_entry [PR#2148](https://github.com/holochain/holochain-rust/pull/2148)
+- Bug where UpdateAspects were handled incorrectly
+- Bugs causing validation timeouts [#2159](https://github.com/holochain/holochain-rust/pull/2159)  [#2169](https://github.com/holochain/holochain-rust/pull/2169)
+- Bugs entry update [PR#2170](https://github.com/holochain/holochain-rust/pull/2170) &  [PR#2153](https://github.com/holochain/holochain-rust/pull/2153)
 
 ### Security
-

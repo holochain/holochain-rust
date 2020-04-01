@@ -328,7 +328,7 @@ mod tests {
         let bind = bind.to_string();
         let con = con.map(|c| c.to_string());
 
-        let (send_binding, recv_binding) = crossbeam_channel::unbounded();
+        let (send_binding, recv_binding) = crossbeam_channel::bounded(CHANNEL_SIZE);
 
         let server_thread = std::thread::spawn(move || {
             let mut listener =

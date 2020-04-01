@@ -1,5 +1,5 @@
-use crate::{action::ActionWrapper, consistency::ConsistencySignal};
-use crossbeam_channel::{unbounded, Receiver, Sender};
+use crate::{action::ActionWrapper, consistency::ConsistencySignal, CHANNEL_SIZE};
+use crossbeam_channel::{bounded, Receiver, Sender};
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
 use serde::{Deserialize, Deserializer};
@@ -43,7 +43,7 @@ pub type SignalSender = Sender<Signal>;
 pub type SignalReceiver = Receiver<Signal>;
 
 pub fn signal_channel() -> (SignalSender, SignalReceiver) {
-    unbounded()
+    bounded(CHANNEL_SIZE)
 }
 
 /// Pass on messages from multiple receivers into a single receiver
@@ -52,7 +52,7 @@ pub fn _combine_receivers<T>(rxs: Vec<Receiver<T>>) -> Receiver<T>
 where
     T: 'static + Send,
 {
-    let (master_tx, master_rx) = unbounded::<T>();
+    let (master_tx, master_rx) = bounded::<T>(CHANNEL_SIZE);
     for rx in rxs {
         let tx = master_tx.clone();
         let _ = thread::Builder::new()

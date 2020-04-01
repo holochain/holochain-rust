@@ -53,10 +53,16 @@ impl Future for CommitFuture {
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
         cx.waker().clone().wake();
+        if self.context.action_channel().is_full() {
+            return Poll::Pending;
+        }
         if let Some(state) = self.context.try_state() {
             match state.agent().actions().get(&self.action) {
                 Some(r) => match r.response() {
                     AgentActionResponse::Commit(result) => {
+                        if self.context.action_channel().is_full() {
+                            return Poll::Pending;
+                        }
                         dispatch_action(
                             self.context.action_channel(),
                             ActionWrapper::new(Action::ClearActionResponse(

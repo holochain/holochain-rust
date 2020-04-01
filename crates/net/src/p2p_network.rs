@@ -17,7 +17,7 @@ use lib3h_protocol::{
     protocol_client::Lib3hClientProtocol, protocol_server::Lib3hServerProtocol, Address,
 };
 
-use crate::sim2h_worker::Sim2hWorker;
+use crate::{sim2h_worker::Sim2hWorker, CHANNEL_SIZE};
 use crossbeam_channel;
 use holochain_conductor_lib_api::conductor_api::ConductorApi;
 use holochain_json_api::json::JsonString;
@@ -111,7 +111,7 @@ impl P2pNetwork {
             }),
         };
 
-        let (t, rx) = crossbeam_channel::unbounded();
+        let (t, rx) = crossbeam_channel::bounded(CHANNEL_SIZE);
         let tx = t.clone();
         let wrapped_handler = if Self::should_wait_for_p2p_ready(&p2p_config2.clone()) {
             NetHandler::new(Box::new(move |message| {

@@ -47,6 +47,9 @@ impl Future for PublishFuture {
         //
         cx.waker().clone().wake();
 
+        if self.context.action_channel().is_full() {
+            return Poll::Pending;
+        }
         if let Some(state) = self.context.try_state() {
             let state = state.network();
             if let Err(error) = state.initialized() {
@@ -56,6 +59,9 @@ impl Future for PublishFuture {
             match state.actions().get(&self.action) {
                 Some(r) => match r.response() {
                     NetworkActionResponse::Publish(result) => {
+                        if self.context.action_channel().is_full() {
+                            return Poll::Pending;
+                        }
                         dispatch_action(
                             self.context.action_channel(),
                             ActionWrapper::new(Action::ClearActionResponse(

@@ -1,4 +1,4 @@
-use crossbeam_channel::{unbounded, Sender};
+use crossbeam_channel::{bounded, Sender};
 use holochain_core_types::error::HolochainError;
 use holochain_locksmith::Mutex;
 use lib3h_sodium::secbuf::SecBuf;
@@ -11,6 +11,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+use crate::CHANNEL_SIZE;
 #[cfg(unix)]
 use std::io::{BufRead, BufReader};
 #[cfg(unix)]
@@ -34,7 +35,7 @@ pub struct PassphraseManager {
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl PassphraseManager {
     pub fn new(passphrase_service: Arc<Mutex<dyn PassphraseService + Send>>) -> Self {
-        let (kill_switch_tx, kill_switch_rx) = unbounded::<()>();
+        let (kill_switch_tx, kill_switch_rx) = bounded::<()>(CHANNEL_SIZE);
         let pm = PassphraseManager {
             passphrase_cache: Arc::new(Mutex::new(None)),
             passphrase_service,

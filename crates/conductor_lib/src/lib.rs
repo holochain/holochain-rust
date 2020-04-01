@@ -131,4 +131,6 @@ pub mod static_server_impls;
 
 pub use crate::holochain::Holochain;
 
+const CHANNEL_SIZE: usize = 1000;
+
 new_relic_setup!("NEW_RELIC_LICENSE_KEY");

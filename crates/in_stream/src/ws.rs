@@ -451,7 +451,7 @@ mod tests {
         mut listener: InStreamListenerWss<SubL>,
         c: C,
     ) {
-        let (send_binding, recv_binding) = crossbeam_channel::unbounded();
+        let (send_binding, recv_binding) = crossbeam_channel::bounded(CHANNEL_SIZE);
 
         let server_thread = std::thread::spawn(move || {
             println!("bound to: {}", listener.binding());

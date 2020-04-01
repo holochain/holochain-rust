@@ -601,8 +601,8 @@ impl Suite {
     /// create a new sim2h server instance on given port
     #[allow(clippy::mutex_atomic)]
     pub fn new(port: u16) -> Self {
-        let (snd1, rcv1) = crossbeam_channel::unbounded();
-        let (snd2, rcv2) = crossbeam_channel::unbounded::<StressJobMetricLogger>();
+        let (snd1, rcv1) = crossbeam_channel::bounded(CHANNEL_SIZE);
+        let (snd2, rcv2) = crossbeam_channel::bounded::<StressJobMetricLogger>(CHANNEL_SIZE);
 
         let sim2h_cont = Arc::new(Mutex::new(true));
         let sim2h_cont_clone = sim2h_cont.clone();

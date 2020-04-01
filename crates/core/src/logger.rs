@@ -1,6 +1,7 @@
 //! This logger is the logger that's attached to each Holochain application
 //! which is separate from standard logging via the log crate warn! info! debug! logging that
 //! gets emitted globaly from the conductor.
+use crate::CHANNEL_SIZE;
 use chrono::Local;
 use crossbeam_channel;
 use holochain_locksmith::Mutex;
@@ -56,7 +57,7 @@ impl ChannelLogger {
         ChannelLogger { id, sender }
     }
     pub fn setup() -> (Sender, Receiver) {
-        crossbeam_channel::unbounded()
+        crossbeam_channel::bounded(CHANNEL_SIZE)
     }
 }
 pub fn default_handler(msg: String) {

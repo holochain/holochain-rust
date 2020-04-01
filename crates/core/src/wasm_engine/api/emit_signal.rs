@@ -61,8 +61,9 @@ pub mod tests {
             },
             Defn,
         },
+        CHANNEL_SIZE,
     };
-    use crossbeam_channel::unbounded;
+    use crossbeam_channel::bounded;
     use holochain_json_api::json::JsonString;
     use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
     use std::sync::Arc;
@@ -92,7 +93,7 @@ pub mod tests {
         let (_instance, context) =
             test_instance_and_context(dna, None).expect("Could not create test instance");
 
-        let (tx, rx) = unbounded::<Signal>();
+        let (tx, rx) = bounded::<Signal>(CHANNEL_SIZE);
         let mut context = (*context).clone();
         context.signal_tx = Some(tx);
         let context = Arc::new(context);

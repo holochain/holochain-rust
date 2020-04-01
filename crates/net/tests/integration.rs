@@ -18,6 +18,8 @@ use lib3h_sodium::SodiumCryptoSystem;
 use sim2h::{run_sim2h, DhtAlgorithm};
 use std::sync::Arc;
 
+const CHANNEL_SIZE: usize = 1000;
+
 struct Server {
     pub bound_uri: Lib3hUri,
     pub thread: Option<std::thread::JoinHandle<()>>,
@@ -35,7 +37,7 @@ impl Server {
     pub fn new(url: &str) -> Self {
         let url = url2!("{}", url);
 
-        let (snd, rcv) = crossbeam_channel::unbounded();
+        let (snd, rcv) = crossbeam_channel::bounded(CHANNEL_SIZE);
 
         let cont = Arc::new(Mutex::new(true));
 

@@ -12,6 +12,7 @@ use crate::{
     signal::Signal,
     state::{State, StateWrapper},
     workflows::{application, run_holding_workflow},
+    CHANNEL_SIZE,
 };
 #[cfg(test)]
 use crate::{
@@ -19,7 +20,7 @@ use crate::{
     nucleus::actions::initialize::initialize_chain,
 };
 use clokwerk::{ScheduleHandle, Scheduler, TimeUnits};
-use crossbeam_channel::{unbounded, Receiver, Sender};
+use crossbeam_channel::{bounded, Receiver, Sender};
 use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},
@@ -27,7 +28,6 @@ use holochain_core_types::{
 use holochain_locksmith::RwLock;
 #[cfg(test)]
 use holochain_persistence_api::cas::content::Address;
-use holochain_tracing::{self as ht, channel::lax_send_wrapped};
 use snowflake::ProcessUniqueId;
 use std::{
     sync::{
@@ -66,7 +66,6 @@ pub struct Observer {
 pub static DISPATCH_WITHOUT_CHANNELS: &str = "dispatch called without channels open";
 
 #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Instance {
     /// This is initializing and starting the redux action loop and adding channels to dispatch
     /// actions and observers to the context
@@ -161,9 +160,9 @@ impl Instance {
 
     /// Returns recievers for actions and observers that get added to this instance
     fn initialize_channels(&mut self) -> (ActionReceiver, Receiver<Observer>) {
-        let (tx_action, rx_action) = unbounded::<ht::SpanWrap<ActionWrapper>>();
-        let (tx_observer, rx_observer) = unbounded::<Observer>();
-        self.action_channel = Some(tx_action.into());
+        let (tx_action, rx_action) = bounded::<ActionWrapper>(CHANNEL_SIZE);
+        let (tx_observer, rx_observer) = bounded::<Observer>(CHANNEL_SIZE);
+        self.action_channel = Some(tx_action);
         self.observer_channel = Some(tx_observer);
 
         (rx_action, rx_observer)
@@ -189,7 +188,7 @@ impl Instance {
         let mut sync_self = self.clone();
         let sub_context = self.initialize_context(context);
 
-        let (kill_sender, kill_receiver) = crossbeam_channel::unbounded();
+        let (kill_sender, kill_receiver) = crossbeam_channel::bounded(CHANNEL_SIZE);
         self.kill_switch = Some(kill_sender);
         let instance_is_alive = sub_context.instance_is_alive.clone();
         instance_is_alive.store(true, Ordering::Relaxed);
@@ -201,7 +200,7 @@ impl Instance {
             ))
             .spawn(move || {
                 let mut state_observers: Vec<Observer> = Vec::new();
-                let mut unprocessed_action: Option<ht::SpanWrap<ActionWrapper>> = None;
+                let mut unprocessed_action: Option<ActionWrapper> = None;
                 while kill_receiver.try_recv().is_err() {
                     if let Some(action_wrapper) = unprocessed_action.take().or_else(|| rx_action.recv_timeout(Duration::from_secs(1)).ok()) {
                         // Add new observers
@@ -212,11 +211,6 @@ impl Instance {
                         if should_process {
                             match sync_self.process_action(&action_wrapper, &sub_context) {
                                 Ok(()) => {
-                                    let tag = ht::Tag::new("action", format!("{:?}", action));
-                                    let _guard = action_wrapper.follower_(&sub_context.tracer, "action_loop thread", |s| s.tag(tag).start()).map(|span| {
-
-                                        ht::push_span(span)
-                                    });
                                     sync_self.emit_signals(&sub_context, &action_wrapper);
                                     // Tick all observers and remove those that have lost their receiving part
                                     state_observers= state_observers
@@ -254,20 +248,9 @@ impl Instance {
     /// returns the new vector of observers
     pub(crate) fn process_action(
         &self,
-        action_wrapper: &ht::SpanWrap<ActionWrapper>,
+        action_wrapper: &ActionWrapper,
         context: &Arc<Context>,
     ) -> Result<(), HolochainError> {
-        let span = action_wrapper
-            .follower(&context.tracer, "begin process_action")
-            .unwrap_or_else(|| {
-                context
-                    .tracer
-                    .span("ROOT: process_action")
-                    .tag(ht::debug_tag("action_wrapper", action_wrapper))
-                    .start()
-                    .into()
-            });
-        let _trace_guard = ht::push_span(span);
         context.redux_wants_write.store(true, Relaxed);
         // Mutate state
         {
@@ -281,7 +264,7 @@ impl Instance {
                     HolochainError::Timeout(format!("timeout src: {}:{}", file!(), line!()))
                 })?;
 
-            new_state = state.reduce(action_wrapper.data.clone());
+            new_state = state.reduce(action_wrapper.clone());
 
             // Change the state
             *state = new_state;
@@ -307,7 +290,7 @@ impl Instance {
     }
 
     fn start_holding_loop(&mut self, context: Arc<Context>) {
-        let (kill_sender, kill_receiver) = crossbeam_channel::unbounded();
+        let (kill_sender, kill_receiver) = crossbeam_channel::bounded(CHANNEL_SIZE);
         self.kill_switch_holding = Some(kill_sender);
         thread::Builder::new()
             .name(format!(
@@ -495,7 +478,7 @@ impl Drop for Instance {
 /// Panics if the channels passed are disconnected.
 #[autotrace]
 pub fn dispatch_action(action_channel: &ActionSender, action_wrapper: ActionWrapper) {
-    lax_send_wrapped(action_channel.clone(), action_wrapper, "dispatch_action");
+    action_channel.send(action_wrapper).ok();
 }
 
 #[cfg(test)]

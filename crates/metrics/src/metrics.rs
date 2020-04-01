@@ -1,3 +1,4 @@
+use crate::CHANNEL_SIZE;
 use chrono::prelude::*;
 use crossbeam_channel::*;
 use holochain_locksmith::RwLock;
@@ -68,7 +69,7 @@ pub struct ChannelPublisher {
 
 impl ChannelPublisher {
     pub fn new(mut metric_publisher: Box<dyn MetricPublisher>) -> Self {
-        let (sender, receiver) = unbounded();
+        let (sender, receiver) = bounded(CHANNEL_SIZE);
         let _join_handle: std::thread::JoinHandle<()> = std::thread::spawn(move || loop {
             match receiver.try_recv() {
                 Ok(metric) => metric_publisher.publish(&metric),

@@ -21,7 +21,7 @@ pub fn reduce_shutdown(
     assert_eq!(*action, Action::ShutdownNetwork);
 
     let json = Lib3hClientProtocol::LeaveSpace(SpaceData {
-        request_id: nanoid::simple(),
+        request_id: snowflake::ProcessUniqueId::new().to_string(),
         space_address: state
             .dna_address
             .as_ref()

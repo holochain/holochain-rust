@@ -59,9 +59,7 @@ impl Future for CommitFuture {
                     AgentActionResponse::Commit(result) => {
                         dispatch_action(
                             self.context.action_channel(),
-                            ActionWrapper::new(Action::ClearActionResponse(
-                                self.action.id().to_string(),
-                            )),
+                            ActionWrapper::new(Action::ClearActionResponse(*self.action.id())),
                         );
                         Poll::Ready(result.clone())
                     }

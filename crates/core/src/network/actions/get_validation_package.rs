@@ -9,7 +9,7 @@ use holochain_core_types::{
     chain_header::ChainHeader, error::HcResult, validation::ValidationPackage,
 };
 
-use std::{pin::Pin, sync::Arc};
+use std::{pin::Pin, sync::Arc, thread, time::Duration};
 
 /// GetValidationPackage Action Creator
 /// This triggers the network module to retrieve the validation package for the
@@ -60,7 +60,11 @@ impl Future for GetValidationPackageFuture {
         // TODO: connect the waker to state updates for performance reasons
         // See: https://github.com/holochain/holochain-rust/issues/314
         //
-        cx.waker().clone().wake();
+        let waker_clone = cx.waker().clone();
+        thread::spawn(move || {
+            thread::sleep(Duration::from_millis(1));
+            waker_clone.wake();
+        });
 
         if let Some(state) = self.context.try_state() {
             let state = state.network();

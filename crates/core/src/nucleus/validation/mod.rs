@@ -147,10 +147,13 @@ pub fn entry_to_validation_data(
                             validation_data: validation_data.clone(),
                         })
                     })
-                    .unwrap_or_else(|_| {
-                        Err(HolochainError::ErrorGeneric(
-                            "Could not find Entry".to_string(),
-                        ))
+                    .unwrap_or_else(|e| {
+                        match e {
+                            HolochainError::Timeout(_) => Err(e),
+                            _ => Err(HolochainError::ErrorGeneric(
+                                format!("Could not find App Entry during validation, got err: {}", e),
+                            )),
+                        }
                     })
             })
             .unwrap_or_else(|| {
@@ -169,10 +172,13 @@ pub fn entry_to_validation_data(
                         validation_data: validation_data.clone(),
                     })
                 })
-                .unwrap_or_else(|_| {
-                    Err(HolochainError::ErrorGeneric(
-                        "Could not find Entry".to_string(),
-                    ))
+                .unwrap_or_else(|e| {
+                    match e {
+                        HolochainError::Timeout(_) => Err(e),
+                        _ => Err(HolochainError::ErrorGeneric(
+                            format!("Could not find Delete Entry during validation, got err: {}", e),
+                        )),
+                    }
                 })
         }
         Entry::CapTokenGrant(_) => Ok(EntryValidationData::Create {

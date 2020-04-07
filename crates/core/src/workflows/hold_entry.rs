@@ -50,18 +50,35 @@ pub async fn hold_entry_workflow(
         &context
     ).await
     .map_err(|err| {
-        if let ValidationError::UnresolvedDependencies(dependencies) = &err {
-            log_debug!(context, "workflow/hold_entry: {} could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}",
-                entry_with_header.entry.address(),
-                dependencies,
-            );
-            HolochainError::ValidationPending
-        } else {
-            log_warn!(context, "workflow/hold_entry: Entry {} is NOT valid! Validation error: {:?}",
-                entry_with_header.entry.address(),
-                err,
-            );
-            HolochainError::from(err)
+        match &err {
+            ValidationError::UnresolvedDependencies(dependencies) => {
+                log_debug!(context, "workflow/hold_entry: {} could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}",
+                           entry_with_header.entry.address(),
+                           dependencies,
+                );
+                HolochainError::ValidationPending
+            },
+            ValidationError::Fail(_) => {
+                log_warn!(context, "workflow/hold_entry: Entry {} is NOT valid! Validation error: {:?}",
+                          entry_with_header.entry.address(),
+                          err,
+                );
+                HolochainError::from(err)
+            },
+            ValidationError::Error(HolochainError::Timeout(e))=> {
+                log_warn!(context, "workflow/hold_entry: Entry {} got timeout({}) during validation, retrying",
+                          entry_with_header.entry.address(),
+                          e,
+                );
+                HolochainError::ValidationPending
+            }
+            _ => {
+                log_warn!(context, "workflow/hold_entry: Entry {} Unexpected error during validation: {:?}",
+                          entry_with_header.entry.address(),
+                          err,
+                );
+                HolochainError::from(err)
+            }
         }
     })?;
 

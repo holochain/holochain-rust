@@ -28,7 +28,7 @@ fn main() {
                     basename
                         .split('-')
                         .nth(0)
-                        .and_then(|hash| Some(hash.to_string()))
+                        .map(|hash| hash.to_string())
                 })
             })
         })

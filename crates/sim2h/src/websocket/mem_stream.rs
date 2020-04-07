@@ -275,7 +275,7 @@ impl MemManager {
 
 // this is the actual singleton global reference
 lazy_static! {
-    static ref MEM_MANAGER: GhostMutex<MemManager> = { GhostMutex::new(MemManager::new()) };
+    static ref MEM_MANAGER: GhostMutex<MemManager> = GhostMutex::new(MemManager::new());
 }
 
 #[cfg(test)]

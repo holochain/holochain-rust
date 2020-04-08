@@ -128,6 +128,55 @@ pub async fn validate_entry(
     }
 }
 
+/// interprets the validation error from validate_entry. for use by the various workflows
+pub fn process_validation_err(
+    src: &str,
+    context: Arc<Context>,
+    err: ValidationError,
+    addr: Address,
+) -> HolochainError {
+    match err {
+        ValidationError::UnresolvedDependencies(dependencies) => {
+            log_debug!(context, "workflow/{}: {} could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}",
+                       src,
+                       addr,
+                       dependencies,
+            );
+            HolochainError::ValidationPending
+        }
+        ValidationError::Fail(_) => {
+            log_warn!(
+                context,
+                "workflow/{}: Entry {} is NOT valid! Validation error: {:?}",
+                src,
+                addr,
+                err,
+            );
+            HolochainError::from(err)
+        }
+        ValidationError::Error(HolochainError::Timeout(e)) => {
+            log_warn!(
+                context,
+                "workflow/{}: Entry {} got timeout({}) during validation, retrying",
+                src,
+                addr,
+                e,
+            );
+            HolochainError::ValidationPending
+        }
+        _ => {
+            log_warn!(
+                context,
+                "workflow/{}: Entry {} Unexpected error during validation: {:?}",
+                src,
+                addr,
+                err,
+            );
+            HolochainError::from(err)
+        }
+    }
+}
+
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn entry_to_validation_data(
     context: Arc<Context>,
@@ -147,10 +196,12 @@ pub fn entry_to_validation_data(
                             validation_data: validation_data.clone(),
                         })
                     })
-                    .unwrap_or_else(|_| {
-                        Err(HolochainError::ErrorGeneric(
-                            "Could not find Entry".to_string(),
-                        ))
+                    .unwrap_or_else(|e| match e {
+                        HolochainError::Timeout(_) => Err(e),
+                        _ => Err(HolochainError::ErrorGeneric(format!(
+                            "Could not find App Entry during validation, got err: {}",
+                            e
+                        ))),
                     })
             })
             .unwrap_or_else(|| {
@@ -169,10 +220,12 @@ pub fn entry_to_validation_data(
                         validation_data: validation_data.clone(),
                     })
                 })
-                .unwrap_or_else(|_| {
-                    Err(HolochainError::ErrorGeneric(
-                        "Could not find Entry".to_string(),
-                    ))
+                .unwrap_or_else(|e| match e {
+                    HolochainError::Timeout(_) => Err(e),
+                    _ => Err(HolochainError::ErrorGeneric(format!(
+                        "Could not find Delete Entry during validation, got err: {}",
+                        e
+                    ))),
                 })
         }
         Entry::CapTokenGrant(_) => Ok(EntryValidationData::Create {

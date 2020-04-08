@@ -2,7 +2,7 @@ use crate::{
     context::Context,
     dht::actions::hold_aspect::hold_aspect,
     network::entry_with_header::EntryWithHeader,
-    nucleus::validation::{validate_entry, ValidationError},
+    nucleus::validation::{process_validation_err, validate_entry},
     workflows::validation_package,
 };
 use holochain_core_types::{
@@ -10,6 +10,7 @@ use holochain_core_types::{
     network::entry_aspect::EntryAspect,
     validation::{EntryLifecycle, ValidationData},
 };
+use holochain_persistence_api::cas::content::AddressableContent;
 use std::sync::Arc;
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
@@ -43,25 +44,16 @@ pub async fn hold_update_workflow(
     };
 
     // 3. Validate the entry
-    validate_entry(
-        entry.clone(),
-        Some(link.clone()),
-        validation_data,
-        &context
-    ).await
-    .map_err(|err| {
-        if let ValidationError::UnresolvedDependencies(dependencies) = &err {
-            log_debug!(context, "workflow/hold_update: Entry update could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}", dependencies);
-            HolochainError::ValidationPending
-        } else {
-            log_warn!(context, "workflow/hold_update: Entry update {:?} is NOT valid! Validation error: {:?}",
-                entry_with_header.entry,
+    validate_entry(entry.clone(), Some(link.clone()), validation_data, &context)
+        .await
+        .map_err(|err| {
+            process_validation_err(
+                "hold_update",
+                context.clone(),
                 err,
-            );
-            HolochainError::from(err)
-        }
-
-    })?;
+                entry_with_header.entry.address(),
+            )
+        })?;
 
     // 4. If valid store the entry aspect in the local DHT shard
     let aspect = EntryAspect::Update(

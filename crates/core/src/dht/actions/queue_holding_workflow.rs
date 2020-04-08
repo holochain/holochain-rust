@@ -66,11 +66,11 @@ impl Future for QueueHoldingWorkflowFuture {
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
         self.context
-            .register_waker(self.id.clone().into(), cx.waker().clone());
+            .register_waker(self.id.clone(), cx.waker().clone());
 
         if let Some(state) = self.context.try_state() {
             if state.dht().has_exact_queued_holding_workflow(&self.pending) {
-                self.context.unregister_waker(self.id.clone().into());
+                self.context.unregister_waker(self.id.clone());
                 Poll::Ready(())
             } else {
                 Poll::Pending

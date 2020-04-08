@@ -53,8 +53,10 @@ pub async fn initialize_network_with_spoofed_dna(
     let action_wrapper = ActionWrapper::new(Action::InitNetwork(network_settings));
     dispatch_action(context.action_channel(), action_wrapper.clone());
 
+    let id = ProcessUniqueId::new();
     InitNetworkFuture {
         context: context.clone(),
+        id,
     }
     .await
 }
@@ -71,7 +73,6 @@ impl Future for InitNetworkFuture {
         if let Some(err) = self.context.action_channel_error("InitializeNetworkFuture") {
             return Poll::Ready(Err(err));
         }
-        //
 
         self.context
             .register_waker(self.id.clone(), cx.waker().clone());

@@ -37,11 +37,18 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
+use futures::task::Waker;
+use std::collections::HashMap;
 
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 
 pub const RETRY_VALIDATION_DURATION_MIN: Duration = Duration::from_millis(500);
 pub const RETRY_VALIDATION_DURATION_MAX: Duration = Duration::from_secs(60 * 60);
+
+pub enum WakerRequest {
+    Add(ProcessUniqueId, Waker),
+    Remove(ProcessUniqueId),
+}
 
 /// Object representing a Holochain instance, i.e. a running holochain (DNA + DHT + source-chain)
 /// Holds the Event loop and processes it with the redux pattern.
@@ -51,6 +58,7 @@ pub struct Instance {
     state: Arc<RwLock<StateWrapper>>,
     action_channel: Option<ActionSender>,
     observer_channel: Option<Sender<Observer>>,
+    waker_channel: Option<Sender<WakerRequest>>,
     scheduler_handle: Option<Arc<ScheduleHandle>>,
     persister: Option<Arc<RwLock<dyn Persister>>>,
     consistency_model: ConsistencyModel,
@@ -71,7 +79,7 @@ impl Instance {
     /// This is initializing and starting the redux action loop and adding channels to dispatch
     /// actions and observers to the context
     pub(in crate::instance) fn inner_setup(&mut self, context: Arc<Context>) -> Arc<Context> {
-        let (rx_action, rx_observer) = self.initialize_channels();
+        let (rx_action, rx_observer, rx_waker) = self.initialize_channels();
         let context = self.initialize_context(context);
         let mut scheduler = Scheduler::new();
         scheduler
@@ -89,7 +97,7 @@ impl Instance {
 
         self.persister = Some(context.persister.clone());
 
-        self.start_action_loop(context.clone(), rx_action, rx_observer);
+        self.start_action_loop(context.clone(), rx_action, rx_observer, rx_waker);
         self.start_holding_loop(context.clone());
 
         context
@@ -160,13 +168,15 @@ impl Instance {
     }
 
     /// Returns recievers for actions and observers that get added to this instance
-    fn initialize_channels(&mut self) -> (ActionReceiver, Receiver<Observer>) {
+    fn initialize_channels(&mut self) -> (ActionReceiver, Receiver<Observer>, Receiver<WakerRequest>) {
         let (tx_action, rx_action) = unbounded::<ht::SpanWrap<ActionWrapper>>();
         let (tx_observer, rx_observer) = unbounded::<Observer>();
+        let (tx_waker, rx_waker) = unbounded::<WakerRequest>();
         self.action_channel = Some(tx_action.into());
         self.observer_channel = Some(tx_observer);
+        self.waker_channel = Some(tx_waker);
 
-        (rx_action, rx_observer)
+        (rx_action, rx_observer, rx_waker)
     }
 
     pub fn initialize_context(&self, context: Arc<Context>) -> Arc<Context> {
@@ -174,6 +184,7 @@ impl Instance {
         sub_context.set_state(self.state.clone());
         sub_context.action_channel = self.action_channel.clone();
         sub_context.observer_channel = self.observer_channel.clone();
+        sub_context.waker_channel = self.waker_channel.clone();
         Arc::new(sub_context)
     }
 
@@ -183,6 +194,7 @@ impl Instance {
         context: Arc<Context>,
         rx_action: ActionReceiver,
         rx_observer: Receiver<Observer>,
+        rx_waker: Receiver<WakerRequest>,
     ) {
         self.stop_action_loop();
 
@@ -202,10 +214,18 @@ impl Instance {
             .spawn(move || {
                 let mut state_observers: Vec<Observer> = Vec::new();
                 let mut unprocessed_action: Option<ht::SpanWrap<ActionWrapper>> = None;
+                let mut wakers: HashMap::<ProcessUniqueId, Waker> = HashMap::new();
                 while kill_receiver.try_recv().is_err() {
                     if let Some(action_wrapper) = unprocessed_action.take().or_else(|| rx_action.recv_timeout(Duration::from_secs(1)).ok()) {
                         // Add new observers
                         state_observers.extend(rx_observer.try_iter());
+                        // Process waker requests
+                        for waker_request in rx_waker.iter() {
+                            match waker_request {
+                                WakerRequest::Add(id, waker) => wakers.insert(id, waker),
+                                WakerRequest::Remove(id) => wakers.remove(&id),
+                            };
+                        }
                         let action = action_wrapper.action();
                         // Ping can happen often, and should be as lightweight as possible
                         let should_process = *action != Action::Ping;
@@ -223,6 +243,10 @@ impl Instance {
                                         .into_iter()
                                         .filter(|observer| observer.ticker.send(()).is_ok())
                                         .collect();
+                                    // Tick all wakers
+                                    for waker in wakers.values() {
+                                        waker.clone().wake();
+                                    }
                                 },
                                 Err(HolochainError::Timeout(s)) => {
                                     warn!("Instance::process_action() couldn't get lock on state. Trying again next loop. Timeout string: {}", s);
@@ -424,6 +448,7 @@ impl Instance {
             state: Arc::new(RwLock::new(StateWrapper::new(context.clone()))),
             action_channel: None,
             observer_channel: None,
+            waker_channel: None,
             scheduler_handle: None,
             persister: None,
             consistency_model: ConsistencyModel::new(context),
@@ -437,6 +462,7 @@ impl Instance {
             state: Arc::new(RwLock::new(StateWrapper::from(state))),
             action_channel: None,
             observer_channel: None,
+            waker_channel: None,
             scheduler_handle: None,
             persister: None,
             consistency_model: ConsistencyModel::new(context),
@@ -782,7 +808,7 @@ pub mod tests {
         let netname = Some("can_process_action");
         let mut instance = Instance::new(test_context("jason", netname));
         let context = instance.initialize_context(test_context("jane", netname));
-        let (rx_action, rx_observer) = instance.initialize_channels();
+        let (rx_action, rx_observer, _) = instance.initialize_channels();
 
         let action_wrapper = test_action_wrapper_commit();
         instance

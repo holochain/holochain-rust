@@ -38,10 +38,6 @@ impl Future for ShutdownFuture {
     type Output = HcResult<()>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
-        //
-        // TODO: connect the waker to state updates for performance reasons
-        // See: https://github.com/holochain/holochain-rust/issues/314
-        //
         cx.waker().clone().wake();
         self.state
             .try_read()

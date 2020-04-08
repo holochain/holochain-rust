@@ -47,11 +47,11 @@ use std::{
     time::Duration,
 };
 
-#[cfg(test)]
-use test_utils::mock_signing::mock_conductor_api;
 use crate::instance::WakerRequest;
 use futures::task::Waker;
 use snowflake::ProcessUniqueId;
+#[cfg(test)]
+use test_utils::mock_signing::mock_conductor_api;
 
 pub type ActionSender = ht::channel::SpanSender<ActionWrapper>;
 pub type ActionReceiver = ht::channel::SpanReceiver<ActionWrapper>;
@@ -357,11 +357,15 @@ impl Context {
     }
 
     pub fn register_waker(&self, future_id: ProcessUniqueId, waker: Waker) {
-        self.waker_channel.as_ref().map(|c| c.send(WakerRequest::Add(future_id, waker)));
+        self.waker_channel
+            .as_ref()
+            .map(|c| c.send(WakerRequest::Add(future_id, waker)));
     }
 
     pub fn unregister_waker(&self, future_id: ProcessUniqueId) {
-        self.waker_channel.as_ref().map(|c| c.send(WakerRequest::Remove(future_id)));
+        self.waker_channel
+            .as_ref()
+            .map(|c| c.send(WakerRequest::Remove(future_id)));
     }
 
     /// Custom future executor that enables nested futures and nested calls of `block_on`.

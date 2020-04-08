@@ -20,6 +20,7 @@ use crate::{
 };
 use clokwerk::{ScheduleHandle, Scheduler, TimeUnits};
 use crossbeam_channel::{unbounded, Receiver, Sender};
+use futures::task::Waker;
 use holochain_core_types::{
     dna::Dna,
     error::{HcResult, HolochainError},
@@ -30,6 +31,7 @@ use holochain_persistence_api::cas::content::Address;
 use holochain_tracing::{self as ht, channel::lax_send_wrapped};
 use snowflake::ProcessUniqueId;
 use std::{
+    collections::HashMap,
     sync::{
         atomic::Ordering::{self, Relaxed},
         Arc,
@@ -37,8 +39,6 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
-use futures::task::Waker;
-use std::collections::HashMap;
 
 pub const RECV_DEFAULT_TIMEOUT_MS: Duration = Duration::from_millis(10000);
 
@@ -168,7 +168,9 @@ impl Instance {
     }
 
     /// Returns recievers for actions and observers that get added to this instance
-    fn initialize_channels(&mut self) -> (ActionReceiver, Receiver<Observer>, Receiver<WakerRequest>) {
+    fn initialize_channels(
+        &mut self,
+    ) -> (ActionReceiver, Receiver<Observer>, Receiver<WakerRequest>) {
         let (tx_action, rx_action) = unbounded::<ht::SpanWrap<ActionWrapper>>();
         let (tx_observer, rx_observer) = unbounded::<Observer>();
         let (tx_waker, rx_waker) = unbounded::<WakerRequest>();

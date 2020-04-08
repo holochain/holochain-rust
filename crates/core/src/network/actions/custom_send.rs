@@ -7,6 +7,7 @@ use crate::{
 use futures::{future::Future, task::Poll};
 use holochain_core_types::{error::HolochainError, time::Timeout};
 use holochain_persistence_api::cas::content::Address;
+use snowflake::ProcessUniqueId;
 use std::{pin::Pin, sync::Arc, time::SystemTime};
 
 /// SendDirectMessage Action Creator for custom (=app) messages
@@ -34,9 +35,11 @@ pub async fn custom_send(
     )));
     dispatch_action(context.action_channel(), action_wrapper);
 
+    let future_id = ProcessUniqueId::new();
     SendResponseFuture {
         context: context.clone(),
         id,
+        future_id,
     }
     .await
 }
@@ -45,6 +48,7 @@ pub async fn custom_send(
 pub struct SendResponseFuture {
     context: Arc<Context>,
     id: String,
+    future_id: ProcessUniqueId,
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
@@ -56,11 +60,8 @@ impl Future for SendResponseFuture {
             return Poll::Ready(Err(err));
         }
 
-        //
-        // TODO: connect the waker to state updates for performance reasons
-        // See: https://github.com/holochain/holochain-rust/issues/314
-        //
-        cx.waker().clone().wake();
+        self.context
+            .register_waker(self.future_id.clone(), cx.waker().clone());
 
         if let Some(state) = self.context.try_state() {
             let state = state.network();
@@ -73,6 +74,7 @@ impl Future for SendResponseFuture {
                         self.context.action_channel(),
                         ActionWrapper::new(Action::ClearCustomSendResponse(self.id.clone())),
                     );
+                    self.context.unregister_waker(self.future_id.clone());
                     Poll::Ready(result.clone())
                 }
                 _ => Poll::Pending,

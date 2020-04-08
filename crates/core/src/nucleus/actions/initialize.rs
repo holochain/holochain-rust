@@ -16,6 +16,7 @@ use holochain_core_types::{
 use holochain_persistence_api::cas::content::Address;
 
 use crate::instance::dispatch_action;
+use snowflake::ProcessUniqueId;
 use std::{pin::Pin, sync::Arc, time::*};
 
 /// Initialization is the value returned by successful initialization of a DNA instance
@@ -64,8 +65,10 @@ pub async fn initialize_chain(
 
     let action_wrapper = ActionWrapper::new(Action::InitializeChain(dna.clone()));
     dispatch_action(context.action_channel(), action_wrapper.clone());
+    let id = ProcessUniqueId::new();
     let _ = InitializingFuture {
         context: context.clone(),
+        id,
     }
     .await;
 
@@ -179,9 +182,11 @@ pub async fn initialize_chain(
         )))
         .expect("Action channel not usable in initialize_chain()");
 
+    let id = ProcessUniqueId::new();
     InitializationFuture {
         context: context.clone(),
         created_at: Instant::now(),
+        id,
     }
     .await
 }
@@ -189,6 +194,7 @@ pub async fn initialize_chain(
 /// Tracks if the initialization has started and the DNA is set in the nucleus.
 pub struct InitializingFuture {
     context: Arc<Context>,
+    id: ProcessUniqueId,
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
@@ -199,20 +205,22 @@ impl Future for InitializingFuture {
         if let Some(err) = self.context.action_channel_error("InitializingFuture") {
             return Poll::Ready(Err(err));
         }
-        //
-        // TODO: connect the waker to state updates for performance reasons
-        // See: https://github.com/holochain/holochain-rust/issues/314
-        //
-        cx.waker().clone().wake();
+        self.context
+            .register_waker(self.id.clone(), cx.waker().clone());
 
         if let Some(state) = self.context.try_state() {
             match state.nucleus().status {
                 NucleusStatus::New => Poll::Pending,
-                NucleusStatus::Initializing => Poll::Ready(Ok(NucleusStatus::Initializing)),
+                NucleusStatus::Initializing => {
+                    self.context.unregister_waker(self.id.clone());
+                    Poll::Ready(Ok(NucleusStatus::Initializing))
+                }
                 NucleusStatus::Initialized(ref init) => {
+                    self.context.unregister_waker(self.id.clone());
                     Poll::Ready(Ok(NucleusStatus::Initialized(init.clone())))
                 }
                 NucleusStatus::InitializationFailed(ref error) => {
+                    self.context.unregister_waker(self.id.clone());
                     Poll::Ready(Err(HolochainError::ErrorGeneric(error.clone())))
                 }
             }
@@ -227,6 +235,7 @@ impl Future for InitializingFuture {
 pub struct InitializationFuture {
     context: Arc<Context>,
     created_at: Instant,
+    id: ProcessUniqueId,
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
@@ -237,11 +246,8 @@ impl Future for InitializationFuture {
         if let Some(err) = self.context.action_channel_error("InitializationFuture") {
             return Poll::Ready(Err(err));
         }
-        //
-        // TODO: connect the waker to state updates for performance reasons
-        // See: https://github.com/holochain/holochain-rust/issues/314
-        //
-        cx.waker().clone().wake();
+        self.context
+            .register_waker(self.id.clone(), cx.waker().clone());
 
         if Instant::now().duration_since(self.created_at)
             > Duration::from_secs(INITIALIZATION_TIMEOUT)
@@ -255,9 +261,11 @@ impl Future for InitializationFuture {
                 NucleusStatus::New => Poll::Pending,
                 NucleusStatus::Initializing => Poll::Pending,
                 NucleusStatus::Initialized(ref init) => {
+                    self.context.unregister_waker(self.id.clone());
                     Poll::Ready(Ok(NucleusStatus::Initialized(init.clone())))
                 }
                 NucleusStatus::InitializationFailed(ref error) => {
+                    self.context.unregister_waker(self.id.clone());
                     Poll::Ready(Err(HolochainError::ErrorGeneric(error.clone())))
                 }
             }

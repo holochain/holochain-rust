@@ -13,6 +13,7 @@ use holochain_core_types::{crud_status::CrudStatus, error::HcResult, time::Timeo
 use std::{pin::Pin, sync::Arc};
 
 use holochain_wasm_utils::api_serialization::get_links::{GetLinksArgs, LinksStatusRequestKind};
+use snowflake::ProcessUniqueId;
 use std::time::SystemTime;
 
 /// FetchEntry Action Creator
@@ -67,9 +68,11 @@ pub async fn query(
     ));
     let action_wrapper = ActionWrapper::new(entry);
     dispatch_action(context.action_channel(), action_wrapper.clone());
+    let id = ProcessUniqueId::new();
     QueryFuture {
         context: context.clone(),
         key: key.clone(),
+        id,
     }
     .await
 }
@@ -79,6 +82,7 @@ pub async fn query(
 pub struct QueryFuture {
     context: Arc<Context>,
     key: QueryKey,
+    id: ProcessUniqueId,
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
@@ -90,11 +94,8 @@ impl Future for QueryFuture {
             return Poll::Ready(Err(err));
         }
 
-        //
-        // TODO: connect the waker to state updates for performance reasons
-        // See: https://github.com/holochain/holochain-rust/issues/314
-        //
-        cx.waker().clone().wake();
+        self.context
+            .register_waker(self.id.clone(), cx.waker().clone());
 
         if let Some(state) = self.context.try_state() {
             if let Err(error) = state.network().initialized() {
@@ -106,6 +107,7 @@ impl Future for QueryFuture {
                         self.context.action_channel(),
                         ActionWrapper::new(Action::ClearQueryResult(self.key.clone())),
                     );
+                    self.context.unregister_waker(self.id.clone());
                     Poll::Ready(result.clone())
                 }
                 _ => Poll::Pending,

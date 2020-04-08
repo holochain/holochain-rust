@@ -7,6 +7,7 @@ use crate::{
 use futures::{future::Future, task::Poll};
 use holochain_core_types::error::HcResult;
 use holochain_persistence_api::cas::content::Address;
+use snowflake::ProcessUniqueId;
 use std::{pin::Pin, sync::Arc};
 
 /// Publish Action Creator
@@ -18,9 +19,11 @@ use std::{pin::Pin, sync::Arc};
 pub async fn publish(address: Address, context: &Arc<Context>) -> HcResult<Address> {
     let action_wrapper = ActionWrapper::new(Action::Publish(address));
     dispatch_action(context.action_channel(), action_wrapper.clone());
+    let id = ProcessUniqueId::new();
     PublishFuture {
         context: context.clone(),
         action: action_wrapper,
+        id,
     }
     .await
 }
@@ -30,6 +33,7 @@ pub async fn publish(address: Address, context: &Arc<Context>) -> HcResult<Addre
 pub struct PublishFuture {
     context: Arc<Context>,
     action: ActionWrapper,
+    id: ProcessUniqueId,
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
@@ -41,11 +45,8 @@ impl Future for PublishFuture {
             return Poll::Ready(Err(err));
         }
 
-        //
-        // TODO: connect the waker to state updates for performance reasons
-        // See: https://github.com/holochain/holochain-rust/issues/314
-        //
-        cx.waker().clone().wake();
+        self.context
+            .register_waker(self.id.clone(), cx.waker().clone());
 
         if let Some(state) = self.context.try_state() {
             let state = state.network();
@@ -62,6 +63,7 @@ impl Future for PublishFuture {
                                 self.action.id().to_string(),
                             )),
                         );
+                        self.context.unregister_waker(self.id.clone());
                         Poll::Ready(result.clone())
                     }
                     _ => unreachable!(),

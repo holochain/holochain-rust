@@ -7,6 +7,7 @@ use crate::{
 use futures::{future::Future, task::Poll};
 use holochain_core_types::{entry::Entry, error::HolochainError};
 use holochain_persistence_api::cas::content::Address;
+use snowflake::ProcessUniqueId;
 use std::{pin::Pin, sync::Arc};
 
 /// Commit Action Creator
@@ -26,9 +27,11 @@ pub async fn commit_entry(
         vec![],
     )));
     dispatch_action(context.action_channel(), action_wrapper.clone());
+    let id = ProcessUniqueId::new();
     CommitFuture {
         context: context.clone(),
         action: action_wrapper,
+        id,
     }
     .await
 }
@@ -38,6 +41,7 @@ pub async fn commit_entry(
 pub struct CommitFuture {
     context: Arc<Context>,
     action: ActionWrapper,
+    id: ProcessUniqueId,
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
@@ -48,11 +52,8 @@ impl Future for CommitFuture {
         if let Some(err) = self.context.action_channel_error("CommitFuture") {
             return Poll::Ready(Err(err));
         }
-        //
-        // TODO: connect the waker to state updates for performance reasons
-        // See: https://github.com/holochain/holochain-rust/issues/314
-        //
-        cx.waker().clone().wake();
+        self.context
+            .register_waker(self.id.clone(), cx.waker().clone());
         if let Some(state) = self.context.try_state() {
             match state.agent().actions().get(&self.action) {
                 Some(r) => match r.response() {
@@ -63,6 +64,7 @@ impl Future for CommitFuture {
                                 self.action.id().to_string(),
                             )),
                         );
+                        self.context.unregister_waker(self.id.clone());
                         Poll::Ready(result.clone())
                     }
                     _ => unreachable!(),

@@ -47,6 +47,9 @@ use std::{
     time::Duration,
 };
 
+use crate::instance::WakerRequest;
+use futures::task::Waker;
+use snowflake::ProcessUniqueId;
 #[cfg(test)]
 use test_utils::mock_signing::mock_conductor_api;
 
@@ -94,6 +97,7 @@ pub struct Context {
     state: Option<Arc<RwLock<StateWrapper>>>,
     pub action_channel: Option<ActionSender>,
     pub observer_channel: Option<Sender<Observer>>,
+    pub waker_channel: Option<Sender<WakerRequest>>,
     pub chain_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
     pub dht_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
     pub eav_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
@@ -159,6 +163,7 @@ impl Context {
             action_channel: None,
             signal_tx,
             observer_channel: None,
+            waker_channel: None,
             chain_storage,
             dht_storage,
             eav_storage: eav,
@@ -199,6 +204,7 @@ impl Context {
             action_channel,
             signal_tx,
             observer_channel,
+            waker_channel: None,
             chain_storage: cas.clone(),
             dht_storage: cas,
             eav_storage: eav,
@@ -348,6 +354,18 @@ impl Context {
             .send(Observer { ticker: tick_tx })
             .expect("Observer channel not initialized");
         tick_rx
+    }
+
+    pub fn register_waker(&self, future_id: ProcessUniqueId, waker: Waker) {
+        self.waker_channel
+            .as_ref()
+            .map(|c| c.send(WakerRequest::Add(future_id, waker)));
+    }
+
+    pub fn unregister_waker(&self, future_id: ProcessUniqueId) {
+        self.waker_channel
+            .as_ref()
+            .map(|c| c.send(WakerRequest::Remove(future_id)));
     }
 
     /// Custom future executor that enables nested futures and nested calls of `block_on`.

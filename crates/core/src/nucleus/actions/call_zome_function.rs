@@ -24,6 +24,7 @@ use crate::instance::dispatch_action;
 use base64;
 use futures::{future::Future, task::Poll};
 use holochain_wasm_utils::api_serialization::crypto::CryptoMethod;
+use snowflake::ProcessUniqueId;
 use std::{pin::Pin, sync::Arc};
 
 #[derive(Clone, Debug, PartialEq, Hash, Serialize)]
@@ -98,10 +99,12 @@ pub async fn call_zome_function(
         zome_call
     );
 
+    let id = ProcessUniqueId::new();
     CallResultFuture {
         context: context.clone(),
         zome_call,
         call_spawned: false,
+        id,
     }
     .await
 }
@@ -324,6 +327,7 @@ pub struct CallResultFuture {
     context: Arc<Context>,
     zome_call: ZomeFnCall,
     call_spawned: bool,
+    id: ProcessUniqueId,
 }
 
 impl Unpin for CallResultFuture {}
@@ -335,11 +339,8 @@ impl Future for CallResultFuture {
         if let Some(err) = self.context.action_channel_error("CallResultFuture") {
             return Poll::Ready(Err(err));
         }
-        // With our own executor implementation in Context::block_on we actually
-        // wouldn't need the waker since this executor is attached to the redux loop
-        // and re-polls after every State mutation.
-        // Leaving this in to be safe against running this future in another executor.
-        cx.waker().clone().wake();
+        self.context
+            .register_waker(self.id.clone(), cx.waker().clone());
 
         if let Some(state) = self.context.clone().try_state() {
             if self.call_spawned {
@@ -351,6 +352,7 @@ impl Future for CallResultFuture {
                                 self.zome_call.clone(),
                             )),
                         );
+                        self.context.unregister_waker(self.id.clone());
                         Poll::Ready(result)
                     }
                     None => Poll::Pending,

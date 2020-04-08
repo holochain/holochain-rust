@@ -5,6 +5,7 @@ use crate::{
     instance::dispatch_action,
 };
 use futures::{future::Future, task::Poll};
+use snowflake::ProcessUniqueId;
 use std::{
     pin::Pin,
     sync::Arc,
@@ -37,7 +38,13 @@ pub async fn queue_holding_workflow(
     {
         log_trace!(context, "Queueing holding workflow: {:?}", pending);
         dispatch_queue_holding_workflow(pending.clone(), delay, context.clone());
-        QueueHoldingWorkflowFuture { context, pending }.await
+        let id = ProcessUniqueId::new();
+        QueueHoldingWorkflowFuture {
+            context,
+            pending,
+            id,
+        }
+        .await
     } else {
         log_trace!(
             context,
@@ -50,6 +57,7 @@ pub async fn queue_holding_workflow(
 pub struct QueueHoldingWorkflowFuture {
     context: Arc<Context>,
     pending: PendingValidation,
+    id: ProcessUniqueId,
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
@@ -57,14 +65,12 @@ impl Future for QueueHoldingWorkflowFuture {
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Self::Output> {
-        //
-        // TODO: connect the waker to state updates for performance reasons
-        // See: https://github.com/holochain/holochain-rust/issues/314
-        //
-        cx.waker().clone().wake();
+        self.context
+            .register_waker(self.id.clone(), cx.waker().clone());
 
         if let Some(state) = self.context.try_state() {
             if state.dht().has_exact_queued_holding_workflow(&self.pending) {
+                self.context.unregister_waker(self.id.clone());
                 Poll::Ready(())
             } else {
                 Poll::Pending

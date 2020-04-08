@@ -222,7 +222,7 @@ impl Instance {
                         // Add new observers
                         state_observers.extend(rx_observer.try_iter());
                         // Process waker requests
-                        for waker_request in rx_waker.iter() {
+                        for waker_request in rx_waker.try_iter() {
                             match waker_request {
                                 WakerRequest::Add(id, waker) => wakers.insert(id, waker),
                                 WakerRequest::Remove(id) => wakers.remove(&id),

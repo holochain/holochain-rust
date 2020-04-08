@@ -38,9 +38,7 @@ pub async fn validate_app_entry(
 
     let params = EntryValidationArgs {
         validation_data: entry_to_validation_data(context.clone(), &entry, link, validation_data)
-            .map_err(|e| {
-                ValidationError::Error(e)
-        })?,
+            .map_err(|e| ValidationError::Error(e))?,
     };
     let call = CallbackFnCall::new(&zome_name, "__hdk_validate_app_entry", params);
 

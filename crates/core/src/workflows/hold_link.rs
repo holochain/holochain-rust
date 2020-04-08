@@ -1,10 +1,8 @@
 use crate::{
-    context::Context, dht::actions::hold_aspect::hold_aspect,
-    network::entry_with_header::EntryWithHeader, nucleus::validation::validate_entry,
-};
-
-use crate::{
-    nucleus::validation::ValidationError,
+    context::Context,
+    dht::actions::hold_aspect::hold_aspect,
+    network::entry_with_header::EntryWithHeader,
+    nucleus::validation::{process_validation_err, validate_entry},
     workflows::{hold_entry::hold_entry_workflow, validation_package},
 };
 use holochain_core_types::{
@@ -13,6 +11,7 @@ use holochain_core_types::{
     network::entry_aspect::EntryAspect,
     validation::{EntryLifecycle, ValidationData},
 };
+use holochain_persistence_api::cas::content::AddressableContent;
 use std::sync::Arc;
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
@@ -58,20 +57,16 @@ pub async fn hold_link_workflow(
         entry_with_header.entry.clone(),
         None,
         validation_data,
-        &context
-    ).await
+        &context,
+    )
+    .await
     .map_err(|err| {
-        if let ValidationError::UnresolvedDependencies(dependencies) = &err {
-            log_debug!(context, "workflow/hold_link: Link could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}", dependencies);
-            HolochainError::ValidationPending
-        } else {
-            log_warn!(context, "workflow/hold_link: Link {:?} is NOT valid! Validation error: {:?}",
-                entry_with_header.entry,
-                err,
-            );
-            HolochainError::from(err)
-        }
-
+        process_validation_err(
+            "hold_link",
+            context.clone(),
+            err,
+            entry_with_header.entry.address(),
+        )
     })?;
     log_debug!(context, "workflow/hold_link: is valid!");
 

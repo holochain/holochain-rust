@@ -3,7 +3,7 @@ use crate::{
     network::entry_with_header::EntryWithHeader, nucleus::validation::validate_entry,
 };
 
-use crate::{nucleus::validation::ValidationError, workflows::validation_package};
+use crate::{nucleus::validation::process_validation_err, workflows::validation_package};
 use holochain_core_types::{
     error::HolochainError,
     network::entry_aspect::EntryAspect,
@@ -47,22 +47,16 @@ pub async fn hold_entry_workflow(
         entry_with_header.entry.clone(),
         None,
         validation_data,
-        &context
-    ).await
+        &context,
+    )
+    .await
     .map_err(|err| {
-        if let ValidationError::UnresolvedDependencies(dependencies) = &err {
-            log_debug!(context, "workflow/hold_entry: {} could not be validated due to unresolved dependencies and will be tried later. List of missing dependencies: {:?}",
-                entry_with_header.entry.address(),
-                dependencies,
-            );
-            HolochainError::ValidationPending
-        } else {
-            log_warn!(context, "workflow/hold_entry: Entry {} is NOT valid! Validation error: {:?}",
-                entry_with_header.entry.address(),
-                err,
-            );
-            HolochainError::from(err)
-        }
+        process_validation_err(
+            "hold_entry",
+            context.clone(),
+            err,
+            entry_with_header.entry.address(),
+        )
     })?;
 
     log_debug!(

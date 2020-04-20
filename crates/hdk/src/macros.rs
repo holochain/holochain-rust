@@ -360,7 +360,7 @@ macro_rules! define_zome {
 
                         traitfns_map.insert(stringify!($trait).into(), traitfns);
                     }
-                ),*
+                )*
 
                 traitfns_map
             };

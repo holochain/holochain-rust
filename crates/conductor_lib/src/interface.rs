@@ -1250,6 +1250,33 @@ impl ConductorApiBuilder {
 
         self
     }
+
+    /// Adds functionality for dealing with traits
+    ///
+    /// - `introspection/traits/get_zomes_by_trait`
+    ///     Checks all zomes of all installed instances if they implement the given
+    ///     trait and responds with a list of all found zomes with according instance
+    ///     ID such that caller is able to call trait functions of those zomes next.
+    ///     Params:
+    ///         - trait [object]
+    ///     Returns: [array] containing all found zomes implementing given trait as string
+    ///              prefixed by instance ID ("instance_id/zome_name")
+    pub fn with_introspection_functions(mut self) -> Self {
+        self.io.add_method("introspection/traits/get_zomes_by_trait", move |params| {
+            let params_map = Self::unwrap_params_map(params)?;
+            let trait_map = params_map.get("trait").ok_or_else(|| {
+                jsonrpc_core::Error::invalid_params(String::from("trait param not provided"))
+            })?;
+
+            let trait_name = Self::get_as_string("name", trait_map)?;
+
+
+            let agent_address = conductor_call!(|c| c.add_test_agent(id, name))?;
+            Ok(json!({ "agent_address": agent_address }))
+        });
+
+        self
+    }
 }
 
 /// A Broadcaster is something that knows how to send a Signal back to a client.

@@ -9,7 +9,7 @@ serde = "=1.0.104"
 serde_json = "=1.0.47"
 serde_derive = "=1.0.104"
 hdk = { path = "../../../../crates/hdk" }
-hdk-proc-macros = { path = "../../../../crates/hdk_v2" }
+hdk_proc_macros = { path = "../../../../crates/hdk_v2" }
 
 [lib]
 path = "src/lib.rs"

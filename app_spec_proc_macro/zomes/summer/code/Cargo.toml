@@ -2,12 +2,13 @@
 name = "summer"
 version = "0.0.47-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
+edition = "2018"
 
 [dependencies]
 serde = "=1.0.104"
 serde_json = { version = "=1.0.47", features = ["preserve_order"] }
 hdk = { path = "../../../../crates/hdk" }
-hdk-proc-macros = { path = "../../../../crates/hdk_v2" }
+hdk_proc_macros = { path = "../../../../crates/hdk_v2" }
 
 serde_derive = "=1.0.104"
 boolinator = "=2.4.0"

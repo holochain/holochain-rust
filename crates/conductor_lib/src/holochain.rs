@@ -308,6 +308,12 @@ impl Holochain {
                 .expect("Context must be Some since we've checked it with check_instance()? above"),
         )?)
     }
+
+    pub fn dna(&self) -> Result<Dna, HolochainInstanceError> {
+        self.check_instance()?;
+        let state = self.context.as_ref().unwrap().state().ok_or(HolochainInstanceError::InstanceNotInitialized)?;
+        state.nucleus().dna().ok_or(HolochainInstanceError::InstanceNotInitialized)
+    }
 }
 
 #[cfg(test)]

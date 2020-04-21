@@ -5,6 +5,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 {{ version-heading }}
 
 ### Added
+ * Trait handle / introspection: admin interfaces can now query the conductor to get all instances/zomes that implement a given zome trait. [#2181](https://github.com/holochain/holochain-rust/pull/2181)
 
 ### Changed
 

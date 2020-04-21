@@ -15,7 +15,7 @@ pub mod summer {
         Ok(())
     }
 
-    #[zome_fn("hc_public")]
+    #[zome_fn("hc_public", "crypto")]
     fn sum(num1: u32, num2: u32) -> ZomeApiResult<u32> {
         Ok(num1 + num2)
     }

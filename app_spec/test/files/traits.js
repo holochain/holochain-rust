@@ -10,18 +10,18 @@ module.exports = scenario => {
                 {
                     name: 'encrypt',
                     inputs: [{ name: 'payload', type: 'String' }],
-                    outputs: [{ name: 'result', type: 'String' }],
+                    outputs: [{ name: 'result', type: 'ZomeApiResult<String>' }],
                 },
                 {
                     name: 'decrypt',
                     inputs: [{ name: 'payload', type: 'String' }],
-                    outputs: [{ name: 'result', type: 'String' }],
+                    outputs: [{ name: 'result', type: 'ZomeApiResult<String>' }],
                 }
             ]
         };
 
         const zomes = await conductor.admin('introspection/traits/get_zomes_by_trait', {trait: crypto_trait})
 
-        t.deepEqual(zomes, ['app/simple'])
+        t.deepEqual(zomes, { zomes: [ { instance_id: 'app', zome_name: 'simple' } ] })
     })
 }

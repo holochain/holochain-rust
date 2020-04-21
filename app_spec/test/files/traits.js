@@ -1,7 +1,7 @@
 const { one } = require('../config')
 
 module.exports = scenario => {
-    scenario.only('get zomes by trait', async (s, t) => {
+    scenario('get zomes by trait', async (s, t) => {
         const {conductor} = await s.players({conductor: one}, true)
 
         const crypto_trait = {

@@ -9,18 +9,18 @@ module.exports = scenario => {
             functions: [
                 {
                     name: 'encrypt',
-                    inputs: { payload: 'String' },
-                    outputs: { result: 'String' },
+                    inputs: [{ name: 'payload', type: 'String' }],
+                    outputs: [{ name: 'result', type: 'String' }],
                 },
                 {
                     name: 'decrypt',
-                    inputs: { payload: 'String' },
-                    outputs: { result: 'String' },
+                    inputs: [{ name: 'payload', type: 'String' }],
+                    outputs: [{ name: 'result', type: 'String' }],
                 }
             ]
         };
 
-        const zomes = conductor.admin('introspection/traits/get_zomes_by_trait', crypto_trait)
+        const zomes = conductor.admin('introspection/traits/get_zomes_by_trait', {trait: crypto_trait})
 
         t.deepEqual(zomes, ['app/simple'])
     })

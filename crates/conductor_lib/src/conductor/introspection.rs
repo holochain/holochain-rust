@@ -1,6 +1,5 @@
-use holochain_core_types::dna::fn_declarations::FnDeclaration;
 use crate::conductor::Conductor;
-use holochain_core_types::error::HolochainError;
+use holochain_core_types::{dna::fn_declarations::FnDeclaration, error::HolochainError};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct ZomePath {
@@ -9,14 +8,19 @@ pub struct ZomePath {
 }
 
 pub trait ConductorIntrospection {
-    fn get_zomes_by_trait(&mut self, trait_name: String, trait_functions: Vec<FnDeclaration>)
-        -> Result<Vec<ZomePath>, HolochainError>;
+    fn get_zomes_by_trait(
+        &mut self,
+        trait_name: String,
+        trait_functions: Vec<FnDeclaration>,
+    ) -> Result<Vec<ZomePath>, HolochainError>;
 }
 
 impl ConductorIntrospection for Conductor {
-    fn get_zomes_by_trait(&mut self, trait_name: String, trait_functions: Vec<FnDeclaration>)
-        -> Result<Vec<ZomePath>, HolochainError>
-    {
+    fn get_zomes_by_trait(
+        &mut self,
+        trait_name: String,
+        trait_functions: Vec<FnDeclaration>,
+    ) -> Result<Vec<ZomePath>, HolochainError> {
         let _ = trait_name;
         let _ = trait_functions;
         Ok(Vec::new())

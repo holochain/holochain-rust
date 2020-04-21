@@ -1,6 +1,8 @@
 use crate::conductor::Conductor;
-use holochain_core_types::{dna::fn_declarations::FnDeclaration, error::HolochainError};
-use holochain_core_types::dna::fn_declarations::TraitFns;
+use holochain_core_types::{
+    dna::fn_declarations::{FnDeclaration, TraitFns},
+    error::HolochainError,
+};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct ZomePath {
@@ -27,7 +29,7 @@ impl ConductorIntrospection for Conductor {
             if let Ok(dna) = instance_lock.read()?.dna() {
                 // Instance is initialized and has DNA
                 for (zome_name, zome) in dna.zomes.iter() {
-                    if let Some(TraitFns{functions}) = zome.traits.get(&trait_name) {
+                    if let Some(TraitFns { functions }) = zome.traits.get(&trait_name) {
                         // DNA implements a trait with same name.
                         // Still need to check all functions signatures...
                         let mut is_good = true;
@@ -36,11 +38,12 @@ impl ConductorIntrospection for Conductor {
                             // and does the whole declaration (complete signature) of the function
                             // as found in the some match the declaration in the given trait?
                             if !functions.contains(&trait_fn_decl.name)
-                                || !zome.fn_declarations.contains(&trait_fn_decl) {
+                                || !zome.fn_declarations.contains(&trait_fn_decl)
+                            {
                                 // If not we can exit this loop since it takes only one missing
                                 // function to not have the trait implemented.
                                 is_good = false;
-                                break
+                                break;
                             }
                         }
 

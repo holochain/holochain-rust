@@ -311,8 +311,16 @@ impl Holochain {
 
     pub fn dna(&self) -> Result<Dna, HolochainInstanceError> {
         self.check_instance()?;
-        let state = self.context.as_ref().unwrap().state().ok_or(HolochainInstanceError::InstanceNotInitialized)?;
-        state.nucleus().dna().ok_or(HolochainInstanceError::InstanceNotInitialized)
+        let state = self
+            .context
+            .as_ref()
+            .unwrap()
+            .state()
+            .ok_or(HolochainInstanceError::InstanceNotInitialized)?;
+        state
+            .nucleus()
+            .dna()
+            .ok_or(HolochainInstanceError::InstanceNotInitialized)
     }
 }
 

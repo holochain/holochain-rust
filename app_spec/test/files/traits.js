@@ -20,7 +20,7 @@ module.exports = scenario => {
             ]
         };
 
-        const zomes = conductor.admin('introspection/traits/get_zomes_by_trait', {trait: crypto_trait})
+        const zomes = await conductor.admin('introspection/traits/get_zomes_by_trait', {trait: crypto_trait})
 
         t.deepEqual(zomes, ['app/simple'])
     })

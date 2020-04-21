@@ -1358,7 +1358,7 @@ impl ConductorApiBuilder {
                 }
 
                 let zomes = conductor_call!(|c| c.get_zomes_by_trait(trait_name, trait_functions))?;
-                Ok(json!({ "zomes": zomes }))
+                Ok(json!(zomes))
             });
 
         self

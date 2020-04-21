@@ -22,6 +22,6 @@ module.exports = scenario => {
 
         const zomes = await conductor.admin('introspection/traits/get_zomes_by_trait', {trait: crypto_trait})
 
-        t.deepEqual(zomes, { zomes: [ { instance_id: 'app', zome_name: 'simple' } ] })
+        t.deepEqual(zomes, [ { instance_id: 'app', zome_name: 'simple' } ] )
     })
 }

@@ -14,7 +14,7 @@ module.exports = scenario => {
     t.deepEqual(result, { Ok: { msg_type: 'response', body: `got hello from ${alice.info('app').agentAddress}` } })
   })
 
-  scenario.only('multiple zome calls', async (s, t) => {
+  scenario('multiple zome calls', async (s, t) => {
     const { alice, bob } = await s.players({ alice: one, bob: one }, true)
     const params = { to_agent: bob.info('app').agentAddress, message: 'hello' }
 

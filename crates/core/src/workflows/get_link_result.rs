@@ -15,6 +15,7 @@ use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use holochain_wasm_utils::api_serialization::get_links::{
     GetLinksArgs, GetLinksResult, LinksResult,
 };
+use lib3h_protocol::types::EntryHash;
 use std::sync::Arc;
 
 // check to see if we are an authority on the DHT for this base, if so no need
@@ -22,7 +23,16 @@ use std::sync::Arc;
 // for anything that is linked on our own agent hash.
 pub fn am_i_dht_authority_for_base<'a>(context: &'a Arc<Context>, base: &Address) -> bool {
     let me: Address = context.agent_id.address();
-    *base == me
+    if *base == me {
+        return true;
+    }
+    let state = context
+        .state()
+        .expect("No state present when trying to respond with gossip list");
+    state
+        .dht()
+        .get_holding_map()
+        .contains_entry(&EntryHash::from(base))
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]

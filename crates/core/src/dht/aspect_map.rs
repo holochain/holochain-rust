@@ -27,6 +27,10 @@ impl AspectMap {
         &self.0
     }
 
+    pub fn contains_entry(&self, entry_address: &EntryHash) -> bool {
+        self.0.contains_key(entry_address)
+    }
+
     pub fn contains(&self, aspect: &EntryAspect) -> bool {
         let entry_address: EntryHash = aspect
             .entry_address()

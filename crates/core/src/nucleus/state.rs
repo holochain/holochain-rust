@@ -16,6 +16,7 @@ use serde::{
     Deserialize, Deserializer, Serialize, Serializer,
 };
 use std::{collections::VecDeque, convert::TryFrom, fmt};
+use crate::wasm_engine::api::ZomeApiFunction;
 
 #[autotrace]
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize, DefaultJson)]
@@ -227,9 +228,13 @@ impl ZomeFnCallState {
                 Ok(())
             }
         } else {
-            Err(HolochainError::new(
-                "Attempted to end HDK call, but none was started!",
-            ))
+            match call.function {
+                // init globals call is never started so expect this to fail
+                ZomeApiFunction::InitGlobals => Ok(()),
+                _ =>    Err(HolochainError::new(
+                    &format!("Attempted to end HDK call, but none was started! {:?} {:?}",call, result)
+                ))
+            }
         }
     }
 }

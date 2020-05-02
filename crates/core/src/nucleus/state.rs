@@ -221,7 +221,7 @@ impl ZomeFnCallState {
                 ))
             } else if current_result.is_some() {
                 Err(HolochainError::new(
-                    "Ending and HDK which was already ended.",
+                    "Ending an HDK call which was already ended.",
                 ))
             } else {
                 self.hdk_fn_invocations.push((call, Some(result)));

@@ -75,14 +75,13 @@ pub(crate) fn reduce_hold_aspect(
 ) -> Option<DhtStore> {
     let aspect = unwrap_to!(action_wrapper.action() => Action::HoldAspect);
     let mut new_store = (*old_store).clone();
-    new_store.mark_aspect_as_held(&aspect);
 
     // TODO: we think we don't need this but not 100%
     // new_store.actions_mut().insert(
     //     action_wrapper.clone(),
     //     Ok("TODO: nico, do we need this?".into()),
     // );
-    match aspect {
+    let mut r = match aspect {
         EntryAspect::Content(entry, header) => {
             match reduce_store_entry_inner(&mut new_store, entry) {
                 Ok(()) => {
@@ -146,7 +145,11 @@ pub(crate) fn reduce_hold_aspect(
             error!("Got EntryAspect::Header which is not implemented.");
             None
         }
+    };
+    if let Some(ref mut store) = r {
+        store.mark_aspect_as_held(&aspect);
     }
+    r
 }
 
 #[allow(dead_code)]

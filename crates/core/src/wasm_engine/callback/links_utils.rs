@@ -24,8 +24,9 @@ pub fn get_link_entries(
         context.block_on(get_entry_result_workflow(&context, entry_args))?;
     if !base_entry_get_result.found() {
         return Err(HolochainError::ErrorGeneric(format!(
-            "Base for link not found: {:?}", link)
-        ));
+            "Base for link not found: {:?}",
+            link
+        )));
     }
     let base_entry = base_entry_get_result.latest().unwrap();
     let entry_args = &GetEntryArgs {
@@ -36,8 +37,9 @@ pub fn get_link_entries(
         context.block_on(get_entry_result_workflow(&context, entry_args))?;
     if !target_entry_get_result.found() {
         return Err(HolochainError::ErrorGeneric(format!(
-            "Target for link not found: {:?}", link)
-        ));
+            "Target for link not found: {:?}",
+            link
+        )));
     }
 
     Ok((base_entry, target_entry_get_result.latest().unwrap()))

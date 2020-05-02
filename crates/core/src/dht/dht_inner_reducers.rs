@@ -72,8 +72,9 @@ pub(crate) fn reduce_add_remove_link_inner(
         Ok(link.link().base().clone())
     } else {
         Err(HolochainError::ErrorGeneric(format!(
-            "Base for link not found: {:?}", link)
-        ))
+            "Base for link not found: {:?}",
+            link
+        )))
     }
 }
 

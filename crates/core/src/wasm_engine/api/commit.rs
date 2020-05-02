@@ -17,6 +17,7 @@ use wasmi::{RuntimeArgs, RuntimeValue};
 pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
     let context = runtime.context()?;
 
+    log_debug!(context, "commit_app_entry_1");
     // deserialize args
     let args_str = runtime.load_json_string_from_args(&args);
     let commit_entry_arg = match CommitEntryArgs::try_from(args_str.clone()) {
@@ -33,6 +34,8 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
+    log_debug!(context, "commit_app_entry_2");
+
     let span = context
         .tracer
         .span("hdk invoke_commit_app_entry")
@@ -42,7 +45,9 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
         ))
         .start()
         .into();
+    log_debug!(context, "commit_app_entry_3");
     let _spanguard = ht::push_span(span);
+    log_debug!(context, "commit_app_entry_4");
 
     // Wait for future to be resolved
     let task_result: Result<CommitEntryResult, HolochainError> = context.block_on(author_entry(
@@ -51,8 +56,12 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
         &context,
         &commit_entry_arg.options().provenance(),
     ));
+    log_debug!(context, "commit_app_entry_5");
 
-    runtime.store_result(task_result)
+    let x = runtime.store_result(task_result);
+
+    log_debug!(context, "commit_app_entry_6");
+    x
 }
 
 #[cfg(test)]

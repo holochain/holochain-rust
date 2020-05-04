@@ -30,8 +30,9 @@ use crate::{dht::pending_validations::PendingValidation, state::StateWrapper};
 use chrono::{offset::FixedOffset, DateTime};
 use holochain_json_api::error::JsonResult;
 use holochain_persistence_api::error::PersistenceResult;
+use snowflake::ProcessUniqueId;
 use std::{
-    collections::{BTreeSet, VecDeque},
+    collections::{BTreeSet, HashMap, VecDeque},
     convert::TryFrom,
     sync::Arc,
     time::Duration,
@@ -48,6 +49,9 @@ pub struct DhtStore {
 
     /// All the entry aspects that the network has told us to hold
     holding_map: AspectMap,
+
+    /// Hold aspect requests from the network
+    queued_hold_aspect_requests: HashMap<ProcessUniqueId, Result<(), HolochainError>>,
 
     pub(crate) queued_holding_workflows: VecDeque<PendingValidationWithTimeout>,
 }
@@ -143,6 +147,7 @@ impl DhtStore {
             meta_storage,
             holding_map: AspectMap::new(),
             queued_holding_workflows: VecDeque::new(),
+            queued_hold_aspect_requests: HashMap::new(),
         }
     }
 
@@ -288,6 +293,21 @@ impl DhtStore {
 
     pub fn mark_aspect_as_held(&mut self, aspect: &EntryAspect) {
         self.holding_map.add(aspect);
+    }
+
+    pub fn mark_hold_aspect_complete(
+        &mut self,
+        id: ProcessUniqueId,
+        result: Result<(), HolochainError>,
+    ) {
+        self.queued_hold_aspect_requests.insert(id, result);
+    }
+
+    pub fn hold_aspec_request_complete(
+        &self,
+        id: &ProcessUniqueId,
+    ) -> Option<&Result<(), HolochainError>> {
+        self.queued_hold_aspect_requests.get(id)
     }
 
     pub fn get_holding_map(&self) -> &AspectMap {

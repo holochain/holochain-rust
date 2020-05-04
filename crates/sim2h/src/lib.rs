@@ -957,7 +957,7 @@ fn spawn_handle_message_fetch_entry_result(
                 }
             }
 
-            for (agent_id, (multi_message, mut holding)) in to_agent.drain() {
+            for (agent_id, (multi_message, mut _holding)) in to_agent.drain() {
                 let uri = match state.lookup_joined(&space_hash, &agent_id) {
                     None => continue,
                     Some(uri) => uri,
@@ -967,6 +967,7 @@ fn spawn_handle_message_fetch_entry_result(
 
                 sim2h_handle.send((&*agent_id).clone(), (&*uri).clone(), &multi_send);
 
+                /* Conductor currently has some
                 for (entry_hash, aspects) in holding.drain() {
                     sim2h_handle.state().spawn_agent_holds_aspects(
                         (&*space_hash).clone(),
@@ -974,7 +975,7 @@ fn spawn_handle_message_fetch_entry_result(
                         entry_hash,
                         aspects,
                     );
-                }
+                }*/
             }
         }
         .instrument(debug_span!("spawn_handle_message_fetch_entry_result")),

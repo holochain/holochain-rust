@@ -581,7 +581,8 @@ impl Sim2hWorker {
     /// Tells us if Sim2hWorker should render the local core instance to be self-suficient,
     /// i.e. storing everything locally and answering to queries locally.
     fn is_autonomous_node(&mut self) -> bool {
-        self.is_full_sync_DHT || !self.connection_ready()
+        return true;
+        //        self.is_full_sync_DHT || !self.connection_ready()
     }
 
     #[allow(dead_code)]

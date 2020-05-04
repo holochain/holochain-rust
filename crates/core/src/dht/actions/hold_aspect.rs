@@ -9,20 +9,24 @@ use snowflake::ProcessUniqueId;
 use std::{pin::Pin, sync::Arc};
 
 pub async fn hold_aspect(aspect: EntryAspect, context: Arc<Context>) -> Result<(), HolochainError> {
-    let action_wrapper = ActionWrapper::new(Action::HoldAspect(aspect.clone()));
-    dispatch_action(context.action_channel(), action_wrapper.clone());
     let id = ProcessUniqueId::new();
-    HoldAspectFuture {
+    let action_wrapper = ActionWrapper::new(Action::HoldAspect((aspect.clone(), id)));
+    dispatch_action(context.action_channel(), action_wrapper.clone());
+    let r = HoldAspectFuture {
         context,
-        aspect,
+        //        aspect,
         id,
     }
-    .await
+    .await;
+    if r.is_err() {
+        panic!(r);
+    }
+    r
 }
 
 pub struct HoldAspectFuture {
     context: Arc<Context>,
-    aspect: EntryAspect,
+    //    aspect: EntryAspect,
     id: ProcessUniqueId,
 }
 
@@ -37,11 +41,10 @@ impl Future for HoldAspectFuture {
         self.context
             .register_waker(self.id.clone(), cx.waker().clone());
         if let Some(state) = self.context.try_state() {
-            // TODO: wait for it to show up in the holding list
-            // i.e. once we write the reducer we'll know
-            if state.dht().get_holding_map().contains(&self.aspect) {
+            // wait for the request to complete
+            if let Some(result) = state.dht().hold_aspec_request_complete(&self.id) {
                 self.context.unregister_waker(self.id.clone());
-                Poll::Ready(Ok(()))
+                Poll::Ready(result.clone())
             } else {
                 Poll::Pending
             }

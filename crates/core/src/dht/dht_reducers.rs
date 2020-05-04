@@ -1,5 +1,7 @@
 //! all DHT reducers
 
+use holochain_core_types::error::HolochainError;
+
 use crate::{
     action::{Action, ActionWrapper},
     dht::{
@@ -73,7 +75,7 @@ pub(crate) fn reduce_hold_aspect(
     old_store: &DhtStore,
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
-    let aspect = unwrap_to!(action_wrapper.action() => Action::HoldAspect);
+    let (aspect, id) = unwrap_to!(action_wrapper.action() => Action::HoldAspect);
     let mut new_store = (*old_store).clone();
 
     // TODO: we think we don't need this but not 100%
@@ -81,15 +83,18 @@ pub(crate) fn reduce_hold_aspect(
     //     action_wrapper.clone(),
     //     Ok("TODO: nico, do we need this?".into()),
     // );
+    let mut hold_result: Result<(), HolochainError> = Ok(());
     let mut r = match aspect {
         EntryAspect::Content(entry, header) => {
-            match reduce_store_entry_inner(&mut new_store, entry) {
+            match reduce_store_entry_inner(&mut new_store, &entry) {
                 Ok(()) => {
                     new_store.add_header_for_entry(&entry, &header).ok()?;
                     Some(new_store)
                 }
                 Err(e) => {
-                    error!("{}", e);
+                    let err = format!("EntryAspect::Content hold error: {}", e);
+                    hold_result = Err(HolochainError::ErrorGeneric(err.clone()));
+                    error!("{}", err);
                     None
                 }
             }
@@ -98,12 +103,14 @@ pub(crate) fn reduce_hold_aspect(
             let entry = Entry::LinkAdd(link_data.clone());
             match reduce_add_remove_link_inner(
                 &mut new_store,
-                link_data,
+                &link_data,
                 &entry.address(),
                 LinkModification::Add,
             ) {
                 Ok(_) => Some(new_store),
                 Err(e) => {
+                    let err = format!("EntryAspect::Content hold error: {}", e);
+                    hold_result = Err(HolochainError::ErrorGeneric(err.clone()));
                     error!("{}", e);
                     None
                 }
@@ -115,7 +122,7 @@ pub(crate) fn reduce_hold_aspect(
                 .fold(new_store, |mut store, link_addresses| {
                     let _ = reduce_add_remove_link_inner(
                         &mut store,
-                        link_data,
+                        &link_data,
                         link_addresses,
                         LinkModification::Remove,
                     );
@@ -127,7 +134,9 @@ pub(crate) fn reduce_hold_aspect(
                 let _ = reduce_update_entry_inner(&mut new_store, &crud_link, &entry.address());
                 Some(new_store)
             } else {
-                error!("EntryAspect::Update without crud_link in header received!");
+                let err = "EntryAspect::Update without crud_link in header received!";
+                hold_result = Err(HolochainError::ErrorGeneric(err.to_string()));
+                error!("{}", err);
                 None
             }
         }
@@ -137,17 +146,24 @@ pub(crate) fn reduce_hold_aspect(
                     reduce_remove_entry_inner(&mut new_store, &crud_link, &header.entry_address());
                 Some(new_store)
             } else {
-                error!("EntryAspect::Update without crud_link in header received!");
+                error!("EntryAspect::Deletion without crud_link in header received!");
                 None
             }
         }
         EntryAspect::Header(_) => {
-            error!("Got EntryAspect::Header which is not implemented.");
+            let err = "Got EntryAspect::Header which is not implemented.";
+            hold_result = Err(HolochainError::ErrorGeneric(err.to_string()));
+            error!("{}", err);
             None
         }
     };
     if let Some(ref mut store) = r {
         store.mark_aspect_as_held(&aspect);
+        store.mark_hold_aspect_complete(id.clone(), hold_result);
+    } else {
+        (*old_store)
+            .clone()
+            .mark_hold_aspect_complete(id.clone(), hold_result);
     }
     r
 }
@@ -289,10 +305,10 @@ pub mod tests {
 
         let new_dht_store = reduce_hold_aspect(
             &store.dht(),
-            &ActionWrapper::new(Action::HoldAspect(EntryAspect::Content(
-                sys_entry.clone(),
-                test_chain_header(),
-            ))),
+            &ActionWrapper::new(
+                Action::HoldAspect(EntryAspect::Content(sys_entry.clone(), test_chain_header())),
+                ProcessUniqueId::new(),
+            ),
         )
         .expect("there should be a new store for committing a sys entry");
 
@@ -331,10 +347,10 @@ pub mod tests {
             test_chain_header(),
             test_agent_id(),
         );
-        let action = ActionWrapper::new(Action::HoldAspect(EntryAspect::LinkAdd(
-            link_data.clone(),
-            test_chain_header(),
-        )));
+        let action = ActionWrapper::new(
+            Action::HoldAspect(EntryAspect::LinkAdd(link_data.clone(), test_chain_header())),
+            ProcessUniqueId::new(),
+        );
         let link_entry = Entry::LinkAdd(link_data.clone());
 
         let new_dht_store = (*reduce(store.dht(), &action)).clone();
@@ -379,10 +395,10 @@ pub mod tests {
 
         //add link to dht
         let entry_link_add = Entry::LinkAdd(link_data.clone());
-        let action_link_add = ActionWrapper::new(Action::HoldAspect(EntryAspect::LinkAdd(
-            link_data.clone(),
-            test_chain_header(),
-        )));
+        let action_link_add = ActionWrapper::new(
+            Action::HoldAspect(EntryAspect::LinkAdd(link_data.clone(), test_chain_header())),
+            ProcessUniqueId::new(),
+        );
 
         let new_dht_store = reduce(store.dht(), &action_link_add);
 
@@ -394,13 +410,16 @@ pub mod tests {
         );
 
         //remove added link from dht
-        let action_link_remove = ActionWrapper::new(Action::HoldAspect(EntryAspect::LinkRemove(
-            (
-                link_remove_data.clone(),
-                vec![entry_link_add.clone().address()],
-            ),
-            test_chain_header(),
-        )));
+        let action_link_remove = ActionWrapper::new(
+            Action::HoldAspect(EntryAspect::LinkRemove(
+                (
+                    link_remove_data.clone(),
+                    vec![entry_link_add.clone().address()],
+                ),
+                test_chain_header(),
+            )),
+            ProcessUniqueId::new(),
+        );
         let new_dht_store = reduce(new_dht_store, &action_link_remove);
 
         //fetch from dht and when tombstone is found return tombstone
@@ -426,10 +445,10 @@ pub mod tests {
         );
 
         //add new link with same chain header
-        let action_link_add = ActionWrapper::new(Action::HoldAspect(EntryAspect::LinkAdd(
-            link_data.clone(),
-            test_chain_header(),
-        )));
+        let action_link_add = ActionWrapper::new(
+            Action::HoldAspect(EntryAspect::LinkAdd(link_data.clone(), test_chain_header())),
+            ProcessUniqueId::new(),
+        );
         let new_dht_store = reduce(store.dht(), &action_link_add);
 
         //fetch from dht after link with same chain header is added
@@ -462,10 +481,10 @@ pub mod tests {
             test_agent_id_with_name("new_agent"),
         );
         let entry_link_add = Entry::LinkAdd(link_data.clone());
-        let action_link_add = ActionWrapper::new(Action::HoldAspect(EntryAspect::LinkAdd(
-            link_data.clone(),
-            test_chain_header(),
-        )));
+        let action_link_add = ActionWrapper::new(
+            Action::HoldAspect(EntryAspect::LinkAdd(link_data.clone(), test_chain_header())),
+            ProcessUniqueId::new(),
+        );
         let new_dht_store_2 = reduce(store.dht(), &action_link_add);
 
         //after new link has been added return from fetch and make sure tombstone and new link is added
@@ -508,10 +527,10 @@ pub mod tests {
             test_chain_header(),
             test_agent_id(),
         );
-        let action = ActionWrapper::new(Action::HoldAspect(EntryAspect::LinkAdd(
-            link_data.clone(),
-            test_chain_header(),
-        )));
+        let action = ActionWrapper::new(
+            Action::HoldAspect(EntryAspect::LinkAdd(link_data.clone(), test_chain_header())),
+            ProcessUniqueId::new(),
+        );
 
         let new_dht_store = reduce(store.dht(), &action);
 
@@ -533,10 +552,10 @@ pub mod tests {
         let store = test_store(context.clone());
 
         let entry = test_entry();
-        let action_wrapper = ActionWrapper::new(Action::HoldAspect(EntryAspect::Content(
-            entry.clone(),
-            test_chain_header(),
-        )));
+        let action_wrapper = ActionWrapper::new(
+            Action::HoldAspect(EntryAspect::Content(entry.clone(), test_chain_header())),
+            ProcessUniqueId::new(),
+        );
 
         store.reduce(action_wrapper);
 

@@ -926,10 +926,10 @@ fn spawn_handle_message_fetch_entry_result(
             #[allow(clippy::type_complexity)]
             let mut to_agent: std::collections::HashMap<
                 MonoRef<AgentId>,
-                (
-                    Vec<ht::EncodedSpanWrap<Lib3hToClient>>,
-                    std::collections::HashMap<EntryHash, im::HashSet<AspectHash>>,
-                ),
+                //(
+                Vec<ht::EncodedSpanWrap<Lib3hToClient>>,
+                //   std::collections::HashMap<EntryHash, im::HashSet<AspectHash>>,
+                //),
             > = std::collections::HashMap::new();
 
             for aspect in fetch_result.entry.aspect_list {
@@ -948,16 +948,16 @@ fn spawn_handle_message_fetch_entry_result(
                         entry_address: fetch_result.entry.entry_address.clone(),
                         entry_aspect: aspect.clone(),
                     });
-                    m.0.push(ht::span_wrap_encode!(Level::INFO, data).into());
+                    m./*0.*/push(ht::span_wrap_encode!(Level::INFO, data).into());
 
-                    let e =
+                    /*let e =
                         m.1.entry(fetch_result.entry.entry_address.clone())
                             .or_default();
-                    e.insert(aspect.aspect_address.clone());
+                    e.insert(aspect.aspect_address.clone());*/
                 }
             }
 
-            for (agent_id, (multi_message, mut _holding)) in to_agent.drain() {
+            for (agent_id, /*(*/ multi_message /*, mut holding)*/) in to_agent.drain() {
                 let uri = match state.lookup_joined(&space_hash, &agent_id) {
                     None => continue,
                     Some(uri) => uri,
@@ -967,7 +967,9 @@ fn spawn_handle_message_fetch_entry_result(
 
                 sim2h_handle.send((&*agent_id).clone(), (&*uri).clone(), &multi_send);
 
-                /* Conductor currently has some
+                /* Conductor may not actually hold when told because of a consistency error so
+                   we can't mark this as held.  Conductor will send back a partial gossip list
+                   after a hold request to tell us that it's held the aspects.
                 for (entry_hash, aspects) in holding.drain() {
                     sim2h_handle.state().spawn_agent_holds_aspects(
                         (&*space_hash).clone(),
@@ -975,7 +977,8 @@ fn spawn_handle_message_fetch_entry_result(
                         entry_hash,
                         aspects,
                     );
-                }*/
+                }
+                 */
             }
         }
         .instrument(debug_span!("spawn_handle_message_fetch_entry_result")),

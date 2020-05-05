@@ -94,7 +94,6 @@ pub(crate) fn reduce_hold_aspect(
                 Err(e) => {
                     let err = format!("EntryAspect::Content hold error: {}", e);
                     hold_result = Err(HolochainError::ErrorGeneric(err.clone()));
-                    error!("{}", err);
                     None
                 }
             }
@@ -109,9 +108,8 @@ pub(crate) fn reduce_hold_aspect(
             ) {
                 Ok(_) => Some(new_store),
                 Err(e) => {
-                    let err = format!("EntryAspect::Content hold error: {}", e);
+                    let err = format!("EntryAspect::LinkAdd hold error: {}", e);
                     hold_result = Err(HolochainError::ErrorGeneric(err));
-                    error!("{}", e);
                     None
                 }
             }
@@ -136,7 +134,6 @@ pub(crate) fn reduce_hold_aspect(
             } else {
                 let err = "EntryAspect::Update without crud_link in header received!";
                 hold_result = Err(HolochainError::ErrorGeneric(err.to_string()));
-                error!("{}", err);
                 None
             }
         }
@@ -146,26 +143,26 @@ pub(crate) fn reduce_hold_aspect(
                     reduce_remove_entry_inner(&mut new_store, &crud_link, &header.entry_address());
                 Some(new_store)
             } else {
-                error!("EntryAspect::Deletion without crud_link in header received!");
+                let err = "EntryAspect::Deletion without crud_link in header received!";
+                hold_result = Err(HolochainError::ErrorGeneric(err.to_string()));
                 None
             }
         }
         EntryAspect::Header(_) => {
             let err = "Got EntryAspect::Header which is not implemented.";
             hold_result = Err(HolochainError::ErrorGeneric(err.to_string()));
-            error!("{}", err);
             None
         }
     };
     if let Some(ref mut store) = r {
         store.mark_aspect_as_held(&aspect);
         store.mark_hold_aspect_complete(id.clone(), hold_result);
+        r
     } else {
-        (*old_store)
-            .clone()
-            .mark_hold_aspect_complete(id.clone(), hold_result);
+        let mut store = (*old_store).clone();
+        store.mark_hold_aspect_complete(id.clone(), hold_result);
+        Some(store)
     }
-    r
 }
 
 #[allow(dead_code)]

@@ -281,7 +281,9 @@ pub mod tests {
         network::entry_aspect::EntryAspect,
     };
     use holochain_persistence_api::cas::content::{Address, AddressableContent};
+    use snowflake::ProcessUniqueId;
     use std::{sync::Arc, time::SystemTime};
+
     // TODO do this for all crate tests somehow
     #[allow(dead_code)]
     fn enable_logging_for_test() {
@@ -306,7 +308,7 @@ pub mod tests {
         let new_dht_store = reduce_hold_aspect(
             &store.dht(),
             &ActionWrapper::new(Action::HoldAspect((
-                (EntryAspect::Content(sys_entry.clone(), test_chain_header())),
+                EntryAspect::Content(sys_entry.clone(), test_chain_header()),
                 ProcessUniqueId::new(),
             ))),
         )
@@ -347,10 +349,10 @@ pub mod tests {
             test_chain_header(),
             test_agent_id(),
         );
-        let action = ActionWrapper::new(Action::HoldAspect(
-            (EntryAspect::LinkAdd(link_data.clone(), test_chain_header())),
+        let action = ActionWrapper::new(Action::HoldAspect((
+            EntryAspect::LinkAdd(link_data.clone(), test_chain_header()),
             ProcessUniqueId::new(),
-        ));
+        )));
         let link_entry = Entry::LinkAdd(link_data.clone());
 
         let new_dht_store = (*reduce(store.dht(), &action)).clone();
@@ -395,8 +397,8 @@ pub mod tests {
 
         //add link to dht
         let entry_link_add = Entry::LinkAdd(link_data.clone());
-        let action_link_add = ActionWrapper::new(Action::HoldAspect((
-            (EntryAspect::LinkAdd(link_data.clone(), test_chain_header())),
+        let action_link_add = ActionWrapper::new(Action::HoldAspect(
+            (EntryAspect::LinkAdd(link_data.clone(), test_chain_header()),
             ProcessUniqueId::new(),
         )));
 
@@ -411,13 +413,13 @@ pub mod tests {
 
         //remove added link from dht
         let action_link_remove = ActionWrapper::new(Action::HoldAspect((
-            (EntryAspect::LinkRemove(
+            EntryAspect::LinkRemove(
                 (
                     link_remove_data.clone(),
                     vec![entry_link_add.clone().address()],
                 ),
                 test_chain_header(),
-            )),
+            ),
             ProcessUniqueId::new(),
         )));
         let new_dht_store = reduce(new_dht_store, &action_link_remove);
@@ -446,7 +448,7 @@ pub mod tests {
 
         //add new link with same chain header
         let action_link_add = ActionWrapper::new(Action::HoldAspect((
-            (EntryAspect::LinkAdd(link_data.clone(), test_chain_header())),
+            EntryAspect::LinkAdd(link_data.clone(), test_chain_header()),
             ProcessUniqueId::new(),
         )));
         let new_dht_store = reduce(store.dht(), &action_link_add);
@@ -527,12 +529,10 @@ pub mod tests {
             test_chain_header(),
             test_agent_id(),
         );
-        let action = ActionWrapper::new(Action::HoldAspect(
-            ((
-                EntryAspect::LinkAdd(link_data.clone(), test_chain_header()),
-                ProcessUniqueId::new(),
-            )),
-        ));
+        let action = ActionWrapper::new(Action::HoldAspect((
+            EntryAspect::LinkAdd(link_data.clone(), test_chain_header()),
+            ProcessUniqueId::new(),
+        )));
 
         let new_dht_store = reduce(store.dht(), &action);
 

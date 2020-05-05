@@ -1,6 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
+    dht::aspect_map::AspectMap,
     instance::dispatch_action,
 };
 use futures::{future::Future, task::Poll};
@@ -30,8 +31,8 @@ pub async fn hold_aspect(aspect: EntryAspect, context: Arc<Context>) -> Result<(
                 .state()
                 .expect("No state present when trying to respond with gossip list");
 
-            // TODO: send the whole holding map for now fix to the specific aspect later
-            let address_map = state.dht().get_holding_map().clone();
+            let mut address_map = AspectMap::new();
+            address_map.add(&aspect);
 
             let action = Action::RespondGossipList(EntryListData {
                 space_address: state.network().dna_address.clone().unwrap().into(),

@@ -397,8 +397,8 @@ pub mod tests {
 
         //add link to dht
         let entry_link_add = Entry::LinkAdd(link_data.clone());
-        let action_link_add = ActionWrapper::new(Action::HoldAspect((
-            EntryAspect::LinkAdd(link_data.clone(), test_chain_header()),
+        let action_link_add = ActionWrapper::new(Action::HoldAspect(
+            (EntryAspect::LinkAdd(link_data.clone(), test_chain_header()),
             ProcessUniqueId::new(),
         )));
 

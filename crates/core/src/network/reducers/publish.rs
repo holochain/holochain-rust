@@ -138,15 +138,11 @@ fn publish_link_meta(
     )
 }
 
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-fn reduce_publish_inner(
+fn publish_entry_with_header(
     network_state: &mut NetworkState,
-    root_state: &State,
-    address: &Address,
+    entry_with_header: EntryWithHeader,
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
-
-    let entry_with_header = fetch_entry_with_header(&address, root_state)?;
 
     match entry_with_header.entry.entry_type() {
         EntryType::AgentId => publish_entry(network_state, &entry_with_header),
@@ -181,6 +177,16 @@ fn reduce_publish_inner(
             entry_with_header.entry.entry_type()
         ))),
     }
+}
+
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+fn reduce_publish_inner(
+    network_state: &mut NetworkState,
+    root_state: &State,
+    address: &Address,
+) -> Result<(), HolochainError> {
+    let entry_with_header = fetch_entry_with_header(&address, root_state)?;
+    publish_entry_with_header(network_state, entry_with_header)
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]

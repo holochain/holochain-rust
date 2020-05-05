@@ -6,6 +6,7 @@ use crate::{
     entry::CanPublish,
     instance::dispatch_action,
     network::{
+        actions::publish::publish,
         entry_aspect::EntryAspect,
         handler::{entry_to_meta_aspect, get_content_aspect},
     },
@@ -18,13 +19,19 @@ use lib3h_protocol::{
 };
 use std::sync::Arc;
 
-#[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Context>) {
+//#[autotrace]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+pub fn handle_get_authoring_list(_get_list_data: GetListData, context: Arc<Context>) {
     let c = context.clone();
     let closure = async move || {
-        let address_map = create_authoring_map(context.clone());
+        //let address_map = create_authoring_map(context.clone());
 
+        /* currently sim2h asks for the authoring list and treats it just the same
+        as the gossiping list, i.e. as data that you hold.  This is a problem because
+        it means that gossiping isn't actually working right.  So instead of fixing that in
+        sim2h, we are doing a short term fix of just doing a fast push of re-publishing all
+        the items we have authored instead!  This creates a one-time burst of connections to
+        the sim2h server on join, so it's not efficient, but it works.
         let action = Action::RespondAuthoringList(EntryListData {
             space_address: get_list_data.space_address,
             provider_agent_id: get_list_data.provider_agent_id,
@@ -32,12 +39,23 @@ pub fn handle_get_authoring_list(get_list_data: GetListData, context: Arc<Contex
             address_map: address_map.into(),
         });
         dispatch_action(context.action_channel(), ActionWrapper::new(action));
+         */
+        for address in get_all_public_chain_entries(context.clone()) {
+            let result = publish(address, &context).await;
+            if result.is_err() {
+                error!(
+                    "Error in publishing during get authoring list: {:?}",
+                    result
+                );
+            }
+        }
     };
 
     let future = closure();
     c.spawn_task(future);
 }
 
+#[allow(dead_code)]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn create_authoring_map(context: Arc<Context>) -> AspectMap {
     let mut address_map: AspectMapBare = AspectMapBare::new();

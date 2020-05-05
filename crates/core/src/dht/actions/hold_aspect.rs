@@ -21,7 +21,7 @@ pub async fn hold_aspect(aspect: EntryAspect, context: Arc<Context>) -> Result<(
     }
     .await;
     if r.is_err() {
-        panic!(r);
+        error!("HoldAspect action completed with error: {:?}", r);
     } else {
         // send a gossip list with this aspect in it back to sim2h so it know we are holding it
         let c = context.clone();

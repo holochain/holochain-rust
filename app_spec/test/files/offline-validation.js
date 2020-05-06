@@ -1,6 +1,6 @@
 const { one } = require('../config')
 
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms)) 
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 module.exports = scenario => {
 
@@ -43,7 +43,7 @@ module.exports = scenario => {
       })
 
       scenario('Can perform validation of an entry while the author is offline', async (s, t) => {
-        
+
         const { alice, bob, carol } = await s.players({alice: one, bob: one, carol: one})
         // alice and bob start online
         await alice.spawn()
@@ -68,7 +68,7 @@ module.exports = scenario => {
         const bob_result = await bob.call('app', "blog", "get_post", { post_address: create_result.Ok })
         t.ok(bob_result.Ok)
         t.equal(JSON.parse(bob_result.Ok.App[1]).content, initialContent)
-        
+
         // alice then goes offline
         t.comment('waiting for alice to go offline')
         await alice.kill()

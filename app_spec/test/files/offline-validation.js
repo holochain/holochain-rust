@@ -10,7 +10,6 @@ module.exports = scenario => {
         await bob.spawn()
 
         await s.consistency()
-
         // alice publishes a memo. This is private but should still publish a header
         const create_result = await alice.call('app', "blog", "create_memo", { content: "private memo" })
         t.comment(JSON.stringify(create_result))
@@ -27,14 +26,13 @@ module.exports = scenario => {
         let chain_headers = []
 
         await s.consistency()
-
         for (let i=0; i< chain_header_hashes.length; i++) {
             // can use get_post because it just returns a raw entry given a hash
             let header_hash = chain_header_hashes[i]
-            t.comment(header_hash)
 
             // check bob can retrieve alices header entries
-            let header_bob = await bob.call('app', "blog", "get_post", { post_address: header_hash })
+            let header_bob = await alice.call('app', "blog", "get_post", { post_address: header_hash })
+            t.comment(header_hash)
             t.ok(header_bob.Ok)
 
             chain_headers.push(header_bob.Ok)

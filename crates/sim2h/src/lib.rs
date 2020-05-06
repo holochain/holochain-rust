@@ -766,12 +766,12 @@ fn spawn_handle_message_publish_entry(
     }
 
     tokio::task::spawn(async move {
-        let aspect_list: im::HashSet<AspectHash> = data
-            .entry
-            .aspect_list
-            .iter()
-            .map(|a| a.aspect_address.clone())
-            .collect();
+        /*        let aspect_list: im::HashSet<AspectHash> = data
+        .entry
+        .aspect_list
+        .iter()
+        .map(|a| a.aspect_address.clone())
+        .collect();*/
         let mut multi_message = Vec::new();
         for aspect in data.entry.aspect_list {
             let data = Lib3hToClient::HandleStoreEntryAspect(StoreEntryAspectData {
@@ -801,12 +801,13 @@ fn spawn_handle_message_publish_entry(
             if let Some(uri) = state.lookup_joined(&space_hash, &agent_id) {
                 sim2h_handle.send((&*agent_id).clone(), uri.clone(), &multi_message);
             }
+            /* send not guaranteed to work so we can't mark as held.
             sim2h_handle.state().spawn_agent_holds_aspects(
                 (&*space_hash).clone(),
                 (&*agent_id).clone(),
                 data.entry.entry_address.clone(),
                 aspect_list.clone(),
-            );
+            );*/
         }
     });
 }

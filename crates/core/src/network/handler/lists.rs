@@ -6,7 +6,7 @@ use crate::{
     entry::CanPublish,
     instance::dispatch_action,
     network::{
-        actions::publish::publish,
+        actions::{publish::publish, publish_header_entry::publish_header_entry},
         entry_aspect::EntryAspect,
         handler::{entry_to_meta_aspect, get_content_aspect},
     },
@@ -24,27 +24,37 @@ use std::sync::Arc;
 pub fn handle_get_authoring_list(_get_list_data: GetListData, context: Arc<Context>) {
     let c = context.clone();
     let closure = async move || {
-        //let address_map = create_authoring_map(context.clone());
+        // let address_map = create_authoring_map(context.clone());
 
-        /* currently sim2h asks for the authoring list and treats it just the same
-        as the gossiping list, i.e. as data that you hold.  This is a problem because
-        it means that gossiping isn't actually working right.  So instead of fixing that in
-        sim2h, we are doing a short term fix of just doing a fast push of re-publishing all
-        the items we have authored instead!  This creates a one-time burst of connections to
-        the sim2h server on join, so it's not efficient, but it works.
-        let action = Action::RespondAuthoringList(EntryListData {
+        // currently sim2h asks for the authoring list and treats it just the same
+        //as the gossiping list, i.e. as data that you hold.  This is a problem because
+        //it means that gossiping isn't actually working right.  So instead of fixing that in
+        //sim2h, we are doing a short term fix of just doing a fast push of re-publishing all
+        //the items we have authored instead!  This creates a one-time burst of connections to
+        // the sim2h server on join, so it's not efficient, but it works.
+        /*let action = Action::RespondAuthoringList(EntryListData {
             space_address: get_list_data.space_address,
             provider_agent_id: get_list_data.provider_agent_id,
             request_id: get_list_data.request_id,
             address_map: address_map.into(),
         });
         dispatch_action(context.action_channel(), ActionWrapper::new(action));
-         */
-        for address in get_all_public_chain_entries(context.clone()) {
-            let result = publish(address, &context).await;
+        //        */
+
+        for (address, is_public) in get_all_chain_entries_with_public(context.clone()) {
+            if is_public {
+                let result = publish(address.clone(), &context).await;
+                if result.is_err() {
+                    error!(
+                        "Error publishing entry during get authoring list: {:?}",
+                        result
+                    );
+                }
+            }
+            let result = publish_header_entry(address, &context).await;
             if result.is_err() {
                 error!(
-                    "Error in publishing during get authoring list: {:?}",
+                    "Error publishing header during get authoring list: {:?}",
                     result
                 );
             }
@@ -129,12 +139,26 @@ fn create_authoring_map(context: Arc<Context>) -> AspectMap {
     address_map.into()
 }
 
+#[allow(dead_code)]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn get_all_public_chain_entries(context: Arc<Context>) -> Vec<Address> {
     let chain = context.state().unwrap().agent().iter_chain();
     chain
         .filter(|ref chain_header| chain_header.entry_type().can_publish(&context))
         .map(|chain_header| chain_header.entry_address().clone())
+        .collect()
+}
+
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+fn get_all_chain_entries_with_public(context: Arc<Context>) -> Vec<(Address, bool)> {
+    let chain = context.state().unwrap().agent().iter_chain();
+    chain
+        .map(|chain_header| {
+            (
+                chain_header.entry_address().clone(),
+                chain_header.entry_type().can_publish(&context),
+            )
+        })
         .collect()
 }
 

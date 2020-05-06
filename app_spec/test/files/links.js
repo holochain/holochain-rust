@@ -180,6 +180,8 @@ module.exports = scenario => {
       { base: alice.info('app').agentAddress, target: 'Holo world 2' }
     )
 
+    await s.consistency()
+
     // get posts for alice from alice
     const alice_posts_live = await alice.call('app', 'simple', 'get_my_links',
       {
@@ -208,6 +210,8 @@ module.exports = scenario => {
         base: alice.info('app').agentAddress,
         target: 'Holo world'
       })
+
+    await s.consistency()
 
     // get all posts with a deleted status from bob
     const bob_posts_deleted = await bob.call('app', 'simple', 'get_my_links',

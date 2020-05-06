@@ -93,7 +93,7 @@ pub(crate) fn reduce_hold_aspect(
                 }
                 Err(e) => {
                     let err = format!("EntryAspect::Content hold error: {}", e);
-                    hold_result = Err(HolochainError::ErrorGeneric(err.clone()));
+                    hold_result = Err(HolochainError::ErrorGeneric(err));
                     None
                 }
             }

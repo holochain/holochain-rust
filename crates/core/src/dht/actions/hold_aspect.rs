@@ -16,8 +16,8 @@ pub async fn hold_aspect(
     aspect: EntryAspect,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
-    let id = (pending_id.clone(), ProcessUniqueId::new());
-    let action_wrapper = ActionWrapper::new(Action::HoldAspect((aspect.clone(), id.clone())));
+    let id = (*pending_id, ProcessUniqueId::new());
+    let action_wrapper = ActionWrapper::new(Action::HoldAspect((aspect.clone(), id)));
     dispatch_action(context.action_channel(), action_wrapper.clone());
     let r = HoldAspectFuture {
         context: context.clone(),

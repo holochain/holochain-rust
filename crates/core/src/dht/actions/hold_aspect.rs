@@ -1,7 +1,7 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
-    dht::aspect_map::AspectMap,
+    dht::{aspect_map::AspectMap, dht_store::HoldAspectAttemptId},
     instance::dispatch_action,
 };
 use futures::{future::Future, task::Poll};
@@ -11,9 +11,13 @@ use lib3h_protocol::data_types::EntryListData;
 use snowflake::ProcessUniqueId;
 use std::{pin::Pin, sync::Arc};
 
-pub async fn hold_aspect(aspect: EntryAspect, context: Arc<Context>) -> Result<(), HolochainError> {
-    let id = ProcessUniqueId::new();
-    let action_wrapper = ActionWrapper::new(Action::HoldAspect((aspect.clone(), id)));
+pub async fn hold_aspect(
+    pending_id: &ProcessUniqueId,
+    aspect: EntryAspect,
+    context: Arc<Context>,
+) -> Result<(), HolochainError> {
+    let id = (pending_id.clone(), ProcessUniqueId::new());
+    let action_wrapper = ActionWrapper::new(Action::HoldAspect((aspect.clone(), id.clone())));
     dispatch_action(context.action_channel(), action_wrapper.clone());
     let r = HoldAspectFuture {
         context: context.clone(),
@@ -51,7 +55,7 @@ pub async fn hold_aspect(aspect: EntryAspect, context: Arc<Context>) -> Result<(
 pub struct HoldAspectFuture {
     context: Arc<Context>,
     //    aspect: EntryAspect,
-    id: ProcessUniqueId,
+    id: HoldAspectAttemptId,
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
@@ -63,11 +67,11 @@ impl Future for HoldAspectFuture {
             return Poll::Ready(Err(err));
         }
         self.context
-            .register_waker(self.id.clone(), cx.waker().clone());
+            .register_waker(self.id.1.clone(), cx.waker().clone());
         if let Some(state) = self.context.try_state() {
             // wait for the request to complete
             if let Some(result) = state.dht().hold_aspec_request_complete(&self.id) {
-                self.context.unregister_waker(self.id.clone());
+                self.context.unregister_waker(self.id.1.clone());
                 Poll::Ready(result.clone())
             } else {
                 Poll::Pending

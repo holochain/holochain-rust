@@ -1,6 +1,6 @@
 use crate::{
     agent::state::AgentState,
-    dht::pending_validations::PendingValidation,
+    dht::{dht_store::HoldAspectAttemptId, pending_validations::PendingValidation},
     network::{
         direct_message::DirectMessage,
         entry_aspect::EntryAspect,
@@ -23,7 +23,6 @@ use holochain_core_types::{
 use holochain_net::{connection::net_connection::NetHandler, p2p_config::P2pConfig};
 use holochain_persistence_api::cas::content::Address;
 use lib3h_protocol::data_types::{EntryListData, FetchEntryData, QueryEntryData};
-use snowflake::ProcessUniqueId;
 use std::{
     hash::{Hash, Hasher},
     time::{Duration, SystemTime},
@@ -121,7 +120,7 @@ pub enum Action {
 
     /// Adds an entry aspect to the local DHT shard.
     /// Does not validate, assumes referenced entry is valid.
-    HoldAspect((EntryAspect, ProcessUniqueId)),
+    HoldAspect((EntryAspect, HoldAspectAttemptId)),
 
     //action for updating crudstatus
     CrudStatus((EntryWithHeader, CrudStatus)),

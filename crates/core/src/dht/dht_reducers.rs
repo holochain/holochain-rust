@@ -306,7 +306,7 @@ pub mod tests {
             &store.dht(),
             &ActionWrapper::new(Action::HoldAspect((
                 EntryAspect::Content(sys_entry.clone(), test_chain_header()),
-                ProcessUniqueId::new(),
+                (ProcessUniqueId::new(), ProcessUniqueId::new()),
             ))),
         )
         .expect("there should be a new store for committing a sys entry");
@@ -348,7 +348,7 @@ pub mod tests {
         );
         let action = ActionWrapper::new(Action::HoldAspect((
             EntryAspect::LinkAdd(link_data.clone(), test_chain_header()),
-            ProcessUniqueId::new(),
+            (ProcessUniqueId::new(), ProcessUniqueId::new()),
         )));
         let link_entry = Entry::LinkAdd(link_data.clone());
 
@@ -396,7 +396,7 @@ pub mod tests {
         let entry_link_add = Entry::LinkAdd(link_data.clone());
         let action_link_add = ActionWrapper::new(Action::HoldAspect((
             EntryAspect::LinkAdd(link_data.clone(), test_chain_header()),
-            ProcessUniqueId::new(),
+            (ProcessUniqueId::new(), ProcessUniqueId::new()),
         )));
 
         let new_dht_store = reduce(store.dht(), &action_link_add);
@@ -417,7 +417,7 @@ pub mod tests {
                 ),
                 test_chain_header(),
             ),
-            ProcessUniqueId::new(),
+            (ProcessUniqueId::new(), ProcessUniqueId::new()),
         )));
         let new_dht_store = reduce(new_dht_store, &action_link_remove);
 
@@ -446,7 +446,7 @@ pub mod tests {
         //add new link with same chain header
         let action_link_add = ActionWrapper::new(Action::HoldAspect((
             EntryAspect::LinkAdd(link_data.clone(), test_chain_header()),
-            ProcessUniqueId::new(),
+            (ProcessUniqueId::new(), ProcessUniqueId::new()),
         )));
         let new_dht_store = reduce(store.dht(), &action_link_add);
 
@@ -482,7 +482,7 @@ pub mod tests {
         let entry_link_add = Entry::LinkAdd(link_data.clone());
         let action_link_add = ActionWrapper::new(Action::HoldAspect((
             EntryAspect::LinkAdd(link_data.clone(), test_chain_header()),
-            ProcessUniqueId::new(),
+            (ProcessUniqueId::new(), ProcessUniqueId::new()),
         )));
         let new_dht_store_2 = reduce(store.dht(), &action_link_add);
 
@@ -528,7 +528,7 @@ pub mod tests {
         );
         let action = ActionWrapper::new(Action::HoldAspect((
             EntryAspect::LinkAdd(link_data.clone(), test_chain_header()),
-            ProcessUniqueId::new(),
+            (ProcessUniqueId::new(), ProcessUniqueId::new()),
         )));
 
         let new_dht_store = reduce(store.dht(), &action);
@@ -553,7 +553,7 @@ pub mod tests {
         let entry = test_entry();
         let action_wrapper = ActionWrapper::new(Action::HoldAspect((
             EntryAspect::Content(entry.clone(), test_chain_header()),
-            ProcessUniqueId::new(),
+            (ProcessUniqueId::new(), ProcessUniqueId::new()),
         )));
 
         store.reduce(action_wrapper);

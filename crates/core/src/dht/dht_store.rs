@@ -38,6 +38,9 @@ use std::{
     time::Duration,
 };
 
+/// A type for identifying holding attempts uniquely and by parent pending validation id
+pub type HoldAspectAttemptId = (ProcessUniqueId, ProcessUniqueId);
+
 /// The state-slice for the DHT.
 /// Holds the CAS and EAVi that's used for the agent's local shard
 /// as well as the holding list, i.e. list of all entries held for the DHT.
@@ -50,8 +53,8 @@ pub struct DhtStore {
     /// All the entry aspects that the network has told us to hold
     holding_map: AspectMap,
 
-    /// Hold aspect requests from the network
-    queued_hold_aspect_requests: HashMap<ProcessUniqueId, Result<(), HolochainError>>,
+    /// Hold aspect attempts that come from pending validations
+    holding_attempt_results: HashMap<HoldAspectAttemptId, Result<(), HolochainError>>,
 
     pub(crate) queued_holding_workflows: VecDeque<PendingValidationWithTimeout>,
 }
@@ -147,7 +150,7 @@ impl DhtStore {
             meta_storage,
             holding_map: AspectMap::new(),
             queued_holding_workflows: VecDeque::new(),
-            queued_hold_aspect_requests: HashMap::new(),
+            holding_attempt_results: HashMap::new(),
         }
     }
 
@@ -297,17 +300,17 @@ impl DhtStore {
 
     pub fn mark_hold_aspect_complete(
         &mut self,
-        id: ProcessUniqueId,
+        id: HoldAspectAttemptId,
         result: Result<(), HolochainError>,
     ) {
-        self.queued_hold_aspect_requests.insert(id, result);
+        self.holding_attempt_results.insert(id, result);
     }
 
     pub fn hold_aspec_request_complete(
         &self,
-        id: &ProcessUniqueId,
+        id: &HoldAspectAttemptId,
     ) -> Option<&Result<(), HolochainError>> {
-        self.queued_hold_aspect_requests.get(id)
+        self.holding_attempt_results.get(id)
     }
 
     pub fn get_holding_map(&self) -> &AspectMap {
@@ -386,6 +389,10 @@ impl DhtStore {
         &mut self,
         item: &PendingValidation,
     ) -> Option<PendingValidationWithTimeout> {
+        // remove any hold aspect requests that were queued under this workflow id
+        self.holding_attempt_results
+            .retain(|&id, _| id.0 != item.uuid);
+
         self.queued_holding_workflows()
             .iter()
             .position(|PendingValidationWithTimeout { pending, .. }| pending == item)

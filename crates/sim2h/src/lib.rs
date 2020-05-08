@@ -1511,9 +1511,7 @@ impl EntriesAlreadyFetched {
         self.entries.retain(|_, t| t.elapsed().as_millis() < 1000);
 
         // next - check
-        let contains = self.entries.contains_key(entry);
-
-        if contains {
+        if self.entries.contains_key(entry) {
             return true;
         }
 

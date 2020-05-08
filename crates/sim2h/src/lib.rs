@@ -1501,6 +1501,45 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
     trace!("sim2h gossip full loop in {} ms (ok to be long, this task is broken into multiple sub-loops)", gossip_full_start.elapsed().as_millis());
 }
 
+struct EntriesAlreadyFetched {
+    entries: std::collections::HashMap<MonoEntryHash, std::time::Instant>,
+}
+
+impl EntriesAlreadyFetched {
+    pub fn check(&mut self, entry: &MonoEntryHash) -> bool {
+        // first - prune
+        self.entries.retain(|_, t| t.elapsed().as_millis() < 1000);
+
+        // next - check
+        let contains = self.entries.contains_key(entry);
+
+        if contains {
+            return true;
+        }
+
+        // finally - set
+        self.entries
+            .insert(entry.clone(), std::time::Instant::now());
+
+        false
+    }
+}
+
+lazy_static! {
+    static ref ENTRIES_ALREADY_FETCHED: std::sync::Mutex<EntriesAlreadyFetched> = {
+        std::sync::Mutex::new(EntriesAlreadyFetched {
+            entries: std::collections::HashMap::new(),
+        })
+    };
+}
+
+fn check_already_fetched(entry: &MonoEntryHash) -> bool {
+    ENTRIES_ALREADY_FETCHED
+        .lock()
+        .expect("failed mutex lock")
+        .check(entry)
+}
+
 fn fetch_entry_data(
     gossip_aspects: im::HashMap<MonoEntryHash, im::HashSet<MonoAspectHash>>,
     space_hash: &MonoRef<SpaceHash>,
@@ -1509,6 +1548,10 @@ fn fetch_entry_data(
 ) {
     for (entry_hash, aspects) in gossip_aspects.iter() {
         if aspects.is_empty() {
+            continue;
+        }
+
+        if check_already_fetched(&entry_hash) {
             continue;
         }
 
@@ -1537,7 +1580,14 @@ fn fetch_entry_data(
                 space_address: (&**space_hash).clone(),
                 provider_agent_id: (&*query_agent).clone(),
                 entry_address: (&**entry_hash).clone(),
-                aspect_address_list: Some(aspects.iter().map(|a| (&**a).clone()).collect()),
+                //aspect_address_list: Some(aspects.iter().map(|a| (&**a).clone()).collect()),
+                // david.b - We have more breadth than depth to worry about here
+                //           i.e. all aspects for a given entry_address are
+                //           not that numerous compared to how many entry
+                //           addresses we have to deal with.
+                //           Doing `None` here makes our "AlreadyFetched" logic
+                //           work better.
+                aspect_address_list: None,
             };
             debug!(message = "wire_message", ?s.request_id, ?s.space_address);
             ht::span_wrap_encode!(tracing::Level::INFO, Lib3hToClient::HandleFetchEntry(s)).into()

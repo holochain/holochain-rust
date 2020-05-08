@@ -11,6 +11,24 @@ use lib3h_protocol::data_types::EntryListData;
 use snowflake::ProcessUniqueId;
 use std::{pin::Pin, sync::Arc};
 
+pub fn ack_single(context: Arc<Context>, aspect: EntryAspect) {
+    log_debug!(context, "sending back fat ack");
+    let state = context
+        .state()
+        .expect("No state present when trying to respond with gossip list");
+
+    let mut address_map = AspectMap::new();
+    address_map.add(&aspect);
+
+    let action = Action::RespondGossipList(EntryListData {
+        space_address: state.network().dna_address.clone().unwrap().into(),
+        provider_agent_id: context.agent_id.address().into(), //get_list_data.provider_agent_id,
+        request_id: "".to_string(),
+        address_map: address_map.into(),
+    });
+    dispatch_action(context.action_channel(), ActionWrapper::new(action));
+}
+
 pub async fn hold_aspect(
     pending_id: &ProcessUniqueId,
     aspect: EntryAspect,
@@ -29,25 +47,12 @@ pub async fn hold_aspect(
         error!("HoldAspect action completed with error: {:?}", r);
     } else {
         // send a gossip list with this aspect in it back to sim2h so it know we are holding it
-        let c = context.clone();
-        let closure = async move || {
-            let state = context
-                .state()
-                .expect("No state present when trying to respond with gossip list");
-
-            let mut address_map = AspectMap::new();
-            address_map.add(&aspect);
-
-            let action = Action::RespondGossipList(EntryListData {
-                space_address: state.network().dna_address.clone().unwrap().into(),
-                provider_agent_id: context.agent_id.address().into(), //get_list_data.provider_agent_id,
-                request_id: "".to_string(),
-                address_map: address_map.into(),
-            });
-            dispatch_action(context.action_channel(), ActionWrapper::new(action));
-        };
-        let future = closure();
-        c.spawn_task(future);
+        //        let c = context.clone();
+        //        let closure = async move || {
+        ack_single(context, aspect);
+        //      };
+        //      let future = closure();
+        //      c.spawn_task(future);
     }
     r
 }

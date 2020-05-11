@@ -47,12 +47,7 @@ pub async fn hold_aspect(
         error!("HoldAspect action completed with error: {:?}", r);
     } else {
         // send a gossip list with this aspect in it back to sim2h so it know we are holding it
-        //        let c = context.clone();
-        //        let closure = async move || {
         ack_single(context, aspect);
-        //      };
-        //      let future = closure();
-        //      c.spawn_task(future);
     }
     r
 }

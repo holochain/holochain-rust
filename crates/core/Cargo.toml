@@ -25,7 +25,7 @@ nanoid = "=0.2.0"
 num-traits = "=0.2.6"
 num-derive = "=0.2.4"
 toml = "=0.5.0"
-futures = { version = "=0.3.2", features = [ "thread-pool" ] }
+futures = { version = "=0.3.5", features = [ "thread-pool" ] }
 holochain_net = { version = "=0.0.47-alpha1", path = "../net" }
 holochain_wasm_utils = { version = "=0.0.47-alpha1", path = "../wasm_utils" }
 holochain_common = { version = "=0.0.47-alpha1", path = "../common" }
@@ -50,7 +50,7 @@ jsonrpc-core = "14.0.1"
 jsonrpc-lite = "=0.5.0"
 globset = "=0.4.2"
 pretty_assertions = "=0.6.1"
-pin-utils = "=0.1.0-alpha.4"
+pin-utils = "=0.1.0"
 clokwerk = "=0.1.0"
 crossbeam-channel = "=0.3.8"
 env_logger = "=0.6.1"

@@ -84,7 +84,7 @@ pub(crate) fn reduce_hold_aspect(
     //     Ok("TODO: nico, do we need this?".into()),
     // );
     let mut hold_result: Result<(), HolochainError> = Ok(());
-    let mut r = match aspect {
+    let mut maybe_store = match aspect {
         EntryAspect::Content(entry, header) => {
             match reduce_store_entry_inner(&mut new_store, &entry) {
                 Ok(()) => {

@@ -154,7 +154,8 @@ pub(crate) fn reduce_hold_aspect(
             None
         }
     };
-    if let Some(ref mut store) = r {
+   // success case, where aspect really has been held
+    if let Some(ref mut store) = maybe_store {
         store.mark_aspect_as_held(&aspect);
         store.mark_hold_aspect_complete(id.clone(), hold_result);
         r

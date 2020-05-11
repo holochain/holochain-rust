@@ -223,7 +223,7 @@ use mono_ref::*;
 use std::collections::BTreeMap;
 use twox_hash::XxHash64;
 
- use std::collections::HashMap;
+use std::collections::HashMap;
 
 #[allow(dead_code)]
 mod sim2h_im_state;
@@ -462,7 +462,7 @@ fn lib3h_to_client_response(
             );
         }
         Lib3hToClientResponse::HandleGetAuthoringEntryListResult(list_data) => {
-            trace!("AUTHORING: list_data {:?}",list_data);
+            trace!("AUTHORING: list_data {:?}", list_data);
             // the author should always be holding it's own agent id so lets construct a holding
             // list for that and mark it as held
             let mut list_data1 = EntryListData {

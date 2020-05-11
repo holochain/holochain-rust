@@ -223,6 +223,8 @@ use mono_ref::*;
 use std::collections::BTreeMap;
 use twox_hash::XxHash64;
 
+ use std::collections::HashMap;
+
 #[allow(dead_code)]
 mod sim2h_im_state;
 
@@ -460,12 +462,25 @@ fn lib3h_to_client_response(
             );
         }
         Lib3hToClientResponse::HandleGetAuthoringEntryListResult(list_data) => {
+            trace!("AUTHORING: list_data {:?}",list_data);
+            // the author should always be holding it's own agent id so lets construct a holding
+            // list for that and mark it as held
+            let mut list_data1 = EntryListData {
+                space_address: list_data.space_address.clone(),
+                provider_agent_id: list_data.provider_agent_id.clone(),
+                request_id: list_data.request_id.clone(),
+                address_map: HashMap::new(),
+            };
+            let agent_hash = signer.to_string().into();
+            if let Some(aspects) = list_data.address_map.get(&agent_hash) {
+                list_data1.address_map.insert(agent_hash, aspects.clone());
+            }
             spawn_handle_message_list_data(
                 sim2h_handle.clone(),
                 uri.clone(),
                 signer.clone(),
                 space_hash.clone(),
-                list_data.clone(),
+                list_data1,
             );
             spawn_handle_message_authoring_entry_list(
                 sim2h_handle,
@@ -877,7 +892,6 @@ fn spawn_handle_message_authoring_entry_list(
                         aspect_list.push(aspect.clone());
                     }
                 }
-
                 if !aspect_list.is_empty() {
                     multi_message.push(
                         ht::span_wrap_encode!(
@@ -894,7 +908,7 @@ fn spawn_handle_message_authoring_entry_list(
                     );
                 }
             }
-
+            trace!("AUTHORING multi-message: {:?}", multi_message);
             if !multi_message.is_empty() {
                 let multi_send = WireMessage::MultiSend(multi_message);
                 sim2h_handle.send(signer, uri, &multi_send);

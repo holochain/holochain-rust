@@ -26,7 +26,7 @@ extern crate signal_hook;
 extern crate structopt;
 
 use holochain_conductor_lib::{
-    conductor::{mount_conductor_from_config, Conductor, CONDUCTOR},
+    conductor::{mount_conductor_from_config, Conductor, ConductorDebug, CONDUCTOR},
     config::{self, load_configuration, Configuration},
 };
 use holochain_core_types::{
@@ -54,7 +54,6 @@ lazy_static! {
 }
 
 new_relic_setup!("NEW_RELIC_LICENSE_KEY");
-
 #[derive(StructOpt, Debug)]
 #[structopt(name = "holochain")]
 struct Opt {
@@ -63,6 +62,8 @@ struct Opt {
     config: Option<PathBuf>,
     #[structopt(short = "i", long = "info")]
     info: bool,
+    #[structopt(short = "d", long = "state_dump")]
+    state_dump: bool,
 }
 
 pub enum SignalConfiguration {
@@ -125,10 +126,23 @@ fn main() {
                     "Successfully loaded {} instance configurations",
                     conductor.instances().len()
                 );
+
+                if opt.state_dump {
+                    for key in conductor.instances().keys() {
+                        println!("-----------------------------------------------------\nSTATE DUMP FOR: {}\n-----------------------------------------------------\n", key);
+                        let dump = conductor.state_dump_for_instance(key).expect("should dump");
+                        let json_dump = serde_json::to_value(dump).expect("should convert");
+                        let str_dump = serde_json::to_string_pretty(&json_dump).unwrap();
+                        println!("{}", str_dump);
+                    }
+                    return;
+                }
+
                 println!("Starting instances...");
                 conductor
                     .start_all_instances()
                     .expect("Could not start instances!");
+
                 println!("Starting interfaces...");
                 conductor.start_all_interfaces();
                 // NB: the following println is very important!

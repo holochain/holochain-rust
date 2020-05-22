@@ -23,8 +23,6 @@ pub async fn hold_entry_workflow(
     let maybe_validation_package = validation_package(&entry_with_header, context.clone())
         .await
         .map_err(|err| {
-            let message = "Could not get validation package from source! -> Add to pending...";
-            log_debug!(context, "workflow/hold_entry: {}", message);
             log_debug!(context, "workflow/hold_entry: Error was: {:?}", err);
             HolochainError::ValidationPending
         })?;

@@ -12,12 +12,10 @@ use holochain_core_types::{
     validation::{EntryLifecycle, ValidationData},
 };
 use holochain_persistence_api::cas::content::AddressableContent;
-use snowflake::ProcessUniqueId;
 use std::sync::Arc;
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn hold_link_workflow(
-    pending_id: &ProcessUniqueId,
     entry_with_header: &EntryWithHeader,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
@@ -74,12 +72,12 @@ pub async fn hold_link_workflow(
 
     // 3. If valid store the entry aspect in the local DHT shard
     let aspect = EntryAspect::LinkAdd(link_add.clone(), entry_with_header.header.clone());
-    hold_aspect(pending_id, aspect, context.clone()).await?;
+    hold_aspect(aspect, context.clone()).await?;
 
     log_debug!(context, "workflow/hold_link: added! {:?}", link);
 
     //4. store link_add entry so we have all we need to respond to get links queries without any other network look-up
-    hold_entry_workflow(pending_id, &entry_with_header, context.clone()).await?;
+    hold_entry_workflow(&entry_with_header, context.clone()).await?;
     log_debug!(
         context,
         "workflow/hold_entry: added! {:?}",

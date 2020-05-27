@@ -1,6 +1,6 @@
 [package]
 name = "test-globals"
-version = "0.0.48-alpha1"
+version = "0.0.47-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 
 [lib]

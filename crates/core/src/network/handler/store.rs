@@ -1,9 +1,7 @@
 use crate::{
     context::Context,
     dht::{
-        actions::{
-            hold_aspect::ack_single, queue_holding_workflow::dispatch_queue_holding_workflow,
-        },
+        actions::queue_holding_workflow::dispatch_queue_holding_workflow,
         pending_validations::PendingValidationStruct,
     },
 };
@@ -32,10 +30,9 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
         {
             log_error!(
                 context,
-                "handle_store: Aspect already being held: {:?}, sending single ack back to sim2h",
+                "handle_store: Aspect already being held: {:?}",
                 aspect
             );
-            ack_single(context, aspect);
             return;
         }
         match PendingValidationStruct::try_from(aspect) {

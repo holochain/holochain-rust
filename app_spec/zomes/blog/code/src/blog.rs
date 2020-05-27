@@ -97,7 +97,7 @@ pub fn handle_ping(to_agent: Address, message: String) -> ZomeApiResult<JsonStri
         "body" : message
     })
     .to_string();
-    let received_str = hdk::send(to_agent, json_msg, 20000.into())?;
+    let received_str = hdk::send(to_agent, json_msg, 10000.into())?;
     Ok(JsonString::from_json(&received_str))
 }
 

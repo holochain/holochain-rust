@@ -1,6 +1,6 @@
 [package]
 name = "holochain_wasm_utils"
-version = "0.0.48-alpha1"
+version = "0.0.47-alpha1"
 description = "holochain wasm utils"
 license = "GPL-3.0-only"
 homepage = "https://github.com/holochain/holochain-rust"
@@ -11,13 +11,13 @@ authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 serde = "=1.0.104"
 serde_derive = "=1.0.104"
 serde_json = { version = "=1.0.47", features = ["preserve_order"] }
-holochain_core_types = { version = "=0.0.48-alpha1", path = "../core_types" }
+holochain_core_types = { version = "=0.0.47-alpha1", path = "../core_types" }
 holochain_json_derive = "=0.0.23"
 holochain_persistence_api = "=0.0.18"
 holochain_json_api = "=0.0.23"
 
 [dev-dependencies]
-test_utils = { version = "=0.0.48-alpha1", path = "../../test_utils" }
-holochain_core = { version = "=0.0.48-alpha1", path = "../core" }
-holochain_conductor_lib = { version = "=0.0.48-alpha1", path = "../conductor_lib" }
+test_utils = { version = "=0.0.47-alpha1", path = "../../test_utils" }
+holochain_core = { version = "=0.0.47-alpha1", path = "../core" }
+holochain_conductor_lib = { version = "=0.0.47-alpha1", path = "../conductor_lib" }
 tempfile = "=3.0.7"

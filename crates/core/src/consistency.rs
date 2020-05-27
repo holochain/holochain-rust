@@ -160,7 +160,7 @@ impl ConsistencyModel {
                     None
                 })
             }
-            Action::HoldAspect((aspect,_)) => match aspect {
+            Action::HoldAspect(aspect) => match aspect {
                 EntryAspect::Content(entry, _) => Some(ConsistencySignal::new_terminal(Hold(entry.address()))),
                 EntryAspect::Update(_, header) => {
                     header.link_update_delete().map(|old| {

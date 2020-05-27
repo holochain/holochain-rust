@@ -33,7 +33,6 @@ pub fn invoke_commit_app_entry(runtime: &mut Runtime, args: &RuntimeArgs) -> Zom
             return ribosome_error_code!(ArgumentDeserializationFailed);
         }
     };
-
     let span = context
         .tracer
         .span("hdk invoke_commit_app_entry")

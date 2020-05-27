@@ -26,7 +26,7 @@ use std::{convert::TryInto, sync::Arc};
 
 pub type LinkTag = String;
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn get_links(
+fn get_links(
     context: &Arc<Context>,
     base: Address,
     link_type: Option<String>,

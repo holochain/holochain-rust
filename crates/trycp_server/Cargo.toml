@@ -1,6 +1,6 @@
 [package]
 name = "trycp_server"
-version = "0.0.47-alpha1"
+version = "0.0.48-alpha1"
 authors = ["Holochain Core Dev Team <devcore@holochain.org>"]
 edition = "2018"
 description = "Conductor provisioner server for try-o-rama"
@@ -12,7 +12,7 @@ documentation = "https://github.com/holochain/holochain-rust"
 repository = "https://github.com/holochain/holochain-rust"
 
 [dependencies]
-in_stream = { version = "=0.0.47-alpha1", path = "../in_stream" }
+in_stream = { version = "=0.0.48-alpha1", path = "../in_stream" }
 log = "0.4.8"
 env_logger = "0.7.0"
 structopt = "0.2.15"

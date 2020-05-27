@@ -460,6 +460,7 @@ fn lib3h_to_client_response(
             );
         }
         Lib3hToClientResponse::HandleGetAuthoringEntryListResult(list_data) => {
+            trace!("AUTHORING: list_data {:?}", list_data);
             spawn_handle_message_list_data(
                 sim2h_handle.clone(),
                 uri.clone(),
@@ -766,12 +767,12 @@ fn spawn_handle_message_publish_entry(
     }
 
     tokio::task::spawn(async move {
-        let aspect_list: im::HashSet<AspectHash> = data
-            .entry
-            .aspect_list
-            .iter()
-            .map(|a| a.aspect_address.clone())
-            .collect();
+        /*        let aspect_list: im::HashSet<AspectHash> = data
+        .entry
+        .aspect_list
+        .iter()
+        .map(|a| a.aspect_address.clone())
+        .collect();*/
         let mut multi_message = Vec::new();
         for aspect in data.entry.aspect_list {
             let data = Lib3hToClient::HandleStoreEntryAspect(StoreEntryAspectData {
@@ -801,12 +802,13 @@ fn spawn_handle_message_publish_entry(
             if let Some(uri) = state.lookup_joined(&space_hash, &agent_id) {
                 sim2h_handle.send((&*agent_id).clone(), uri.clone(), &multi_message);
             }
+            /* send not guaranteed to work so we can't mark as held.
             sim2h_handle.state().spawn_agent_holds_aspects(
                 (&*space_hash).clone(),
                 (&*agent_id).clone(),
                 data.entry.entry_address.clone(),
                 aspect_list.clone(),
-            );
+            );*/
         }
     });
 }
@@ -876,7 +878,6 @@ fn spawn_handle_message_authoring_entry_list(
                         aspect_list.push(aspect.clone());
                     }
                 }
-
                 if !aspect_list.is_empty() {
                     multi_message.push(
                         ht::span_wrap_encode!(
@@ -893,7 +894,7 @@ fn spawn_handle_message_authoring_entry_list(
                     );
                 }
             }
-
+            trace!("AUTHORING multi-message: {:?}", multi_message);
             if !multi_message.is_empty() {
                 let multi_send = WireMessage::MultiSend(multi_message);
                 sim2h_handle.send(signer, uri, &multi_send);
@@ -926,10 +927,10 @@ fn spawn_handle_message_fetch_entry_result(
             #[allow(clippy::type_complexity)]
             let mut to_agent: std::collections::HashMap<
                 MonoRef<AgentId>,
-                (
-                    Vec<ht::EncodedSpanWrap<Lib3hToClient>>,
-                    std::collections::HashMap<EntryHash, im::HashSet<AspectHash>>,
-                ),
+                //(
+                Vec<ht::EncodedSpanWrap<Lib3hToClient>>,
+                //   std::collections::HashMap<EntryHash, im::HashSet<AspectHash>>,
+                //),
             > = std::collections::HashMap::new();
 
             for aspect in fetch_result.entry.aspect_list {
@@ -948,16 +949,16 @@ fn spawn_handle_message_fetch_entry_result(
                         entry_address: fetch_result.entry.entry_address.clone(),
                         entry_aspect: aspect.clone(),
                     });
-                    m.0.push(ht::span_wrap_encode!(Level::INFO, data).into());
+                    m./*0.*/push(ht::span_wrap_encode!(Level::INFO, data).into());
 
-                    let e =
+                    /*let e =
                         m.1.entry(fetch_result.entry.entry_address.clone())
                             .or_default();
-                    e.insert(aspect.aspect_address.clone());
+                    e.insert(aspect.aspect_address.clone());*/
                 }
             }
 
-            for (agent_id, (multi_message, mut holding)) in to_agent.drain() {
+            for (agent_id, /*(*/ multi_message /*, mut holding)*/) in to_agent.drain() {
                 let uri = match state.lookup_joined(&space_hash, &agent_id) {
                     None => continue,
                     Some(uri) => uri,
@@ -967,6 +968,9 @@ fn spawn_handle_message_fetch_entry_result(
 
                 sim2h_handle.send((&*agent_id).clone(), (&*uri).clone(), &multi_send);
 
+                /* Conductor may not actually hold when told because of a consistency error so
+                   we can't mark this as held.  Conductor will send back a partial gossip list
+                   after a hold request to tell us that it's held the aspects.
                 for (entry_hash, aspects) in holding.drain() {
                     sim2h_handle.state().spawn_agent_holds_aspects(
                         (&*space_hash).clone(),
@@ -975,6 +979,7 @@ fn spawn_handle_message_fetch_entry_result(
                         aspects,
                     );
                 }
+                 */
             }
         }
         .instrument(debug_span!("spawn_handle_message_fetch_entry_result")),
@@ -1501,6 +1506,43 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
     trace!("sim2h gossip full loop in {} ms (ok to be long, this task is broken into multiple sub-loops)", gossip_full_start.elapsed().as_millis());
 }
 
+struct EntriesAlreadyFetched {
+    entries: std::collections::HashMap<MonoEntryHash, std::time::Instant>,
+}
+
+impl EntriesAlreadyFetched {
+    pub fn check(&mut self, entry: &MonoEntryHash) -> bool {
+        // first - prune
+        self.entries.retain(|_, t| t.elapsed().as_millis() < 1000);
+
+        // next - check
+        if self.entries.contains_key(entry) {
+            return true;
+        }
+
+        // finally - set
+        self.entries
+            .insert(entry.clone(), std::time::Instant::now());
+
+        false
+    }
+}
+
+lazy_static! {
+    static ref ENTRIES_ALREADY_FETCHED: std::sync::Mutex<EntriesAlreadyFetched> = {
+        std::sync::Mutex::new(EntriesAlreadyFetched {
+            entries: std::collections::HashMap::new(),
+        })
+    };
+}
+
+fn check_already_fetched(entry: &MonoEntryHash) -> bool {
+    ENTRIES_ALREADY_FETCHED
+        .lock()
+        .expect("failed mutex lock")
+        .check(entry)
+}
+
 fn fetch_entry_data(
     gossip_aspects: im::HashMap<MonoEntryHash, im::HashSet<MonoAspectHash>>,
     space_hash: &MonoRef<SpaceHash>,
@@ -1509,6 +1551,10 @@ fn fetch_entry_data(
 ) {
     for (entry_hash, aspects) in gossip_aspects.iter() {
         if aspects.is_empty() {
+            continue;
+        }
+
+        if check_already_fetched(&entry_hash) {
             continue;
         }
 
@@ -1537,7 +1583,14 @@ fn fetch_entry_data(
                 space_address: (&**space_hash).clone(),
                 provider_agent_id: (&*query_agent).clone(),
                 entry_address: (&**entry_hash).clone(),
-                aspect_address_list: Some(aspects.iter().map(|a| (&**a).clone()).collect()),
+                //aspect_address_list: Some(aspects.iter().map(|a| (&**a).clone()).collect()),
+                // david.b - We have more breadth than depth to worry about here
+                //           i.e. all aspects for a given entry_address are
+                //           not that numerous compared to how many entry
+                //           addresses we have to deal with.
+                //           Doing `None` here makes our "AlreadyFetched" logic
+                //           work better.
+                aspect_address_list: None,
             };
             debug!(message = "wire_message", ?s.request_id, ?s.space_address);
             ht::span_wrap_encode!(tracing::Level::INFO, Lib3hToClient::HandleFetchEntry(s)).into()

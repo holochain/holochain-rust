@@ -80,7 +80,8 @@ pub fn reduce_query_timeout(
         network_state.get_query_results.insert(
             key.clone(),
             Some(Err(HolochainError::Timeout(format!(
-                "timeout src: {}:{}",
+                "key: {:?}, timeout src: {}:{}",
+                key,
                 file!(),
                 line!()
             )))),

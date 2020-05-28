@@ -1,5 +1,4 @@
 const { one, two } = require('../config')
-const sleep = require('sleep')
 
 module.exports = scenario => {
   scenario('delete_entry_post', async (s, t) => {
@@ -220,8 +219,6 @@ module.exports = scenario => {
     t.equal(address, address3)
 
     await s.consistency()
-
-    sleep.sleep(5)  // why do we need this now?
 
     const sources1 = await alice.call('app', 'blog', 'get_sources', { address }).then(x => x.Ok.sort())
     const sources2 = await bob.call('app', 'blog', 'get_sources', { address }).then(x => x.Ok.sort())

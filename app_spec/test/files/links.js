@@ -73,7 +73,7 @@ module.exports = scenario => {
     t.ok(result_bob_delete.Err)
     t.notOk(result_bob_delete.Ok)
     const error = JSON.parse(result_bob_delete.Err.Internal)
-    t.match(error.kind.ErrorGeneric, /Target for link not found: Link { base: HashString\(".*"\), target: HashString\(".*"\), link_type: "authored_posts", tag: "" }/)
+    t.deepEqual(error.kind, { ErrorGeneric: 'Target for link not found' })
     t.ok(error.file)
     t.ok(error.line)
   })
@@ -180,8 +180,6 @@ module.exports = scenario => {
       { base: alice.info('app').agentAddress, target: 'Holo world 2' }
     )
 
-    await s.consistency()
-
     // get posts for alice from alice
     const alice_posts_live = await alice.call('app', 'simple', 'get_my_links',
       {
@@ -210,8 +208,6 @@ module.exports = scenario => {
         base: alice.info('app').agentAddress,
         target: 'Holo world'
       })
-
-    await s.consistency()
 
     // get all posts with a deleted status from bob
     const bob_posts_deleted = await bob.call('app', 'simple', 'get_my_links',

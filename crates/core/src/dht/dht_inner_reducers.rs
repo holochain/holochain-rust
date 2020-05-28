@@ -71,9 +71,8 @@ pub(crate) fn reduce_add_remove_link_inner(
         store.add_eavi(&eav)?;
         Ok(link.link().base().clone())
     } else {
-        Err(HolochainError::ErrorGeneric(format!(
-            "Base for link not found: {:?}",
-            link
+        Err(HolochainError::ErrorGeneric(String::from(
+            "Base for link not found",
         )))
     }
 }

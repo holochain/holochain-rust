@@ -73,7 +73,7 @@ pub struct PendingValidationStruct {
     pub entry_with_header: EntryWithHeader,
     pub dependencies: Vec<Address>,
     pub workflow: ValidatingWorkflow,
-    pub uuid: ProcessUniqueId,
+    uuid: ProcessUniqueId,
 }
 
 impl PendingValidationStruct {

@@ -1,6 +1,6 @@
 use crate::{
     agent::state::AgentState,
-    dht::pending_validations::PendingValidation,
+    dht::{dht_store::HoldAspectAttemptId, pending_validations::PendingValidation},
     network::{
         direct_message::DirectMessage,
         entry_aspect::EntryAspect,
@@ -120,7 +120,7 @@ pub enum Action {
 
     /// Adds an entry aspect to the local DHT shard.
     /// Does not validate, assumes referenced entry is valid.
-    HoldAspect(EntryAspect),
+    HoldAspect((EntryAspect, HoldAspectAttemptId)),
 
     //action for updating crudstatus
     CrudStatus((EntryWithHeader, CrudStatus)),

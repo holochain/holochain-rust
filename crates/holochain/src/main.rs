@@ -15,12 +15,15 @@
 /// ~/.holochain/conductor/conductor_config.toml.
 /// A custom config can be provided with the --config, -c flag.
 extern crate holochain_conductor_lib;
+extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_locksmith;
 extern crate holochain_persistence_api;
 #[macro_use]
 extern crate holochain_common;
+extern crate im;
 extern crate lazy_static;
+extern crate lib3h_protocol;
 extern crate lib3h_sodium;
 extern crate shrust;
 #[cfg(unix)]
@@ -32,11 +35,15 @@ use holochain_conductor_lib::{
     conductor::{mount_conductor_from_config, Conductor, ConductorDebug, CONDUCTOR},
     config::{self, load_configuration, Configuration},
 };
+use holochain_core::network::handler::fetch::fetch_aspects_for_entry;
 use holochain_core_types::{
-    error::HolochainError, hdk_version::HDK_VERSION, BUILD_DATE, GIT_BRANCH, GIT_HASH, HDK_HASH,
+    error::HolochainError, hdk_version::HDK_VERSION, network::entry_aspect::EntryAspect,
+    BUILD_DATE, GIT_BRANCH, GIT_HASH, HDK_HASH,
 };
 use holochain_locksmith::spawn_locksmith_guard_watcher;
-use holochain_persistence_api::cas::content::Address;
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
+use im::HashSet;
+use lib3h_protocol::types::AspectHash;
 #[cfg(unix)]
 use signal_hook::{iterator::Signals, SIGINT, SIGTERM};
 use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc};
@@ -162,6 +169,28 @@ fn main() {
 
                 if opt.repl {
                     let mut shell = Shell::new(conductor);
+                    shell.new_command_noargs("chk", "check that holding list matches what's actually held", |io, conductor| {
+                        for key in conductor.instances().keys() {
+                            println!("-----------------------------------------------------\nChecking: {}\n-----------------------------------------------------\n", key);
+                            let hc = conductor.instances().get(key).unwrap();
+                            let context = hc.read().unwrap().context()?;
+                            let dump = conductor.state_dump_for_instance(key).expect("should dump");
+                            for (entry_hash, held_list_aspect_map) in dump.held_aspects {
+                                let aspects =  fetch_aspects_for_entry(&entry_hash,context.clone());
+                                let actually_held_aspect_map : HashSet<AspectHash> = aspects.clone().into_iter().map(|aspect| AspectHash::from(aspect.address())).collect();
+                                if held_list_aspect_map != actually_held_aspect_map {
+                                    let actually_held_aspects : HashSet<(AspectHash, EntryAspect)> = aspects.into_iter().map(|aspect| (AspectHash::from(aspect.address()), aspect)).collect();
+
+                                    writeln!(io, "mismatch: held aspects for {:?} is:\n{:?}\n but actual aspects held are:\n{:?}", entry_hash, held_list_aspect_map, actually_held_aspects)?;
+                                }
+//                                writeln!(io, "holding aspects for {:?}: {:?}", entry_hash, aspects)?;
+                                if hc.read().unwrap().get_type_and_content_from_cas(&entry_hash).is_err() {
+                                    writeln!(io, "get failed for {:?}", entry_hash)?;
+                                }
+                            }
+                        }
+                        Ok(())
+                    });
                     shell.new_command_noargs("dump", "dump the current instances state", |io, conductor| {
                         for key in conductor.instances().keys() {
                             println!("-----------------------------------------------------\nSTATE DUMP FOR: {}\n-----------------------------------------------------\n", key);
@@ -179,10 +208,14 @@ fn main() {
                         |io, conductor, args| {
                             let instance = args[0];
                             if let Some(hc) = conductor.instances().get(instance) {
-                                let result = hc.read().unwrap().get_type_and_content_from_cas(
-                                    &Address::from(args[1].to_string()),
-                                )?;
+                                let address = Address::from(args[1].to_string());
+                                let result =
+                                    hc.read().unwrap().get_type_and_content_from_cas(&address)?;
                                 writeln!(io, "getting: {:?}", result)?;
+                                let context = hc.read().unwrap().context()?;
+                                let aspects =
+                                    fetch_aspects_for_entry(&address.into(), context.clone());
+                                writeln!(io, "aspects: {:?}", aspects)?;
                             } else {
                                 writeln!(io, "instance {} not found", args[0])?;
                             }

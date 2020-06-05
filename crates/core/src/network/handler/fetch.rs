@@ -7,7 +7,7 @@ use crate::{
     },
 };
 use holochain_core_types::network::entry_aspect::EntryAspect;
-use lib3h_protocol::data_types::FetchEntryData;
+use lib3h_protocol::{data_types::FetchEntryData, types::EntryHash};
 use std::{collections::HashSet, sync::Arc};
 
 /// The network has requested a DHT entry from us.
@@ -15,13 +15,21 @@ use std::{collections::HashSet, sync::Arc};
 #[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
-    let address = get_dht_data.entry_address.clone();
+    let entry_hash = get_dht_data.entry_address.clone();
+    let aspect_set = fetch_aspects_for_entry(&entry_hash, context.clone());
+    let aspects = aspect_set.into_iter().collect::<Vec<_>>();
+
+    let action_wrapper = ActionWrapper::new(Action::RespondFetch((get_dht_data, aspects)));
+    dispatch_action(context.action_channel(), action_wrapper);
+}
+
+pub fn fetch_aspects_for_entry(address: &EntryHash, context: Arc<Context>) -> HashSet<EntryAspect> {
     let mut aspects: HashSet<EntryAspect> = HashSet::new();
 
     // XXX: NB: we seem to be ignoring aspect_address_list and just attempting to get all aspects.
     // Is that right?
 
-    match get_content_aspect(&address, context.clone()) {
+    match get_content_aspect(address, context.clone()) {
         Ok(content_aspect) => {
             aspects.insert(content_aspect);
             for result in &[
@@ -49,8 +57,5 @@ pub fn handle_fetch_entry(get_dht_data: FetchEntryData, context: Arc<Context>) {
         }
     }
 
-    let aspects = aspects.into_iter().collect::<Vec<_>>();
-
-    let action_wrapper = ActionWrapper::new(Action::RespondFetch((get_dht_data, aspects)));
-    dispatch_action(context.action_channel(), action_wrapper);
+    aspects
 }

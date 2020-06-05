@@ -1216,6 +1216,7 @@ dependencies = [
  "holochain_conductor_lib 0.0.49-alpha1",
  "holochain_core_types 0.0.49-alpha1",
  "holochain_locksmith 0.0.49-alpha1",
+ "holochain_persistence_api 0.0.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_tracing 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "holochain_tracing_macros 0.0.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1223,6 +1224,7 @@ dependencies = [
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "newrelic 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.47 (registry+https://github.com/rust-lang/crates.io-index)",
+ "shrust 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "signal-hook 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "structopt 0.2.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "tiny_http 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -4008,6 +4010,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "shrust"
+version = "0.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "prettytable-rs 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "signal-hook"
 version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5873,6 +5883,7 @@ dependencies = [
 "checksum shlex 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "7fdf1b9db47230893d76faad238fd6097fd6d6a9245cd7a4d90dbd639536bbd2"
 "checksum shrinkwraprs 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "7d5f047b90b2ca2d1526ff73d67cba61f86f4cf9a8afddc99dd96702ded8e684"
 "checksum shrinkwraprs 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e63e6744142336dfb606fe2b068afa2e1cca1ee6a5d8377277a92945d81fa331"
+"checksum shrust 0.0.7 (registry+https://github.com/rust-lang/crates.io-index)" = "8839836a10bcc0a6920610f885c61cd651c863ff90840bd598dcb970a27d12c1"
 "checksum signal-hook 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)" = "4f61c4d59f3aaa9f61bba6450a9b80ba48362fd7d651689e7a10c453b1f6dc68"
 "checksum signal-hook-registry 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "94f478ede9f64724c5d173d7bb56099ec3e2d9fc2774aac65d34b8b890405f41"
 "checksum sized-chunks 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)" = "d59044ea371ad781ff976f7b06480b9f0180e834eda94114f2afb4afc12b7718"

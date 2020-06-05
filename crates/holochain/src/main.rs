@@ -17,13 +17,16 @@
 extern crate holochain_conductor_lib;
 extern crate holochain_core_types;
 extern crate holochain_locksmith;
+extern crate holochain_persistence_api;
 #[macro_use]
 extern crate holochain_common;
 extern crate lazy_static;
 extern crate lib3h_sodium;
+extern crate shrust;
 #[cfg(unix)]
 extern crate signal_hook;
 extern crate structopt;
+use shrust::{Shell, ShellIO};
 
 use holochain_conductor_lib::{
     conductor::{mount_conductor_from_config, Conductor, ConductorDebug, CONDUCTOR},
@@ -33,6 +36,7 @@ use holochain_core_types::{
     error::HolochainError, hdk_version::HDK_VERSION, BUILD_DATE, GIT_BRANCH, GIT_HASH, HDK_HASH,
 };
 use holochain_locksmith::spawn_locksmith_guard_watcher;
+use holochain_persistence_api::cas::content::Address;
 #[cfg(unix)]
 use signal_hook::{iterator::Signals, SIGINT, SIGTERM};
 use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc};
@@ -64,6 +68,8 @@ struct Opt {
     info: bool,
     #[structopt(short = "d", long = "state_dump")]
     state_dump: bool,
+    #[structopt(short = "r", long = "repl")]
+    repl: bool,
 }
 
 pub enum SignalConfiguration {
@@ -153,6 +159,38 @@ fn main() {
                 conductor
                     .start_all_static_servers()
                     .expect("Could not start UI servers!");
+
+                if opt.repl {
+                    let mut shell = Shell::new(conductor);
+                    shell.new_command_noargs("dump", "dump the current instances state", |io, conductor| {
+                        for key in conductor.instances().keys() {
+                            println!("-----------------------------------------------------\nSTATE DUMP FOR: {}\n-----------------------------------------------------\n", key);
+                            let dump = conductor.state_dump_for_instance(key).expect("should dump");
+                            let json_dump = serde_json::to_value(dump).expect("should convert");
+                            let str_dump = serde_json::to_string_pretty(&json_dump).unwrap();
+                            writeln!(io, "{}", str_dump)?;
+                        }
+                        Ok(())
+                    });
+                    shell.new_command(
+                        "get",
+                        "get an address from an instance CAS",
+                        2,
+                        |io, conductor, args| {
+                            let instance = args[0];
+                            if let Some(hc) = conductor.instances().get(instance) {
+                                let result = hc.read().unwrap().get_type_and_content_from_cas(
+                                    &Address::from(args[1].to_string()),
+                                )?;
+                                writeln!(io, "getting: {:?}", result)?;
+                            } else {
+                                writeln!(io, "instance {} not found", args[0])?;
+                            }
+                            Ok(())
+                        },
+                    );
+                    shell.run_loop(&mut ShellIO::default());
+                }
             }
 
             match SignalConfiguration::default() {

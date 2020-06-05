@@ -183,10 +183,6 @@ fn main() {
 
                                     writeln!(io, "mismatch: held aspects for {:?} is:\n{:?}\n but actual aspects held are:\n{:?}", entry_hash, held_list_aspect_map, actually_held_aspects)?;
                                 }
-//                                writeln!(io, "holding aspects for {:?}: {:?}", entry_hash, aspects)?;
-                                if hc.read().unwrap().get_type_and_content_from_cas(&entry_hash).is_err() {
-                                    writeln!(io, "get failed for {:?}", entry_hash)?;
-                                }
                             }
                         }
                         Ok(())

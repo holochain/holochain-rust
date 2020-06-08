@@ -6,7 +6,7 @@ let
   hc-conductor-install &&
   (
     cd stress-test &&
-    wget https://github.com/holochain/passthrough-dna/releases/download/v0.0.8/passthrough-dna.dna.json -O passthrough-dna.dna.json
+    wget https://github.com/holochain/passthrough-dna/releases/download/v0.0.9-pre/passthrough-dna.dna.json -O passthrough-dna.dna.json
     npm install &&
     APP_SPEC_NETWORK_TYPE=sim2h TRYORAMA_CHOOSE_FREE_PORT=1 npm test -- "$@"
   )

@@ -209,8 +209,7 @@ fn main() {
                                     hc.read().unwrap().get_type_and_content_from_cas(&address)?;
                                 writeln!(io, "getting: {:?}", result)?;
                                 let context = hc.read().unwrap().context()?;
-                                let aspects =
-                                    fetch_aspects_for_entry(&address.into(), context);
+                                let aspects = fetch_aspects_for_entry(&address.into(), context);
                                 writeln!(io, "aspects: {:?}", aspects)?;
                             } else {
                                 writeln!(io, "instance {} not found", args[0])?;

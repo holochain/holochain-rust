@@ -210,7 +210,7 @@ fn main() {
                                 writeln!(io, "getting: {:?}", result)?;
                                 let context = hc.read().unwrap().context()?;
                                 let aspects =
-                                    fetch_aspects_for_entry(&address.into(), context.clone());
+                                    fetch_aspects_for_entry(&address.into(), context);
                                 writeln!(io, "aspects: {:?}", aspects)?;
                             } else {
                                 writeln!(io, "instance {} not found", args[0])?;

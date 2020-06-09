@@ -1,7 +1,9 @@
 use crate::{
     action::{Action, ActionWrapper},
-    agent::actions::commit::commit_entry,
+    agent::{actions::commit::commit_entry, find_chain_header},
     context::Context,
+    dht::actions::hold_aspect::hold_aspect_no_ack,
+    network::entry_aspect::EntryAspect,
     nucleus::state::NucleusStatus,
 };
 use futures::{future::Future, task::Poll};
@@ -98,7 +100,7 @@ pub async fn initialize_chain(
 
     // Commit AgentId to chain
     let agent_id_entry = Entry::AgentId(context_clone.agent_id.clone());
-    let agent_id_commit = commit_entry(agent_id_entry, None, &context_clone).await;
+    let agent_id_commit = commit_entry(agent_id_entry.clone(), None, &context_clone).await;
 
     // Let initialization fail if AgentId could not be committed.
     // Currently this cannot happen since ToEntry for Agent always creates
@@ -109,6 +111,14 @@ pub async fn initialize_chain(
         return Err(HolochainError::InitializationFailed(
             "error committing Agent".to_string(),
         ));
+    } else {
+        let agent_id_header = find_chain_header(&agent_id_entry, &context.state().unwrap())
+            .ok_or_else(|| HolochainError::from("No header found for agent id entry"))?;
+
+        // mark the entry as held in the dht store because we always hold ourselves.
+        let entry_aspect = EntryAspect::Content(agent_id_entry, agent_id_header);
+
+        hold_aspect_no_ack(&ProcessUniqueId::new(), entry_aspect, context.clone()).await?;
     }
 
     let mut cap_functions = CapFunctions::new();

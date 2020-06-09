@@ -181,7 +181,7 @@ fn main() {
                                 if held_list_aspect_map != actually_held_aspect_map {
                                     let actually_held_aspects : HashSet<(AspectHash, EntryAspect)> = aspects.into_iter().map(|aspect| (AspectHash::from(aspect.address()), aspect)).collect();
 
-                                    writeln!(io, "mismatch: held aspects for {:?} is:\n{:?}\n but actual aspects held are:\n{:?}", entry_hash, held_list_aspect_map, actually_held_aspects)?;
+                                    writeln!(io, "mismatch: held aspects for {:?} is:\n{:?}\n but actual aspects held are:\n{:?}\n\n\n", entry_hash, held_list_aspect_map, actually_held_aspects)?;
                                 }
                             }
                         }

@@ -29,6 +29,26 @@ pub fn ack_single(context: Arc<Context>, aspect: EntryAspect) {
     dispatch_action(context.action_channel(), ActionWrapper::new(action));
 }
 
+pub async fn hold_aspect_no_ack(
+    pending_id: &ProcessUniqueId,
+    aspect: EntryAspect,
+    context: Arc<Context>,
+) -> Result<(), HolochainError> {
+    let id = (*pending_id, ProcessUniqueId::new());
+    let action_wrapper = ActionWrapper::new(Action::HoldAspect((aspect.clone(), id)));
+    dispatch_action(context.action_channel(), action_wrapper.clone());
+    let r = HoldAspectFuture {
+        context: context.clone(),
+        //        aspect,
+        id,
+    }
+    .await;
+    if r.is_err() {
+        error!("HoldAspect action completed with error: {:?}", r);
+    }
+    r
+}
+
 pub async fn hold_aspect(
     pending_id: &ProcessUniqueId,
     aspect: EntryAspect,

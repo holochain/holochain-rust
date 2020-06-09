@@ -7,7 +7,7 @@ use crate::{
     instance::dispatch_action,
     network::{
         entry_aspect::EntryAspect,
-        handler::{entry_to_meta_aspect, get_content_aspect},
+        handler::{entry_to_meta_aspect, get_content_aspects_from_chain},
     },
 };
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
@@ -43,33 +43,35 @@ fn create_authoring_map(context: Arc<Context>) -> AspectMap {
     let mut address_map: AspectMapBare = AspectMapBare::new();
     for entry_address in get_all_public_chain_entries(context.clone()) {
         // 1. For every public chain entry we definitely add the content aspect:
-        let content_aspect = get_content_aspect(&entry_address, context.clone())
-            .expect("Must be able to get content aspect of entry that is in our source chain");
+        let content_aspects = get_content_aspects_from_chain(&entry_address, context.clone())
+            .expect("Must be able to get content aspects of entry that is in our source chain");
 
-        address_map
-            .entry(EntryHash::from(entry_address.clone()))
-            .or_insert_with(|| HashSet::new())
-            .insert(AspectHash::from(content_aspect.address()));
-
-        // 2. Then we might need to add a meta aspect as well depending on what kind of
-        //    entry this is.
-
-        // So we first unwrap the entry it self from the content aspect:
-        let (entry, header) = match content_aspect {
-            EntryAspect::Content(entry, header) => (entry, header),
-            _ => panic!("get_content_aspect must return only EntryAspect::Content"),
-        };
-
-        // And then we deduce the according base entry and meta aspect from that entry
-        // and its header:
-        let maybe_meta_aspect =
-            entry_to_meta_aspect(entry, header).expect("Couldn't derive meta aspect from entry");
-
-        if let Some((base_address, meta_aspect)) = maybe_meta_aspect {
+        for content_aspect in content_aspects {
             address_map
-                .entry(EntryHash::from(base_address.clone()))
+                .entry(EntryHash::from(entry_address.clone()))
                 .or_insert_with(|| HashSet::new())
-                .insert(AspectHash::from(meta_aspect.address()));
+                .insert(AspectHash::from(content_aspect.address()));
+
+            // 2. Then we might need to add a meta aspect as well depending on what kind of
+            //    entry this is.
+
+            // So we first unwrap the entry it self from the content aspect:
+            let (entry, header) = match content_aspect {
+                EntryAspect::Content(entry, header) => (entry, header),
+                _ => panic!("get_content_aspects must return only EntryAspect::Content"),
+            };
+
+            // And then we deduce the according base entry and meta aspect from that entry
+            // and its header:
+            let maybe_meta_aspect = entry_to_meta_aspect(entry, header)
+                .expect("Couldn't derive meta aspect from entry");
+
+            if let Some((base_address, meta_aspect)) = maybe_meta_aspect {
+                address_map
+                    .entry(EntryHash::from(base_address.clone()))
+                    .or_insert_with(|| HashSet::new())
+                    .insert(AspectHash::from(meta_aspect.address()));
+            }
         }
     }
 

@@ -1,6 +1,9 @@
 use crate::{
     action::{Action, ActionWrapper},
-    agent::{actions::commit::commit_entry, find_chain_header},
+    agent::{
+        actions::commit::commit_entry, find_chain_header,
+        state::create_entry_with_header_for_header,
+    },
     context::Context,
     dht::actions::hold_aspect::hold_aspect_no_ack,
     network::entry_aspect::EntryAspect,
@@ -54,7 +57,7 @@ const INITIALIZATION_TIMEOUT: u64 = 60;
 ///
 /// Use futures::executor::block_on to wait for an initialized instance.
 #[autotrace]
-#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+//#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn initialize_chain(
     dna: Dna,
     context: &Arc<Context>,
@@ -88,7 +91,7 @@ pub async fn initialize_chain(
 
     // Commit DNA to chain
     let dna_entry = Entry::Dna(Box::new(dna.clone()));
-    let dna_commit = commit_entry(dna_entry, None, &context_clone).await;
+    let dna_commit = commit_entry(dna_entry.clone(), None, &context_clone).await;
     if dna_commit.is_err() {
         let error = dna_commit.err().unwrap();
         dispatch_error_result(&context_clone, error.clone());
@@ -97,6 +100,14 @@ pub async fn initialize_chain(
             error
         )));
     }
+
+    // mark the dna header as held.
+    let dna_header = find_chain_header(&dna_entry, &context.state().unwrap())
+        .ok_or_else(|| HolochainError::from("No header found for dna entry"))?;
+
+    let ewh = create_entry_with_header_for_header(&context.state().unwrap(), dna_header)?;
+    let entry_aspect = EntryAspect::Content(ewh.entry, ewh.header);
+    hold_aspect_no_ack(&ProcessUniqueId::new(), entry_aspect, context.clone()).await?;
 
     // Commit AgentId to chain
     let agent_id_entry = Entry::AgentId(context_clone.agent_id.clone());
@@ -115,9 +126,12 @@ pub async fn initialize_chain(
         let agent_id_header = find_chain_header(&agent_id_entry, &context.state().unwrap())
             .ok_or_else(|| HolochainError::from("No header found for agent id entry"))?;
 
-        // mark the entry as held in the dht store because we always hold ourselves.
-        let entry_aspect = EntryAspect::Content(agent_id_entry, agent_id_header);
+        // mark the entry and it's header as held in the dht store because we always hold ourselves.
+        let entry_aspect = EntryAspect::Content(agent_id_entry, agent_id_header.clone());
+        hold_aspect_no_ack(&ProcessUniqueId::new(), entry_aspect, context.clone()).await?;
 
+        let ewh = create_entry_with_header_for_header(&context.state().unwrap(), agent_id_header)?;
+        let entry_aspect = EntryAspect::Content(ewh.entry, ewh.header);
         hold_aspect_no_ack(&ProcessUniqueId::new(), entry_aspect, context.clone()).await?;
     }
 

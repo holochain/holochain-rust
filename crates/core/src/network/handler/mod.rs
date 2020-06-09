@@ -17,7 +17,6 @@ use crate::{
     network::{
         direct_message::DirectMessage,
         entry_aspect::EntryAspect,
-        entry_with_header::EntryWithHeader,
         handler::{
             fetch::*,
             lists::{handle_get_authoring_list, handle_get_gossip_list},
@@ -28,7 +27,6 @@ use crate::{
     },
     workflows::get_entry_result::get_entry_with_meta_workflow_local,
 };
-use boolinator::Boolinator;
 use holochain_core_types::{
     chain_header::ChainHeader, eav::Attribute, entry::Entry, error::HolochainError,
 };
@@ -294,97 +292,84 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
     }))
 }
 
-/// Get content aspect at this address, regardless of whether the address points to
-/// an Entry or a Header
-///
-/// NB: this can be optimized by starting with a CAS lookup for the entry directly,
-/// to avoid traversing the chain unnecessarily in the case of a miss
-/// (https://github.com/holochain/holochain-rust/pull/1727#discussion_r330258624)
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-fn get_content_aspect(
+fn get_content_aspects_from_chain(
     entry_address: &Address,
     context: Arc<Context>,
-) -> Result<EntryAspect, HolochainError> {
+) -> Result<Vec<EntryAspect>, HolochainError> {
     let state = context.state().ok_or_else(|| {
-        HolochainError::InitializationFailed(String::from("In get_content_aspect: no state found"))
+        HolochainError::InitializationFailed(String::from(
+            "In get_content_aspects_from_chain: no state found",
+        ))
     })?;
 
-    // Optimistically look for entry in chain...
-    let maybe_chain_header = state
+    let aspects = state
         .agent()
         .iter_chain()
-        // First we look to see if the address corresponds to a header itself, if so return the header
-        .find(|ref chain_header| chain_header.address() == *entry_address)
-        .map(|h| (h, true))
-        .or_else(|| {
-            state
-                .agent()
-                .iter_chain()
-                // Otherwise, try to find the header for the entry at this address
-                .find(|ref chain_header| chain_header.entry_address() == entry_address)
-                .map(|h| (h, false))
-        });
-
-    // If we have found a header for the requested entry in the chain...
-    let maybe_entry_with_header = match maybe_chain_header {
-        Some((header, true)) => Some(create_entry_with_header_for_header(&state, header)?),
-        Some((header, false)) => {
-            // ... we can just get the content from the chain CAS
-            Some(EntryWithHeader {
-                entry: state
-                    .agent()
-                    .chain_store()
-                    .get(&header.entry_address())?
-                    .expect("Could not find entry in chain CAS, but header is chain"),
-                header,
-            })
-        }
-        None => {
-            // ... but if we didn't author that entry, let's see if we have it in the DHT cas:
-            if let Some(entry) = state.dht().get(entry_address)? {
-                // If we have it in the DHT cas that's good,
-                // but then we have to get the header like this:
-                let headers = state.get_headers(entry_address.clone()).map_err(|error| {
-                    let err_message = format!(
-                        "net/fetch/get_content_aspect: Error trying to get headers {:?}",
-                        error
-                    );
-                    log_error!(context, "{}", err_message);
-                    HolochainError::ErrorGeneric(err_message)
-                })?;
-                if !headers.is_empty() {
-                    // TODO: this is just taking the first header..
-                    // We should actually transform all headers into EntryAspect::Headers and just the first one
-                    // into an EntryAspect content (What about ordering? Using the headers timestamp?)
-                    Some(EntryWithHeader {
-                        entry,
-                        header: headers[0].clone(),
-                    })
+        .filter_map(|ref chain_header| {
+            if !chain_header.entry_type().can_publish(&context) {
+                return None;
+            };
+            if chain_header.address() == *entry_address {
+                if let Ok(ewh) = create_entry_with_header_for_header(&state, chain_header.clone()) {
+                    Some(EntryAspect::Content(ewh.entry, ewh.header))
                 } else {
-                    debug!(
-                        "GET CONTENT ASPECT: entry found in cas, but then couldn't find a header"
-                    );
+                    None
+                }
+            } else if chain_header.entry_address() == entry_address {
+                if let Ok(maybe_entry) = state.agent().chain_store().get(&entry_address) {
+                    if let Some(entry) = maybe_entry {
+                        Some(EntryAspect::Content(entry, chain_header.clone()))
+                    } else {
+                        None
+                    }
+                } else {
                     None
                 }
             } else {
-                debug!("GET CONTENT ASPECT: entry not found in cas");
                 None
             }
+        })
+        .collect();
+    Ok(aspects)
+}
+
+/// Get the content aspects from the cas for an address, regardless of whether the address points to
+/// an Entry or a Header. There can be more than one if the entry was committed twice either
+/// by the same agent or by multiple agents.
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+fn get_content_aspects(
+    entry_address: &Address,
+    context: Arc<Context>,
+) -> Result<Vec<EntryAspect>, HolochainError> {
+    let state = context.state().ok_or_else(|| {
+        HolochainError::InitializationFailed(String::from("In get_content_aspects: no state found"))
+    })?;
+
+    let mut aspects: Vec<EntryAspect> = Vec::new();
+
+    if let Some(entry) = state.dht().get(entry_address)? {
+        // If we have it in the DHT cas that's good,
+        // but then we have to get the header like this:
+        let headers = state.get_headers(entry_address.clone()).map_err(|error| {
+            let err_message = format!(
+                "net/fetch/get_content_aspects: Error trying to get headers {:?}",
+                error
+            );
+            log_error!(context, "{}", err_message);
+            HolochainError::ErrorGeneric(err_message)
+        })?;
+        if !headers.is_empty() {
+            for h in headers {
+                aspects.push(EntryAspect::Content(entry.clone(), h.clone()));
+            }
+        } else {
+            error!("GET CONTENT ASPECTS: entry found in cas, but then couldn't find a header");
         }
-    };
-
-    let entry_with_header = maybe_entry_with_header.ok_or(HolochainError::EntryNotFoundLocally)?;
-
-    let _ = entry_with_header
-        .entry
-        .entry_type()
-        .can_publish(&context)
-        .ok_or(HolochainError::EntryIsPrivate)?;
-
-    Ok(EntryAspect::Content(
-        entry_with_header.entry,
-        entry_with_header.header,
-    ))
+    } else {
+        error!("GET CONTENT ASPECTS: entry not found in cas");
+    }
+    Ok(aspects)
 }
 
 /// This function converts an entry into the right "meta" EntryAspect and the according

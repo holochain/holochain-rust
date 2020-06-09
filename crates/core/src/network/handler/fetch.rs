@@ -3,7 +3,7 @@ use crate::{
     context::Context,
     instance::dispatch_action,
     network::handler::{
-        get_content_aspect, get_meta_aspects_from_chain, get_meta_aspects_from_dht_eav,
+        get_content_aspects, get_meta_aspects_from_chain, get_meta_aspects_from_dht_eav,
     },
 };
 use holochain_core_types::network::entry_aspect::EntryAspect;
@@ -29,9 +29,12 @@ pub fn fetch_aspects_for_entry(address: &EntryHash, context: Arc<Context>) -> Ha
     // XXX: NB: we seem to be ignoring aspect_address_list and just attempting to get all aspects.
     // Is that right?
 
-    match get_content_aspect(address, context.clone()) {
-        Ok(content_aspect) => {
-            aspects.insert(content_aspect);
+    match get_content_aspects(address, context.clone()) {
+        Ok(content_aspects) => {
+            // there may be more than one if the same entry data was committed twice
+            for aspect in content_aspects {
+                aspects.insert(aspect);
+            }
             for result in &[
                 get_meta_aspects_from_chain(&address, context.clone()),
                 get_meta_aspects_from_dht_eav(&address, context.clone()),
@@ -50,7 +53,7 @@ pub fn fetch_aspects_for_entry(address: &EntryHash, context: Arc<Context>) -> Ha
             }
         }
         Err(get_content_error) => {
-            log_debug!(context, "net/handle_fetch_entry: Could not get content aspect of requested entry ({:?}), error: {:?}",
+            log_debug!(context, "net/handle_fetch_entry: Could not get content aspects of requested entry ({:?}), error: {:?}",
                 address,
                 get_content_error,
             );

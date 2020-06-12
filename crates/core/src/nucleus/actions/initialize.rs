@@ -170,8 +170,8 @@ pub async fn initialize_chain(
         }
 
         let grant = maybe_public_cap_grant_entry.ok().unwrap();
-        let public_cap_grant_commit =
-            commit_entry(Entry::CapTokenGrant(grant.clone()), None, &context_clone).await;
+        let grant_entry = Entry::CapTokenGrant(grant.clone());
+        let public_cap_grant_commit = commit_entry(grant_entry.clone(), None, &context_clone).await;
 
         // Let initialization fail if Public Grant could not be committed.
         match public_cap_grant_commit {
@@ -182,6 +182,15 @@ pub async fn initialize_chain(
                 ));
             }
             Ok(addr) => {
+                let grant_header = find_chain_header(&grant_entry, &context.state().unwrap())
+                    .ok_or_else(|| HolochainError::from("No header found for agent id entry"))?;
+
+                // mark the cap token entry header as held in the dht store
+                let ewh =
+                    create_entry_with_header_for_header(&context.state().unwrap(), grant_header)?;
+                let entry_aspect = EntryAspect::Content(ewh.entry, ewh.header);
+                hold_aspect_no_ack(&ProcessUniqueId::new(), entry_aspect, context.clone()).await?;
+
                 log_debug!(context, "initialize: created public token: {:?}", addr);
                 Some(addr)
             }

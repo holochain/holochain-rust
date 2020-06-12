@@ -364,10 +364,16 @@ fn get_content_aspects(
                 aspects.push(EntryAspect::Content(entry.clone(), h.clone()));
             }
         } else {
-            error!("GET CONTENT ASPECTS: entry found in cas, but then couldn't find a header");
+            error!(
+                "GET CONTENT ASPECTS: entry ({}) found in cas, but then couldn't find a header",
+                entry_address
+            );
         }
     } else {
-        error!("GET CONTENT ASPECTS: entry not found in cas");
+        error!(
+            "GET CONTENT ASPECTS: entry for {} not found in cas",
+            entry_address
+        );
     }
     Ok(aspects)
 }

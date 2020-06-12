@@ -1,11 +1,16 @@
 use crate::{
     action::QueryKey,
+    content_store::GetContent,
     context::Context,
     dht::{aspect_map::AspectMapBare, pending_validations::PendingValidationWithTimeout},
-    network::direct_message::DirectMessage,
+    network::{direct_message::DirectMessage, entry_with_header::EntryWithHeader},
     nucleus::{ZomeFnCall, ZomeFnCallState},
 };
-use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
+use holochain_core_types::{
+    chain_header::ChainHeader,
+    entry::{entry_type::EntryType, Entry},
+    error::HolochainError,
+};
 use holochain_json_api::json::JsonString;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use std::{collections::VecDeque, convert::TryInto, sync::Arc};
@@ -20,7 +25,7 @@ pub struct StateDump {
     pub direct_message_flows: Vec<(String, DirectMessage)>,
     pub queued_holding_workflows: VecDeque<PendingValidationWithTimeout>,
     pub held_aspects: AspectMapBare,
-    pub source_chain: Vec<ChainHeader>,
+    pub source_chain: Vec<EntryWithHeader>,
 }
 
 impl From<Arc<Context>> for StateDump {
@@ -36,7 +41,26 @@ impl From<Arc<Context>> for StateDump {
         };
 
         let source_chain: Vec<ChainHeader> = agent.iter_chain().collect();
-        let source_chain: Vec<ChainHeader> = source_chain.into_iter().rev().collect();
+        let source_chain: Vec<EntryWithHeader> = source_chain
+            .into_iter()
+            .rev()
+            .filter_map(|header| {
+                let ewh = EntryWithHeader {
+                    entry: agent
+                        .chain_store()
+                        .get(&header.entry_address())
+                        .unwrap()
+                        .unwrap(),
+                    header,
+                };
+                // for now just drop the DNA entry
+                if ewh.entry.entry_type() == EntryType::Dna {
+                    None
+                } else {
+                    Some(ewh)
+                }
+            })
+            .collect();
 
         let queued_calls: Vec<ZomeFnCall> = nucleus.queued_zome_calls.into_iter().collect();
         let invocations = nucleus.hdk_function_calls;

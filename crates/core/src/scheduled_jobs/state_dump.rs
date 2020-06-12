@@ -87,11 +87,11 @@ pub fn state_dump(context: Arc<Context>) {
     let source_chain_strings = dump
         .source_chain
         .iter()
-        .map(|h| {
+        .map(|ewh| {
             format!(
                 "{}\n=> {}",
-                header_to_string(h),
-                address_to_content_string(h.entry_address(), context.clone())
+                header_to_string(&ewh.header),
+                address_to_content_string(ewh.header.entry_address(), context.clone())
             )
         })
         .collect::<Vec<String>>();

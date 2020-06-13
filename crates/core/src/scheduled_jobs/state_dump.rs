@@ -87,7 +87,7 @@ pub fn state_dump(context: Arc<Context>) {
     let source_chain_strings = dump
         .source_chain
         .iter()
-        .map(|ewh| {
+        .map(|(ewh, _)| {
             format!(
                 "{}\n=> {}",
                 header_to_string(&ewh.header),

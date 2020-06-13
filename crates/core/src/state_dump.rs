@@ -25,7 +25,7 @@ pub struct StateDump {
     pub direct_message_flows: Vec<(String, DirectMessage)>,
     pub queued_holding_workflows: VecDeque<PendingValidationWithTimeout>,
     pub held_aspects: AspectMapBare,
-    pub source_chain: Vec<EntryWithHeader>,
+    pub source_chain: Vec<(EntryWithHeader, Address)>,
 }
 
 impl From<Arc<Context>> for StateDump {
@@ -41,7 +41,7 @@ impl From<Arc<Context>> for StateDump {
         };
 
         let source_chain: Vec<ChainHeader> = agent.iter_chain().collect();
-        let source_chain: Vec<EntryWithHeader> = source_chain
+        let source_chain: Vec<(EntryWithHeader, Address)> = source_chain
             .into_iter()
             .rev()
             .filter_map(|header| {
@@ -51,13 +51,13 @@ impl From<Arc<Context>> for StateDump {
                         .get(&header.entry_address())
                         .unwrap()
                         .unwrap(),
-                    header,
+                    header: header.clone(),
                 };
                 // for now just drop the DNA entry
                 if ewh.entry.entry_type() == EntryType::Dna {
                     None
                 } else {
-                    Some(ewh)
+                    Some((ewh, header.address()))
                 }
             })
             .collect();

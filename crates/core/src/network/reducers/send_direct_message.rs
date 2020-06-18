@@ -68,6 +68,7 @@ pub fn reduce_send_direct_message_timeout(
     let id = unwrap_to!(action => crate::action::Action::SendDirectMessageTimeout);
 
     network_state.direct_message_timeouts.remove(id);
+    network_state.direct_message_connections.remove(id);
 
     if network_state.custom_direct_message_replys.get(id).is_some() {
         return;

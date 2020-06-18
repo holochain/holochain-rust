@@ -290,6 +290,10 @@ impl Sim2hWorker {
                     ClientToLib3hResponse::SendDirectMessageResult(_) => false,
                     _ => true,
                 },
+                WireMessage::ClientToLib3h(span_wrap) => match span_wrap.data {
+                    ClientToLib3h::SendDirectMessage(_) => false,
+                    _ => true,
+                },
                 _ => true,
             });
         self.outgoing_message_buffer.insert(0, message.into());

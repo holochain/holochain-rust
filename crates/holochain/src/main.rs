@@ -179,9 +179,25 @@ fn main() {
                                 let aspects =  fetch_aspects_for_entry(&entry_hash,context.clone());
                                 let actually_held_aspect_map : HashSet<AspectHash> = aspects.clone().into_iter().map(|aspect| AspectHash::from(aspect.address())).collect();
                                 if held_list_aspect_map != actually_held_aspect_map {
+                                    writeln!(io, "mismatch for {}:", entry_hash)?;
                                     let actually_held_aspects : HashSet<(AspectHash, EntryAspect)> = aspects.into_iter().map(|aspect| (AspectHash::from(aspect.address()), aspect)).collect();
+                                    let missing_in_held_list : HashSet<(AspectHash, EntryAspect)> = actually_held_aspects.clone().into_iter().filter(|(hash, _aspect)| !held_list_aspect_map.contains(hash)).collect();
+                                    if missing_in_held_list.len() > 0 {
+                                        writeln!(io, "held list is missing:\n {:?}\n", missing_in_held_list)?;
+                                    }
 
-                                    writeln!(io, "mismatch: held aspects for {:?} is:\n{:?}\n but actual aspects held are:\n{:?}\n\n\n", entry_hash, held_list_aspect_map, actually_held_aspects)?;
+                                    let missing_in_cas : Vec<AspectHash> = held_list_aspect_map.clone().into_iter().filter_map(|hash| {
+                                        if actually_held_aspect_map.contains(&hash) {
+                                            None
+                                        }
+                                        else {
+                                            Some(hash.clone())
+                                        }
+                                    }).collect();
+                                    if missing_in_cas.len() > 0 {
+                                        writeln!(io, "cas is missing:\n {:?}\n\n", missing_in_cas)?;
+                                    }
+                                    writeln!(io, "-------")?;
                                 }
                             }
                         }

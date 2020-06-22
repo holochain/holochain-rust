@@ -3,7 +3,7 @@ use crate::{
     dht::actions::hold_aspect::hold_aspect,
     network::entry_with_header::EntryWithHeader,
     nucleus::validation::{process_validation_err, validate_entry},
-    workflows::{hold_entry::hold_entry_workflow, validation_package},
+    workflows::{hold_entry::hold_content_aspect, validation_package},
 };
 use holochain_core_types::{
     entry::Entry,
@@ -72,23 +72,23 @@ pub async fn remove_link_workflow(
         )
     })?;
 
-    log_debug!(context, "workflow/remove_link: is valid!");
+    log_debug!(
+        context,
+        "workflow/remove_link valid for: {:?}",
+        entry_with_header
+    );
 
-    // 3. If valid store the entry aspect in the local DHT shard
+    // 4. If valid store the entry aspect in the local DHT shard
     let aspect = EntryAspect::LinkRemove(
         (link_data.clone(), links_to_remove.clone()),
         entry_with_header.header.clone(),
     );
     hold_aspect(pending_id, aspect, context.clone()).await?;
-    log_debug!(context, "workflow/remove_link: added! {:?}", link);
+    log_debug!(context, "workflow/remove_link: aspect held! {:?}", link);
 
-    //4. store link_remove entry so we have all we need to respond to get links queries without any other network look-up```
-    hold_entry_workflow(pending_id, &entry_with_header, context.clone()).await?;
-    log_debug!(
-        context,
-        "workflow/hold_entry: added! {:?}",
-        entry_with_header
-    );
+    //5. store link_remove entry so we have all we need to respond to get links queries without any other network look-up```
+    hold_content_aspect(pending_id, &entry_with_header, context.clone()).await?;
 
+    //6. RemoveLink has been added to EAV and LinkAdd Entry has been stored on the dht
     Ok(())
 }

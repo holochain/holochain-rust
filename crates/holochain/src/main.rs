@@ -186,13 +186,8 @@ fn main() {
                                         writeln!(io, "held list is missing:\n {:?}\n", missing_in_held_list)?;
                                     }
 
-                                    let missing_in_cas : Vec<AspectHash> = held_list_aspect_map.clone().into_iter().filter_map(|hash| {
-                                        if actually_held_aspect_map.contains(&hash) {
-                                            None
-                                        }
-                                        else {
-                                            Some(hash.clone())
-                                        }
+                                    let missing_in_cas : Vec<AspectHash> = held_list_aspect_map.clone().into_iter().filter(|hash| {
+                                        !actually_held_aspect_map.contains(hash)
                                     }).collect();
                                     if missing_in_cas.len() > 0 {
                                         writeln!(io, "cas is missing:\n {:?}\n\n", missing_in_cas)?;

@@ -8,11 +8,15 @@ use crate::{
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
+    eav::{EaviQuery, EntityAttributeValueIndex},
     entry::{entry_type::EntryType, Entry},
     error::HolochainError,
 };
 use holochain_json_api::json::JsonString;
-use holochain_persistence_api::cas::content::{Address, AddressableContent};
+use holochain_persistence_api::{
+    cas::content::{Address, AddressableContent},
+    eav::IndexFilter,
+};
 use std::{collections::VecDeque, convert::TryInto, sync::Arc};
 
 #[derive(Serialize)]
@@ -26,6 +30,7 @@ pub struct StateDump {
     pub queued_holding_workflows: VecDeque<PendingValidationWithTimeout>,
     pub held_aspects: AspectMapBare,
     pub source_chain: Vec<(EntryWithHeader, Address)>,
+    pub eavis: Vec<EntityAttributeValueIndex>,
 }
 
 impl From<Arc<Context>> for StateDump {
@@ -101,6 +106,20 @@ impl From<Arc<Context>> for StateDump {
 
         let held_aspects = dht.get_holding_map().bare().clone();
 
+        let query = EaviQuery::new(
+            Default::default(),
+            Default::default(),
+            Default::default(),
+            IndexFilter::Range(Some(0), Some(std::i64::MAX)),
+            None,
+        );
+        let eavis: Vec<EntityAttributeValueIndex> = dht
+            .fetch_eavi(&query)
+            .expect("should be ok")
+            .iter()
+            .cloned()
+            .collect();
+
         StateDump {
             queued_calls,
             running_calls,
@@ -111,6 +130,7 @@ impl From<Arc<Context>> for StateDump {
             queued_holding_workflows,
             held_aspects,
             source_chain,
+            eavis,
         }
     }
 }

@@ -10,6 +10,7 @@ use crate::content_store::{AddContent, GetContent};
 ///
 use crate::dht::dht_store::DhtStore;
 use holochain_core_types::{
+    chain_header::ChainHeader,
     crud_status::{create_crud_link_eav, create_crud_status_eav, CrudStatus},
     eav::{Attribute, EaviQuery, EntityAttributeValueIndex},
     entry::Entry,
@@ -49,6 +50,7 @@ pub(crate) fn reduce_add_remove_link_inner(
     link: &LinkData,
     address: &Address,
     link_modification: LinkModification,
+    header: &ChainHeader,
 ) -> HcResult<Address> {
     if store.contains(link.link().base())? {
         let attr = match link_modification {
@@ -61,7 +63,11 @@ pub(crate) fn reduce_add_remove_link_inner(
                 link.link().tag().to_string(),
             ),
         };
-        let link_created_time: DateTime<FixedOffset> = link.top_chain_header.timestamp().into();
+        debug!(
+            "EAVI: Storing {:?} for {} based on link: {:?}",
+            attr, address, link
+        );
+        let link_created_time: DateTime<FixedOffset> = header.timestamp().into();
         let eav = EntityAttributeValueIndex::new_with_index(
             &link.link().base().clone(),
             &attr,

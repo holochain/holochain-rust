@@ -98,13 +98,14 @@ pub(crate) fn reduce_hold_aspect(
                 }
             }
         }
-        EntryAspect::LinkAdd(link_data, _header) => {
+        EntryAspect::LinkAdd(link_data, header) => {
             let entry = Entry::LinkAdd(link_data.clone());
             match reduce_add_remove_link_inner(
                 &mut new_store,
                 &link_data,
                 &entry.address(),
                 LinkModification::Add,
+                header,
             ) {
                 Ok(_) => Some(new_store),
                 Err(e) => {
@@ -114,7 +115,7 @@ pub(crate) fn reduce_hold_aspect(
                 }
             }
         }
-        EntryAspect::LinkRemove((link_data, links_to_remove), _header) => Some(
+        EntryAspect::LinkRemove((link_data, links_to_remove), header) => Some(
             links_to_remove
                 .iter()
                 .fold(new_store, |mut store, link_addresses| {
@@ -123,6 +124,7 @@ pub(crate) fn reduce_hold_aspect(
                         &link_data,
                         link_addresses,
                         LinkModification::Remove,
+                        header,
                     );
                     store
                 }),

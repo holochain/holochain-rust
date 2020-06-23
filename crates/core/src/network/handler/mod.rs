@@ -449,49 +449,103 @@ fn get_meta_aspects_from_dht_eav(
     entry_address: &Address,
     context: Arc<Context>,
 ) -> Result<Vec<EntryAspect>, HolochainError> {
+    log_trace!(context, "EAVI: entry address: {}", entry_address);
     let eavis = context
         .state()
         .expect("Could not get state for handle_fetch_entry")
         .dht()
         .get_all_metas(entry_address)?;
+    log_trace!(context, "EAVI: get_all_metas results {:?}", eavis);
     let (aspects, errors): (Vec<_>, Vec<_>) = eavis
         .iter()
         .filter(|eavi| match eavi.attribute() {
             Attribute::LinkTag(_, _) => true,
-            Attribute::RemovedLink(_, _) => true,
+            Attribute::RemovedLink(_, _, _) => true,
             Attribute::CrudLink => true,
             _ => false,
         })
         .map(|eavi| {
+            log_trace!(context, "EAVI: for each eavi: {:?}", eavi);
             let value_entry = get_entry_with_meta_workflow_local(&context, &eavi.value())?
                 .ok_or_else(|| {
                     HolochainError::from("Entry linked in EAV not found! This should never happen.")
                 })?;
             let header = value_entry.headers[0].to_owned();
+            log_trace!(context, "EAVI: value_entry: {:?}", value_entry);
+            log_trace!(context, "EAVI: header: {:?}", header);
 
             match eavi.attribute() {
-                Attribute::LinkTag(_, _) => match value_entry.entry_with_meta.entry {
-                    Entry::LinkAdd(link_data) | Entry::LinkRemove((link_data, _)) => {
-                        Ok(EntryAspect::LinkAdd(link_data, header))
-                    }
-                    _ => Err(HolochainError::from(format!(
-                        "Invalid Entry Value for LinkTag: {:?}",
-                        value_entry
-                    ))),
-                },
-                Attribute::RemovedLink(_link_type, _link_tag) => {
+                Attribute::LinkTag(x, y) => {
+                    log_trace!(context, "EAVI: LinkTag: {},{}", x, y);
                     match value_entry.entry_with_meta.entry {
-                        Entry::LinkRemove((link_data, removed_link_entries)) => Ok(
-                            EntryAspect::LinkRemove((link_data, removed_link_entries), header),
-                        ),
+                        Entry::LinkAdd(link_data) | Entry::LinkRemove((link_data, _)) => {
+                            Ok(EntryAspect::LinkAdd(link_data, header))
+                        }
+                        _ => Err(HolochainError::from(format!(
+                            "Invalid Entry Value for LinkTag: {:?}",
+                            value_entry
+                        ))),
+                    }
+                }
+                Attribute::RemovedLink(link_remove_address, link_type, link_tag) => {
+                    log_trace!(context, "EAVI: RemovedLink: {}, {}, {}", link_remove_address, link_type, link_tag);
+                    match value_entry.entry_with_meta.entry {
+                        Entry::LinkRemove((link_data, removed_link_entries)) => {
+                            log_trace!(
+                                context,
+                                "value was LinkRemove with link_data: {:?}, removed_link_entries: {:?}",
+                                link_data,
+                                removed_link_entries
+                            );
+
+                            Ok(EntryAspect::LinkRemove(
+                                (link_data, removed_link_entries),
+                                header,
+                            ))
+                        }
                         Entry::LinkAdd(link_data) => {
+                            log_trace!(
+                                context,
+                                "value was LinkAdd with link_data: {:?}",
+                                link_data,
+                            );
+                            // get the content entry aspect out of the dht so we can
+                            // can have the header of the LinkRemove entry to correctly
+                            // rebuild the LinkRemove aspect
+                            let contents = get_content_aspects(&link_remove_address, context.clone())?;
+                            // there should always only by one.
+                            if contents.len() != 1 {
+                                return Err(HolochainError::from(format!(
+                                "Expecting one LinkRemove content aspect, got: {:?}",
+                                contents
+                                )))
+                            };
+
+                            let content_aspect = &contents[0];
+                            let (link_remove_header, link_data) = match content_aspect {
+                                EntryAspect::Content(entry, header) => {
+                                    let link_data = match entry {
+                                        Entry::LinkRemove((ld, _)) => ld,
+                                        _ => return Err(HolochainError::from(format!(
+                                            "Expecting LinkRemove entry, got: {:?}",
+                                            entry
+                                        )))
+                                    };
+                                    (header, link_data)
+                                }
+                                _ => return Err(HolochainError::from(format!(
+                                    "Expecting content aspect, got: {:?}",
+                                    content_aspect
+                                )))
+                            };
+
                             // here we are manually building the entry aspect assuming
                             // just one link being removed which is actually correct for holochain
                             // but currently incorrect in this implementation and needs to be fixed
                             // in hdk v3.
                             Ok(EntryAspect::LinkRemove(
-                                (link_data, vec![eavi.value()]),
-                                header,
+                                (link_data.clone(), vec![eavi.value()]),
+                                link_remove_header.clone(),
                             ))
                         }
                         _ => Err(HolochainError::from(format!(

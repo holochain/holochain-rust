@@ -406,10 +406,12 @@ pub mod tests {
 
         let new_dht_store = reduce(store.dht(), &action_link_add);
 
+        let link_remove_header = test_chain_header();
+
         let link_remove_data = LinkData::from_link(
             &link.clone(),
             LinkActionKind::REMOVE,
-            test_chain_header(),
+            link_remove_header.clone(),
             test_agent_id(),
         );
 
@@ -445,7 +447,11 @@ pub mod tests {
         assert_eq!(eav.value(), link_entry.address());
         assert_eq!(
             eav.attribute(),
-            Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_string())
+            Attribute::RemovedLink(
+                link_remove_header.entry_address(),
+                link.link_type().to_string(),
+                link.tag().to_string()
+            )
         );
 
         //add new link with same chain header
@@ -474,7 +480,11 @@ pub mod tests {
         assert_eq!(eav.value(), link_entry.address());
         assert_eq!(
             eav.attribute(),
-            Attribute::RemovedLink(link.link_type().to_string(), link.tag().to_string())
+            Attribute::RemovedLink(
+                link_remove_header.entry_address(),
+                link.link_type().to_string(),
+                link.tag().to_string()
+            )
         );
 
         //add new link after tombstone has been added with different chain_header which will produce different hash

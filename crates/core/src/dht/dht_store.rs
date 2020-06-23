@@ -112,7 +112,7 @@ pub fn create_get_links_eavi_query<'a>(
         Some(address).into(),
         EavFilter::predicate(move |attr: Attribute| match attr {
             Attribute::LinkTag(query_link_type, query_tag)
-            | Attribute::RemovedLink(query_link_type, query_tag) => {
+            | Attribute::RemovedLink(_, query_link_type, query_tag) => {
                 link_type
                     .clone()
                     .map(|link_type| link_type == query_link_type)
@@ -131,7 +131,7 @@ pub fn create_get_links_eavi_query<'a>(
             //at this stage of the eavi_query all three vectors (e,a,v) have already been matched
             //it would be safe to assume at this point that any value that we match using this method
             //will be a tombstone
-            Attribute::RemovedLink(_, _) => true,
+            Attribute::RemovedLink(_, _, _) => true,
             _ => false,
         })),
     ))
@@ -165,7 +165,7 @@ impl DhtStore {
         new_dht_store
     }
 
-    ///This algorithmn works by querying the EAVI Query for entries that match the address given, the link _type given, the tag given and a tombstone query set of RemovedLink(link_type,tag)
+    ///This algorithmn works by querying the EAVI Query for entries that match the address given, the link _type given, the tag given and a tombstone query set of RemovedLink(remove_link_address, link_type, tag)
     ///this means no matter how many links are added after one is removed, we will always say that the link has been removed.
     ///One thing to remember is that LinkAdd entries occupy the "Value" aspect of our EAVI link stores.
     ///When that set is obtained, we filter based on the LinkTag and RemovedLink attributes to evaluate if they are "live" or "deleted". A reminder that links cannot be modified
@@ -227,7 +227,7 @@ impl DhtStore {
             Some(address.to_owned()).into(),
             EavFilter::predicate(move |attr: Attribute| match attr {
                 Attribute::LinkTag(_, _)
-                | Attribute::RemovedLink(_, _)
+                | Attribute::RemovedLink(_, _, _)
                 | Attribute::CrudLink
                 | Attribute::CrudStatus => true,
                 _ => false,

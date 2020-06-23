@@ -150,11 +150,12 @@ impl fmt::Debug for EntryAspect {
             ),
             EntryAspect::LinkRemove((link_data, _), header) => write!(
                 f,
-                "EntryAspect::LinkRemove({} -> {} [tag: {}, type: {}], {})",
+                "EntryAspect::LinkRemove({} -> {} [tag: {}, type: {}], top_chain_header:{}, remove_header: {})",
                 link_data.link.base(),
                 link_data.link.target(),
                 link_data.link.tag(),
                 link_data.link.link_type(),
+                format_header(&link_data.top_chain_header),
                 format_header(header)
             ),
             EntryAspect::Update(entry, header) => write!(

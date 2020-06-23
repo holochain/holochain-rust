@@ -83,8 +83,14 @@ pub async fn remove_link_workflow(
         (link_data.clone(), links_to_remove.clone()),
         entry_with_header.header.clone(),
     );
-    hold_aspect(pending_id, aspect, context.clone()).await?;
-    log_debug!(context, "workflow/remove_link: aspect held! {:?}", link);
+    hold_aspect(pending_id, aspect.clone(), context.clone()).await?;
+    log_debug!(
+        context,
+        "workflow/remove_link: aspect held! aspect address:{}, link_data: {:?} {:?}",
+        aspect.address(),
+        link_data,
+        entry_with_header.header
+    );
 
     //5. store link_remove entry so we have all we need to respond to get links queries without any other network look-up```
     hold_content_aspect(pending_id, &entry_with_header, context.clone()).await?;

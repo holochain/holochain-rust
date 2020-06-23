@@ -59,6 +59,7 @@ pub(crate) fn reduce_add_remove_link_inner(
                 link.link().tag().to_string(),
             ),
             LinkModification::Remove => Attribute::RemovedLink(
+                header.entry_address().clone(),
                 link.link().link_type().to_string(),
                 link.link().tag().to_string(),
             ),

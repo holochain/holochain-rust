@@ -51,7 +51,7 @@ pub fn get_links(
         .map(|(eavi, crud)| {
             let tag = match eavi.attribute() {
                 Attribute::LinkTag(_, tag) => Ok(tag),
-                Attribute::RemovedLink(_, tag) => Ok(tag),
+                Attribute::RemovedLink(_, _, tag) => Ok(tag),
                 _ => Err(HolochainError::ErrorGeneric(
                     "Could not get tag".to_string(),
                 )),

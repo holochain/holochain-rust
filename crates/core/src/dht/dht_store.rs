@@ -233,7 +233,7 @@ impl DhtStore {
                 _ => false,
             }),
             None.into(),
-            IndexFilter::LatestByAttribute,
+            IndexFilter::Range(Some(0), Some(std::i64::MAX)),
             None,
         );
         Ok(self.meta_storage.read()?.fetch_eavi(&query)?)

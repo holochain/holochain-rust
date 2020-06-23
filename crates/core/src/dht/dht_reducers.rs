@@ -448,7 +448,7 @@ pub mod tests {
         assert_eq!(
             eav.attribute(),
             Attribute::RemovedLink(
-                link_remove_header.entry_address(),
+                link_remove_header.entry_address().clone(),
                 link.link_type().to_string(),
                 link.tag().to_string()
             )
@@ -481,7 +481,7 @@ pub mod tests {
         assert_eq!(
             eav.attribute(),
             Attribute::RemovedLink(
-                link_remove_header.entry_address(),
+                link_remove_header.entry_address().clone(),
                 link.link_type().to_string(),
                 link.tag().to_string()
             )

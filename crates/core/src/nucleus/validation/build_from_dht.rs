@@ -47,9 +47,9 @@ async fn all_chain_headers_before_header_dht(
             headers.push(chain_header.clone());
             current_header = chain_header;
         } else {
-            log_debug!(context, "When building validation package from DHT, Could not retrieve a header entry at address: {:?}. Got {:?}", next_header_addr, get_entry_result);
+            log_debug!(context, "When building validation package from DHT, Could not retrieve a header entry at address: {}. Got {:?}", next_header_addr, get_entry_result);
             return Err(HolochainError::ErrorGeneric(
-                format!("When building validation package from DHT, Could not retrieve a header entry at address: {:?}. Got {:?}", next_header_addr, get_entry_result))
+                format!("When building validation package from DHT, Could not retrieve a header entry at address: {}. Got {:?}", next_header_addr, get_entry_result))
             );
         }
     }
@@ -78,7 +78,7 @@ async fn public_chain_entries_from_headers_dht(
             entries.push(entry.clone());
         } else {
             return Err(HolochainError::ErrorGeneric(
-                format!("When building validation package from DHT, Could not retrieve entry at address: {:?}. Got: {:?}", header.entry_address(), get_entry_result))
+                format!("When building validation package from DHT, Could not retrieve entry at address: {}. Got: {:?}", header.entry_address(), get_entry_result))
             );
         }
     }

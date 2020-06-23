@@ -164,31 +164,34 @@ async fn validation_package(
         "validation_package:{} - Could not retrieve from author. Trying to build from published headers",
         entry_with_header.entry.address()
     );
-    if let Ok(package) = try_make_validation_package_dht(
+
+    let result = try_make_validation_package_dht(
         &entry_with_header,
         &validation_package_definition,
         context.clone(),
     )
-    .await
-    {
-        log_debug!(
-            context,
-            "validation_package:{} - Successfully built from published headers",
-            entry_with_header.entry.address()
-        );
-        return Ok(Some(package));
+    .await;
+    match result {
+        Ok(package) => {
+            log_debug!(
+                context,
+                "validation_package:{} - Successfully built from published headers",
+                entry_with_header.entry.address()
+            );
+            Ok(Some(package))
+        }
+        Err(err) => {
+            let message = format!(
+                "Could not get validation package for {}. Error was: {}",
+                entry_with_header.entry.address(),
+                err
+            );
+            // If all the above failed then returning an error will add this validation request to pending
+            // It will then try all of the above from the start again later
+            log_debug!(context, "{}", message.clone(),);
+            Err(HolochainError::ErrorGeneric(message))
+        }
     }
-
-    // If all the above failed then returning an error will add this validation request to pending
-    // It will then try all of the above from the start again later
-    log_debug!(
-        context,
-        "validation_package:{} - Could not get validation package!!!",
-        entry_with_header.entry.address()
-    );
-    Err(HolochainError::ErrorGeneric(
-        "Could not get validation package".to_string(),
-    ))
 }
 
 #[cfg(test)]
@@ -256,19 +259,19 @@ pub async fn run_holding_workflow(
 ) -> Result<(), HolochainError> {
     match pending.workflow {
         ValidatingWorkflow::HoldLink => {
-            hold_link_workflow(&pending.entry_with_header, context.clone()).await
+            hold_link_workflow(&pending.uuid, &pending.entry_with_header, context.clone()).await
         }
         ValidatingWorkflow::HoldEntry => {
-            hold_entry_workflow(&pending.entry_with_header, context.clone()).await
+            hold_entry_workflow(&pending.uuid, &pending.entry_with_header, context.clone()).await
         }
         ValidatingWorkflow::RemoveLink => {
-            remove_link_workflow(&pending.entry_with_header, context.clone()).await
+            remove_link_workflow(&pending.uuid, &pending.entry_with_header, context.clone()).await
         }
         ValidatingWorkflow::UpdateEntry => {
-            hold_update_workflow(&pending.entry_with_header, context.clone()).await
+            hold_update_workflow(&pending.uuid, &pending.entry_with_header, context.clone()).await
         }
         ValidatingWorkflow::RemoveEntry => {
-            hold_remove_workflow(&pending.entry_with_header, context.clone()).await
+            hold_remove_workflow(&pending.uuid, &pending.entry_with_header, context.clone()).await
         }
     }
 }

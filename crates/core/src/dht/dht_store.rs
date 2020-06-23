@@ -30,12 +30,16 @@ use crate::{dht::pending_validations::PendingValidation, state::StateWrapper};
 use chrono::{offset::FixedOffset, DateTime};
 use holochain_json_api::error::JsonResult;
 use holochain_persistence_api::error::PersistenceResult;
+use snowflake::ProcessUniqueId;
 use std::{
-    collections::{BTreeSet, VecDeque},
+    collections::{BTreeSet, HashMap, VecDeque},
     convert::TryFrom,
     sync::Arc,
     time::Duration,
 };
+
+/// A type for identifying holding attempts uniquely and by parent pending validation id
+pub type HoldAspectAttemptId = (ProcessUniqueId, ProcessUniqueId);
 
 /// The state-slice for the DHT.
 /// Holds the CAS and EAVi that's used for the agent's local shard
@@ -48,6 +52,9 @@ pub struct DhtStore {
 
     /// All the entry aspects that the network has told us to hold
     holding_map: AspectMap,
+
+    /// Hold aspect attempts that come from pending validations
+    holding_attempt_results: HashMap<HoldAspectAttemptId, Result<(), HolochainError>>,
 
     pub(crate) queued_holding_workflows: VecDeque<PendingValidationWithTimeout>,
 }
@@ -105,7 +112,7 @@ pub fn create_get_links_eavi_query<'a>(
         Some(address).into(),
         EavFilter::predicate(move |attr: Attribute| match attr {
             Attribute::LinkTag(query_link_type, query_tag)
-            | Attribute::RemovedLink(query_link_type, query_tag) => {
+            | Attribute::RemovedLink(_, query_link_type, query_tag) => {
                 link_type
                     .clone()
                     .map(|link_type| link_type == query_link_type)
@@ -124,7 +131,7 @@ pub fn create_get_links_eavi_query<'a>(
             //at this stage of the eavi_query all three vectors (e,a,v) have already been matched
             //it would be safe to assume at this point that any value that we match using this method
             //will be a tombstone
-            Attribute::RemovedLink(_, _) => true,
+            Attribute::RemovedLink(_, _, _) => true,
             _ => false,
         })),
     ))
@@ -143,6 +150,7 @@ impl DhtStore {
             meta_storage,
             holding_map: AspectMap::new(),
             queued_holding_workflows: VecDeque::new(),
+            holding_attempt_results: HashMap::new(),
         }
     }
 
@@ -157,7 +165,7 @@ impl DhtStore {
         new_dht_store
     }
 
-    ///This algorithmn works by querying the EAVI Query for entries that match the address given, the link _type given, the tag given and a tombstone query set of RemovedLink(link_type,tag)
+    ///This algorithmn works by querying the EAVI Query for entries that match the address given, the link _type given, the tag given and a tombstone query set of RemovedLink(remove_link_address, link_type, tag)
     ///this means no matter how many links are added after one is removed, we will always say that the link has been removed.
     ///One thing to remember is that LinkAdd entries occupy the "Value" aspect of our EAVI link stores.
     ///When that set is obtained, we filter based on the LinkTag and RemovedLink attributes to evaluate if they are "live" or "deleted". A reminder that links cannot be modified
@@ -219,13 +227,13 @@ impl DhtStore {
             Some(address.to_owned()).into(),
             EavFilter::predicate(move |attr: Attribute| match attr {
                 Attribute::LinkTag(_, _)
-                | Attribute::RemovedLink(_, _)
+                | Attribute::RemovedLink(_, _, _)
                 | Attribute::CrudLink
                 | Attribute::CrudStatus => true,
                 _ => false,
             }),
             None.into(),
-            IndexFilter::LatestByAttribute,
+            IndexFilter::Range(Some(0), Some(std::i64::MAX)),
             None,
         );
         Ok(self.meta_storage.read()?.fetch_eavi(&query)?)
@@ -288,6 +296,21 @@ impl DhtStore {
 
     pub fn mark_aspect_as_held(&mut self, aspect: &EntryAspect) {
         self.holding_map.add(aspect);
+    }
+
+    pub fn mark_hold_aspect_complete(
+        &mut self,
+        id: HoldAspectAttemptId,
+        result: Result<(), HolochainError>,
+    ) {
+        self.holding_attempt_results.insert(id, result);
+    }
+
+    pub fn hold_aspec_request_complete(
+        &self,
+        id: &HoldAspectAttemptId,
+    ) -> Option<&Result<(), HolochainError>> {
+        self.holding_attempt_results.get(id)
     }
 
     pub fn get_holding_map(&self) -> &AspectMap {
@@ -366,6 +389,10 @@ impl DhtStore {
         &mut self,
         item: &PendingValidation,
     ) -> Option<PendingValidationWithTimeout> {
+        // remove any hold aspect requests that were queued under this workflow id
+        self.holding_attempt_results
+            .retain(|&id, _| id.0 != item.uuid);
+
         self.queued_holding_workflows()
             .iter()
             .position(|PendingValidationWithTimeout { pending, .. }| pending == item)

@@ -1,13 +1,22 @@
 use crate::{
     action::QueryKey,
+    content_store::GetContent,
     context::Context,
     dht::{aspect_map::AspectMapBare, pending_validations::PendingValidationWithTimeout},
-    network::direct_message::DirectMessage,
+    network::{direct_message::DirectMessage, entry_with_header::EntryWithHeader},
     nucleus::{ZomeFnCall, ZomeFnCallState},
 };
-use holochain_core_types::{chain_header::ChainHeader, entry::Entry, error::HolochainError};
+use holochain_core_types::{
+    chain_header::ChainHeader,
+    eav::{EaviQuery, EntityAttributeValueIndex},
+    entry::{entry_type::EntryType, Entry},
+    error::HolochainError,
+};
 use holochain_json_api::json::JsonString;
-use holochain_persistence_api::cas::content::{Address, AddressableContent};
+use holochain_persistence_api::{
+    cas::content::{Address, AddressableContent},
+    eav::IndexFilter,
+};
 use std::{collections::VecDeque, convert::TryInto, sync::Arc};
 
 #[derive(Serialize)]
@@ -20,7 +29,8 @@ pub struct StateDump {
     pub direct_message_flows: Vec<(String, DirectMessage)>,
     pub queued_holding_workflows: VecDeque<PendingValidationWithTimeout>,
     pub held_aspects: AspectMapBare,
-    pub source_chain: Vec<ChainHeader>,
+    pub source_chain: Vec<(EntryWithHeader, Address)>,
+    pub eavis: Vec<EntityAttributeValueIndex>,
 }
 
 impl From<Arc<Context>> for StateDump {
@@ -36,7 +46,26 @@ impl From<Arc<Context>> for StateDump {
         };
 
         let source_chain: Vec<ChainHeader> = agent.iter_chain().collect();
-        let source_chain: Vec<ChainHeader> = source_chain.into_iter().rev().collect();
+        let source_chain: Vec<(EntryWithHeader, Address)> = source_chain
+            .into_iter()
+            .rev()
+            .filter_map(|header| {
+                let ewh = EntryWithHeader {
+                    entry: agent
+                        .chain_store()
+                        .get(&header.entry_address())
+                        .unwrap()
+                        .unwrap(),
+                    header: header.clone(),
+                };
+                // for now just drop the DNA entry
+                if ewh.entry.entry_type() == EntryType::Dna {
+                    None
+                } else {
+                    Some((ewh, header.address()))
+                }
+            })
+            .collect();
 
         let queued_calls: Vec<ZomeFnCall> = nucleus.queued_zome_calls.into_iter().collect();
         let invocations = nucleus.hdk_function_calls;
@@ -77,6 +106,20 @@ impl From<Arc<Context>> for StateDump {
 
         let held_aspects = dht.get_holding_map().bare().clone();
 
+        let query = EaviQuery::new(
+            Default::default(),
+            Default::default(),
+            Default::default(),
+            IndexFilter::Range(Some(0), Some(std::i64::MAX)),
+            None,
+        );
+        let eavis: Vec<EntityAttributeValueIndex> = dht
+            .fetch_eavi(&query)
+            .expect("should be ok")
+            .iter()
+            .cloned()
+            .collect();
+
         StateDump {
             queued_calls,
             running_calls,
@@ -87,6 +130,7 @@ impl From<Arc<Context>> for StateDump {
             queued_holding_workflows,
             held_aspects,
             source_chain,
+            eavis,
         }
     }
 }

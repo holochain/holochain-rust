@@ -284,6 +284,18 @@ impl Sim2hWorker {
         for buffered_message in self.outgoing_message_buffer.iter_mut() {
             buffered_message.last_sent = None;
         }
+        self.outgoing_message_buffer
+            .retain(|m| match &m.wire_message {
+                WireMessage::ClientToLib3hResponse(span_wrap) => match span_wrap.data {
+                    ClientToLib3hResponse::SendDirectMessageResult(_) => false,
+                    _ => true,
+                },
+                WireMessage::ClientToLib3h(span_wrap) => match span_wrap.data {
+                    ClientToLib3h::SendDirectMessage(_) => false,
+                    _ => true,
+                },
+                _ => true,
+            });
         self.outgoing_message_buffer.insert(0, message.into());
         Ok(())
     }
@@ -581,6 +593,7 @@ impl Sim2hWorker {
     /// Tells us if Sim2hWorker should render the local core instance to be self-suficient,
     /// i.e. storing everything locally and answering to queries locally.
     fn is_autonomous_node(&mut self) -> bool {
+        //return true;
         self.is_full_sync_DHT || !self.connection_ready()
     }
 

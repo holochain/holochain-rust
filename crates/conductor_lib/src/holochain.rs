@@ -76,7 +76,7 @@
 //! hc.start().expect("couldn't start the holochain instance");
 //!
 //! // call a function in the zome code
-//! hc.call("test_zome", CapabilityRequest::new(Address::from("some_token"), Address::from("caller"), Signature::fake()), "some_fn", "{}");
+//! hc.call_zome_function("test_zome", CapabilityRequest::new(Address::from("some_token"), Address::from("caller"), Signature::fake()), "some_fn", "{}");
 //!
 //! // get the state
 //! {

@@ -640,6 +640,6 @@ pub fn assert_zome_internal_errors_equivalent(left: &ZomeApiError, right: &ZomeA
 
 fn internal_error_substr<'a>(error_string: &'a str) -> Option<&'a str> {
     error_string
-        .find(r#""line":"#)
+        .find(r#":"#)
         .map(|idx| &error_string[0..idx])
 }

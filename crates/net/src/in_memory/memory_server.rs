@@ -738,10 +738,19 @@ impl InMemoryServer {
 
     /// Received response from our request for the 'holding_list'
     fn priv_serve_HandleGetGossipingEntryListResult(&mut self, msg: &EntryListData) {
-        let chain_id = self
-            .priv_check_request(&msg.request_id)
-            .expect("Not our request")
-            .to_string();
+        let chain_id = {
+            // we are using GossipEntryListResult without a request to confirm
+            // hold aspect requests.
+            if msg.request_id == "" {
+                let agent = msg.provider_agent_id.clone();
+                let space = msg.space_address.clone();
+                into_chain_id(&space.into(), &agent.into())
+            } else {
+                self.priv_check_request(&msg.request_id)
+                    .expect("Not our request")
+                    .to_string()
+            }
+        };
         self.log.d(&format!(
             "---- HandleGetHoldingEntryListResult: chain_id = '{}'",
             chain_id,

@@ -10,10 +10,12 @@ use holochain_core_types::{
     validation::{EntryLifecycle, ValidationData},
 };
 use holochain_persistence_api::cas::content::AddressableContent;
+use snowflake::ProcessUniqueId;
 use std::sync::Arc;
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn hold_remove_workflow(
+    pending_id: &ProcessUniqueId,
     entry_with_header: &EntryWithHeader,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
@@ -54,6 +56,6 @@ pub async fn hold_remove_workflow(
 
     // 4. If valid store the entry aspect in the local DHT shard
     let aspect = EntryAspect::Deletion(entry_with_header.header.clone());
-    hold_aspect(aspect, context.clone()).await?;
+    hold_aspect(pending_id, aspect, context.clone()).await?;
     Ok(())
 }

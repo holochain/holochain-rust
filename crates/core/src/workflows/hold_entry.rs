@@ -9,13 +9,32 @@ use holochain_core_types::{
     network::entry_aspect::EntryAspect,
     validation::{EntryLifecycle, ValidationData},
 };
-
 use holochain_persistence_api::cas::content::AddressableContent;
-
+use snowflake::ProcessUniqueId;
 use std::sync::Arc;
+
+pub async fn hold_content_aspect(
+    pending_id: &ProcessUniqueId,
+    entry_with_header: &EntryWithHeader,
+    context: Arc<Context>,
+) -> Result<(), HolochainError> {
+    let aspect = EntryAspect::Content(
+        entry_with_header.entry.clone(),
+        entry_with_header.header.clone(),
+    );
+    hold_aspect(pending_id, aspect, context.clone()).await?;
+
+    log_debug!(
+        context,
+        "workflow/hold_entry: HOLDING: {}",
+        entry_with_header.entry.address()
+    );
+    Ok(())
+}
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn hold_entry_workflow(
+    pending_id: &ProcessUniqueId,
     entry_with_header: &EntryWithHeader,
     context: Arc<Context>,
 ) -> Result<(), HolochainError> {
@@ -23,8 +42,6 @@ pub async fn hold_entry_workflow(
     let maybe_validation_package = validation_package(&entry_with_header, context.clone())
         .await
         .map_err(|err| {
-            let message = "Could not get validation package from source! -> Add to pending...";
-            log_debug!(context, "workflow/hold_entry: {}", message);
             log_debug!(context, "workflow/hold_entry: Error was: {:?}", err);
             HolochainError::ValidationPending
         })?;
@@ -65,18 +82,8 @@ pub async fn hold_entry_workflow(
         entry_with_header.entry.address()
     );
 
-    // 4. If valid store the entry aspect in the local DHT shard
-    let aspect = EntryAspect::Content(
-        entry_with_header.entry.clone(),
-        entry_with_header.header.clone(),
-    );
-    hold_aspect(aspect, context.clone()).await?;
-
-    log_debug!(
-        context,
-        "workflow/hold_entry: HOLDING: {}",
-        entry_with_header.entry.address()
-    );
+    // 4. If valid store the entry's content aspect in the local DHT shard
+    hold_content_aspect(pending_id, entry_with_header, context).await?;
 
     Ok(())
 }

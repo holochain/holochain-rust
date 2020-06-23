@@ -22,7 +22,7 @@ pub fn get_entry_with_meta_workflow_local<'a>(
     let maybe_entry_with_meta =
         nucleus::actions::get_entry::get_entry_with_meta(context, address.clone())?;
     let entry = maybe_entry_with_meta
-        .ok_or_else(|| HolochainError::ErrorGeneric("Could not get entry".to_string()))?;
+        .ok_or_else(|| HolochainError::ErrorGeneric(format!("Could not get entry: {}", address)))?;
     context
         .state()
         .ok_or_else(|| HolochainError::ErrorGeneric("Could not get state".to_string()))?
@@ -59,8 +59,9 @@ pub async fn get_entry_with_meta_workflow<'a>(
         }
     } else {
         // 3. If we've found the entry locally we also need to get the header from the local state:
-        let entry = maybe_entry_with_meta
-            .ok_or_else(|| HolochainError::ErrorGeneric("Could not get entry".to_string()))?;
+        let entry = maybe_entry_with_meta.ok_or_else(|| {
+            HolochainError::ErrorGeneric(format!("Could not get entry: {}", address))
+        })?;
         match context
             .state()
             .ok_or_else(|| HolochainError::ErrorGeneric("Could not get state".to_string()))?

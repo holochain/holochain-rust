@@ -87,7 +87,7 @@ macro_rules! link_zome_api {
                                 trace_return_hdk_function(zome_api_call.clone(), hdk_fn_call, hdk_fn_result, &context);
                                 result
                             } else {
-                                error!("Can't record zome call hdk invocations for non zome call");
+                                // we don't record hdk function calls for callbacks or direct function calls
                                 $function_name(runtime, args)
                             }
                         } else {

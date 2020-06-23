@@ -68,6 +68,7 @@ pub mod tests {
     use holochain_persistence_api::cas::content::Address;
     use holochain_wasm_utils::api_serialization::get_links::GetLinksArgs;
     use serde_json;
+    use snowflake::ProcessUniqueId;
 
     /// dummy link_entries args from standard test entry
     pub fn test_get_links_args_bytes(
@@ -124,8 +125,10 @@ pub mod tests {
                     &initialized_context
                 ))
                 .is_ok());
+            let fake_id = ProcessUniqueId::new();
             assert!(initialized_context
                 .block_on(hold_aspect(
+                    &fake_id,
                     EntryAspect::LinkAdd(
                         LinkData::add_from_link(link, test_chain_header(), test_agent_id()),
                         test_chain_header(),

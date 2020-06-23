@@ -15,24 +15,35 @@
 /// ~/.holochain/conductor/conductor_config.toml.
 /// A custom config can be provided with the --config, -c flag.
 extern crate holochain_conductor_lib;
+extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_locksmith;
+extern crate holochain_persistence_api;
 #[macro_use]
 extern crate holochain_common;
+extern crate im;
 extern crate lazy_static;
+extern crate lib3h_protocol;
 extern crate lib3h_sodium;
+extern crate shrust;
 #[cfg(unix)]
 extern crate signal_hook;
 extern crate structopt;
+use shrust::{Shell, ShellIO};
 
 use holochain_conductor_lib::{
-    conductor::{mount_conductor_from_config, Conductor, CONDUCTOR},
+    conductor::{mount_conductor_from_config, Conductor, ConductorDebug, CONDUCTOR},
     config::{self, load_configuration, Configuration},
 };
+use holochain_core::network::handler::fetch::fetch_aspects_for_entry;
 use holochain_core_types::{
-    error::HolochainError, hdk_version::HDK_VERSION, BUILD_DATE, GIT_BRANCH, GIT_HASH, HDK_HASH,
+    error::HolochainError, hdk_version::HDK_VERSION, network::entry_aspect::EntryAspect,
+    BUILD_DATE, GIT_BRANCH, GIT_HASH, HDK_HASH,
 };
 use holochain_locksmith::spawn_locksmith_guard_watcher;
+use holochain_persistence_api::cas::content::{Address, AddressableContent};
+use im::HashSet;
+use lib3h_protocol::types::AspectHash;
 #[cfg(unix)]
 use signal_hook::{iterator::Signals, SIGINT, SIGTERM};
 use std::{fs::File, io::prelude::*, path::PathBuf, sync::Arc};
@@ -54,7 +65,6 @@ lazy_static! {
 }
 
 new_relic_setup!("NEW_RELIC_LICENSE_KEY");
-
 #[derive(StructOpt, Debug)]
 #[structopt(name = "holochain")]
 struct Opt {
@@ -63,6 +73,10 @@ struct Opt {
     config: Option<PathBuf>,
     #[structopt(short = "i", long = "info")]
     info: bool,
+    #[structopt(short = "d", long = "state_dump")]
+    state_dump: bool,
+    #[structopt(short = "r", long = "repl")]
+    repl: bool,
 }
 
 pub enum SignalConfiguration {
@@ -125,10 +139,23 @@ fn main() {
                     "Successfully loaded {} instance configurations",
                     conductor.instances().len()
                 );
+
+                if opt.state_dump {
+                    for key in conductor.instances().keys() {
+                        println!("-----------------------------------------------------\nSTATE DUMP FOR: {}\n-----------------------------------------------------\n", key);
+                        let dump = conductor.state_dump_for_instance(key).expect("should dump");
+                        let json_dump = serde_json::to_value(dump).expect("should convert");
+                        let str_dump = serde_json::to_string_pretty(&json_dump).unwrap();
+                        println!("{}", str_dump);
+                    }
+                    return;
+                }
+
                 println!("Starting instances...");
                 conductor
                     .start_all_instances()
                     .expect("Could not start instances!");
+
                 println!("Starting interfaces...");
                 conductor.start_all_interfaces();
                 // NB: the following println is very important!
@@ -139,6 +166,73 @@ fn main() {
                 conductor
                     .start_all_static_servers()
                     .expect("Could not start UI servers!");
+
+                if opt.repl {
+                    let mut shell = Shell::new(conductor);
+                    shell.new_command_noargs("chk", "check that holding list matches what's actually held", |io, conductor| {
+                        for key in conductor.instances().keys() {
+                            println!("-----------------------------------------------------\nChecking: {}\n-----------------------------------------------------\n", key);
+                            let hc = conductor.instances().get(key).unwrap();
+                            let context = hc.read().unwrap().context()?;
+                            let dump = conductor.state_dump_for_instance(key).expect("should dump");
+                            for (entry_hash, held_list_aspect_map) in dump.held_aspects {
+                                let aspects =  fetch_aspects_for_entry(&entry_hash,context.clone());
+                                let actually_held_aspect_map : HashSet<AspectHash> = aspects.clone().into_iter().map(|aspect| AspectHash::from(aspect.address())).collect();
+                                if held_list_aspect_map != actually_held_aspect_map {
+                                    writeln!(io, "mismatch for {}:", entry_hash)?;
+                                    let actually_held_aspects : HashSet<(AspectHash, EntryAspect)> = aspects.into_iter().map(|aspect| (AspectHash::from(aspect.address()), aspect)).collect();
+                                    let missing_in_held_list : HashSet<(AspectHash, EntryAspect)> = actually_held_aspects.clone().into_iter().filter(|(hash, _aspect)| !held_list_aspect_map.contains(hash)).collect();
+                                    if missing_in_held_list.len() > 0 {
+                                        writeln!(io, "held list is missing:\n {:?}\n", missing_in_held_list)?;
+                                    }
+
+                                    let missing_in_cas : Vec<AspectHash> = held_list_aspect_map.clone().into_iter().filter(|hash| {
+                                        !actually_held_aspect_map.contains(hash)
+                                    }).collect();
+                                    if missing_in_cas.len() > 0 {
+                                        writeln!(io, "cas is missing:\n {:?}\n\n", missing_in_cas)?;
+                                    }
+                                    writeln!(io, "-------")?;
+                                }
+                            }
+                        }
+                        Ok(())
+                    });
+                    shell.new_command_noargs("dump", "dump the current instances state", |io, conductor| {
+                        for key in conductor.instances().keys() {
+                            println!("-----------------------------------------------------\nSTATE DUMP FOR: {}\n-----------------------------------------------------\n", key);
+                            let dump = conductor.state_dump_for_instance(key).expect("should dump");
+                            let json_dump = serde_json::to_value(dump).expect("should convert");
+                            let str_dump = serde_json::to_string_pretty(&json_dump).unwrap();
+                            writeln!(io, "{}", str_dump)?;
+                        }
+                        Ok(())
+                    });
+                    shell.new_command(
+                        "get",
+                        "get an address from an instance CAS",
+                        2,
+                        |io, conductor, args| {
+                            let instance = args[0];
+                            if let Some(hc) = conductor.instances().get(instance) {
+                                let address = Address::from(args[1].to_string());
+                                let result =
+                                    hc.read().unwrap().get_type_and_content_from_cas(&address)?;
+                                writeln!(io, "getting: {:?}", result)?;
+                                let context = hc.read().unwrap().context()?;
+                                let aspects = fetch_aspects_for_entry(&address.into(), context);
+                                writeln!(io, "aspects:")?;
+                                for a in aspects {
+                                    writeln!(io, "    {:?}: {:?}", a.address(), a)?;
+                                }
+                            } else {
+                                writeln!(io, "instance {} not found", args[0])?;
+                            }
+                            Ok(())
+                        },
+                    );
+                    shell.run_loop(&mut ShellIO::default());
+                }
             }
 
             match SignalConfiguration::default() {

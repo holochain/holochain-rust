@@ -68,6 +68,7 @@ pub fn reduce_send_direct_message_timeout(
     let id = unwrap_to!(action => crate::action::Action::SendDirectMessageTimeout);
 
     network_state.direct_message_timeouts.remove(id);
+    network_state.direct_message_connections.remove(id);
 
     if network_state.custom_direct_message_replys.get(id).is_some() {
         return;
@@ -153,7 +154,7 @@ mod tests {
         assert_eq!(
             maybe_reply,
             Some(Err(HolochainError::Timeout(
-                "timeout src: crates/core/src/network/reducers/send_direct_message.rs:81"
+                "timeout src: crates/core/src/network/reducers/send_direct_message.rs:82"
                     .to_string()
             )))
         );

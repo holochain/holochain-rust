@@ -42,9 +42,8 @@ pub enum Attribute {
     CrudLink,
     EntryHeader,
     Link,
-    LinkRemove,
     LinkTag(String, String),
-    RemovedLink(String, String),
+    RemovedLink(Address, String, String),
     PendingEntry,
     Target,
 }
@@ -79,11 +78,12 @@ impl fmt::Display for Attribute {
             Attribute::CrudLink => write!(f, "crud-link"),
             Attribute::EntryHeader => write!(f, "entry-header"),
             Attribute::Link => write!(f, "link"),
-            Attribute::LinkRemove => write!(f, "link_remove"),
             Attribute::LinkTag(link_type, tag) => write!(f, "link__{}__{}", link_type, tag),
-            Attribute::RemovedLink(link_type, tag) => {
-                write!(f, "removed_link__{}__{}", link_type, tag)
-            }
+            Attribute::RemovedLink(link_remove_address, link_type, tag) => write!(
+                f,
+                "removed_link__{}__{}__{}",
+                link_remove_address, link_type, tag
+            ),
             Attribute::PendingEntry => write!(f, "pending-entry"),
             Attribute::Target => write!(f, "target"),
         }
@@ -93,8 +93,8 @@ impl fmt::Display for Attribute {
 lazy_static! {
     static ref LINK_REGEX: Regex =
         Regex::new(r"^link__(.*)__(.*)$").expect("This string literal is a valid regex");
-    static ref REMOVED_LINK_REGEX: Regex =
-        Regex::new(r"^removed_link__(.*)__(.*)$").expect("This string literal is a valid regex");
+    static ref REMOVED_LINK_REGEX: Regex = Regex::new(r"^removed_link__(.*)__(.*)__(.*)$")
+        .expect("This string literal is a valid regex");
 }
 
 impl TryFrom<&str> for Attribute {
@@ -107,16 +107,16 @@ impl TryFrom<&str> for Attribute {
 
             Ok(LinkTag(link_type, link_tag))
         } else if REMOVED_LINK_REGEX.is_match(s) {
-            let link_type = REMOVED_LINK_REGEX.captures(s)?.get(1)?.as_str().to_string();
-            let link_tag = REMOVED_LINK_REGEX.captures(s)?.get(2)?.as_str().to_string();
-            Ok(RemovedLink(link_type, link_tag))
+            let address = REMOVED_LINK_REGEX.captures(s)?.get(1)?.as_str().to_string();
+            let link_type = REMOVED_LINK_REGEX.captures(s)?.get(2)?.as_str().to_string();
+            let link_tag = REMOVED_LINK_REGEX.captures(s)?.get(3)?.as_str().to_string();
+            Ok(RemovedLink(address.into(), link_type, link_tag))
         } else {
             match s {
                 "crud-status" => Ok(CrudStatus),
                 "crud-link" => Ok(CrudLink),
                 "entry-header" => Ok(EntryHeader),
                 "link" => Ok(Link),
-                "link_remove" => Ok(LinkRemove),
                 "pending-entry" => Ok(PendingEntry),
                 "target" => Ok(Target),
                 a => Err(AttributeError::Unrecognized(a.to_string())),
@@ -151,7 +151,7 @@ pub type EntityAttributeValueIndex =
 pub type EntityAttributeValueStorage = dyn GenericStorage<Attribute>;
 
 fn validate_attribute(attribute: &Attribute) -> PersistenceResult<()> {
-    if let Attribute::LinkTag(name, _tag) | Attribute::RemovedLink(name, _tag) = attribute {
+    if let Attribute::LinkTag(name, _tag) | Attribute::RemovedLink(_, name, _tag) = attribute {
         let regex = RegexBuilder::new(r#"[/:*?<>"'\\|+]"#)
             .build()
             .map_err(|_| PersistenceError::ErrorGeneric("Could not create regex".to_string()))?;

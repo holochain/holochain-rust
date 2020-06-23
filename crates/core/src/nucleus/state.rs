@@ -4,7 +4,7 @@ use crate::{
 };
 use holochain_core_types::{dna::Dna, error::HolochainError};
 
-use crate::state::StateWrapper;
+use crate::{state::StateWrapper, wasm_engine::api::ZomeApiFunction};
 use holochain_json_api::{
     error::{JsonError, JsonResult},
     json::JsonString,
@@ -220,16 +220,21 @@ impl ZomeFnCallState {
                 ))
             } else if current_result.is_some() {
                 Err(HolochainError::new(
-                    "Ending and HDK which was already ended.",
+                    "Ending an HDK call which was already ended.",
                 ))
             } else {
                 self.hdk_fn_invocations.push((call, Some(result)));
                 Ok(())
             }
         } else {
-            Err(HolochainError::new(
-                "Attempted to end HDK call, but none was started!",
-            ))
+            match call.function {
+                // init globals call is never started so expect this to fail
+                ZomeApiFunction::InitGlobals => Ok(()),
+                _ => Err(HolochainError::new(&format!(
+                    "Attempted to end HDK call, but none was started! {:?} {:?}",
+                    call, result
+                ))),
+            }
         }
     }
 }

@@ -17,7 +17,6 @@ use crate::{
     network::{
         direct_message::DirectMessage,
         entry_aspect::EntryAspect,
-        entry_with_header::EntryWithHeader,
         handler::{
             fetch::*,
             lists::{handle_get_authoring_list, handle_get_gossip_list},
@@ -28,7 +27,6 @@ use crate::{
     },
     workflows::get_entry_result::get_entry_with_meta_workflow_local,
 };
-use boolinator::Boolinator;
 use holochain_core_types::{
     chain_header::ChainHeader, eav::Attribute, entry::Entry, error::HolochainError,
 };
@@ -294,97 +292,90 @@ pub fn create_handler(c: &Arc<Context>, my_dna_address: String) -> NetHandler {
     }))
 }
 
-/// Get content aspect at this address, regardless of whether the address points to
-/// an Entry or a Header
-///
-/// NB: this can be optimized by starting with a CAS lookup for the entry directly,
-/// to avoid traversing the chain unnecessarily in the case of a miss
-/// (https://github.com/holochain/holochain-rust/pull/1727#discussion_r330258624)
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-fn get_content_aspect(
+fn get_content_aspects_from_chain(
     entry_address: &Address,
     context: Arc<Context>,
-) -> Result<EntryAspect, HolochainError> {
+) -> Result<Vec<EntryAspect>, HolochainError> {
     let state = context.state().ok_or_else(|| {
-        HolochainError::InitializationFailed(String::from("In get_content_aspect: no state found"))
+        HolochainError::InitializationFailed(String::from(
+            "In get_content_aspects_from_chain: no state found",
+        ))
     })?;
 
-    // Optimistically look for entry in chain...
-    let maybe_chain_header = state
+    let aspects = state
         .agent()
         .iter_chain()
-        // First we look to see if the address corresponds to a header itself, if so return the header
-        .find(|ref chain_header| chain_header.address() == *entry_address)
-        .map(|h| (h, true))
-        .or_else(|| {
-            state
-                .agent()
-                .iter_chain()
-                // Otherwise, try to find the header for the entry at this address
-                .find(|ref chain_header| chain_header.entry_address() == entry_address)
-                .map(|h| (h, false))
-        });
-
-    // If we have found a header for the requested entry in the chain...
-    let maybe_entry_with_header = match maybe_chain_header {
-        Some((header, true)) => Some(create_entry_with_header_for_header(&state, header)?),
-        Some((header, false)) => {
-            // ... we can just get the content from the chain CAS
-            Some(EntryWithHeader {
-                entry: state
-                    .agent()
-                    .chain_store()
-                    .get(&header.entry_address())?
-                    .expect("Could not find entry in chain CAS, but header is chain"),
-                header,
-            })
-        }
-        None => {
-            // ... but if we didn't author that entry, let's see if we have it in the DHT cas:
-            if let Some(entry) = state.dht().get(entry_address)? {
-                // If we have it in the DHT cas that's good,
-                // but then we have to get the header like this:
-                let headers = state.get_headers(entry_address.clone()).map_err(|error| {
-                    let err_message = format!(
-                        "net/fetch/get_content_aspect: Error trying to get headers {:?}",
-                        error
-                    );
-                    log_error!(context, "{}", err_message);
-                    HolochainError::ErrorGeneric(err_message)
-                })?;
-                if !headers.is_empty() {
-                    // TODO: this is just taking the first header..
-                    // We should actually transform all headers into EntryAspect::Headers and just the first one
-                    // into an EntryAspect content (What about ordering? Using the headers timestamp?)
-                    Some(EntryWithHeader {
-                        entry,
-                        header: headers[0].clone(),
-                    })
+        .filter_map(|ref chain_header| {
+            if !chain_header.entry_type().can_publish(&context) {
+                return None;
+            };
+            if chain_header.address() == *entry_address {
+                if let Ok(ewh) = create_entry_with_header_for_header(&state, chain_header.clone()) {
+                    Some(EntryAspect::Content(ewh.entry, ewh.header))
                 } else {
-                    debug!(
-                        "GET CONTENT ASPECT: entry found in cas, but then couldn't find a header"
-                    );
+                    None
+                }
+            } else if chain_header.entry_address() == entry_address {
+                if let Ok(maybe_entry) = state.agent().chain_store().get(&entry_address) {
+                    if let Some(entry) = maybe_entry {
+                        Some(EntryAspect::Content(entry, chain_header.clone()))
+                    } else {
+                        None
+                    }
+                } else {
                     None
                 }
             } else {
-                debug!("GET CONTENT ASPECT: entry not found in cas");
                 None
             }
+        })
+        .collect();
+    Ok(aspects)
+}
+
+/// Get the content aspects from the cas for an address, regardless of whether the address points to
+/// an Entry or a Header. There can be more than one if the entry was committed twice either
+/// by the same agent or by multiple agents.
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+fn get_content_aspects(
+    entry_address: &Address,
+    context: Arc<Context>,
+) -> Result<Vec<EntryAspect>, HolochainError> {
+    let state = context.state().ok_or_else(|| {
+        HolochainError::InitializationFailed(String::from("In get_content_aspects: no state found"))
+    })?;
+
+    let mut aspects: Vec<EntryAspect> = Vec::new();
+
+    if let Some(entry) = state.dht().get(entry_address)? {
+        // If we have it in the DHT cas that's good,
+        // but then we have to get the header like this:
+        let headers = state.get_headers(entry_address.clone()).map_err(|error| {
+            let err_message = format!(
+                "net/fetch/get_content_aspects: Error trying to get headers {:?}",
+                error
+            );
+            log_error!(context, "{}", err_message);
+            HolochainError::ErrorGeneric(err_message)
+        })?;
+        if !headers.is_empty() {
+            for h in headers {
+                aspects.push(EntryAspect::Content(entry.clone(), h.clone()));
+            }
+        } else {
+            error!(
+                "GET CONTENT ASPECTS: entry ({}) found in cas, but then couldn't find a header",
+                entry_address
+            );
         }
-    };
-
-    let entry_with_header = maybe_entry_with_header.ok_or(HolochainError::EntryNotFoundLocally)?;
-
-    let _ = entry_with_header
-        .entry
-        .entry_type()
-        .can_publish(&context)
-        .ok_or(HolochainError::EntryIsPrivate)?;
-
-    Ok(EntryAspect::Content(
-        entry_with_header.entry,
-        entry_with_header.header,
-    ))
+    } else {
+        error!(
+            "GET CONTENT ASPECTS: entry for {} not found in cas",
+            entry_address
+        );
+    }
+    Ok(aspects)
 }
 
 /// This function converts an entry into the right "meta" EntryAspect and the according
@@ -458,49 +449,103 @@ fn get_meta_aspects_from_dht_eav(
     entry_address: &Address,
     context: Arc<Context>,
 ) -> Result<Vec<EntryAspect>, HolochainError> {
+    log_trace!(context, "EAVI: entry address: {}", entry_address);
     let eavis = context
         .state()
         .expect("Could not get state for handle_fetch_entry")
         .dht()
         .get_all_metas(entry_address)?;
+    log_trace!(context, "EAVI: get_all_metas results {:?}", eavis);
     let (aspects, errors): (Vec<_>, Vec<_>) = eavis
         .iter()
         .filter(|eavi| match eavi.attribute() {
             Attribute::LinkTag(_, _) => true,
-            Attribute::RemovedLink(_, _) => true,
+            Attribute::RemovedLink(_, _, _) => true,
             Attribute::CrudLink => true,
             _ => false,
         })
         .map(|eavi| {
+            log_trace!(context, "EAVI: for each eavi: {:?}", eavi);
             let value_entry = get_entry_with_meta_workflow_local(&context, &eavi.value())?
                 .ok_or_else(|| {
                     HolochainError::from("Entry linked in EAV not found! This should never happen.")
                 })?;
             let header = value_entry.headers[0].to_owned();
+            log_trace!(context, "EAVI: value_entry: {:?}", value_entry);
+            log_trace!(context, "EAVI: header: {:?}", header);
 
             match eavi.attribute() {
-                Attribute::LinkTag(_, _) => match value_entry.entry_with_meta.entry {
-                    Entry::LinkAdd(link_data) | Entry::LinkRemove((link_data, _)) => {
-                        Ok(EntryAspect::LinkAdd(link_data, header))
-                    }
-                    _ => Err(HolochainError::from(format!(
-                        "Invalid Entry Value for LinkTag: {:?}",
-                        value_entry
-                    ))),
-                },
-                Attribute::RemovedLink(_link_type, _link_tag) => {
+                Attribute::LinkTag(x, y) => {
+                    log_trace!(context, "EAVI: LinkTag: {},{}", x, y);
                     match value_entry.entry_with_meta.entry {
-                        Entry::LinkRemove((link_data, removed_link_entries)) => Ok(
-                            EntryAspect::LinkRemove((link_data, removed_link_entries), header),
-                        ),
+                        Entry::LinkAdd(link_data) | Entry::LinkRemove((link_data, _)) => {
+                            Ok(EntryAspect::LinkAdd(link_data, header))
+                        }
+                        _ => Err(HolochainError::from(format!(
+                            "Invalid Entry Value for LinkTag: {:?}",
+                            value_entry
+                        ))),
+                    }
+                }
+                Attribute::RemovedLink(link_remove_address, link_type, link_tag) => {
+                    log_trace!(context, "EAVI: RemovedLink: {}, {}, {}", link_remove_address, link_type, link_tag);
+                    match value_entry.entry_with_meta.entry {
+                        Entry::LinkRemove((link_data, removed_link_entries)) => {
+                            log_trace!(
+                                context,
+                                "value was LinkRemove with link_data: {:?}, removed_link_entries: {:?}",
+                                link_data,
+                                removed_link_entries
+                            );
+
+                            Ok(EntryAspect::LinkRemove(
+                                (link_data, removed_link_entries),
+                                header,
+                            ))
+                        }
                         Entry::LinkAdd(link_data) => {
+                            log_trace!(
+                                context,
+                                "value was LinkAdd with link_data: {:?}",
+                                link_data,
+                            );
+                            // get the content entry aspect out of the dht so we can
+                            // can have the header of the LinkRemove entry to correctly
+                            // rebuild the LinkRemove aspect
+                            let contents = get_content_aspects(&link_remove_address, context.clone())?;
+                            // there should always only by one.
+                            if contents.len() != 1 {
+                                return Err(HolochainError::from(format!(
+                                "Expecting one LinkRemove content aspect, got: {:?}",
+                                contents
+                                )))
+                            };
+
+                            let content_aspect = &contents[0];
+                            let (link_remove_header, link_data) = match content_aspect {
+                                EntryAspect::Content(entry, header) => {
+                                    let link_data = match entry {
+                                        Entry::LinkRemove((ld, _)) => ld,
+                                        _ => return Err(HolochainError::from(format!(
+                                            "Expecting LinkRemove entry, got: {:?}",
+                                            entry
+                                        )))
+                                    };
+                                    (header, link_data)
+                                }
+                                _ => return Err(HolochainError::from(format!(
+                                    "Expecting content aspect, got: {:?}",
+                                    content_aspect
+                                )))
+                            };
+
                             // here we are manually building the entry aspect assuming
                             // just one link being removed which is actually correct for holochain
                             // but currently incorrect in this implementation and needs to be fixed
                             // in hdk v3.
                             Ok(EntryAspect::LinkRemove(
-                                (link_data, vec![eavi.value()]),
-                                header,
+                                (link_data.clone(), vec![eavi.value()]),
+                                link_remove_header.clone(),
                             ))
                         }
                         _ => Err(HolochainError::from(format!(

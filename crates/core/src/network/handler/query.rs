@@ -26,7 +26,7 @@ use std::{convert::TryInto, sync::Arc};
 
 pub type LinkTag = String;
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-fn get_links(
+pub fn get_links(
     context: &Arc<Context>,
     base: Address,
     link_type: Option<String>,
@@ -51,7 +51,7 @@ fn get_links(
         .map(|(eavi, crud)| {
             let tag = match eavi.attribute() {
                 Attribute::LinkTag(_, tag) => Ok(tag),
-                Attribute::RemovedLink(_, tag) => Ok(tag),
+                Attribute::RemovedLink(_, _, tag) => Ok(tag),
                 _ => Err(HolochainError::ErrorGeneric(
                     "Could not get tag".to_string(),
                 )),

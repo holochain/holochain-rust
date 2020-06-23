@@ -28,6 +28,14 @@ pub enum QueryMethod {
     Link(GetLinksArgs, GetLinksNetworkQuery),
 }
 
+pub fn crud_status_from_link_args(link_args: &GetLinksArgs) -> Option<CrudStatus> {
+    match link_args.options.status_request {
+        LinksStatusRequestKind::All => None,
+        LinksStatusRequestKind::Deleted => Some(CrudStatus::Deleted),
+        LinksStatusRequestKind::Live => Some(CrudStatus::Live),
+    }
+}
+
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn query(
     context: Arc<Context>,
@@ -49,11 +57,7 @@ pub async fn query(
                 tag: link_args.tag.clone(),
                 id: nanoid::simple(),
             };
-            let crud_status = match link_args.options.status_request {
-                LinksStatusRequestKind::All => None,
-                LinksStatusRequestKind::Deleted => Some(CrudStatus::Deleted),
-                LinksStatusRequestKind::Live => Some(CrudStatus::Live),
-            };
+            let crud_status = crud_status_from_link_args(&link_args);
             (
                 QueryKey::Links(key),
                 QueryPayload::Links((crud_status, query)),

@@ -1,7 +1,7 @@
 use crate::{
     context::Context,
     dht::pending_validations::PendingValidationWithTimeout,
-    state_dump::{address_to_content_and_type, StateDump},
+    state_dump::{address_to_content_and_type, DumpOptions, StateDump},
 };
 use holochain_core_types::chain_header::ChainHeader;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
@@ -46,8 +46,8 @@ fn address_to_content_string(address: &Address, context: Arc<Context>) -> String
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
-pub fn state_dump(context: Arc<Context>) {
-    let dump = StateDump::from(context.clone());
+pub fn state_dump(context: Arc<Context>, options: DumpOptions) {
+    let dump = StateDump::new(context.clone(), options);
 
     let queued_holding_workflows_strings = dump
         .queued_holding_workflows

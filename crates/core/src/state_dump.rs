@@ -30,11 +30,16 @@ pub struct StateDump {
     pub queued_holding_workflows: VecDeque<PendingValidationWithTimeout>,
     pub held_aspects: AspectMapBare,
     pub source_chain: Vec<(EntryWithHeader, Address)>,
-    pub eavis: Vec<EntityAttributeValueIndex>,
+    pub eavis: Option<Vec<EntityAttributeValueIndex>>,
 }
 
-impl From<Arc<Context>> for StateDump {
-    fn from(context: Arc<Context>) -> StateDump {
+#[derive(Clone)]
+pub struct DumpOptions {
+    pub include_eavis: bool,
+}
+
+impl StateDump {
+    pub fn new(context: Arc<Context>, options: DumpOptions) -> StateDump {
         let (agent, nucleus, network, dht) = {
             let state_lock = context.state().expect("No state?!");
             (
@@ -106,19 +111,24 @@ impl From<Arc<Context>> for StateDump {
 
         let held_aspects = dht.get_holding_map().bare().clone();
 
-        let query = EaviQuery::new(
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            IndexFilter::Range(Some(0), Some(std::i64::MAX)),
-            None,
-        );
-        let eavis: Vec<EntityAttributeValueIndex> = dht
-            .fetch_eavi(&query)
-            .expect("should be ok")
-            .iter()
-            .cloned()
-            .collect();
+        let maybe_eavis = if options.include_eavis {
+            let query = EaviQuery::new(
+                Default::default(),
+                Default::default(),
+                Default::default(),
+                IndexFilter::Range(Some(0), Some(std::i64::MAX)),
+                None,
+            );
+            let eavis: Vec<EntityAttributeValueIndex> = dht
+                .fetch_eavi(&query)
+                .expect("should be ok")
+                .iter()
+                .cloned()
+                .collect();
+            Some(eavis)
+        } else {
+            None
+        };
 
         StateDump {
             queued_calls,
@@ -130,8 +140,19 @@ impl From<Arc<Context>> for StateDump {
             queued_holding_workflows,
             held_aspects,
             source_chain,
-            eavis,
+            eavis: maybe_eavis,
         }
+    }
+}
+
+impl From<Arc<Context>> for StateDump {
+    fn from(context: Arc<Context>) -> StateDump {
+        StateDump::new(
+            context,
+            DumpOptions {
+                include_eavis: false,
+            },
+        )
     }
 }
 

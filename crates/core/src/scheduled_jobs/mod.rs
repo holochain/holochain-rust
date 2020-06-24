@@ -5,14 +5,18 @@ use crate::{
     action::{Action, ActionWrapper},
     context::Context,
     instance::dispatch_action,
+    state_dump::DumpOptions,
 };
 use std::sync::Arc;
 
-pub fn create_state_dump_callback(context: Arc<Context>) -> impl 'static + FnMut() + Sync + Send {
+pub fn create_state_dump_callback(
+    context: Arc<Context>,
+    options: DumpOptions,
+) -> impl 'static + FnMut() + Sync + Send {
     move || {
         //log_debug!(context, "scheduled_jobs: tick");
         if context.state_dump_logging {
-            state_dump::state_dump(context.clone());
+            state_dump::state_dump(context.clone(), options.clone());
         }
     }
 }

@@ -108,7 +108,7 @@ use holochain_json_api::json::JsonString;
 
 use holochain_core::{
     state::StateWrapper,
-    state_dump::{address_to_content_and_type, StateDump},
+    state_dump::{address_to_content_and_type, DumpOptions, StateDump},
 };
 use holochain_persistence_api::cas::content::Address;
 use jsonrpc_core::IoHandler;
@@ -289,11 +289,17 @@ impl Holochain {
         Ok(())
     }
 
-    pub fn get_state_dump(&self) -> Result<StateDump, HolochainInstanceError> {
+    pub fn get_state_dump(
+        &self,
+        options: DumpOptions,
+    ) -> Result<StateDump, HolochainInstanceError> {
         self.check_instance()?;
-        Ok(StateDump::from(self.context.clone().expect(
-            "Context must be Some since we've checked it with check_instance()? above",
-        )))
+        Ok(StateDump::new(
+            self.context
+                .clone()
+                .expect("Context must be Some since we've checked it with check_instance()? above"),
+            options,
+        ))
     }
 
     pub fn get_type_and_content_from_cas(

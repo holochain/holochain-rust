@@ -35,7 +35,7 @@ use holochain_conductor_lib::{
     conductor::{mount_conductor_from_config, Conductor, ConductorDebug, CONDUCTOR},
     config::{self, load_configuration, Configuration},
 };
-use holochain_core::network::handler::fetch::fetch_aspects_for_entry;
+use holochain_core::{network::handler::fetch::fetch_aspects_for_entry, state_dump::DumpOptions};
 use holochain_core_types::{
     error::HolochainError, hdk_version::HDK_VERSION, network::entry_aspect::EntryAspect,
     BUILD_DATE, GIT_BRANCH, GIT_HASH, HDK_HASH,
@@ -143,7 +143,14 @@ fn main() {
                 if opt.state_dump {
                     for key in conductor.instances().keys() {
                         println!("-----------------------------------------------------\nSTATE DUMP FOR: {}\n-----------------------------------------------------\n", key);
-                        let dump = conductor.state_dump_for_instance(key).expect("should dump");
+                        let dump = conductor
+                            .state_dump_for_instance(
+                                key,
+                                DumpOptions {
+                                    include_eavis: true,
+                                },
+                            )
+                            .expect("should dump");
                         let json_dump = serde_json::to_value(dump).expect("should convert");
                         let str_dump = serde_json::to_string_pretty(&json_dump).unwrap();
                         println!("{}", str_dump);
@@ -174,7 +181,7 @@ fn main() {
                             println!("-----------------------------------------------------\nChecking: {}\n-----------------------------------------------------\n", key);
                             let hc = conductor.instances().get(key).unwrap();
                             let context = hc.read().unwrap().context()?;
-                            let dump = conductor.state_dump_for_instance(key).expect("should dump");
+                            let dump = conductor.state_dump_for_instance(key, DumpOptions {include_eavis: false}).expect("should dump");
                             for (entry_hash, held_list_aspect_map) in dump.held_aspects {
                                 let aspects =  fetch_aspects_for_entry(&entry_hash,context.clone());
                                 let actually_held_aspect_map : HashSet<AspectHash> = aspects.clone().into_iter().map(|aspect| AspectHash::from(aspect.address())).collect();
@@ -198,10 +205,10 @@ fn main() {
                         }
                         Ok(())
                     });
-                    shell.new_command_noargs("dump", "dump the current instances state", |io, conductor| {
+                    shell.new_command_noargs("dump", "dump the current instances states", |io, conductor| {
                         for key in conductor.instances().keys() {
                             println!("-----------------------------------------------------\nSTATE DUMP FOR: {}\n-----------------------------------------------------\n", key);
-                            let dump = conductor.state_dump_for_instance(key).expect("should dump");
+                            let dump = conductor.state_dump_for_instance(key, DumpOptions {include_eavis: true}).expect("should dump");
                             let json_dump = serde_json::to_value(dump).expect("should convert");
                             let str_dump = serde_json::to_string_pretty(&json_dump).unwrap();
                             writeln!(io, "{}", str_dump)?;

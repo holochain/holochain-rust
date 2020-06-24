@@ -11,6 +11,7 @@ use crate::{
     scheduled_jobs,
     signal::Signal,
     state::{State, StateWrapper},
+    state_dump::DumpOptions,
     workflows::{application, run_holding_workflow},
 };
 #[cfg(test)]
@@ -84,7 +85,12 @@ impl Instance {
         let mut scheduler = Scheduler::new();
         scheduler
             .every(10.seconds())
-            .run(scheduled_jobs::create_state_dump_callback(context.clone()));
+            .run(scheduled_jobs::create_state_dump_callback(
+                context.clone(),
+                DumpOptions {
+                    include_eavis: false,
+                },
+            ));
         scheduler
             .every(1.second())
             .run(scheduled_jobs::create_timeout_callback(context.clone()));

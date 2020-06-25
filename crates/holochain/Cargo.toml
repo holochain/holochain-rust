@@ -13,6 +13,7 @@ holochain_persistence_api = "=0.0.18"
 holochain_core = { version = "=0.0.49-alpha1", path = "../core" }
 holochain_core_types = { version = "=0.0.49-alpha1", path = "../core_types" }
 holochain_conductor_lib = { version = "=0.0.49-alpha1", path = "../conductor_lib" }
+holochain_wasm_utils = { version = "=0.0.49-alpha1", path = "../wasm_utils" }
 lib3h_sodium = "=0.0.42"
 lib3h_protocol = "=0.0.42"
 holochain_common = { version = "=0.0.49-alpha1", path = "../common" }

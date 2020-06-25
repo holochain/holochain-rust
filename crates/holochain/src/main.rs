@@ -19,6 +19,7 @@ extern crate holochain_core;
 extern crate holochain_core_types;
 extern crate holochain_locksmith;
 extern crate holochain_persistence_api;
+extern crate holochain_wasm_utils;
 #[macro_use]
 extern crate holochain_common;
 extern crate im;
@@ -35,13 +36,19 @@ use holochain_conductor_lib::{
     conductor::{mount_conductor_from_config, Conductor, ConductorDebug, CONDUCTOR},
     config::{self, load_configuration, Configuration},
 };
-use holochain_core::{network::handler::fetch::fetch_aspects_for_entry, state_dump::DumpOptions};
+use holochain_core::{
+    network::handler::fetch::fetch_aspects_for_entry, state_dump::DumpOptions,
+    workflows::get_link_result::get_link_result_workflow,
+};
 use holochain_core_types::{
     error::HolochainError, hdk_version::HDK_VERSION, network::entry_aspect::EntryAspect,
     BUILD_DATE, GIT_BRANCH, GIT_HASH, HDK_HASH,
 };
 use holochain_locksmith::spawn_locksmith_guard_watcher;
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
+use holochain_wasm_utils::api_serialization::get_links::{
+    GetLinksArgs, GetLinksOptions, LinksStatusRequestKind,
+};
 use im::HashSet;
 use lib3h_protocol::types::AspectHash;
 #[cfg(unix)]
@@ -232,6 +239,40 @@ fn main() {
                                 for a in aspects {
                                     writeln!(io, "    {:?}: {:?}", a.address(), a)?;
                                 }
+                            } else {
+                                writeln!(io, "instance {} not found", args[0])?;
+                            }
+                            Ok(())
+                        },
+                    );
+                    shell.new_command(
+                        "get_links",
+                        "make a get_links call on an instance dht",
+                        2,
+                        |io, conductor, args| {
+                            let instance = args[0];
+                            if let Some(hc) = conductor.instances().get(instance) {
+                                let base = Address::from(args[1].to_string());
+                                let link_type = if args.len() > 2 {
+                                    Some(args[2].to_string())
+                                } else {
+                                    None
+                                };
+                                //                                let tag: LinkMatch<&str>,
+                                let mut options = GetLinksOptions::default();
+                                options.status_request = LinksStatusRequestKind::All;
+                                options.headers = true;
+
+                                let args = GetLinksArgs {
+                                    entry_address: base,
+                                    link_type,
+                                    tag: None,
+                                    options,
+                                };
+                                let context = hc.read().unwrap().context()?;
+                                let result =
+                                    context.block_on(get_link_result_workflow(&context, &args));
+                                writeln!(io, "get_links result: {:?}", result)?;
                             } else {
                                 writeln!(io, "instance {} not found", args[0])?;
                             }

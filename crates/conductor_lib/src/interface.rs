@@ -1,7 +1,9 @@
 use crate::{conductor::broadcaster::Broadcaster, holo_signing_service::request_service};
 use base64;
 use crossbeam_channel::Receiver;
-use holochain_core::nucleus::actions::call_zome_function::make_cap_request_for_call;
+use holochain_core::{
+    nucleus::actions::call_zome_function::make_cap_request_for_call, state_dump::DumpOptions,
+};
 
 use crate::Holochain;
 use holochain_core_types::{
@@ -789,7 +791,12 @@ impl ConductorApiBuilder {
             let params_map = Self::unwrap_params_map(params)?;
             let instance_id = Self::get_as_string("instance_id", &params_map)?;
 
-            let mut dump = conductor_call!(|c| c.state_dump_for_instance(&instance_id))?;
+            let mut dump = conductor_call!(|c| c.state_dump_for_instance(
+                &instance_id,
+                DumpOptions {
+                    include_eavis: false
+                }
+            ))?;
 
             if Ok(false) == Self::get_as_bool("source_chain", &params_map) {
                 dump.source_chain.clear()

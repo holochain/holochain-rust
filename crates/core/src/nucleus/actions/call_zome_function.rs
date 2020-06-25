@@ -302,7 +302,10 @@ pub fn spawn_zome_function(context: Arc<Context>, zome_call: ZomeFnCall) {
             let elapsed = Instant::now().duration_since(start);
             log_debug!(
                 context,
-                "actions/call_zome_fn: {:?}\nreturned:  {:?}\nafter {:?}", zome_call, call_result, elapsed
+                "actions/call_zome_fn: {:?}\nreturned:  {:?}\nafter {:?}",
+                zome_call,
+                call_result,
+                elapsed
             );
             // Construct response
             let response = ExecuteZomeFnResponse::new(zome_call.clone(), call_result);

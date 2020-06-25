@@ -287,35 +287,30 @@ pub fn verify_grant(context: Arc<Context>, grant: &CapTokenGrant, fn_call: &Zome
     }
 }
 
+use std::time::Instant;
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn spawn_zome_function(context: Arc<Context>, zome_call: ZomeFnCall) {
     std::thread::Builder::new()
         .name(format!("{:?}", zome_call))
         .spawn(move || {
+            let start = Instant::now();
             // Have Ribosome spin up DNA and call the zome function
             let call_result = wasm_engine::run_dna(
                 Some(zome_call.clone().parameters.to_bytes()),
                 WasmCallData::new_zome_call(context.clone(), zome_call.clone()),
             );
+            let elapsed = Instant::now().duration_since(start);
             log_debug!(
                 context,
-                "actions/call_zome_fn: got call_result from ribosome::run_dna."
+                "actions/call_zome_fn: {:?}\nreturned:  {:?}\nafter {:?}", zome_call, call_result, elapsed
             );
             // Construct response
-            let response = ExecuteZomeFnResponse::new(zome_call, call_result);
+            let response = ExecuteZomeFnResponse::new(zome_call.clone(), call_result);
             // Send ReturnZomeFunctionResult Action
-            log_debug!(
-                context,
-                "actions/call_zome_fn: sending ReturnZomeFunctionResult action."
-            );
             lax_send_wrapped(
                 context.action_channel().clone(),
                 ActionWrapper::new(Action::ReturnZomeFunctionResult(response)),
                 "call_zome_function",
-            );
-            log_debug!(
-                context,
-                "actions/call_zome_fn: sent ReturnZomeFunctionResult action."
             );
         })
         .expect("Could not spawn thread for zome function call");

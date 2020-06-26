@@ -54,7 +54,7 @@ pub fn reduce_send_direct_message(
             .insert(dm_data.msg_id.clone(), timeout.clone());
     }
     if let Err(error) = inner(network_state, dm_data) {
-        println!("err/net: Error sending direct message: {:?}", error);
+        error!("err/net: Error sending direct message: {:?}", error);
     }
 }
 

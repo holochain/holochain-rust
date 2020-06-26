@@ -247,7 +247,7 @@ fn main() {
                     );
                     shell.new_command(
                         "get_links",
-                        "make a get_links call on an instance dht",
+                        "make a get_links call on an instance dht: ",
                         2,
                         |io, conductor, args| {
                             let instance = args[0];
@@ -258,7 +258,6 @@ fn main() {
                                 } else {
                                     None
                                 };
-                                //                                let tag: LinkMatch<&str>,
                                 let mut options = GetLinksOptions::default();
                                 options.status_request = LinksStatusRequestKind::All;
                                 options.headers = true;
@@ -271,8 +270,9 @@ fn main() {
                                 };
                                 let context = hc.read().unwrap().context()?;
                                 let result =
-                                    context.block_on(get_link_result_workflow(&context, &args));
-                                writeln!(io, "get_links result: {:?}", result)?;
+                                    context.block_on(get_link_result_workflow(&context, &args))?;
+
+                                writeln!(io, "get_links {} links found:\n{:?}", result.links().len() , result)?;
                             } else {
                                 writeln!(io, "instance {} not found", args[0])?;
                             }

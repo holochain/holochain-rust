@@ -32,12 +32,12 @@ pub mod tests {
     use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
     use test_utils::*;
 
-    #[cfg_attr(tarpaulin, skip)]
+    #[cfg(not(tarpaulin_include))]
     pub fn instance(network_name: Option<&str>) -> (Instance, Arc<Context>) {
         instance_by_name("jane", test_dna(), network_name)
     }
 
-    #[cfg_attr(tarpaulin, skip)]
+    #[cfg(not(tarpaulin_include))]
     pub fn test_dna() -> Dna {
         // Setup the holochain instance
         let target_path: PathBuf = [
@@ -89,7 +89,7 @@ pub mod tests {
         dna
     }
 
-    #[cfg_attr(tarpaulin, skip)]
+    #[cfg(not(tarpaulin_include))]
     pub fn instance_by_name(
         name: &str,
         dna: Dna,
@@ -101,7 +101,7 @@ pub mod tests {
         (instance, initialized_context)
     }
 
-    #[cfg_attr(tarpaulin, skip)]
+    #[cfg(not(tarpaulin_include))]
     pub fn instance_with_bootstrap_nodes(
         name: &str,
         dna: Dna,
@@ -114,27 +114,27 @@ pub mod tests {
         (instance, initialized_context)
     }
 
-    #[cfg_attr(tarpaulin, skip)]
+    #[cfg(not(tarpaulin_include))]
     pub fn test_entry_package_entry() -> Entry {
         Entry::App("package_entry".into(), RawString::from("test value").into())
     }
 
-    #[cfg_attr(tarpaulin, skip)]
+    #[cfg(not(tarpaulin_include))]
     pub fn test_entry_package_chain_entries() -> Entry {
         Entry::App("package_chain_entries".into(), "test value".into())
     }
 
-    #[cfg_attr(tarpaulin, skip)]
+    #[cfg(not(tarpaulin_include))]
     pub fn test_entry_package_chain_headers() -> Entry {
         Entry::App("package_chain_headers".into(), "test value".into())
     }
 
-    #[cfg_attr(tarpaulin, skip)]
+    #[cfg(not(tarpaulin_include))]
     pub fn test_entry_package_chain_full() -> Entry {
         Entry::App("package_chain_full".into(), "test value".into())
     }
 
-    #[cfg_attr(tarpaulin, skip)]
+    #[cfg(not(tarpaulin_include))]
     pub fn commit(entry: Entry, context: &Arc<Context>) -> ChainHeader {
         let chain = context.state().unwrap().agent().chain_store();
 

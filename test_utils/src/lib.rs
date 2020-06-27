@@ -252,7 +252,7 @@ pub enum TestNodeConfig {
     LegacyInMemory,
 }
 
-#[cfg_attr(tarpaulin, skip)]
+#[cfg(not(tarpaulin_include))]
 pub fn create_test_context_with_logger_and_signal(
     agent_name: &str,
     network_name: Option<&str>,

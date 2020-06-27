@@ -139,7 +139,7 @@ pub struct EntryWithMetaAndHeader {
 }
 
 /// dummy entry value
-#[cfg_attr(tarpaulin, skip)]
+#[cfg(not(tarpaulin_include))]
 pub fn test_entry_value() -> JsonString {
     JsonString::from(RawString::from("test entry value"))
 }
@@ -149,32 +149,32 @@ pub fn test_entry_content() -> Content {
 }
 
 /// dummy entry content, same as test_entry_value()
-#[cfg_attr(tarpaulin, skip)]
+#[cfg(not(tarpaulin_include))]
 pub fn test_entry_value_a() -> JsonString {
     test_entry_value()
 }
 
 /// dummy entry content, differs from test_entry_value()
-#[cfg_attr(tarpaulin, skip)]
+#[cfg(not(tarpaulin_include))]
 pub fn test_entry_value_b() -> JsonString {
     JsonString::from(RawString::from("other test entry value"))
 }
-#[cfg_attr(tarpaulin, skip)]
+#[cfg(not(tarpaulin_include))]
 pub fn test_entry_value_c() -> JsonString {
     RawString::from("value C").into()
 }
 
-#[cfg_attr(tarpaulin, skip)]
+#[cfg(not(tarpaulin_include))]
 pub fn test_sys_entry_value() -> AgentId {
     test_agent_id()
 }
 
 /// dummy entry
-#[cfg_attr(tarpaulin, skip)]
+#[cfg(not(tarpaulin_include))]
 pub fn test_entry() -> Entry {
     Entry::App(test_app_entry_type(), test_entry_value())
 }
-#[cfg_attr(tarpaulin, skip)]
+#[cfg(not(tarpaulin_include))]
 pub fn test_entry_with_value(value: &'static str) -> Entry {
     Entry::App(test_app_entry_type(), JsonString::from_json(&value))
 }
@@ -184,19 +184,19 @@ pub fn expected_serialized_entry_content() -> JsonString {
 }
 
 /// the correct address for test_entry()
-#[cfg_attr(tarpaulin, skip)]
+#[cfg(not(tarpaulin_include))]
 pub fn expected_entry_address() -> Address {
     Address::from("Qma6RfzvZRL127UCEVEktPhQ7YSS1inxEFw7SjEsfMJcrq".to_string())
 }
 
 /// dummy entry, same as test_entry()
-#[cfg_attr(tarpaulin, skip)]
+#[cfg(not(tarpaulin_include))]
 pub fn test_entry_a() -> Entry {
     test_entry()
 }
 
 /// dummy entry, differs from test_entry()
-#[cfg_attr(tarpaulin, skip)]
+#[cfg(not(tarpaulin_include))]
 pub fn test_entry_b() -> Entry {
     Entry::App(test_app_entry_type_b(), test_entry_value_b())
 }
@@ -205,7 +205,7 @@ pub fn test_entry_c() -> Entry {
 }
 
 /// dummy entry with unique string content
-#[cfg_attr(tarpaulin, skip)]
+#[cfg(not(tarpaulin_include))]
 pub fn test_entry_unique() -> Entry {
     Entry::App(
         test_app_entry_type(),
@@ -213,7 +213,7 @@ pub fn test_entry_unique() -> Entry {
     )
 }
 
-#[cfg_attr(tarpaulin, skip)]
+#[cfg(not(tarpaulin_include))]
 pub fn test_sys_entry() -> Entry {
     Entry::AgentId(test_sys_entry_value())
 }
@@ -224,7 +224,7 @@ pub fn test_sys_entry_address() -> Address {
     ))
 }
 
-#[cfg_attr(tarpaulin, skip)]
+#[cfg(not(tarpaulin_include))]
 pub fn test_unpublishable_entry() -> Entry {
     Entry::Dna(Box::new(Dna::new()))
 }

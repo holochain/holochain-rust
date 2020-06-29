@@ -272,7 +272,12 @@ fn main() {
                                 let result =
                                     context.block_on(get_link_result_workflow(&context, &args))?;
 
-                                writeln!(io, "get_links {} links found:\n{:?}", result.links().len() , result)?;
+                                writeln!(
+                                    io,
+                                    "get_links {} links found:\n{:?}",
+                                    result.links().len(),
+                                    result
+                                )?;
                             } else {
                                 writeln!(io, "instance {} not found", args[0])?;
                             }

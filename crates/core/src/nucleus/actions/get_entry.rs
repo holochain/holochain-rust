@@ -115,29 +115,43 @@ pub fn get_entry_with_meta(
         Ok(Some(entry)) => entry,
     };
 
-    // 2. try to get the entry's metadata
-    let (crud_status, maybe_link_update_delete) =
-        match get_entry_crud_meta_from_dht(context, &address)? {
-            Some(crud_info) => crud_info,
-            None => {
-                log_debug!(
-                    context,
-                    "Entry with address: {} exists in CAS but has no CRUD status! Returning None",
-                    address
-                );
-                return Ok(None); //If we cannot get the CRUD status for above entry it is not an
-                                 //entry that is held by this DHT. It might be in the DHT CAS
-                                 //because DHT and chain share the same CAS or it maybe just got
-                                 //added by a concurrent process but the CRUD status is still about
-                                 //to get set. Either way, we should treat it as not existent (yet).
-            }
-        };
-    let item = EntryWithMeta {
-        entry,
-        crud_status,
-        maybe_link_update_delete,
-    };
-    Ok(Some(item))
+    // if the entry is a header it won't have Meta otherwise we look it up
+    match entry {
+        Entry::ChainHeader(_) => {
+            let item = EntryWithMeta {
+                entry,
+                crud_status: CrudStatus::Live, // treat headers as live always
+                maybe_link_update_delete: None,
+            };
+            Ok(Some(item))
+        }
+        _ => {
+            // 2. try to get the entry's metadata
+            let (crud_status, maybe_link_update_delete) = match get_entry_crud_meta_from_dht(
+                context, &address,
+            )? {
+                Some(crud_info) => crud_info,
+                None => {
+                    log_debug!(
+                            context,
+                            "Entry with address: {} exists in CAS but has no CRUD status! Returning None",
+                            address
+                        );
+                    return Ok(None); //If we cannot get the CRUD status for above entry it is not an
+                                     //entry that is held by this DHT. It might be in the DHT CAS
+                                     //because DHT and chain share the same CAS or it maybe just got
+                                     //added by a concurrent process but the CRUD status is still about
+                                     //to get set. Either way, we should treat it as not existent (yet).
+                }
+            };
+            let item = EntryWithMeta {
+                entry,
+                crud_status,
+                maybe_link_update_delete,
+            };
+            Ok(Some(item))
+        }
+    }
 }
 
 #[cfg(test)]

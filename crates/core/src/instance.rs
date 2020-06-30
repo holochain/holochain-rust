@@ -41,7 +41,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-pub const RETRY_VALIDATION_DURATION_MIN: Duration = Duration::from_millis(500);
+pub const RETRY_VALIDATION_DURATION_MIN: Duration = Duration::from_millis(15000);
 pub const RETRY_VALIDATION_DURATION_MAX: Duration = Duration::from_secs(60 * 60);
 
 pub enum WakerRequest {
@@ -413,7 +413,7 @@ impl Instance {
                             break;
                         }
                     }
-                    std::thread::sleep(Duration::from_millis(10));
+                    std::thread::sleep(Duration::from_millis(50));
                 }
             })
             .expect("Could not spawn holding thread");

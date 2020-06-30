@@ -290,7 +290,7 @@ impl DhtStore {
             &header.address(),
         )?;
         self.add(header)?;
-        self.meta_storage.write().unwrap().add_eavi(&eavi)?;
+        self.add_eavi(&eavi)?;
         Ok(())
     }
 

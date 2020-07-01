@@ -8,6 +8,11 @@ use futures::{future::Future, task::Poll};
 use snowflake::ProcessUniqueId;
 use std::{pin::Pin, sync::Arc, time::Duration};
 
+// This enum is used to specify what to do with the item
+// Processing moves it to the in_process queue
+// waiting moves it back from the in_process queue to the holding queue
+// and Done removes it from the in_process queue entirely.
+// this is implemented in dht_reducers.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum HoldingWorkflowQueueing {
     Processing,

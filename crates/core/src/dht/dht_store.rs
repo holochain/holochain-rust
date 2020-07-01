@@ -5,6 +5,7 @@ use crate::{
         aspect_map::{AspectMap, AspectMapBare},
         pending_validations::{PendingValidationWithTimeout, ValidationTimeout},
     },
+    instance::RETRY_VALIDATION_DURATION_MIN,
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
@@ -86,7 +87,7 @@ impl From<&StateWrapper> for DhtStoreSnapshot {
         DhtStoreSnapshot {
             holding_map: state.dht().get_holding_map().bare().clone(),
             queued_holding_workflows: state.dht().queued_holding_workflows.clone(),
-            in_process_holding_workflows: state.dht().queued_holding_workflows.clone(),
+            in_process_holding_workflows: state.dht().in_process_holding_workflows.clone(),
         }
     }
 }
@@ -166,6 +167,15 @@ impl DhtStore {
     ) -> Self {
         let mut new_dht_store = Self::new(content_storage, meta_storage);
         new_dht_store.holding_map = snapshot.holding_map.into();
+
+        // the in_process queue is no longer in-process when being restored so
+        // items are put in the waiting queue with a new timeout
+        for item in snapshot.in_process_holding_workflows.iter_mut() {
+            item.timeout = Some(ValidationTimeout::new(
+                SystemTime::now(),
+                RETRY_VALIDATION_DURATION_MIN,
+            ))
+        }
         new_dht_store.queued_holding_workflows = snapshot.in_process_holding_workflows;
         new_dht_store
             .queued_holding_workflows
@@ -173,7 +183,7 @@ impl DhtStore {
         new_dht_store
     }
 
-    ///This algorithmn works by querying the EAVI Query for entries that match the address given, the link _type given, the tag given and a tombstone query set of RemovedLink(remove_link_address, link_type, tag)
+    ///This algorithm works by querying the EAVI Query for entries that match the address given, the link _type given, the tag given and a tombstone query set of RemovedLink(remove_link_address, link_type, tag)
     ///this means no matter how many links are added after one is removed, we will always say that the link has been removed.
     ///One thing to remember is that LinkAdd entries occupy the "Value" aspect of our EAVI link stores.
     ///When that set is obtained, we filter based on the LinkTag and RemovedLink attributes to evaluate if they are "live" or "deleted". A reminder that links cannot be modified

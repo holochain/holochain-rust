@@ -262,6 +262,7 @@ pub mod tests {
         action::{Action, ActionWrapper},
         content_store::{AddContent, GetContent},
         dht::{
+            actions::remove_queued_holding_workflow::HoldingWorkflowQueueing,
             dht_reducers::{
                 reduce, reduce_hold_aspect, reduce_queue_holding_workflow,
                 reduce_remove_queued_holding_workflow,
@@ -640,7 +641,15 @@ pub mod tests {
         assert!(store.has_exact_queued_holding_workflow(&hold_link));
 
         // the link won't validate while the entry is pending so we have to remove it
-        let action = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow(hold.clone()));
+        let action = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow((
+            HoldingWorkflowQueueing::Processing,
+            hold.clone(),
+        )));
+        let store = reduce_remove_queued_holding_workflow(&store, &action).unwrap();
+        let action = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow((
+            HoldingWorkflowQueueing::Done,
+            hold.clone(),
+        )));
         let store = reduce_remove_queued_holding_workflow(&store, &action).unwrap();
 
         let (next_pending, _) = store.next_queued_holding_workflow().unwrap();
@@ -659,7 +668,15 @@ pub mod tests {
         assert!(store.has_exact_queued_holding_workflow(&update));
         assert!(store.has_exact_queued_holding_workflow(&hold_link));
 
-        let action = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow(hold_link.clone()));
+        let action = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow((
+            HoldingWorkflowQueueing::Processing,
+            hold_link.clone(),
+        )));
+        let store = reduce_remove_queued_holding_workflow(&store, &action).unwrap();
+        let action = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow((
+            HoldingWorkflowQueueing::Done,
+            hold_link.clone(),
+        )));
         let store = reduce_remove_queued_holding_workflow(&store, &action).unwrap();
 
         assert_eq!(store.queued_holding_workflows().len(), 1);

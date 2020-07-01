@@ -393,8 +393,7 @@ impl DhtStore {
             |PendingValidationWithTimeout {
                  pending: current, ..
              }| {
-                current.entry_with_header.header.entry_address()
-                    == pending.entry_with_header.header.entry_address()
+                current.entry_with_header.header == pending.entry_with_header.header
                     && current.workflow == pending.workflow
             },
         )
@@ -405,8 +404,7 @@ impl DhtStore {
             |PendingValidationWithTimeout {
                  pending: current, ..
              }| {
-                current.entry_with_header.header.entry_address()
-                    == pending.entry_with_header.header.entry_address()
+                current.entry_with_header.header == pending.entry_with_header.header
                     && current.workflow == pending.workflow
             },
         )

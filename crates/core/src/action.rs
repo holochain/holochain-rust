@@ -1,6 +1,9 @@
 use crate::{
     agent::state::AgentState,
-    dht::{dht_store::HoldAspectAttemptId, pending_validations::PendingValidation},
+    dht::{
+        actions::remove_queued_holding_workflow::HoldingWorkflowQueueing,
+        dht_store::HoldAspectAttemptId, pending_validations::PendingValidation,
+    },
     network::{
         direct_message::DirectMessage,
         entry_aspect::EntryAspect,
@@ -116,7 +119,7 @@ pub enum Action {
     QueueHoldingWorkflow((PendingValidation, Option<(SystemTime, Duration)>)),
 
     /// Removes the given item from the holding queue.
-    RemoveQueuedHoldingWorkflow(PendingValidation),
+    RemoveQueuedHoldingWorkflow((HoldingWorkflowQueueing, PendingValidation)),
 
     /// Adds an entry aspect to the local DHT shard.
     /// Does not validate, assumes referenced entry is valid.

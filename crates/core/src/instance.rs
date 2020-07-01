@@ -2,9 +2,8 @@ use crate::{
     action::{Action, ActionWrapper},
     consistency::ConsistencyModel,
     context::{ActionReceiver, ActionSender, Context},
-    dht::actions::{
-        queue_holding_workflow::queue_holding_workflow,
-        remove_queued_holding_workflow::remove_queued_holding_workflow,
+    dht::actions::remove_queued_holding_workflow::{
+        remove_queued_holding_workflow, HoldingWorkflowQueueing,
     },
     network,
     persister::Persister,
@@ -363,6 +362,7 @@ impl Instance {
                             // NB: If for whatever reason we pop_next_holding_workflow anywhere else other than here,
                             // we can run into a race condition.
                             context.block_on(remove_queued_holding_workflow(
+                                HoldingWorkflowQueueing::Processing,
                                 pending.clone(),
                                 context.clone(),
                             ));
@@ -371,7 +371,7 @@ impl Instance {
                             let pending = pending.clone();
 
                             let closure = async move || {
-                                match run_holding_workflow(pending.clone(), c.clone()).await {
+                                let queuing = match run_holding_workflow(pending.clone(), c.clone()).await {
                                     // If we couldn't run the validation due to unresolved dependencies,
                                     // we have to re-add this entry at the end of the queue:
                                     Err(HolochainError::ValidationPending) => {
@@ -389,23 +389,35 @@ impl Instance {
                                             delay = RETRY_VALIDATION_DURATION_MAX
                                         }
                                         log_debug!(c, "re-queuing pending validation for {:?} with a delay of {:?}", pending, delay);
-                                        queue_holding_workflow(
+                                        HoldingWorkflowQueueing::Waiting(delay)
+
+
+/*                                        queue_holding_workflow(
                                             Arc::new(pending.same()),
                                             Some(delay),
                                             c.clone(),
                                         )
-                                        .await
+                                        .await*/
                                     }
-                                    Err(e) => log_error!(
-                                        c,
-                                        "Error running holding workflow for {:?}: {:?}",
-                                        pending,
-                                        e,
-                                    ),
+                                    Err(e) => {
+                                        log_error!(
+                                            c,
+                                            "Error running holding workflow for {:?}: {:?}",
+                                            pending,
+                                            e,
+                                        );
+                                        HoldingWorkflowQueueing::Done
+                                    }
                                     Ok(()) => {
-                                        log_debug!(c, "Successfully processed: {:?}", pending)
+                                        log_debug!(c, "Successfully processed: {:?}", pending);
+                                        HoldingWorkflowQueueing::Done
                                     }
-                                }
+                                };
+                                remove_queued_holding_workflow(
+                                    queuing,
+                                    pending.clone(),
+                                    c.clone(),
+                                ).await
                             };
                             let future = closure();
                             context.spawn_task(future);

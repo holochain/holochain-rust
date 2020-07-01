@@ -202,6 +202,9 @@ pub fn reduce_queue_holding_workflow(
         if old_store.has_same_queued_holding_worfkow(pending) {
             warn!("Tried to add pending validation to queue which is already queued!");
             None
+        } else if old_store.has_same_in_process_holding_worfkow(pending) {
+            warn!("Tried to add pending validation to queue which is already in process!");
+            None
         } else {
             let mut new_store = (*old_store).clone();
             new_store
@@ -246,12 +249,9 @@ pub fn reduce_remove_queued_holding_workflow(
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
     let action = action_wrapper.action();
-    let pending = unwrap_to!(action => Action::RemoveQueuedHoldingWorkflow);
+    let (state, pending) = unwrap_to!(action => Action::RemoveQueuedHoldingWorkflow);
     let mut new_store = (*old_store).clone();
-    if let None = new_store.remove_holding_workflow(pending) {
-        error!("Got Action::PopNextHoldingWorkflow on an empty holding queue!");
-    }
-
+    new_store.update_queued_holding_workflow(state, pending);
     Some(new_store)
 }
 

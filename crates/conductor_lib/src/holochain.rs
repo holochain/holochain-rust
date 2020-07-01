@@ -63,20 +63,20 @@
 //!
 //! // The conductor API, together with the storage and the agent ID
 //! // constitute the instance's context:
-//! let context = ContextBuilder::new()
+//! let context = Arc::new(ContextBuilder::new()
 //!     .with_agent(agent)
 //!     .with_conductor_api(conductor_api)
 //!     .with_file_storage(storage_directory_path)
 //!     .expect("Tempdir should be accessible")
-//!     .spawn();
+//!     .spawn());
 //!
-//! let mut hc = Holochain::new(dna,Arc::new(context)).unwrap();
+//! let mut hc = Holochain::new(dna, context.clone()).unwrap();
 //!
 //! // start up the holochain instance
 //! hc.start().expect("couldn't start the holochain instance");
 //!
 //! // call a function in the zome code
-//! hc.call_zome_function("test_zome", CapabilityRequest::new(Address::from("some_token"), Address::from("caller"), Signature::fake()), "some_fn", "{}");
+//! // Holochain::call_zome_function(context, "test_zome", CapabilityRequest::new(Address::from("some_token"), Address::from("caller"), Signature::fake()), "some_fn", "{}");
 //!
 //! // get the state
 //! {

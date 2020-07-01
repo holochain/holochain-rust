@@ -136,16 +136,32 @@ pub fn get_links(
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAndHeader> {
-    nucleus::actions::get_entry::get_entry_with_meta(&context, address.clone())
-        .map(|entry_with_meta_opt| {
-            let state = context
-                .state()
-                .expect("Could not get state for handle_fetch_entry");
-            state
-                .get_headers(address)
-                .map(|headers| {
-                    entry_with_meta_opt
-                        .map(|entry_with_meta| {
+    let result = nucleus::actions::get_entry::get_entry_with_meta(&context, address.clone());
+    match result {
+        Err(error) => {
+            log_error!(context, "net: Error trying to find entry {:?}", error);
+            None
+        }
+        Ok(None) => None,
+        Ok(Some(entry_with_meta)) => {
+            // if the entry is itself a header don't go looking for headers.
+            match entry_with_meta.entry {
+                Entry::ChainHeader(_) => Some(EntryWithMetaAndHeader {
+                    entry_with_meta: entry_with_meta,
+                    headers: Vec::new(),
+                }),
+                // otherwise get the headers for the entry
+                _ => {
+                    match context
+                        .state()
+                        .expect("Could not get state for handle_fetch_entry")
+                        .get_headers(address)
+                    {
+                        Err(error) => {
+                            log_error!(context, "net: Error trying to get headers {:?}", error);
+                            None
+                        }
+                        Ok(headers) => {
                             if entry_with_meta.entry.entry_type().can_publish(&context) {
                                 Some(EntryWithMetaAndHeader {
                                     entry_with_meta: entry_with_meta,
@@ -154,20 +170,12 @@ fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAn
                             } else {
                                 None
                             }
-                        })
-                        .unwrap_or(None)
-                })
-                .map_err(|error| {
-                    log_error!(context, "net: Error trying to get headers {:?}", error);
-                    None::<EntryWithMetaAndHeader>
-                })
-        })
-        .map_err(|error| {
-            log_error!(context, "net: Error trying to find entry {:?}", error);
-            None::<EntryWithMetaAndHeader>
-        })
-        .unwrap_or(Ok(None))
-        .unwrap_or(None)
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 /// The network has sent us a query for entry data, so we need to examine

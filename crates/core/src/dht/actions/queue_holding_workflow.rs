@@ -24,6 +24,7 @@ pub fn dispatch_queue_holding_workflow(
     dispatch_action(context.action_channel(), action_wrapper);
 }
 
+/*
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub async fn queue_holding_workflow(
     pending: PendingValidation,
@@ -52,7 +53,7 @@ pub async fn queue_holding_workflow(
             pending
         );
     }
-}
+}*/
 
 pub struct QueueHoldingWorkflowFuture {
     context: Arc<Context>,

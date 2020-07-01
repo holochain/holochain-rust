@@ -1,9 +1,11 @@
 use crate::{
     content_store::{AddContent, GetContent},
     dht::{
+        actions::remove_queued_holding_workflow::HoldingWorkflowQueueing,
         aspect_map::{AspectMap, AspectMapBare},
         pending_validations::{PendingValidationWithTimeout, ValidationTimeout},
     },
+    instance::RETRY_VALIDATION_DURATION_MIN,
 };
 use holochain_core_types::{
     chain_header::ChainHeader,
@@ -35,7 +37,7 @@ use std::{
     collections::{BTreeSet, HashMap, VecDeque},
     convert::TryFrom,
     sync::Arc,
-    time::Duration,
+    time::{Duration, SystemTime},
 };
 
 /// A type for identifying holding attempts uniquely and by parent pending validation id
@@ -57,6 +59,7 @@ pub struct DhtStore {
     holding_attempt_results: HashMap<HoldAspectAttemptId, Result<(), HolochainError>>,
 
     pub(crate) queued_holding_workflows: VecDeque<PendingValidationWithTimeout>,
+    pub(crate) in_process_holding_workflows: VecDeque<PendingValidationWithTimeout>,
 }
 
 impl PartialEq for DhtStore {
@@ -76,6 +79,7 @@ impl PartialEq for DhtStore {
 pub struct DhtStoreSnapshot {
     pub holding_map: AspectMapBare,
     queued_holding_workflows: VecDeque<PendingValidationWithTimeout>,
+    in_process_holding_workflows: VecDeque<PendingValidationWithTimeout>,
 }
 
 impl From<&StateWrapper> for DhtStoreSnapshot {
@@ -83,6 +87,7 @@ impl From<&StateWrapper> for DhtStoreSnapshot {
         DhtStoreSnapshot {
             holding_map: state.dht().get_holding_map().bare().clone(),
             queued_holding_workflows: state.dht().queued_holding_workflows.clone(),
+            in_process_holding_workflows: state.dht().in_process_holding_workflows.clone(),
         }
     }
 }
@@ -150,6 +155,7 @@ impl DhtStore {
             meta_storage,
             holding_map: AspectMap::new(),
             queued_holding_workflows: VecDeque::new(),
+            in_process_holding_workflows: VecDeque::new(),
             holding_attempt_results: HashMap::new(),
         }
     }
@@ -157,15 +163,27 @@ impl DhtStore {
     pub fn new_from_snapshot(
         content_storage: Arc<RwLock<dyn ContentAddressableStorage>>,
         meta_storage: Arc<RwLock<dyn EntityAttributeValueStorage<Attribute>>>,
-        snapshot: DhtStoreSnapshot,
+        mut snapshot: DhtStoreSnapshot,
     ) -> Self {
         let mut new_dht_store = Self::new(content_storage, meta_storage);
         new_dht_store.holding_map = snapshot.holding_map.into();
-        new_dht_store.queued_holding_workflows = snapshot.queued_holding_workflows;
+
+        // the in_process queue is no longer in-process when being restored so
+        // items are put in the waiting queue with a new timeout
+        for item in snapshot.in_process_holding_workflows.iter_mut() {
+            item.timeout = Some(ValidationTimeout::new(
+                SystemTime::now(),
+                RETRY_VALIDATION_DURATION_MIN,
+            ))
+        }
+        new_dht_store.queued_holding_workflows = snapshot.in_process_holding_workflows;
+        new_dht_store
+            .queued_holding_workflows
+            .append(&mut snapshot.queued_holding_workflows);
         new_dht_store
     }
 
-    ///This algorithmn works by querying the EAVI Query for entries that match the address given, the link _type given, the tag given and a tombstone query set of RemovedLink(remove_link_address, link_type, tag)
+    ///This algorithm works by querying the EAVI Query for entries that match the address given, the link _type given, the tag given and a tombstone query set of RemovedLink(remove_link_address, link_type, tag)
     ///this means no matter how many links are added after one is removed, we will always say that the link has been removed.
     ///One thing to remember is that LinkAdd entries occupy the "Value" aspect of our EAVI link stores.
     ///When that set is obtained, we filter based on the LinkTag and RemovedLink attributes to evaluate if they are "live" or "deleted". A reminder that links cannot be modified
@@ -290,7 +308,7 @@ impl DhtStore {
             &header.address(),
         )?;
         self.add(header)?;
-        self.meta_storage.write().unwrap().add_eavi(&eavi)?;
+        self.add_eavi(&eavi)?;
         Ok(())
     }
 
@@ -369,13 +387,34 @@ impl DhtStore {
         )
     }
 
+    pub(crate) fn has_exact_in_process_holding_workflow(
+        &self,
+        pending: &PendingValidation,
+    ) -> bool {
+        self.in_process_holding_workflows.iter().any(
+            |PendingValidationWithTimeout {
+                 pending: current, ..
+             }| current == pending,
+        )
+    }
+
     pub(crate) fn has_same_queued_holding_worfkow(&self, pending: &PendingValidation) -> bool {
         self.queued_holding_workflows.iter().any(
             |PendingValidationWithTimeout {
                  pending: current, ..
              }| {
-                current.entry_with_header.header.entry_address()
-                    == pending.entry_with_header.header.entry_address()
+                current.entry_with_header.header == pending.entry_with_header.header
+                    && current.workflow == pending.workflow
+            },
+        )
+    }
+
+    pub(crate) fn has_same_in_process_holding_worfkow(&self, pending: &PendingValidation) -> bool {
+        self.in_process_holding_workflows.iter().any(
+            |PendingValidationWithTimeout {
+                 pending: current, ..
+             }| {
+                current.entry_with_header.header == pending.entry_with_header.header
                     && current.workflow == pending.workflow
             },
         )
@@ -385,19 +424,84 @@ impl DhtStore {
         &self.queued_holding_workflows
     }
 
-    pub(crate) fn remove_holding_workflow(
+    pub(crate) fn in_process_holding_workflows(&self) -> &VecDeque<PendingValidationWithTimeout> {
+        &self.in_process_holding_workflows
+    }
+
+    pub(crate) fn update_queued_holding_workflow(
+        &mut self,
+        state: &HoldingWorkflowQueueing,
+        item: &PendingValidation,
+    ) {
+        match state {
+            HoldingWorkflowQueueing::Waiting(delay) => {
+                match self
+                    .in_process_holding_workflows
+                    .iter()
+                    .position(|PendingValidationWithTimeout { pending, .. }| pending == item)
+                    .and_then(|index| self.in_process_holding_workflows.remove(index))
+                {
+                    None => {
+                        error!(
+                            "update_queued_holding_workflow {:?} not found in process!",
+                            item
+                        );
+                    }
+                    Some(pending) => {
+                        let mut pending = pending;
+                        pending.timeout = Some(ValidationTimeout::new(SystemTime::now(), *delay));
+                        self.queued_holding_workflows.push_back(pending);
+                    }
+                }
+            }
+            HoldingWorkflowQueueing::Processing => {
+                match self
+                    .queued_holding_workflows()
+                    .iter()
+                    .position(|PendingValidationWithTimeout { pending, .. }| pending == item)
+                    .and_then(|index| self.queued_holding_workflows.remove(index))
+                {
+                    None => {
+                        error!(
+                            "update_queued_holding_workflow {:?} not found waiting!",
+                            item
+                        );
+                    }
+                    Some(pending) => {
+                        self.in_process_holding_workflows.push_back(pending);
+                    }
+                }
+            }
+            HoldingWorkflowQueueing::Done => {
+                if self
+                    .in_process_holding_workflows
+                    .iter()
+                    .position(|PendingValidationWithTimeout { pending, .. }| pending == item)
+                    .and_then(|index| self.in_process_holding_workflows.remove(index))
+                    .is_none()
+                {
+                    error!(
+                        "update_queued_holding_workflow {:?} not found in process!",
+                        item
+                    );
+                }
+            }
+        }
+    }
+    /*
+    pub(crate) fn remove_in_process_holding_workflow(
         &mut self,
         item: &PendingValidation,
     ) -> Option<PendingValidationWithTimeout> {
         // remove any hold aspect requests that were queued under this workflow id
         self.holding_attempt_results
-            .retain(|&id, _| id.0 != item.uuid);
+               .retain(|&id, _| id.0 != item.uuid);
 
-        self.queued_holding_workflows()
+        self.in_process_holding_workflows
             .iter()
             .position(|PendingValidationWithTimeout { pending, .. }| pending == item)
-            .and_then(|index| self.queued_holding_workflows.remove(index))
-    }
+            .and_then(|index| self.in_process_holding_workflows.remove(index))
+    }*/
 }
 
 use im::HashSet;

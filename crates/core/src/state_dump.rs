@@ -28,6 +28,7 @@ pub struct StateDump {
     pub validation_package_flows: Vec<Address>,
     pub direct_message_flows: Vec<(String, DirectMessage)>,
     pub queued_holding_workflows: VecDeque<PendingValidationWithTimeout>,
+    pub in_process_holding_workflows: VecDeque<PendingValidationWithTimeout>,
     pub held_aspects: AspectMapBare,
     pub source_chain: Vec<(EntryWithHeader, Address)>,
     pub eavis: Option<Vec<EntityAttributeValueIndex>>,
@@ -108,6 +109,7 @@ impl StateDump {
             .collect();
 
         let queued_holding_workflows = dht.queued_holding_workflows().clone();
+        let in_process_holding_workflows = dht.in_process_holding_workflows().clone();
 
         let held_aspects = dht.get_holding_map().bare().clone();
 
@@ -138,6 +140,7 @@ impl StateDump {
             validation_package_flows,
             direct_message_flows,
             queued_holding_workflows,
+            in_process_holding_workflows,
             held_aspects,
             source_chain,
             eavis: maybe_eavis,

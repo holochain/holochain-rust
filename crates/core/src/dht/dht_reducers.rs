@@ -202,6 +202,9 @@ pub fn reduce_queue_holding_workflow(
         if old_store.has_same_queued_holding_worfkow(pending) {
             warn!("Tried to add pending validation to queue which is already queued!");
             None
+        } else if old_store.has_same_in_process_holding_worfkow(pending) {
+            warn!("Tried to add pending validation to queue which is already in process!");
+            None
         } else {
             let mut new_store = (*old_store).clone();
             new_store
@@ -246,12 +249,9 @@ pub fn reduce_remove_queued_holding_workflow(
     action_wrapper: &ActionWrapper,
 ) -> Option<DhtStore> {
     let action = action_wrapper.action();
-    let pending = unwrap_to!(action => Action::RemoveQueuedHoldingWorkflow);
+    let (state, pending) = unwrap_to!(action => Action::RemoveQueuedHoldingWorkflow);
     let mut new_store = (*old_store).clone();
-    if let None = new_store.remove_holding_workflow(pending) {
-        error!("Got Action::PopNextHoldingWorkflow on an empty holding queue!");
-    }
-
+    new_store.update_queued_holding_workflow(state, pending);
     Some(new_store)
 }
 
@@ -262,6 +262,7 @@ pub mod tests {
         action::{Action, ActionWrapper},
         content_store::{AddContent, GetContent},
         dht::{
+            actions::remove_queued_holding_workflow::HoldingWorkflowQueueing,
             dht_reducers::{
                 reduce, reduce_hold_aspect, reduce_queue_holding_workflow,
                 reduce_remove_queued_holding_workflow,
@@ -640,7 +641,15 @@ pub mod tests {
         assert!(store.has_exact_queued_holding_workflow(&hold_link));
 
         // the link won't validate while the entry is pending so we have to remove it
-        let action = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow(hold.clone()));
+        let action = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow((
+            HoldingWorkflowQueueing::Processing,
+            hold.clone(),
+        )));
+        let store = reduce_remove_queued_holding_workflow(&store, &action).unwrap();
+        let action = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow((
+            HoldingWorkflowQueueing::Done,
+            hold.clone(),
+        )));
         let store = reduce_remove_queued_holding_workflow(&store, &action).unwrap();
 
         let (next_pending, _) = store.next_queued_holding_workflow().unwrap();
@@ -659,7 +668,15 @@ pub mod tests {
         assert!(store.has_exact_queued_holding_workflow(&update));
         assert!(store.has_exact_queued_holding_workflow(&hold_link));
 
-        let action = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow(hold_link.clone()));
+        let action = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow((
+            HoldingWorkflowQueueing::Processing,
+            hold_link.clone(),
+        )));
+        let store = reduce_remove_queued_holding_workflow(&store, &action).unwrap();
+        let action = ActionWrapper::new(Action::RemoveQueuedHoldingWorkflow((
+            HoldingWorkflowQueueing::Done,
+            hold_link.clone(),
+        )));
         let store = reduce_remove_queued_holding_workflow(&store, &action).unwrap();
 
         assert_eq!(store.queued_holding_workflows().len(), 1);

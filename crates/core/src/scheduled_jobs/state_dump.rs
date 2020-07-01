@@ -67,6 +67,24 @@ pub fn state_dump(context: Arc<Context>, options: DumpOptions) {
         })
         .collect::<Vec<String>>();
 
+    let in_process_holding_workflows_strings = dump
+        .in_process_holding_workflows
+        .iter()
+        .map(|PendingValidationWithTimeout { pending, .. }| {
+            format!(
+                "<{}({})> {}: depends on : {:?}",
+                pending.workflow.to_string(),
+                pending.entry_with_header.header.entry_type(),
+                pending.entry_with_header.entry.address(),
+                pending
+                    .dependencies
+                    .iter()
+                    .map(|addr| addr.to_string())
+                    .collect::<Vec<_>>(),
+            )
+        })
+        .collect::<Vec<String>>();
+
     let holding_strings = dump
         .held_aspects
         .iter()
@@ -123,6 +141,9 @@ Dht:
 ====
 Queued validations:
 {queued_holding_workflows_strings}
+
+In-process validations:
+{in_process_holding_workflows_strings}
 --------
 Holding:
 {holding_list}
@@ -133,6 +154,7 @@ Holding:
         call_results = dump.call_results,
         calls = dump.running_calls,
         queued_holding_workflows_strings = queued_holding_workflows_strings.join("\n"),
+        in_process_holding_workflows_strings = in_process_holding_workflows_strings.join("\n"),
         flows = dump.query_flows,
         validation_packages = dump.validation_package_flows,
         direct_messages = dump.direct_message_flows,

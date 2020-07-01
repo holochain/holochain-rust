@@ -440,9 +440,8 @@ impl DhtStore {
                         );
                     }
                     Some(pending) => {
-                        let mut pending = pending.clone();
-                        pending.timeout =
-                            Some(ValidationTimeout::new(SystemTime::now(), delay.clone()));
+                        let mut pending = pending;
+                        pending.timeout = Some(ValidationTimeout::new(SystemTime::now(), *delay));
                         self.queued_holding_workflows.push_back(pending);
                     }
                 }

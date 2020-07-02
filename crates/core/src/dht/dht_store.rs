@@ -169,17 +169,20 @@ impl DhtStore {
         new_dht_store.holding_map = snapshot.holding_map.into();
 
         // the in_process queue is no longer in-process when being restored so
-        // items are put in the waiting queue with a new timeout
-        for item in snapshot.in_process_holding_workflows.iter_mut() {
+        // items are put in the waiting queue
+        new_dht_store.queued_holding_workflows = snapshot.in_process_holding_workflows;
+        new_dht_store
+            .queued_holding_workflows
+            .append(&mut snapshot.queued_holding_workflows);
+
+        // All items need the timeout reset
+        for item in new_dht_store.queued_holding_workflows.iter_mut() {
             item.timeout = Some(ValidationTimeout::new(
                 SystemTime::now(),
                 RETRY_VALIDATION_DURATION_MIN,
             ))
         }
-        new_dht_store.queued_holding_workflows = snapshot.in_process_holding_workflows;
-        new_dht_store
-            .queued_holding_workflows
-            .append(&mut snapshot.queued_holding_workflows);
+
         new_dht_store
     }
 

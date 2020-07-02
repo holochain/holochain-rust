@@ -79,6 +79,7 @@ impl PartialEq for DhtStore {
 pub struct DhtStoreSnapshot {
     pub holding_map: AspectMapBare,
     queued_holding_workflows: VecDeque<PendingValidationWithTimeout>,
+    #[serde(default)]
     in_process_holding_workflows: VecDeque<PendingValidationWithTimeout>,
 }
 

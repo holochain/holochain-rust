@@ -8,7 +8,7 @@ pub fn u32_high_bits(i: u32) -> u16 {
 
 /// returns the u16 low bits from a u32 by doing a lossy cast
 pub fn u32_low_bits(i: u32) -> u16 {
-    (i as u16)
+    i as u16
 }
 
 /// splits the high and low bits of u32 into a tuple of u16, for destructuring convenience
@@ -26,7 +26,7 @@ pub fn u64_high_bits(i: u64) -> u32 {
 }
 
 pub fn u64_low_bits(i: u64) -> u32 {
-    (i as u32)
+    i as u32
 }
 
 pub fn u64_split_bits(i: u64) -> (u32, u32) {

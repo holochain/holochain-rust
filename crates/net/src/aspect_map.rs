@@ -181,8 +181,8 @@ mod tests {
         map1.insert("a".into(), hashset![AspectHash::from("x")]);
         map2.insert("b".into(), hashset![AspectHash::from("y")]);
         let (map1, map2): (AspectMap, AspectMap) = (map1.into(), map2.into());
-        let merged = AspectMap::merge(map1.clone(), map2.clone());
-        let merged2 = AspectMap::merge(map2.clone(), map1.clone());
+        let merged = AspectMap::merge(&map1.clone(), &map2.clone());
+        let merged2 = AspectMap::merge(&map2.clone(), &map1.clone());
         assert_eq!(merged.0, merged2.0);
         assert_eq!(merged.0.len(), 2);
         assert_eq!(merged.0.get(&EntryHash::from("a")).unwrap().len(), 1);
@@ -199,8 +199,8 @@ mod tests {
             hashset![AspectHash::from("x"), AspectHash::from("y")],
         );
         let (map1, map2): (AspectMap, AspectMap) = (map1.into(), map2.into());
-        let merged = AspectMap::merge(map1.clone(), map2.clone());
-        let merged2 = AspectMap::merge(map1, map2);
+        let merged = AspectMap::merge(&map1.clone(), &map2.clone());
+        let merged2 = AspectMap::merge(&map1, &map2);
         assert_eq!(merged.0, merged2.0);
         assert_eq!(merged.0.len(), 1);
         assert_eq!(merged.0.get(&EntryHash::from("a")).unwrap().len(), 2);
@@ -231,8 +231,8 @@ mod tests {
             hashset![AspectHash::from("v"), AspectHash::from("w")],
         );
         let (map1, map2): (AspectMap, AspectMap) = (map1.into(), map2.into());
-        let merged = AspectMap::merge(map1.clone(), map2.clone());
-        let merged2 = AspectMap::merge(map2, map1);
+        let merged = AspectMap::merge(&map1.clone(), &map2.clone());
+        let merged2 = AspectMap::merge(&map2, &map1);
         assert_eq!(merged.0, merged2.0);
         assert_eq!(merged.0.len(), 2);
         assert_eq!(merged.0.get(&EntryHash::from("a")).unwrap().len(), 3);

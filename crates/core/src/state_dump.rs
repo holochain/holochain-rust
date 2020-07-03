@@ -2,7 +2,7 @@ use crate::{
     action::QueryKey,
     content_store::GetContent,
     context::Context,
-    dht::{aspect_map::AspectMapBare, pending_validations::PendingValidationWithTimeout},
+    dht::pending_validations::PendingValidationWithTimeout,
     network::{direct_message::DirectMessage, entry_with_header::EntryWithHeader},
     nucleus::{ZomeFnCall, ZomeFnCallState},
 };
@@ -13,6 +13,7 @@ use holochain_core_types::{
     error::HolochainError,
 };
 use holochain_json_api::json::JsonString;
+use holochain_net::aspect_map::AspectMapBare;
 use holochain_persistence_api::{
     cas::content::{Address, AddressableContent},
     eav::IndexFilter,

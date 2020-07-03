@@ -24,6 +24,7 @@ extern crate serde_derive;
 
 #[macro_use]
 extern crate holochain_tracing_macros;
+pub mod aspect_map;
 pub mod connection;
 pub mod error;
 pub mod in_memory;

@@ -1,11 +1,12 @@
 use crate::{
     action::{Action, ActionWrapper},
     context::Context,
-    dht::{aspect_map::AspectMap, dht_store::HoldAspectAttemptId},
+    dht::dht_store::HoldAspectAttemptId,
     instance::dispatch_action,
 };
 use futures::{future::Future, task::Poll};
 use holochain_core_types::{error::HolochainError, network::entry_aspect::EntryAspect};
+use holochain_net::aspect_map::AspectMap;
 use holochain_persistence_api::cas::content::AddressableContent;
 use lib3h_protocol::data_types::EntryListData;
 use snowflake::ProcessUniqueId;

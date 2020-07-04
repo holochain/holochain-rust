@@ -86,7 +86,7 @@ pub struct Sim2hWorker {
     reconnect_interval: Duration,
     metric_publisher: std::sync::Arc<std::sync::RwLock<dyn MetricPublisher>>,
     time_of_last_batching: Instant,
-    outgoing_fetch_entry_results: Vec<WireMessage>,
+    outgoing_fetch_entry_results: Vec<ht::EncodedSpanWrap<Lib3hToClientResponse>>,
     outgoing_fat_acks: AspectMap,
     outgoing_message_buffer: Vec<BufferedMessage>,
     ws_frame: Option<WsFrame>,
@@ -257,6 +257,15 @@ impl Sim2hWorker {
                     .push(WireMessage::Lib3hToClientResponse(msg.into()).into());
             };
         }
+
+        if self.outgoing_fetch_entry_results.len() > 0 {
+            let mut msgs: Vec<ht::EncodedSpanWrap<Lib3hToClientResponse>> = Vec::new();
+            for m in self.outgoing_fetch_entry_results.drain(..) {
+                msgs.push(m);
+            }
+            self.outgoing_message_buffer
+                .push(WireMessage::MultiSendResponse(msgs).into());
+        }
     }
 
     /// if we have queued wire messages and our connection is ready,
@@ -355,12 +364,11 @@ impl Sim2hWorker {
         let send = match message {
             WireMessage::Lib3hToClientResponse(ref span_wrap) => match span_wrap.data {
                 Lib3hToClientResponse::HandleFetchEntryResult(_) => {
-                    true
-                    //                    self.outgoing_fetch_entry_results.push(message);
-                    //                    false
+                    self.outgoing_fetch_entry_results.push(span_wrap.clone());
+                    false
                 }
                 Lib3hToClientResponse::HandleGetGossipingEntryListResult(ref entry_data) => {
-                    // only batch fat acks.
+                    // only batch fat acks which have no request_id
                     if entry_data.request_id == "" {
                         let am = AspectMap::from(&entry_data.address_map);
                         self.outgoing_fat_acks = AspectMap::merge(&self.outgoing_fat_acks, &am);
@@ -597,6 +605,12 @@ impl Sim2hWorker {
                 for span_wrap in messages.into_iter() {
                     self.to_core.push(span_wrap.map(Lib3hServerProtocol::from));
                 }
+            }
+            WireMessage::MultiSendResponse(m) => {
+                error!(
+                    "Got a MultiSendResponse from the Sim2h server, weird! Ignoring: {:?}",
+                    m
+                )
             }
             WireMessage::ClientToLib3hResponse(span_wrap) => {
                 self.to_core.push(span_wrap.map(Lib3hServerProtocol::from))

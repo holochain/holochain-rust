@@ -39,6 +39,7 @@ pub enum WireMessage {
     Lib3hToClient(ht::EncodedSpanWrap<Lib3hToClient>),
     Lib3hToClientResponse(ht::EncodedSpanWrap<Lib3hToClientResponse>),
     MultiSend(Vec<ht::EncodedSpanWrap<Lib3hToClient>>),
+    MultiSendResponse(Vec<ht::EncodedSpanWrap<Lib3hToClientResponse>>),
     Err(WireError),
     Ping,
     Pong,
@@ -114,6 +115,10 @@ impl WireMessage {
                 let messages: Vec<&Lib3hToClient> = m.iter().map(|w| &w.data).collect();
                 get_multi_type(messages)
             }
+            WireMessage::MultiSendResponse(m) => {
+                let messages: Vec<&Lib3hToClientResponse> = m.iter().map(|w| &w.data).collect();
+                get_multi_response_type(messages)
+            }
             WireMessage::Err(_) => "[Error] {:?}",
             WireMessage::Ack(_) => "[Ack] {:?}",
         })
@@ -139,6 +144,19 @@ fn get_multi_type(list: Vec<&Lib3hToClient>) -> &str {
         }
     } else {
         "[L>C]MultiSend::EMPTY_SEND"
+    }
+}
+
+fn get_multi_response_type(list: Vec<&Lib3hToClientResponse>) -> &str {
+    if list.len() > 0 {
+        match list.get(0).unwrap() {
+            Lib3hToClientResponse::HandleFetchEntryResult(_) => {
+                "[L>C]MultiSendResponse::HandleFetchEntryResult"
+            }
+            _ => "[L>C]MultiSendResponse::UNEXPECTED_VARIANT",
+        }
+    } else {
+        "[L>C]MultiSendResponse::EMPTY_SEND"
     }
 }
 

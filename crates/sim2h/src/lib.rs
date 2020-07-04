@@ -388,6 +388,18 @@ impl Sim2hHandle {
                 WireMessage::Lib3hToClientResponse(ht::EncodedSpanWrap { data, .. }) => {
                     return lib3h_to_client_response(data, uri, sim2h_handle, signer, space_hash);
                 }
+                WireMessage::MultiSendResponse(messages) => {
+                    for ht::EncodedSpanWrap { data, .. } in messages {
+                        lib3h_to_client_response(
+                            data,
+                            uri.clone(),
+                            sim2h_handle.clone(),
+                            signer.clone(),
+                            space_hash.clone(),
+                        );
+                    }
+                    return;
+                }
                 message @ _ => {
                     error!("unhandled message type {:?}", message);
                     return;

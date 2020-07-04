@@ -241,6 +241,8 @@ impl Sim2hWorker {
         }
         self.time_of_last_batching = Instant::now();
 
+        let mut msgs: Vec<ht::EncodedSpanWrap<Lib3hToClientResponse>> = Vec::new();
+
         if !self.outgoing_fat_acks.empty() {
             if let Some(space_data) = &self.space_data {
                 let entry_data = EntryListData {
@@ -253,16 +255,16 @@ impl Sim2hWorker {
                 let msg = Lib3hToClientResponse::HandleGetGossipingEntryListResult(entry_data);
                 let span = ht::top_follower("fat-acks");
                 let msg = span.wrap(msg);
-                self.outgoing_message_buffer
-                    .push(WireMessage::Lib3hToClientResponse(msg.into()).into());
+                msgs.push(msg.into());
             };
         }
 
         if self.outgoing_fetch_entry_results.len() > 0 {
-            let mut msgs: Vec<ht::EncodedSpanWrap<Lib3hToClientResponse>> = Vec::new();
             for m in self.outgoing_fetch_entry_results.drain(..) {
                 msgs.push(m);
             }
+        }
+        if msgs.len() > 0 {
             self.outgoing_message_buffer
                 .push(WireMessage::MultiSendResponse(msgs).into());
         }

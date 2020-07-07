@@ -5,8 +5,8 @@ let
  # tag will ultimately be current version when it hits holonix
  # https://github.com/holochain/holonix/blob/master/release/default.nix#L7
  tag = "v${current}";
- holonix-version = "v0.0.72";
- holonix-sha256 = "090h5gqmfm40vkqhf1ky1n3ml24f5py04bvn50dkw0v8xzmsl4sk";
+ holonix-version = "mmahut/rust";
+ holonix-sha256 = "1yzs296jy4ci35k010x42780x4nm1m7rw0fpmy9f637yg13iimsi";
 in
 rec {
 
@@ -32,7 +32,7 @@ rec {
    sha256 = holonix-sha256;
 
    # the github owner of the holonix repo
-   owner = "holochain";
+   owner = "mmahut";
 
    # the name of the holonix repo
    repo = "holonix";

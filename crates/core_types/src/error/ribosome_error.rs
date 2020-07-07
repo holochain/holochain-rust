@@ -240,7 +240,8 @@ impl RibosomeErrorCode {
             10 => UnknownEntryType,
             12 => EntryNotFound,
             13 => WorkflowFailed,
-            1 | _ => Unspecified,
+            1 => Unspecified,
+            _ => Unspecified,
         }
     }
 

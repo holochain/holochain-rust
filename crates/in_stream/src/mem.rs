@@ -356,7 +356,7 @@ impl MemManager {
 // this is the actual singleton global reference
 lazy_static! {
     static ref MEM_MANAGER: parking_lot::Mutex<MemManager> =
-        { parking_lot::Mutex::new(MemManager::new()) };
+        parking_lot::Mutex::new(MemManager::new());
 }
 
 fn get_mem_manager() -> parking_lot::MutexGuard<'static, MemManager> {

@@ -3,11 +3,13 @@ use crate::{
     network::{actions::Response, direct_message::DirectMessage, query::NetworkQueryResult},
 };
 use boolinator::*;
-use holochain_core_types::{error::HolochainError, validation::ValidationPackage};
+use holochain_core_types::{
+    chain_header::ChainHeader, error::HolochainError, validation::ValidationPackage,
+};
 use holochain_net::p2p_network::P2pNetwork;
 use holochain_persistence_api::cas::content::Address;
 use im::HashMap;
-use std::time::{Duration, SystemTime};
+use std::time::{Duration, Instant, SystemTime};
 
 type Actions = HashMap<ActionWrapper, Response>;
 
@@ -20,6 +22,10 @@ type Actions = HashMap<ActionWrapper, Response>;
 type GetValidationPackageResult = Option<Result<Option<ValidationPackage>, HolochainError>>;
 
 type GetResults = Option<Result<NetworkQueryResult, HolochainError>>;
+
+/// timeout for how long to keep an author in the unavailable cache which is used
+/// to skip directly to the dht for looking up validation packages
+const UNAVAILABLE_TIMEOUT_MS: u64 = 60_000;
 
 #[derive(Clone, Debug)]
 pub struct NetworkState {
@@ -47,6 +53,9 @@ pub struct NetworkState {
 
     pub custom_direct_message_replys: HashMap<String, Result<String, HolochainError>>,
 
+    /// store a list of agents who have timeout out on validation package requests
+    pub recently_unavailable_authors: std::collections::HashMap<Address, Instant>,
+
     id: String,
 }
 
@@ -71,6 +80,7 @@ impl NetworkState {
             direct_message_connections: HashMap::new(),
             direct_message_timeouts: HashMap::new(),
             custom_direct_message_replys: HashMap::new(),
+            recently_unavailable_authors: std::collections::HashMap::new(),
 
             id: nanoid::simple(),
         }
@@ -84,5 +94,26 @@ impl NetworkState {
         (self.network.is_some() && self.dna_address.is_some() && self.agent_id.is_some()).ok_or(
             HolochainError::ErrorGeneric("Network not initialized".to_string()),
         )
+    }
+
+    pub fn author_recently_unavailable(&self, header: &ChainHeader) -> bool {
+        let maybe_prov = &header.provenances().first();
+        if maybe_prov.is_none() {
+            return false;
+        }
+        self.recently_unavailable_authors
+            .contains_key(&maybe_prov.unwrap().source())
+    }
+
+    pub(crate) fn add_recently_unavailable(&mut self, agent: Address) {
+        if self.recently_unavailable_authors.get(&agent).is_none() {
+            self.recently_unavailable_authors
+                .insert(agent, Instant::now());
+        }
+    }
+
+    pub(crate) fn remove_timed_out_recently_unavailable(&mut self) {
+        self.recently_unavailable_authors
+            .retain(|_agent, time| time.elapsed() < Duration::from_millis(UNAVAILABLE_TIMEOUT_MS));
     }
 }

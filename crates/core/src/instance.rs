@@ -371,6 +371,7 @@ impl Instance {
                             let pending = pending.clone();
 
                             let closure = async move || {
+                                log_debug!(c, "run_holding_workflow: before {:?}", pending);
                                 let queuing = match run_holding_workflow(pending.clone(), c.clone()).await {
                                     // If we couldn't run the validation due to unresolved dependencies,
                                     // we have to re-add this entry at the end of the queue:
@@ -413,11 +414,14 @@ impl Instance {
                                         HoldingWorkflowQueueing::Done
                                     }
                                 };
-                                remove_queued_holding_workflow(
+                                log_debug!(c, "run_holding_workflow: after {:?}", pending);
+                                let r = remove_queued_holding_workflow(
                                     queuing,
                                     pending.clone(),
                                     c.clone(),
-                                ).await
+                                ).await;
+                                log_debug!(c, "run_holding_workflow: remove {:?}", pending);
+                                r
                             };
                             let future = closure();
                             context.spawn_task(future);

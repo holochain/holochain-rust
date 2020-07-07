@@ -493,18 +493,18 @@ impl DhtStore {
         }
     }
     /*
-    pub(crate) fn remove_in_process_holding_workflow(
-        &mut self,
-        item: &PendingValidation,
-    ) -> Option<PendingValidationWithTimeout> {
-        // remove any hold aspect requests that were queued under this workflow id
-        self.holding_attempt_results
-               .retain(|&id, _| id.0 != item.uuid);
+        pub(crate) fn remove_in_process_holding_workflow(
+            &mut self,
+            item: &PendingValidation,
+        ) -> Option<PendingValidationWithTimeout> {
+            // remove any hold aspect requests that were queued under this workflow id
+            self.holding_attempt_results
+                   .retain(|&id, _| id.0 != item.uuid);
 
-        self.in_process_holding_workflows
-            .iter()
-            .position(|PendingValidationWithTimeout { pending, .. }| pending == item)
-            .and_then(|index| self.in_process_holding_workflows.remove(index))
+            self.in_process_holding_workflows
+                .iter()
+                .position(|PendingValidationWithTimeout { pending, .. }| pending == item)
+                .and_then(|index| self.in_process_holding_workflows.remove(index))
     }*/
 }
 

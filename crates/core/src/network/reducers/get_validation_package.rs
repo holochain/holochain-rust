@@ -63,11 +63,20 @@ pub fn reduce_get_validation_package_timeout(
     let action = action_wrapper.action();
     let key = unwrap_to!(action => crate::action::Action::GetValidationPackageTimeout);
 
-    network_state.get_validation_package_timeouts.remove(key);
+    // remove the timeout from the timeouts queue
+    let timeout = network_state.get_validation_package_timeouts.remove(key);
 
     if let Some(Some(_)) = network_state.get_validation_package_results.get(key) {
+        debug!("ignoring timeout: {:#?}", timeout);
         // A result already came back from the network so don't overwrite it
         return;
+    }
+
+    // if we actually did remove the timeout, i.e. this reducer may have run after some other
+    // code removed the timeout, then we should mark this agent as recently unavailable so
+    // we don't try to send it messages that are just likely to time right out again
+    if timeout.is_some() {
+        network_state.add_recently_unavailable(key.address.clone());
     }
 
     network_state.get_validation_package_results.insert(

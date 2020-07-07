@@ -134,28 +134,30 @@ async fn validation_package(
         return Ok(Some(package));
     }
 
-    // 2. Try and get it from the author
-    log_debug!(
-        context,
-        "validation_package:{} - Could not build locally. Trying to retrieve from author",
-        entry_with_header.entry.address()
-    );
-
-    match get_validation_package(entry_with_header.header.clone(), &context).await {
-        Ok(Some(package)) => {
-            log_debug!(
-                context,
-                "validation_package:{} - Successfully retrieved from author",
-                entry_with_header.entry.address()
-            );
-            return Ok(Some(package));
-        }
-        response => log_debug!(
+    // 2. Try and get it from the author as long as we didn't fail to get it recently
+    let network_state = context.state().unwrap().network();
+    if !network_state.author_recently_unavailable(&entry_with_header.header) {
+        log_debug!(
             context,
-            "validation_package:{} - Direct message to author responded: {:?}",
-            entry_with_header.entry.address(),
-            response,
-        ),
+            "validation_package:{} - Could not build locally. Trying to retrieve from author",
+            entry_with_header.entry.address()
+        );
+        match get_validation_package(entry_with_header.header.clone(), &context).await {
+            Ok(Some(package)) => {
+                log_debug!(
+                    context,
+                    "validation_package:{} - Successfully retrieved from author",
+                    entry_with_header.entry.address()
+                );
+                return Ok(Some(package));
+            }
+            response => log_debug!(
+                context,
+                "validation_package:{} - Direct message to author responded: {:?}",
+                entry_with_header.entry.address(),
+                response,
+            ),
+        }
     }
 
     // 3. Build it from the DHT (this may require many network requests (or none if full sync))

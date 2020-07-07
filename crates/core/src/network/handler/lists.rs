@@ -2,7 +2,6 @@ use crate::{
     action::{Action, ActionWrapper},
     agent::state::create_entry_with_header_for_header,
     context::Context,
-    dht::aspect_map::{AspectMap, AspectMapBare},
     entry::CanPublish,
     instance::dispatch_action,
     network::{
@@ -10,6 +9,7 @@ use crate::{
         handler::{entry_to_meta_aspect, get_content_aspects_from_chain},
     },
 };
+use holochain_net::aspect_map::{AspectMap, AspectMapBare};
 use holochain_persistence_api::cas::content::{Address, AddressableContent};
 use im::HashSet;
 use lib3h_protocol::{

@@ -2,7 +2,6 @@ use crate::{
     content_store::{AddContent, GetContent},
     dht::{
         actions::remove_queued_holding_workflow::HoldingWorkflowQueueing,
-        aspect_map::{AspectMap, AspectMapBare},
         pending_validations::{PendingValidationWithTimeout, ValidationTimeout},
     },
     instance::RETRY_VALIDATION_DURATION_MIN,
@@ -20,6 +19,7 @@ use holochain_core_types::{
 };
 use holochain_json_api::{error::JsonError, json::JsonString};
 use holochain_locksmith::RwLock;
+use holochain_net::aspect_map::{AspectMap, AspectMapBare};
 use holochain_persistence_api::{
     cas::{
         content::{Address, AddressableContent, Content},

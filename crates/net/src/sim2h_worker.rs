@@ -1,6 +1,7 @@
 //! provides worker that makes use of sim2h
 
 use crate::{
+    aspect_map::AspectMap,
     connection::{
         net_connection::{NetHandler, NetWorker},
         NetResult,
@@ -37,6 +38,7 @@ const INITIAL_CONNECTION_TIMEOUT_MS: u64 = 2000; // The real initial is 4 second
 const MAX_CONNECTION_TIMEOUT_MS: u64 = 60000;
 const SIM2H_WORKER_INTERNAL_REQUEST_ID: &str = "SIM2H_WORKER";
 const RESEND_WIRE_MESSAGE_MS: u64 = 10000;
+const BATCHING_INTERVAL_MS: u64 = 1000;
 
 fn connect(url: Lib3hUri, timeout_ms: u64) -> NetResult<TcpWss> {
     //    let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
@@ -51,6 +53,7 @@ pub struct Sim2hConfig {
     pub sim2h_url: String,
 }
 
+#[derive(Debug)]
 struct BufferedMessage {
     pub wire_message: WireMessage,
     pub hash: u64,
@@ -82,6 +85,9 @@ pub struct Sim2hWorker {
     connection_timeout_backoff: u64,
     reconnect_interval: Duration,
     metric_publisher: std::sync::Arc<std::sync::RwLock<dyn MetricPublisher>>,
+    time_of_last_batching: Instant,
+    outgoing_fetch_entry_results: Vec<ht::EncodedSpanWrap<Lib3hToClientResponse>>,
+    outgoing_fat_acks: AspectMap,
     outgoing_message_buffer: Vec<BufferedMessage>,
     ws_frame: Option<WsFrame>,
     initial_authoring_list: Option<EntryListData>,
@@ -123,6 +129,9 @@ impl Sim2hWorker {
             metric_publisher: std::sync::Arc::new(std::sync::RwLock::new(
                 DefaultMetricPublisher::default(),
             )),
+            time_of_last_batching: Instant::now(),
+            outgoing_fetch_entry_results: Vec::new(),
+            outgoing_fat_acks: AspectMap::new(),
             outgoing_message_buffer: Vec::new(),
             ws_frame: None,
             initial_authoring_list: None,
@@ -225,6 +234,42 @@ impl Sim2hWorker {
         }
     }
 
+    /// check if it's time to collect up batched messages and move them to outgoing if so
+    fn check_batched_messages(&mut self) {
+        if self.time_of_last_batching.elapsed() < Duration::from_millis(BATCHING_INTERVAL_MS) {
+            return;
+        }
+        self.time_of_last_batching = Instant::now();
+
+        let mut msgs: Vec<ht::EncodedSpanWrap<Lib3hToClientResponse>> = Vec::new();
+
+        if !self.outgoing_fat_acks.empty() {
+            if let Some(space_data) = &self.space_data {
+                let entry_data = EntryListData {
+                    space_address: space_data.space_address.clone(),
+                    provider_agent_id: space_data.agent_id.clone(),
+                    request_id: "".to_string(),
+                    address_map: self.outgoing_fat_acks.clone().into(),
+                };
+                self.outgoing_fat_acks = AspectMap::new();
+                let msg = Lib3hToClientResponse::HandleGetGossipingEntryListResult(entry_data);
+                let span = ht::top_follower("fat-acks");
+                let msg = span.wrap(msg);
+                msgs.push(msg.into());
+            };
+        }
+
+        if self.outgoing_fetch_entry_results.len() > 0 {
+            for m in self.outgoing_fetch_entry_results.drain(..) {
+                msgs.push(m);
+            }
+        }
+        if msgs.len() > 0 {
+            self.outgoing_message_buffer
+                .push(WireMessage::MultiSendResponse(msgs).into());
+        }
+    }
+
     /// if we have queued wire messages and our connection is ready,
     /// try to send one
     /// return if we did something
@@ -239,7 +284,10 @@ impl Sim2hWorker {
             }
         }
         let message = &buffered_message.wire_message;
-        debug!("WireMessage: preparing to send {:?}", message);
+        debug!(
+            "WireMessage: preparing to send {:?} with hash: {}",
+            message, buffered_message.hash
+        );
         let payload: String = message.clone().into();
         let signature = self
             .conductor_api
@@ -304,8 +352,41 @@ impl Sim2hWorker {
     fn send_wire_message(&mut self, message: WireMessage) -> NetResult<()> {
         // we always put messages in the outgoing buffer,
         // they'll be sent when the connection is ready
-        debug!("WireMessage: queueing {:?}", message);
-        self.outgoing_message_buffer.push(message.into());
+        debug!(
+            "WireMessage: queueing on top of {} messages: {:#?}\nwaiting for: {:#?}",
+            self.outgoing_message_buffer.len(),
+            message,
+            self.outgoing_message_buffer.get(0)
+        );
+        // debug!("on queue: {:#?}", self.outgoing_message_buffer);
+
+        // but if it's a fat ack (HandleGetGossipingEntryListResult), or HandleFetchEntryResult
+        // they don't need to be sent in a particular order and we want to bundle them for periodic
+        // sending so we add them to different queues.
+        let send = match message {
+            WireMessage::Lib3hToClientResponse(ref span_wrap) => match span_wrap.data {
+                Lib3hToClientResponse::HandleFetchEntryResult(_) => {
+                    self.outgoing_fetch_entry_results.push(span_wrap.clone());
+                    false
+                }
+                Lib3hToClientResponse::HandleGetGossipingEntryListResult(ref entry_data) => {
+                    // only batch fat acks which have no request_id
+                    if entry_data.request_id == "" {
+                        let am = AspectMap::from(&entry_data.address_map);
+                        self.outgoing_fat_acks = AspectMap::merge(&self.outgoing_fat_acks, &am);
+                        false
+                    } else {
+                        true
+                    }
+                }
+                _ => true,
+            },
+            _ => true,
+        };
+        if send {
+            self.outgoing_message_buffer.push(message.into());
+        };
+
         Ok(())
     }
 
@@ -527,6 +608,12 @@ impl Sim2hWorker {
                     self.to_core.push(span_wrap.map(Lib3hServerProtocol::from));
                 }
             }
+            WireMessage::MultiSendResponse(m) => {
+                error!(
+                    "Got a MultiSendResponse from the Sim2h server, weird! Ignoring: {:?}",
+                    m
+                )
+            }
             WireMessage::ClientToLib3hResponse(span_wrap) => {
                 self.to_core.push(span_wrap.map(Lib3hServerProtocol::from))
             }
@@ -637,6 +724,9 @@ impl NetWorker for Sim2hWorker {
 
         if self.connection_ready() {
             self.reset_backoff();
+
+            self.check_batched_messages();
+
             if self.try_send_from_outgoing_buffer() {
                 did_something = true;
             }

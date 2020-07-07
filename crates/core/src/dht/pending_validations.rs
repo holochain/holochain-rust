@@ -2,6 +2,7 @@ use crate::{
     entry::validation_dependencies::ValidationDependencies,
     network::entry_with_header::EntryWithHeader,
 };
+use chrono::{offset::Utc, DateTime};
 use holochain_core_types::{
     entry::{deletion_entry::DeletionEntry, Entry},
     error::HolochainError,
@@ -13,6 +14,7 @@ use snowflake::ProcessUniqueId;
 use std::{
     convert::TryFrom,
     fmt,
+    ops::Add,
     sync::Arc,
     time::{Duration, SystemTime},
 };
@@ -171,6 +173,13 @@ impl From<PendingValidationStruct> for EntryAspect {
 pub struct ValidationTimeout {
     pub time_of_dispatch: SystemTime,
     pub delay: Duration,
+}
+
+impl fmt::Display for ValidationTimeout {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let datetime: DateTime<Utc> = self.time_of_dispatch.add(self.delay).into();
+        write!(f, "{}", datetime.format("%d/%m/%Y %T"))
+    }
 }
 
 impl ValidationTimeout {

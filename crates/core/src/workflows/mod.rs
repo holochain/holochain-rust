@@ -134,6 +134,8 @@ async fn validation_package(
         return Ok(Some(package));
     }
 
+    // 1.5. Fetch a cached version of the validation package if cache version is warm
+    // This mitigates hitting the author too frequently for the same validation package.
     log_debug!(
         context,
         "validation_package:{} - Could not build locally. Trying to build from cache",

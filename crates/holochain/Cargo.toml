@@ -20,7 +20,8 @@ holochain_common = { version = "=0.0.49-alpha1", path = "../common" }
 holochain_locksmith = { version = "=0.0.49-alpha1", path = "../locksmith" }
 holochain_tracing = "=0.0.24"
 holochain_tracing_macros = "=0.0.24"
-structopt = "=0.2.15"
+structopt-derive = "=0.2.18"
+structopt = "=0.2.18"
 tiny_http = "=0.6.2"
 lazy_static = "=1.4.0"
 ws = "=0.8.0"

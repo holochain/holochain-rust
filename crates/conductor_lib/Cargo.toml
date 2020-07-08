@@ -62,7 +62,8 @@ tokio = "=0.1.22"
 test_utils = { version = "=0.0.49-alpha1", path = "../../test_utils" }
 tempfile = "=3.0.7"
 holochain_wasm_utils = { version = "=0.0.49-alpha1", path = "../wasm_utils" }
-structopt = "=0.2.15"
+structopt-derive = "=0.2.18"
+structopt = "=0.2.18"
 pretty_assertions = "=0.6.1"
 ws = "=0.8.0"
 parking_lot = "=0.7.1"

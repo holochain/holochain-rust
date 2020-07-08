@@ -302,7 +302,7 @@ mod tests {
             build_validation_package(&test_entry_package_chain_full(), context.clone(), &vec![]);
         assert!(maybe_validation_package.is_ok());
 
-        let headers = all_chain_headers_before_header(&context, &chain_header);
+        let headers = all_chain_headers(&context);
 
         let expected = ValidationPackage {
             chain_header,

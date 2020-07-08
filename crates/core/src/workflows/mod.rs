@@ -272,7 +272,7 @@ pub mod tests {
                 .source_chain_headers
                 .unwrap()
                 .len(),
-            2
+            3
         );
     }
 }

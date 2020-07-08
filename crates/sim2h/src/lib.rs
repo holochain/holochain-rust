@@ -1488,7 +1488,7 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
     }
 
     for (space_hash, agents) in agents_needing_gossip.iter() {
-        trace!(
+        debug!(
             "sim2h gossip agent count: {} in space {:?}",
             agents.len(),
             space_hash

@@ -1,12 +1,12 @@
 let
- release-commit = "e01a73f6b8d6b28e3ee83182839cfee19068c961";
- current = "0.0.49-alpha1";
+ release-commit = "79673147c095479e4017d3d2e669850857293efc";
+ current = "0.0.50-alpha1";
  previous = "0.0.49-alpha1";
  # tag will ultimately be current version when it hits holonix
  # https://github.com/holochain/holonix/blob/master/release/default.nix#L7
  tag = "v${current}";
- holonix-version = "v0.0.72";
- holonix-sha256 = "090h5gqmfm40vkqhf1ky1n3ml24f5py04bvn50dkw0v8xzmsl4sk";
+ holonix-version = "v0.0.79";
+ holonix-sha256 = "1wc0wav215bm41zl865yqym5isv5k4rq0yqgrbr7vriqc5bwmcql";
 in
 rec {
 

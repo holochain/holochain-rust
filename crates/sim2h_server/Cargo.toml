@@ -26,7 +26,8 @@ lib3h_sodium = "=0.0.42"
 lazy_static = "=1.4.0"
 log = "0.4.8"
 env_logger = "0.7.0"
-structopt = "=0.2.15"
+structopt-derive = "=0.2.18"
+structopt = "=0.2.18"
 tracing-log = "=0.1.1"
 
 [features]

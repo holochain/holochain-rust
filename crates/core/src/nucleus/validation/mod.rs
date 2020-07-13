@@ -76,11 +76,18 @@ impl From<ValidationError> for HolochainError {
 pub async fn validate_entry(
     entry: Entry,
     link: Option<Address>,
-    validation_data: ValidationData,
+    mut validation_data: ValidationData,
     context: &Arc<Context>,
 ) -> ValidationResult {
     log_debug!(context, "workflow/validate_entry: {:?}", entry);
     //check_entry_type(entry.entry_type(), context)?;
+
+    // cleanup validation data which may include too much
+    if let Some(ref mut headers) = validation_data.package.source_chain_headers {
+        let t = validation_data.package.chain_header.timestamp();
+        headers.retain(|header| header.timestamp() < t);
+    }
+
     header_address::validate_header_address(&entry, &validation_data.package.chain_header)?;
     provenances::validate_provenances(&validation_data)?;
 

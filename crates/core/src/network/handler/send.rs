@@ -137,6 +137,7 @@ pub fn handle_send_message_result(message_data: DirectMessageData, context: Arc<
             let address = unwrap_to!(initial_message => DirectMessage::RequestValidationPackage);
 
             let action_wrapper = ActionWrapper::new(Action::HandleGetValidationPackage((
+                message_data.from_agent_id.into(),
                 address.clone(),
                 maybe_validation_package,
             )));

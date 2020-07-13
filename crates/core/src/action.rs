@@ -193,7 +193,7 @@ pub enum Action {
     /// Updates the state to hold the response that we got for
     /// our previous request for a validation package.
     /// Triggered from the network handler when we get the response.
-    HandleGetValidationPackage((ValidationKey, Option<ValidationPackage>)),
+    HandleGetValidationPackage((Address, ValidationKey, Option<ValidationPackage>)),
 
     /// Clean up the validation package result so the state doesn't grow indefinitely.
     ClearValidationPackageResult(ValidationKey),

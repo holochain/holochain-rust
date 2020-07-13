@@ -350,16 +350,6 @@ impl Sim2hWorker {
 
     /// queue a wire message for send
     fn send_wire_message(&mut self, message: WireMessage) -> NetResult<()> {
-        // we always put messages in the outgoing buffer,
-        // they'll be sent when the connection is ready
-        debug!(
-            "WireMessage: queueing on top of {} messages: {:#?}\nwaiting for: {:#?}",
-            self.outgoing_message_buffer.len(),
-            message,
-            self.outgoing_message_buffer.get(0)
-        );
-        // debug!("on queue: {:#?}", self.outgoing_message_buffer);
-
         // but if it's a fat ack (HandleGetGossipingEntryListResult), or HandleFetchEntryResult
         // they don't need to be sent in a particular order and we want to bundle them for periodic
         // sending so we add them to different queues.
@@ -372,6 +362,13 @@ impl Sim2hWorker {
                 Lib3hToClientResponse::HandleGetGossipingEntryListResult(ref entry_data) => {
                     // only batch fat acks which have no request_id
                     if entry_data.request_id == "" {
+                        debug!(
+                            "WireMessage: batching fat ack, pending ack aspect count is: {}",
+                            self.outgoing_fat_acks
+                                .bare()
+                                .iter()
+                                .fold(0, |acc, (_k, v)| acc + v.len()),
+                        );
                         let am = AspectMap::from(&entry_data.address_map);
                         self.outgoing_fat_acks = AspectMap::merge(&self.outgoing_fat_acks, &am);
                         false
@@ -384,6 +381,15 @@ impl Sim2hWorker {
             _ => true,
         };
         if send {
+            // we always put messages in the outgoing buffer,
+            // they'll be sent when the connection is ready
+            debug!(
+                "WireMessage: queueing on top of {} messages: {:#?}\nwaiting for: {:#?}",
+                self.outgoing_message_buffer.len(),
+                message,
+                self.outgoing_message_buffer.get(0)
+            );
+            // debug!("on queue: {:#?}", self.outgoing_message_buffer);
             self.outgoing_message_buffer.push(message.into());
         };
 

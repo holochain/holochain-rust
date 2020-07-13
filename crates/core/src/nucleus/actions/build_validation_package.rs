@@ -70,12 +70,10 @@ pub fn build_validation_package<'a>(
 
     let entry = entry.clone();
     let context = context;
-    let maybe_entry_header = find_chain_header(
-        &entry.clone(),
-        &context
-            .state()
-            .expect("No state in build_validation_package"),
-    );
+    let state = &context
+        .state()
+        .expect("No state in build_validation_package");
+    let maybe_entry_header = find_chain_header(&entry.clone(), &state);
     let entry_header = match maybe_entry_header {
         None => {
             // TODO: make sure that we don't run into race conditions with respect to the chain
@@ -134,7 +132,7 @@ pub fn build_validation_package<'a>(
                 }
                 ChainFull => {
                     let mut package = ValidationPackage::only_header(entry_header);
-                    let headers = all_chain_headers_before_header(&context, &package.chain_header);
+                    let headers = all_chain_headers(&context);
                     package.source_chain_entries =
                         Some(public_chain_entries_from_headers(&context, &headers));
                     package.source_chain_headers = Some(headers);
@@ -169,6 +167,17 @@ fn public_chain_entries_from_headers(
                 .expect("Entry does not exist")
         })
         .collect::<Vec<_>>()
+}
+
+#[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+fn all_chain_headers(context: &Arc<Context>) -> Vec<ChainHeader> {
+    let state = &context
+        .state()
+        .expect("No state in build_validation_package")
+        .agent();
+    let top = state.top_chain_header().expect("there has to be a top");
+    let chain = state.chain_store();
+    chain.iter(&Some(top)).collect()
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
@@ -293,7 +302,7 @@ mod tests {
             build_validation_package(&test_entry_package_chain_full(), context.clone(), &vec![]);
         assert!(maybe_validation_package.is_ok());
 
-        let headers = all_chain_headers_before_header(&context, &chain_header);
+        let headers = all_chain_headers(&context);
 
         let expected = ValidationPackage {
             chain_header,

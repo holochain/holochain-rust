@@ -231,7 +231,7 @@ pub mod tests {
                 .source_chain_headers
                 .expect("chain headers not in locally generated packagae")
                 .len(),
-            2
+            3
         );
 
         assert_eq!(
@@ -243,6 +243,9 @@ pub mod tests {
             2
         );
 
-        assert_eq!(local_validation_package, dht_validation_package,)
+        // these are no longer the same because the validation package from the author
+        // will include the entire chain, not just the items below the given header so that
+        // they can be cached.  TODO: cache the dht validation packages too.
+        //assert_eq!(local_validation_package, dht_validation_package,)
     }
 }

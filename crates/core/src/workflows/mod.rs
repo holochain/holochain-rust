@@ -134,10 +134,38 @@ async fn validation_package(
         return Ok(Some(package));
     }
 
+    // 1.5. Fetch a cached version of the validation package if cache version is warm
+    // This mitigates hitting the author too frequently for the same validation package.
+    log_debug!(
+        context,
+        "validation_package:{} - Could not build locally. Trying to build from cache",
+        entry_with_header.entry.address()
+    );
+
+    let network_state = context.state().unwrap().network();
+    let header = &entry_with_header.header;
+    let source_address = header
+        .provenances()
+        .first()
+        .ok_or_else(|| HolochainError::ErrorGeneric("No source found in ChainHeader".to_string()))?
+        .source();
+    if let Some(package) = network_state.get_validation_package_from_cache(
+        source_address,
+        &validation_package_definition,
+        header,
+    ) {
+        log_debug!(
+            context,
+            "validation_package:{} - Successfully retrieved from cache",
+            entry_with_header.entry.address()
+        );
+        return Ok(Some(package));
+    }
+
     // 2. Try and get it from the author
     log_debug!(
         context,
-        "validation_package:{} - Could not build locally. Trying to retrieve from author",
+        "validation_package:{} - Could not get from cache. Trying to retrieve from author",
         entry_with_header.entry.address()
     );
 
@@ -246,7 +274,7 @@ pub mod tests {
                 .source_chain_headers
                 .unwrap()
                 .len(),
-            2
+            3
         );
     }
 }

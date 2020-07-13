@@ -15,7 +15,8 @@ repository = "https://github.com/holochain/holochain-rust"
 in_stream = { version = "=0.0.49-alpha1", path = "../in_stream" }
 log = "0.4.8"
 env_logger = "0.7.0"
-structopt = "0.2.15"
+structopt-derive = "=0.2.18"
+structopt = "=0.2.18"
 jsonrpc-core = "14.0"
 jsonrpc-ws-server = "14.0"
 serde_json = { version = "=1.0.47", features = ["preserve_order"] }

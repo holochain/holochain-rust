@@ -123,10 +123,10 @@ impl<T> SendExt<T> for crossbeam_channel::Sender<T> {
     }
 }
 
-//const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 30000; // 30 seconds
+const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 30000; // 30 seconds
 /// actual timing is handled by sim2h_im_state
 /// but it does cause a mutate, so we don't want to spam it too hard
-const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 500; // half second
+//const RETRY_FETCH_MISSING_ASPECTS_INTERVAL_MS: u64 = 500; // half second
 
 fn open_lifecycle(desc: &str, uuid: &str, uri: &Lib3hUri) {
     debug!("connection event open_conns: {} for {}@{}", desc, uuid, uri);
@@ -1488,7 +1488,7 @@ async fn missing_aspects_resync(sim2h_handle: Sim2hHandle, _schedule_guard: Sche
     }
 
     for (space_hash, agents) in agents_needing_gossip.iter() {
-        trace!(
+        debug!(
             "sim2h gossip agent count: {} in space {:?}",
             agents.len(),
             space_hash

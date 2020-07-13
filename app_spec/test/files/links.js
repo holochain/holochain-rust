@@ -73,7 +73,8 @@ module.exports = scenario => {
     t.ok(result_bob_delete.Err)
     t.notOk(result_bob_delete.Ok)
     const error = JSON.parse(result_bob_delete.Err.Internal)
-    t.match(error.kind.ErrorGeneric, /Target for link not found: Link { base: HashString\(".*"\), target: HashString\(".*"\), link_type: "authored_posts", tag: "" }/)
+    let re = /Target for link not found: Link { base: HashString\(".*"\), target: HashString\(".*"\), link_type: "authored_posts", tag: "" }/;
+    t.equal(true, re.test(error.kind.ErrorGeneric))
     t.ok(error.file)
     t.ok(error.line)
   })

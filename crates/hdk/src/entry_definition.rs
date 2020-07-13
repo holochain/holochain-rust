@@ -115,8 +115,6 @@ pub struct ValidatingLinkDefinition {
 /// #   validation::EntryValidationData
 /// # };
 ///
-/// # fn main() {
-///
 /// #[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
 /// pub struct Post {
 ///     content: String,
@@ -165,8 +163,6 @@ pub struct ValidatingLinkDefinition {
 ///         ]
 ///     )
 /// }
-///
-/// # }
 /// ```
 
 #[macro_export]

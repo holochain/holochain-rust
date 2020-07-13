@@ -25,11 +25,9 @@ use super::Dispatch;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::signature::{Provenance, Signature};
 /// # use hdk::error::ZomeApiResult;
-/// # fn main() {
 /// pub fn handle_sign_message(message: String) -> ZomeApiResult<Signature> {
 ///    hdk::sign(message).map(Signature::from)
 /// }
-/// # }
 /// ```
 pub fn sign<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
     Dispatch::Crypto.with_input(CryptoArgs {
@@ -56,11 +54,9 @@ pub fn sign<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
 /// # use holochain_core_types::signature::{Provenance, Signature};
 /// # use hdk::error::ZomeApiResult;
 /// # use hdk::holochain_wasm_utils::api_serialization::sign::{OneTimeSignArgs, SignOneTimeResult};
-/// # fn main() {
 /// pub fn handle_one_time_sign(key_id: String, message: String) -> ZomeApiResult<Signature> {
 ///    hdk::sign(message).map(Signature::from)
 /// }
-/// # }
 /// ```
 pub fn sign_one_time<S: Into<String>>(payloads: Vec<S>) -> ZomeApiResult<SignOneTimeResult> {
     let mut converted_payloads = Vec::new();
@@ -88,11 +84,9 @@ pub fn sign_one_time<S: Into<String>>(payloads: Vec<S>) -> ZomeApiResult<SignOne
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::signature::Provenance;
 /// # use hdk::error::ZomeApiResult;
-/// # fn main() {
 /// pub fn handle_verify_message(message: String, provenance: Provenance) -> ZomeApiResult<bool> {
 ///     hdk::verify_signature(provenance, message)
 /// }
-/// # }
 /// ```
 pub fn verify_signature<S: Into<String>>(
     provenance: Provenance,

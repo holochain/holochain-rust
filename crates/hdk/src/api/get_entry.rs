@@ -26,7 +26,7 @@ use holochain_wasm_utils::api_serialization::get_entry::{
 /// # use holochain_core_types::entry::Entry;
 /// # use holochain_json_api::json::JsonString;
 /// # use holochain_persistence_api::cas::content::Address;
-/// # fn main() {
+///
 /// pub fn handle_get_post(post_address: Address) -> ZomeApiResult<Option<Entry>> {
 ///     // get_entry returns a Result<Option<T>, ZomeApiError>
 ///     // where T is the type that you used to commit the entry, in this case a Blog
@@ -34,7 +34,6 @@ use holochain_wasm_utils::api_serialization::get_entry::{
 ///     // Otherwise its a Some(T) or a None
 ///     hdk::get_entry(&post_address)
 /// }
-/// # }
 /// ```
 pub fn get_entry(address: &Address) -> ZomeApiResult<Option<Entry>> {
     let entry_result = get_entry_result(address, GetEntryOptions::default())?;

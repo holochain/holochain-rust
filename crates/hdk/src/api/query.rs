@@ -36,7 +36,6 @@ use holochain_wasm_utils::api_serialization::{
 /// # use holochain_json_api::json::JsonString;
 /// # use holochain_persistence_api::cas::content::Address;
 ///
-/// # fn main() {
 /// pub fn handle_my_posts_as_commited() -> ZomeApiResult<Vec<Address>> {
 ///     hdk::query("post".into(), 0, 0)
 /// }
@@ -46,7 +45,6 @@ use holochain_wasm_utils::api_serialization::{
 /// pub fn everything_including_namespaced_except_system() -> ZomeApiResult<Vec<Address>> {
 ///     hdk::query("**/[!%]*".into(), 0, 0)
 /// }
-/// # }
 /// ```
 ///
 /// With hdk::query_result, you can specify a package of QueryArgsOptions, and get a

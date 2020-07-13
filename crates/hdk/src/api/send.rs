@@ -90,7 +90,6 @@ use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 /// # #[no_mangle]
 /// # pub fn hc_emit_signal(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 ///
-/// # fn main() {
 /// fn handle_send_message(to_agent: Address, message: String) -> ZomeApiResult<String> {
 ///     // because the function signature of hdk::send is the same as the
 ///     // signature of handle_send_message we can just directly return its' result
@@ -101,7 +100,7 @@ use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 ///    entries: []
 ///
 ///    init: || { Ok(()) }
-///    
+///
 ///    validate_agent: |validation_data : EntryValidationData::<AgentId>| {
 ///        Ok(())
 ///    }
@@ -125,7 +124,6 @@ use holochain_wasm_utils::api_serialization::send::{SendArgs, SendOptions};
 ///         hc_public [send_message]
 ///     }
 ///}
-/// # }
 /// ```
 pub fn send(to_agent: Address, payload: String, timeout: Timeout) -> ZomeApiResult<String> {
     Dispatch::Send.with_input(SendArgs {

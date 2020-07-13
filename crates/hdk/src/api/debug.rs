@@ -9,15 +9,12 @@ use holochain_json_api::json::JsonString;
 /// # extern crate hdk;
 /// # use hdk::error::ZomeApiResult;
 ///
-/// # fn main() {
 /// pub fn handle_some_function(content: String) -> ZomeApiResult<()> {
 ///     // ...
 ///     hdk::debug("write a message to the logs");
 ///     // ...
 ///     Ok(())
 /// }
-///
-/// # }
 /// ```
 pub fn debug<J: Into<String>>(msg: J) -> ZomeApiResult<()> {
     let _: ZomeApiResult<()> = Dispatch::Debug.with_input(JsonString::from_json(&msg.into()));

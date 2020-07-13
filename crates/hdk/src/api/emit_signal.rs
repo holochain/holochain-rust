@@ -34,7 +34,6 @@ use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
 /// # #[no_mangle]
 /// # pub fn hc_emit_signal(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 ///
-/// # fn main() {
 /// pub fn handle_receive_chat_message(message: String) -> ZomeApiResult<()> {
 ///     // ...
 ///     hdk::emit_signal("message_received", JsonString::from_json(&format!(
@@ -43,8 +42,6 @@ use holochain_wasm_utils::api_serialization::emit_signal::EmitSignalArgs;
 ///     // ...
 ///     Ok(())
 /// }
-///
-/// # }
 /// ```
 pub fn emit_signal<S: Into<String>, J: Into<JsonString>>(
     name: S,

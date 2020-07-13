@@ -35,7 +35,6 @@ use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 /// # use hdk::error::ZomeApiResult;
 /// # use hdk::holochain_wasm_utils::api_serialization::get_entry::GetEntryOptions;
 /// # use hdk::holochain_wasm_utils::api_serialization::get_entry::StatusRequestKind;
-/// # fn main() {
 ///
 /// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 /// pub struct Post {
@@ -68,7 +67,6 @@ use holochain_wasm_utils::api_serialization::link_entries::LinkEntriesArgs;
 ///     Ok(address)
 ///
 /// }
-/// # }
 /// ```
 pub fn link_entries<S: Into<String>>(
     base: &Address,

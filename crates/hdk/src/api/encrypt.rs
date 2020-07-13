@@ -19,11 +19,9 @@ use super::Dispatch;
 /// # use holochain_core_types::error::HolochainError;
 /// # use holochain_core_types::signature::{Provenance, Signature};
 /// # use hdk::error::ZomeApiResult;
-/// # fn main() {
 /// pub fn handle_encrypt_message(message: String) -> ZomeApiResult<Signature> {
 ///    hdk::encrypt(message).map(Signature::from)
 /// }
-/// # }
 /// ```
 pub fn encrypt<S: Into<String>>(payload: S) -> ZomeApiResult<String> {
     Dispatch::Crypto.with_input(CryptoArgs {

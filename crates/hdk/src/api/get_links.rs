@@ -32,11 +32,9 @@ use holochain_wasm_utils::api_serialization::{
 /// # use holochain_wasm_utils::api_serialization::get_links::{GetLinksResult, GetLinksOptions};
 /// # use holochain_core_types::link::LinkMatch;
 ///
-/// # fn main() {
 /// pub fn handle_posts_by_agent(agent: Address) -> ZomeApiResult<GetLinksResult> {
 ///     hdk::get_links_with_options(&agent, LinkMatch::Exactly("authored_posts"), LinkMatch::Any, GetLinksOptions::default())
 /// }
-/// # }
 /// ```
 pub fn get_links_with_options(
     base: &Address,
@@ -66,11 +64,9 @@ pub fn get_links_with_options(
 /// # use holochain_wasm_utils::api_serialization::get_links::{GetLinksResultCount, GetLinksOptions};
 /// # use holochain_core_types::link::LinkMatch;
 ///
-/// # fn main() {
 /// pub fn handle_posts_count_by_agent(agent: Address) -> ZomeApiResult<GetLinksResultCount> {
 ///     hdk::get_links_count_with_options(&agent, LinkMatch::Exactly("authored_posts"), LinkMatch::Any, GetLinksOptions::default())
 /// }
-/// # }
 /// ```
 pub fn get_links_count_with_options(
     base: &Address,
@@ -119,11 +115,9 @@ pub fn get_links(
 /// #    get_links::GetLinksOptions};
 /// # use holochain_core_types::link::LinkMatch;
 ///
-/// # fn main() {
 /// fn hangle_get_links_result(address: Address) -> ZomeApiResult<Vec<ZomeApiResult<GetEntryResult>>> {
 ///    hdk::get_links_result(&address, LinkMatch::Exactly("test-link"), LinkMatch::Any, GetLinksOptions::default(), GetEntryOptions::default())
 /// }
-/// # }
 /// ```
 pub fn get_links_result(
     base: &Address,

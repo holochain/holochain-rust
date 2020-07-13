@@ -137,8 +137,6 @@ macro_rules! load_string {
 /// # #[no_mangle]
 /// # pub fn hc_emit_signal(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 ///
-/// # fn main() {
-///
 /// #[derive(Serialize, Deserialize, Debug, DefaultJson,Clone)]
 /// pub struct Post {
 ///     content: String,
@@ -187,7 +185,7 @@ macro_rules! load_string {
 ///     init: || {
 ///         Ok(())
 ///     }
-///     
+///
 ///     validate_agent: |validation_data : EntryValidationData::<AgentId>| {
 ///         Ok(())
 ///     }
@@ -214,8 +212,6 @@ macro_rules! load_string {
 ///         hc_public [post_address]
 ///     }
 /// }
-///
-/// # }
 /// ```
 #[macro_export]
 macro_rules! define_zome {

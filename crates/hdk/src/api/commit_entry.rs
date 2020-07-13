@@ -32,8 +32,6 @@ use holochain_wasm_utils::api_serialization::commit_entry::{
 /// # #[no_mangle]
 /// # pub fn hc_commit_entry(_: RibosomeEncodingBits) -> RibosomeEncodingBits { 0 }
 ///
-/// # fn main() {
-///
 /// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 /// pub struct Post {
 ///     content: String,
@@ -52,8 +50,6 @@ use holochain_wasm_utils::api_serialization::commit_entry::{
 ///    Ok(address)
 ///
 /// }
-///
-/// # }
 /// ```
 pub fn commit_entry(entry: &Entry) -> ZomeApiResult<Address> {
     commit_entry_result(entry, CommitEntryOptions::default()).map(|result| result.address())

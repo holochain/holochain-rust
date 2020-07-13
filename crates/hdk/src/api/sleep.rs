@@ -9,15 +9,12 @@ use std::time::Duration;
 /// # use hdk::error::ZomeApiResult;
 /// # use std::time::Duration;
 ///
-/// # fn main() {
 /// pub fn handle_some_function(content: String) -> ZomeApiResult<()> {
 ///     // ...
 ///     hdk::sleep(Duration::from_millis(100));
 ///     // ...
 ///     Ok(())
 /// }
-///
-/// # }
 /// ```
 pub fn sleep(duration: Duration) -> ZomeApiResult<()> {
     let _: ZomeApiResult<()> = Dispatch::Sleep.with_input(JsonString::from(duration.as_nanos()));

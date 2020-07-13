@@ -25,7 +25,6 @@ use holochain_persistence_api::cas::content::Address;
 /// # use holochain_core_types::entry::AppEntryValue;
 /// # use holochain_core_types::entry::Entry;
 /// # use holochain_persistence_api::cas::content::Address;
-/// # fn main() {
 ///
 /// #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 /// pub struct Post {
@@ -42,7 +41,6 @@ use holochain_persistence_api::cas::content::Address;
 ///     hdk::entry_address(&post_entry)
 /// }
 ///
-/// # }
 /// ```
 pub fn entry_address(entry: &Entry) -> ZomeApiResult<Address> {
     Dispatch::EntryAddress.with_input(entry)

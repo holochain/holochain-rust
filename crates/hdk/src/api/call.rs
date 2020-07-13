@@ -83,8 +83,6 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// # #[no_mangle]
 /// # pub fn hc_emit_signal(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 ///
-/// # fn main() {
-///
 /// fn handle_sum(num1: u32, num2: u32) -> JsonString {
 ///     let sum = num1 + num2;
 ///     json!({"sum": sum.to_string()}).into()
@@ -100,7 +98,7 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 ///     validate_agent: |validation_data : EntryValidationData::<AgentId>| {
 ///         Ok(())
 ///     }
-///     
+///
 ///     functions: [
 ///             sum: {
 ///                 inputs: |num1: u32, num2: u32|,
@@ -113,8 +111,6 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 ///         hc_public [sum]
 ///     }
 /// }
-///
-/// # }
 /// ```
 ///
 /// This second zome is the "caller" that makes the call into the `summer` Zome.
@@ -197,8 +193,6 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 /// # #[no_mangle]
 /// # pub fn hc_emit_signal(_: RibosomeEncodingBits) -> RibosomeEncodingBits { RibosomeEncodedValue::Success.into() }
 ///
-/// # fn main() {
-///
 /// fn handle_check_sum(num1: u32, num2: u32) -> ZomeApiResult<JsonString> {
 ///     #[derive(Serialize, Deserialize, Debug, DefaultJson)]
 ///     struct SumInput {
@@ -218,7 +212,7 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 ///     init: || {
 ///         Ok(())
 ///     }
-///     
+///
 ///     validate_agent: |validation_data : EntryValidationData::<AgentId>| {
 ///         Ok(())
 ///     }
@@ -235,8 +229,6 @@ use holochain_wasm_utils::api_serialization::ZomeFnCallArgs;
 ///         hc_public [check_sum]
 ///     }
 /// }
-///
-/// # }
 /// ```
 pub fn call<S: Into<String>>(
     instance_handle: S,

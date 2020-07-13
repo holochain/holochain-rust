@@ -171,7 +171,7 @@ fn sim2h_worker_talks_to_sim2h() {
                     println!("HANDLE DM: {:?}", info);
                     ResultData::as_mut(&result_data_worker).got_handle_dm = true;
                 }
-                e @ _ => panic!("unexpected: {:#?}", e),
+                e => panic!("unexpected: {:#?}", e),
             }
             Ok(())
         })),

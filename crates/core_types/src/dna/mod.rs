@@ -474,7 +474,7 @@ pub mod tests {
         assert!(dna.verify().is_err())
     }
 
-    static UNIT_UUID: &'static str = "00000000-0000-0000-0000-000000000000";
+    static UNIT_UUID: &str = "00000000-0000-0000-0000-000000000000";
 
     fn test_empty_dna() -> Dna {
         Dna::new()

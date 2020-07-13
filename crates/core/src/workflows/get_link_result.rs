@@ -26,6 +26,7 @@ pub fn am_i_dht_authority_for_base<'a>(context: &'a Arc<Context>, base: &Address
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[allow(clippy::suspicious_else_formatting)]
 pub async fn get_link_result_workflow<'a>(
     context: &'a Arc<Context>,
     link_args: &'a GetLinksArgs,
@@ -41,15 +42,14 @@ pub async fn get_link_result_workflow<'a>(
     );
     let links = if am_i_dht_authority_for_base(context, &link_args.entry_address) {
         // get the results from the local DHT
-        let links = get_links(
+        get_links(
             context,
             link_args.entry_address.clone(),
             link_args.link_type.clone(),
             link_args.tag.clone(),
             crud_status_from_link_args(&link_args),
             config,
-        )?;
-        links
+        )?
     } else {
         let response = query(context.clone(), method, link_args.options.timeout.clone()).await?;
         let links_result = match response {

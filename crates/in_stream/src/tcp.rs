@@ -6,7 +6,7 @@ use std::{
 };
 use url2::prelude::*;
 
-const SCHEME: &'static str = "tcp";
+const SCHEME: &str = "tcp";
 
 /// internal helper convert urls to socket addrs for binding / connection
 fn tcp_url_to_socket_addr(url: &Url2) -> Result<SocketAddr> {

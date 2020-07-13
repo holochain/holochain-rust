@@ -517,6 +517,8 @@ impl Clone for Store {
 }
 
 impl Store {
+    #[allow(clippy::new_ret_no_self)]
+    #[allow(clippy::redundant_pattern_matching)]
     pub fn new(
         crypto: Box<dyn CryptoSystem>,
         redundancy: u64,
@@ -600,27 +602,21 @@ impl Store {
     fn mutate(&mut self, aol_entry: AolEntry) {
         match aol_entry {
             AolEntry::NewConnection {
-                aol_idx: _,
                 space_hash,
                 agent_id,
                 uri,
+                ..
             } => self.new_connection(space_hash, agent_id, uri),
-            AolEntry::DropConnectionByUri { aol_idx: _, uri } => self.drop_connection_by_uri(uri),
+            AolEntry::DropConnectionByUri { uri, .. } => self.drop_connection_by_uri(uri),
             AolEntry::AgentHoldsAspects {
-                aol_idx: _,
                 space_hash,
                 agent_id,
                 entry_hash,
                 aspects,
+                ..
             } => self.agent_holds_aspects(space_hash, agent_id, entry_hash, aspects),
-            AolEntry::CheckGossip {
-                aol_idx: _,
-                response,
-            } => self.check_gossip(response),
-            AolEntry::CheckDisconnected {
-                aol_idx: _,
-                response,
-            } => self.check_disconnected(response),
+            AolEntry::CheckGossip { response, .. } => self.check_gossip(response),
+            AolEntry::CheckDisconnected { response, .. } => self.check_disconnected(response),
         }
     }
 
@@ -900,6 +896,7 @@ impl StoreHandle {
     }
 
     #[must_use]
+    #[allow(clippy::redundant_pattern_matching)]
     pub fn new_connection(
         &self,
         space_hash: SpaceHash,
@@ -918,7 +915,7 @@ impl StoreHandle {
         );
         if let Err(_) = self.send_mut.send(msg) {
             error!("failed to send im store message - shutting down?");
-            return async { () }.boxed();
+            return async {}.boxed();
         }
         async move {
             let _ = receiver.await;
@@ -953,6 +950,7 @@ impl StoreHandle {
     */
 
     #[must_use]
+    #[allow(clippy::redundant_pattern_matching)]
     pub fn drop_connection_by_uri(&self, uri: Lib3hUri) -> BoxFuture<'static, ()> {
         let (sender, receiver) = tokio::sync::oneshot::channel();
         if let Err(_) = self.send_mut.send(StoreProto::Mutate(
@@ -963,7 +961,7 @@ impl StoreHandle {
             sender,
         )) {
             error!("failed to send im store message - shutting down?");
-            return async { () }.boxed();
+            return async {}.boxed();
         }
         async move {
             let _ = receiver.await;
@@ -977,6 +975,7 @@ impl StoreHandle {
     }
 
     #[must_use]
+    #[allow(clippy::redundant_pattern_matching)]
     pub fn agent_holds_aspects(
         &self,
         space_hash: SpaceHash,
@@ -996,7 +995,7 @@ impl StoreHandle {
             sender,
         )) {
             error!("failed to send im store message - shutting down?");
-            return async { () }.boxed();
+            return async {}.boxed();
         }
         async move {
             let _ = receiver.await;
@@ -1016,6 +1015,7 @@ impl StoreHandle {
     }
 
     #[tracing::instrument(skip(self))]
+    #[allow(clippy::redundant_pattern_matching)]
     pub async fn check_gossip(&self) -> CheckGossipData {
         let (sender, receiver) = tokio::sync::oneshot::channel();
         let (sender_c, receiver_c) = tokio::sync::oneshot::channel();
@@ -1035,6 +1035,7 @@ impl StoreHandle {
         receiver.await.unwrap()
     }
 
+    #[allow(clippy::redundant_pattern_matching)]
     pub async fn check_disconnected(&self) -> Vec<Lib3hUri> {
         let (sender, receiver) = tokio::sync::oneshot::channel();
         let (sender_c, receiver_c) = tokio::sync::oneshot::channel();

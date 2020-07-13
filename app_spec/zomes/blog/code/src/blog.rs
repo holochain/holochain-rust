@@ -113,7 +113,7 @@ pub fn handle_post_address(content: String) -> ZomeApiResult<Address> {
     hdk::entry_address(&post_entry(content))
 }
 
-pub static BOB_AGENT_ID: &'static str =
+pub static BOB_AGENT_ID: &str =
     "HcSCJCqoIY3uwiw34acyvNmJMyzkk4y9groHdYKBekqp7y48mvwfVTQQkzcjnfz";
 
 fn is_my_friend(addr: Address) -> bool {

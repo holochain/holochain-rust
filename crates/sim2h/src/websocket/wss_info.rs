@@ -23,6 +23,7 @@ impl<T: std::io::Read + std::io::Write + std::fmt::Debug> WssInfo<T> {
     }
 
     pub fn new(url: url::Url, socket: BaseStream<T>, is_server: bool) -> Self {
+        #[allow(clippy::match_bool)]
         WssInfo {
             // TODO set a request id
             request_id: "".to_string(),

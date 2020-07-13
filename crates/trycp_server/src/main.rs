@@ -259,11 +259,11 @@ fn get_as_bool<T: Into<String>>(
     }
 }
 
-fn get_dir(state: &TrycpServer, id: &String) -> PathBuf {
+fn get_dir(state: &TrycpServer, id: &str) -> PathBuf {
     state.dir.join(id)
 }
 
-fn get_config_path(state: &TrycpServer, id: &String) -> PathBuf {
+fn get_config_path(state: &TrycpServer, id: &str) -> PathBuf {
     get_dir(state, id).join(CONDUCTOR_CONFIG_FILENAME)
 }
 
@@ -275,11 +275,11 @@ fn get_dna_path(state: &TrycpServer, url: &Url) -> PathBuf {
     get_dna_dir(state).join(url.path().to_string().replace("/", "").replace("%", "_"))
 }
 
-fn get_stdout_log_path(state: &TrycpServer, id: &String) -> PathBuf {
+fn get_stdout_log_path(state: &TrycpServer, id: &str) -> PathBuf {
     get_dir(state, id).join(CONDUCTOR_STDOUT_LOG_FILENAME)
 }
 
-fn get_stderr_log_path(state: &TrycpServer, id: &String) -> PathBuf {
+fn get_stderr_log_path(state: &TrycpServer, id: &str) -> PathBuf {
     get_dir(state, id).join(CONDUCTOR_STDERR_LOG_FILENAME)
 }
 
@@ -560,7 +560,7 @@ fn main() {
         let id = get_as_string("id", &params_map)?;
         let mut state = state_setup.write().unwrap();
         let file_path = get_dir(&state, &id);
-        let interface_port = state.acquire_port().map_err(|e| internal_error(e))?;
+        let interface_port = state.acquire_port().map_err(internal_error)?;
         Ok(json!({
             "interfacePort": interface_port,
             "configDir": file_path.to_string_lossy(),
@@ -701,11 +701,7 @@ fn main() {
     server.wait().expect("server should wait");
 }
 
-fn do_kill(
-    id: &String,
-    child: &Child,
-    signal: &str,
-) -> Result<(), jsonrpc_core::types::error::Error> {
+fn do_kill(id: &str, child: &Child, signal: &str) -> Result<(), jsonrpc_core::types::error::Error> {
     let sig = match signal {
         "SIGKILL" => Signal::SIGKILL,
         "SIGTERM" => Signal::SIGTERM,
@@ -721,7 +717,7 @@ fn do_kill(
 
 fn check_player_config(
     state: &TrycpServer,
-    id: &String,
+    id: &str,
 ) -> Result<(), jsonrpc_core::types::error::Error> {
     let file_path = get_config_path(state, id);
     if !file_path.is_file() {
@@ -733,7 +729,7 @@ fn check_player_config(
     Ok(())
 }
 
-fn check_url(url: &String) -> bool {
+fn check_url(url: &str) -> bool {
     // send reset to Url to confirm that it's working, and ready.
     let result = send_json_rpc(url, "reset", json!({}));
 

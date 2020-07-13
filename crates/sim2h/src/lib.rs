@@ -349,7 +349,7 @@ impl Sim2hHandle {
                 ));
                 return;
             }
-            message @ _ => message,
+            message => message,
         };
 
         // you have to be in a space to proceed further
@@ -400,7 +400,7 @@ impl Sim2hHandle {
                     }
                     return;
                 }
-                message @ _ => {
+                message => {
                     error!("unhandled message type {:?}", message);
                     return;
                 }
@@ -431,21 +431,15 @@ fn client_to_lib3h(
             sim2h_handle.disconnect(vec![uri.clone()]);
         }
         ClientToLib3h::SendDirectMessage(dm_data) => {
-            return spawn_handle_message_send_dm(sim2h_handle, uri, signer, space_hash, dm_data);
+            spawn_handle_message_send_dm(sim2h_handle, uri, signer, space_hash, dm_data);
         }
         ClientToLib3h::PublishEntry(data) => {
-            return spawn_handle_message_publish_entry(sim2h_handle, uri, signer, space_hash, data);
+            spawn_handle_message_publish_entry(sim2h_handle, uri, signer, space_hash, data);
         }
         ClientToLib3h::QueryEntry(query_data) => {
-            return spawn_handle_message_query_entry(
-                sim2h_handle,
-                uri,
-                signer,
-                space_hash,
-                query_data,
-            );
+            spawn_handle_message_query_entry(sim2h_handle, uri, signer, space_hash, query_data);
         }
-        message @ _ => {
+        message => {
             error!("unhandled message type {:?}", message);
         }
     }
@@ -463,13 +457,7 @@ fn lib3h_to_client_response(
     let _g = span.enter();
     match data {
         Lib3hToClientResponse::HandleSendDirectMessageResult(dm_data) => {
-            return spawn_handle_message_send_dm_result(
-                sim2h_handle,
-                uri,
-                signer,
-                space_hash,
-                dm_data,
-            );
+            spawn_handle_message_send_dm_result(sim2h_handle, uri, signer, space_hash, dm_data);
         }
         Lib3hToClientResponse::HandleGetAuthoringEntryListResult(list_data) => {
             trace!("AUTHORING: list_data {:?}", list_data);
@@ -487,19 +475,12 @@ fn lib3h_to_client_response(
                 space_hash,
                 list_data,
             );
-            return;
         }
         Lib3hToClientResponse::HandleGetGossipingEntryListResult(list_data) => {
-            return spawn_handle_message_list_data(
-                sim2h_handle,
-                uri,
-                signer,
-                space_hash,
-                list_data,
-            );
+            spawn_handle_message_list_data(sim2h_handle, uri, signer, space_hash, list_data);
         }
         Lib3hToClientResponse::HandleFetchEntryResult(fetch_result) => {
-            return spawn_handle_message_fetch_entry_result(
+            spawn_handle_message_fetch_entry_result(
                 sim2h_handle,
                 uri,
                 signer,
@@ -508,7 +489,7 @@ fn lib3h_to_client_response(
             );
         }
         Lib3hToClientResponse::HandleQueryEntryResult(query_result) => {
-            return spawn_handle_message_query_entry_result(
+            spawn_handle_message_query_entry_result(
                 sim2h_handle,
                 uri,
                 signer,
@@ -516,9 +497,8 @@ fn lib3h_to_client_response(
                 query_result,
             );
         }
-        message @ _ => {
+        message => {
             error!("unhandled message type {:?}", message);
-            return;
         }
     }
 }

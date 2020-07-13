@@ -1,5 +1,5 @@
-static FAKE_PKCS12: &'static [u8] = include_bytes!("fake_key.p12");
-static FAKE_PASS: &'static str = "hello";
+static FAKE_PKCS12: &[u8] = include_bytes!("fake_key.p12");
+static FAKE_PASS: &str = "hello";
 
 use openssl::{
     asn1::Asn1Time,

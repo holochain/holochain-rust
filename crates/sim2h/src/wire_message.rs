@@ -136,7 +136,7 @@ impl WireMessage {
 }
 
 fn get_multi_type(list: Vec<&Lib3hToClient>) -> &str {
-    if list.len() > 0 {
+    if !list.is_empty() {
         match list.get(0).unwrap() {
             Lib3hToClient::HandleFetchEntry(_) => "[L>C]MultiSend::HandleFetchEntry",
             Lib3hToClient::HandleStoreEntryAspect(_) => "[L>C]MultiSend::HandleStoreEntryAspect",
@@ -148,7 +148,7 @@ fn get_multi_type(list: Vec<&Lib3hToClient>) -> &str {
 }
 
 fn get_multi_response_type(list: Vec<&Lib3hToClientResponse>) -> &str {
-    if list.len() > 0 {
+    if !list.is_empty() {
         match list.get(0).unwrap() {
             Lib3hToClientResponse::HandleFetchEntryResult(_) => {
                 "[L>C]MultiSendResponse::HandleFetchEntryResult"

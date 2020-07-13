@@ -137,7 +137,7 @@ pub fn run(rules: &LogRules, id: String, msg: String) {
     }
 }
 
-static ID_COLORS: &'static [&str] = &["green", "yellow", "blue", "magenta", "cyan"];
+static ID_COLORS: &[&str] = &["green", "yellow", "blue", "magenta", "cyan"];
 
 // TODO this is actually silly and we should allocate colors to IDs so they aren't likely to collide
 fn pick_color(text: &str) -> &str {

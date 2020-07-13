@@ -130,7 +130,7 @@ impl Read for MemStream {
                 }
             }
         }
-        if self.recv_buf.len() == 0 {
+        if self.recv_buf.is_empty() {
             if disconnected {
                 // nothing in our buffer, let the user know about the EOF
                 return Ok(0);
@@ -297,7 +297,7 @@ mod tests {
     fn it_should_connection_refused() {
         match MemStream::connect(&Url2::parse("badconnection:")) {
             Err(ref e) if e.kind() == std::io::ErrorKind::ConnectionRefused => (),
-            e @ _ => panic!("unexpected {:?}", e),
+            e => panic!("unexpected {:?}", e),
         }
     }
 
@@ -306,7 +306,7 @@ mod tests {
         let (listener, _c, _s) = setup();
         match MemListener::bind(listener.get_url()) {
             Err(ref e) if e.kind() == std::io::ErrorKind::AddrInUse => (),
-            e @ _ => panic!("unexpected {:?}", e),
+            e => panic!("unexpected {:?}", e),
         }
     }
 
@@ -333,17 +333,17 @@ mod tests {
 
         match listener.accept() {
             Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => (),
-            e @ _ => panic!("unexpected {:?}", e),
+            e => panic!("unexpected {:?}", e),
         }
 
         match client.read(&mut buf) {
             Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => (),
-            e @ _ => panic!("unexpected {:?}", e),
+            e => panic!("unexpected {:?}", e),
         }
 
         match server.read(&mut buf) {
             Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => (),
-            e @ _ => panic!("unexpected {:?}", e),
+            e => panic!("unexpected {:?}", e),
         }
     }
 

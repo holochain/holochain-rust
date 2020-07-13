@@ -764,7 +764,7 @@ impl NetWorker for Sim2hWorker {
                             }
                         }
                         WsFrame::Ping(_) => (),
-                        frame @ _ => {
+                        frame => {
                             trace!("unhandled websocket message type: {:?}", frame);
                         }
                     }

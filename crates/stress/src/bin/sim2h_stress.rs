@@ -485,7 +485,7 @@ impl Job {
                     self.priv_handle_msg_inner(logger, span_wrap)
                 }
             }
-            e @ _ => panic!("unexpected: {:?}", e),
+            e => panic!("unexpected: {:?}", e),
         }
     }
 
@@ -525,7 +525,7 @@ impl Job {
                 let res = res.unwrap();
                 logger.log("dm_result_in_ms", res.elapsed().as_millis() as f64);
             }
-            e @ _ => panic!("unexpected: {:?}", e),
+            e => panic!("unexpected: {:?}", e),
         }
     }
 }
@@ -541,7 +541,7 @@ impl StressJob for Job {
                     self.priv_handle_msg(logger, msg);
                 }
                 WsFrame::Ping(_) => (),
-                frame @ _ => {
+                frame => {
                     panic!("unexpected {:?}", frame);
                 }
             },

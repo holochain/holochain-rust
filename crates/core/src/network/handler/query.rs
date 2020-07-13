@@ -147,7 +147,7 @@ fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAn
             // if the entry is itself a header don't go looking for headers.
             match entry_with_meta.entry {
                 Entry::ChainHeader(_) => Some(EntryWithMetaAndHeader {
-                    entry_with_meta: entry_with_meta,
+                    entry_with_meta,
                     headers: Vec::new(),
                 }),
                 // otherwise get the headers for the entry
@@ -164,7 +164,7 @@ fn get_entry(context: &Arc<Context>, address: Address) -> Option<EntryWithMetaAn
                         Ok(headers) => {
                             if entry_with_meta.entry.entry_type().can_publish(&context) {
                                 Some(EntryWithMetaAndHeader {
-                                    entry_with_meta: entry_with_meta,
+                                    entry_with_meta,
                                     headers,
                                 })
                             } else {
@@ -264,8 +264,8 @@ pub fn handle_query_entry_result(query_result_data: QueryEntryResultData, contex
                 payload,
                 QueryKey::Links(GetLinksKey {
                     base_address: query_result_data.entry_address.clone().into(),
-                    link_type: link_type,
-                    tag: tag,
+                    link_type,
+                    tag,
                     id: query_result_data.request_id,
                 }),
             )))

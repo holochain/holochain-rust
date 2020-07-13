@@ -197,9 +197,9 @@ impl EncryptingKeyPair {
 
         //append nonce to cipher
         let cipher_with_nonce_slice = cipher_slice
-            .into_iter()
+            .iter()
             .cloned()
-            .chain(nonce_slice.into_iter().cloned())
+            .chain(nonce_slice.iter().cloned())
             .collect::<Vec<u8>>();
         encrypted_data.from_array(&cipher_with_nonce_slice);
 

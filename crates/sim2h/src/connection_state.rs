@@ -15,6 +15,7 @@ pub enum ConnectionState {
 
 #[newrelic_autotrace(SIM2H)]
 impl ConnectionState {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> ConnectionState {
         ConnectionState::Limbo(Box::new(Vec::new()))
     }

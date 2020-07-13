@@ -159,7 +159,7 @@ impl Job {
                 data: Lib3hToClient::HandleGetGossipingEntryList(_),
                 ..
             }) => {}
-            e @ _ => panic!("unexpected: {:?}", e),
+            e => panic!("unexpected: {:?}", e),
         }
     }
 
@@ -173,7 +173,7 @@ impl Job {
                     self.priv_handle_msg(msg);
                 }
                 WsFrame::Ping(_) => (),
-                frame @ _ => {
+                frame => {
                     panic!("unexpected {:?}", frame);
                 }
             },

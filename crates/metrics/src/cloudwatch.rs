@@ -29,7 +29,7 @@ impl TryFrom<ResultField> for Metric {
                 result_field.field
             )));
         }
-        let message = result_field.value.map(|m| Ok(m)).unwrap_or_else(|| {
+        let message = result_field.value.map(Ok).unwrap_or_else(|| {
             Err(ParseError(
                 "Expected message value but got none".to_string(),
             ))
@@ -49,6 +49,7 @@ impl TryFrom<&ResultField> for Metric {
 
 impl TryFrom<Vec<ResultField>> for Metric {
     type Error = ParseError;
+    #[allow(clippy::map_clone)]
     fn try_from(result_fields: Vec<ResultField>) -> Result<Self, Self::Error> {
         let mut stream_id: Option<String> = None;
         let mut timestamp: Option<DateTime<Utc>> = None;
@@ -239,9 +240,7 @@ impl CloudWatchLogger {
             }
         }
 
-        let log_records = query_result.results.unwrap_or_default();
-
-        log_records
+        query_result.results.unwrap_or_default()
     }
 
     /// Converts raw result fields to in iterator over metric samples
@@ -387,8 +386,8 @@ impl CloudWatchLogger {
 
         Self {
             client,
-            log_stream_name: log_stream_name,
-            log_group_name: log_group_name,
+            log_stream_name,
+            log_group_name,
             sequence_token: None,
             metrics_to_publish: vec![],
         }
@@ -515,7 +514,7 @@ pub fn assume_role(region: &Region, role_arn: &str) -> StsAssumeRoleSessionCrede
         region.clone(),
     );
 
-    let provider = StsAssumeRoleSessionCredentialsProvider::new(
+    StsAssumeRoleSessionCredentialsProvider::new(
         sts,
         role_arn.to_owned(),
         format!(
@@ -526,8 +525,7 @@ pub fn assume_role(region: &Region, role_arn: &str) -> StsAssumeRoleSessionCrede
         None,
         None,
         None,
-    );
-    provider
+    )
 }
 
 #[cfg(test)]

@@ -5,7 +5,7 @@ use url2::prelude::*;
 mod certificate;
 pub use certificate::*;
 
-const SCHEME: &'static str = "tls";
+const SCHEME: &str = "tls";
 
 /// internal helper make sure we're dealing with tls:// urls
 fn validate_url_scheme(url: &Url2) -> Result<()> {

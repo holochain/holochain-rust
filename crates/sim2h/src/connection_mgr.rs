@@ -101,10 +101,11 @@ fn process_control_cmds(cmd_info: &mut CmdInfo) -> Loop {
             }
         }
     }
-    return Loop::Continue;
+    Loop::Continue
 }
 
 // process a batch of incoming websocket frames
+#[allow(clippy::redundant_pattern_matching)]
 fn process_websocket_frames(cmd_info: &mut CmdInfo) -> Loop {
     let CmdInfo {
         ref mut did_work,
@@ -140,7 +141,7 @@ fn process_websocket_frames(cmd_info: &mut CmdInfo) -> Loop {
             }
         }
     }
-    return Loop::Continue;
+    Loop::Continue
 }
 
 #[allow(clippy::complexity)]
@@ -220,6 +221,7 @@ enum ConMgrResult {
 use ConMgrResult::*;
 
 /// internal loop for processing the connection mgr
+#[allow(clippy::redundant_pattern_matching)]
 async fn con_mgr_task(mut con_mgr: ConnectionMgr, weak_ref_dummy: Weak<()>) {
     'con_mgr_task: loop {
         if let None = weak_ref_dummy.upgrade() {
@@ -250,6 +252,7 @@ pub struct ConnectionMgr {
 impl ConnectionMgr {
     /// spawn a new connection manager task, returning a handle for controlling it
     /// and a receiving channel for any incoming data
+    #[allow(clippy::new_ret_no_self)]
     pub fn new() -> (ConnectionMgrHandle, ConnectionMgrEventRecv, ConnectionCount) {
         let (evt_p_send, evt_p_recv) = tokio::sync::mpsc::unbounded_channel();
         let (evt_c_send, evt_c_recv) = tokio::sync::mpsc::unbounded_channel();
@@ -290,6 +293,7 @@ impl ConnectionMgr {
         }
     }
 
+    #[allow(clippy::redundant_pattern_matching)]
     fn handle_send_data(&mut self, uri: Lib3hUri, frame: WsFrame) {
         debug!(?uri);
         let mut remove = false;
@@ -341,6 +345,7 @@ impl ConnectionMgr {
         None
     }
 
+    #[allow(clippy::redundant_pattern_matching)]
     fn process_child_cmds(
         &mut self,
         recv_count: &mut u64,
@@ -364,7 +369,7 @@ impl ConnectionMgr {
                                 return Some(EndTask);
                             }
                         }
-                        evt @ _ => {
+                        evt => {
                             // just forward
                             if let Err(e) = self.evt_send_to_parent.send(evt) {
                                 // channel broken, end task

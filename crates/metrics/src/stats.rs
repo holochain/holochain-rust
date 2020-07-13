@@ -170,7 +170,7 @@ impl StatsRecord {
         let mut stats_by_metric_name: HashMap<String, Box<dyn DescriptiveStats>> = HashMap::new();
         for record in reader.deserialize() {
             let stat: StatsRecord = record?;
-            let stat_name = stat.metric.clone().map(|x| Ok(x)).unwrap_or_else(|| {
+            let stat_name = stat.metric.clone().map(Ok).unwrap_or_else(|| {
                 Err(Box::new(io::Error::new(
                     io::ErrorKind::Other,
                     "No stat name in stat record",
@@ -429,12 +429,12 @@ impl Display for StatCheckResult {
         for (stat_name, stat_result) in self.iter() {
             match stat_result {
                 Ok(_checked_stat) => {
-                    write!(f, "Checking {} metric... ok!\n", stat_name)?;
+                    writeln!(f, "Checking {} metric... ok!", stat_name)?;
                 }
                 Err((_checked_stat, stat_failures)) => {
-                    write!(f, "Checking {} metric... failed!\n", stat_name)?;
+                    writeln!(f, "Checking {} metric... failed!", stat_name)?;
                     for stat_failure in stat_failures {
-                        write!(f, "\t{}\n", stat_failure)?;
+                        writeln!(f, "\t{}", stat_failure)?;
                     }
                 }
             }
@@ -509,13 +509,13 @@ impl<'a, D: DescriptiveStats + Clone + 'a> StatsByMetric<D> {
         let mut data = HashMap::new();
         for record in reader.deserialize() {
             let stat: StatsRecord = record?;
-            let metric_name = stat.metric.clone().map(|x| Ok(x)).unwrap_or_else(|| {
+            let metric_name = stat.metric.clone().map(Ok).unwrap_or_else(|| {
                 Err(Box::new(io::Error::new(
                     io::ErrorKind::Other,
                     "No metric name in stat record",
                 )))
             })?;
-            let stream_id = stat.stream_id.clone().map(|x| Ok(x)).unwrap_or_else(|| {
+            let stream_id = stat.stream_id.clone().map(Ok).unwrap_or_else(|| {
                 Err(Box::new(io::Error::new(
                     io::ErrorKind::Other,
                     "No stream id stat record",

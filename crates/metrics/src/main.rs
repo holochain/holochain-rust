@@ -223,6 +223,7 @@ fn print_log_metrics(log_file: PathBuf) {
 
 /// Prints to stdout human readonly pass/fail info
 /// Saves to `result_csv_file` gradient info
+#[allow(clippy::let_and_return)]
 fn print_stat_check(
     expected_csv_file: PathBuf, // StatsByMetric
     actual_csv_file: PathBuf,   // StatsByMetric

@@ -5,7 +5,7 @@ use url2::prelude::*;
 mod frame;
 pub use frame::*;
 
-const SCHEME: &'static str = "ws";
+const SCHEME: &str = "ws";
 
 /// internal helper, make sure we're dealing with wss urls
 fn validate_url_scheme(url: &Url2) -> Result<()> {

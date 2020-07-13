@@ -104,7 +104,7 @@ impl TryFrom<LogLine> for Metric {
         let cap = PARSE_METRIC_REGEX
             .captures_iter(stripped)
             .next()
-            .map(|cap| Ok(cap))
+            .map(Ok)
             .unwrap_or_else(|| {
                 Err(ParseError(format!(
                     "expected at least one capture group for a metric value: {:?}",
@@ -128,7 +128,7 @@ impl TryFrom<LogLine> for Metric {
         let value_str = cap[2].to_string();
         let metric_value: f64 = value_str.as_str().parse()?;
         let metric = Metric::new(&metric_name, None, timestamp, metric_value);
-        return Ok(metric);
+        Ok(metric)
     }
 }
 

@@ -438,7 +438,7 @@ mod tests {
                     StreamEvent::ConnectResult(_url, _id) => {
                         got_out = true;
                     }
-                    e @ _ => panic!("unexpected {:?}", e),
+                    e => panic!("unexpected {:?}", e),
                 }
             }
             if got_in.is_none() || !got_out {
@@ -463,7 +463,7 @@ mod tests {
                         );
                         got = true
                     }
-                    e @ _ => panic!("unexpected {:?}", e),
+                    e => panic!("unexpected {:?}", e),
                 }
             }
             if !got {

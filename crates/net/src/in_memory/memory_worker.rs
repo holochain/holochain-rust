@@ -174,10 +174,10 @@ mod tests {
         "QmYsFu7QGaVeUUac1E4BWST7BR38cYvzRaaTc3YS9WqsTu".into()
     }
 
-    static AGENT_ID_1: &'static str = "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk";
+    static AGENT_ID_1: &str = "QmY6MfiuhHnQ1kg7RwNZJNUQhwDxTFL45AAPnpJMNPEoxk";
     // TODO - AgentIds need to be HcSyada base32 format
     //        currently HashString try_into Vec<u8> is doing only base58
-    //static AGENT_ID_1: &'static str = "HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa";
+    //static AGENT_ID_1: &str = "HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa";
 
     #[test]
     #[cfg_attr(tarpaulin, skip)]

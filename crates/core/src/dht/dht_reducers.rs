@@ -198,23 +198,21 @@ pub fn reduce_queue_holding_workflow(
     if old_store.get_holding_map().contains(&entry_aspect) {
         error!("Tried to add pending validation to queue which is already held!");
         None
+    } else if old_store.has_same_queued_holding_worfkow(pending) {
+        warn!("Tried to add pending validation to queue which is already queued!");
+        None
+    } else if old_store.has_same_in_process_holding_worfkow(pending) {
+        warn!("Tried to add pending validation to queue which is already in process!");
+        None
     } else {
-        if old_store.has_same_queued_holding_worfkow(pending) {
-            warn!("Tried to add pending validation to queue which is already queued!");
-            None
-        } else if old_store.has_same_in_process_holding_worfkow(pending) {
-            warn!("Tried to add pending validation to queue which is already in process!");
-            None
-        } else {
-            let mut new_store = (*old_store).clone();
-            new_store
-                .queued_holding_workflows
-                .push_back(PendingValidationWithTimeout::new(
-                    pending.clone(),
-                    maybe_delay.map(ValidationTimeout::from),
-                ));
-            Some(new_store)
-        }
+        let mut new_store = (*old_store).clone();
+        new_store
+            .queued_holding_workflows
+            .push_back(PendingValidationWithTimeout::new(
+                pending.clone(),
+                maybe_delay.map(ValidationTimeout::from),
+            ));
+        Some(new_store)
     }
 }
 

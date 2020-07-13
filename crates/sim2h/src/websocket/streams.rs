@@ -336,6 +336,7 @@ impl<T: Read + Write + std::fmt::Debug> StreamManager<T> {
                 }
                 Ok(())
             }
+            #[allow(clippy::match_ref_pats)]
             WebsocketStreamState::ConnectingSrv(socket) => {
                 info.last_msg = std::time::Instant::now();
                 *did_work = true;

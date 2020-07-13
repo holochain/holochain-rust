@@ -39,6 +39,7 @@ pub struct MessageLogger {
 
 #[newrelic_autotrace(SIM2H)]
 impl MessageLogger {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         MessageLogger {
             buffer: LinkedList::new(),

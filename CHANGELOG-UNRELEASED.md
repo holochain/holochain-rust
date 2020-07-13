@@ -9,6 +9,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - restores changes from v0.0.48-alpha1 [2195](https://github.com/holochain/holochain-rust/pull/2195)
 - Adds experimental debugging repl [2196](https://github.com/holochain/holochain-rust/pull/2196)
 - Adds eavi to state dump [2196](https://github.com/holochain/holochain-rust/pull/2196)
+- Adds caching of validation packages for faster initial sync [2202](https://github.com/holochain/holochain-rust/pull/2202)
 
 ### Changed
 

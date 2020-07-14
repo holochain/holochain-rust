@@ -228,7 +228,7 @@ impl Keystore {
 
     /// This function expects the named secret in `secrets`, decrypts it and stores the decrypted
     /// representation in `cache`.
-    fn decrypt(&mut self, id_str: &String) -> HcResult<()> {
+    fn decrypt(&mut self, id_str: &str) -> HcResult<()> {
         let blob = self.secrets.get(id_str).ok_or("Secret not found")?;
 
         let mut default_passphrase =
@@ -246,13 +246,13 @@ impl Keystore {
         })?;
 
         self.cache
-            .insert(id_str.clone(), Arc::new(Mutex::new(secret)));
+            .insert(id_str.to_string(), Arc::new(Mutex::new(secret)));
         Ok(())
     }
 
     /// This expects an unencrypted named secret in `cache`, encrypts it and stores the
     /// encrypted representation in `secrets`.
-    fn encrypt(&mut self, id_str: &String) -> HcResult<()> {
+    fn encrypt(&mut self, id_str: &str) -> HcResult<()> {
         let secret = self.cache.get(id_str).ok_or("Secret not found")?;
         let mut passphrase = self.passphrase_manager.as_ref()?.get_passphrase()?;
         self.check_passphrase(&mut passphrase)?;
@@ -273,7 +273,7 @@ impl Keystore {
                 key.as_blob(&mut passphrase, "".to_string(), self.hash_config.clone())
             }
         }?;
-        self.secrets.insert(id_str.clone(), blob);
+        self.secrets.insert(id_str.to_string(), blob);
         Ok(())
     }
 
@@ -380,6 +380,7 @@ impl Keystore {
 
     /// adds a keypair into the keystore based on a seed already in the keystore
     /// returns the public key
+    #[allow(clippy::toplevel_ref_arg)]
     pub fn add_key_from_seed(
         &mut self,
         src_id_str: &str,
@@ -527,9 +528,9 @@ impl Keystore {
                 Ok(Signature::from(signature_str))
             }
             _ => {
-                return Err(HolochainError::ErrorGeneric(
+                Err(HolochainError::ErrorGeneric(
                     "source secret is not a signing key".to_string(),
-                ));
+                ))
             }
         }
     }

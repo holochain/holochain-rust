@@ -6,8 +6,8 @@ use holochain_persistence_api::cas::content::AddressableContent;
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 pub fn request_service(
     agent_id: &AgentId,
-    payload: &String,
-    service_uri: &String,
+    payload: &str,
+    service_uri: &str,
 ) -> Result<String, HolochainError> {
     let body_json = json!({"agent_id": agent_id.address(), "payload": payload});
     let client = reqwest::Client::new();

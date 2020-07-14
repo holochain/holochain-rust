@@ -23,6 +23,7 @@ use std::{
 /// how many milliseconds sleep all bugs under rugs
 const SWEET_SLEEP: u64 = 500;
 
+#[allow(clippy::ptr_arg)]
 pub trait ConductorAdmin {
     fn install_dna_from_file(
         &mut self,
@@ -81,6 +82,7 @@ impl ConductorAdmin for Conductor {
     /// and will be injected in the dna package prior to installation. Existing properties will also be kept and
     /// overriden by the passed properties in the case of collisions. This will change the dna hash!
     /// (Note injecting properties requires that copy=true)
+    #[allow(clippy::match_bool)]
     fn install_dna_from_file(
         &mut self,
         path: PathBuf,
@@ -291,6 +293,7 @@ impl ConductorAdmin for Conductor {
         Ok(())
     }
 
+    #[allow(clippy::block_in_if_condition_stmt)]
     fn remove_interface(&mut self, id: &String) -> Result<(), HolochainError> {
         let mut new_config = self.config.clone();
 
@@ -322,6 +325,7 @@ impl ConductorAdmin for Conductor {
         Ok(())
     }
 
+    #[allow(clippy::block_in_if_condition_stmt)]
     fn add_instance_to_interface(
         &mut self,
         interface_id: &String,
@@ -374,6 +378,7 @@ impl ConductorAdmin for Conductor {
         Ok(())
     }
 
+    #[allow(clippy::block_in_if_condition_stmt)]
     fn remove_instance_from_interface(
         &mut self,
         interface_id: &String,
@@ -482,7 +487,7 @@ impl ConductorAdmin for Conductor {
             id: id.clone(),
             name,
             public_address: public_address.clone(),
-            keystore_file: keystore_file,
+            keystore_file,
             holo_remote_key: holo_remote_key.map(|_| true),
             test_agent: None,
         };

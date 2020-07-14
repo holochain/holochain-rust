@@ -82,11 +82,11 @@ impl LogRules {
     pub fn run(&self, id: String, msg: String) -> Option<LogMessage> {
         let mut message = LogMessage {
             date: Local::now(),
-            id: id,
+            id,
             msg: msg.clone(),
             color: None,
         };
-        if self.rules.len() == 0 {
+        if self.rules.is_empty() {
             None
         } else {
             for r in &self.rules {
@@ -131,9 +131,8 @@ impl DebugLogger {
 
 // run checks a message against the rules and renders it if it matches
 pub fn run(rules: &LogRules, id: String, msg: String) {
-    match rules.run(id, msg) {
-        Some(message) => render(message),
-        None => (),
+    if let Some(message) = rules.run(id, msg) {
+        render(message);
     }
 }
 

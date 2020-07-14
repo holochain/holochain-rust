@@ -170,6 +170,7 @@ pub fn notify(msg: String) {
 
 #[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
+#[allow(clippy::ptr_arg)]
 impl Conductor {
     pub fn from_config(config: Configuration) -> Self {
         lib3h_sodium::check_init();
@@ -189,7 +190,7 @@ impl Conductor {
             .build()
             .expect("Fail to instanciate the logging factory.");
 
-        if config.ui_bundles.len() > 0 || config.ui_interfaces.len() > 0 {
+        if !config.ui_bundles.is_empty() || !config.ui_interfaces.is_empty() {
             println!();
             println!("{}", std::iter::repeat("!").take(20).collect::<String>());
             println!("DEPRECATION WARNING - Hosting a static UI via the conductor will not be supported in future releases");
@@ -720,7 +721,7 @@ impl Conductor {
     /// for use with all instances
     pub fn boot_from_config(&mut self) -> Result<(), String> {
         notify("conductor: boot_from_config".into());
-        let _ = self.config.check_consistency(&mut self.dna_loader)?;
+        self.config.check_consistency(&mut self.dna_loader)?;
 
         if self.p2p_config.is_none() {
             self.p2p_config = Some(self.initialize_p2p_config());

@@ -46,6 +46,7 @@ pub struct ContextBuilder {
 }
 
 impl ContextBuilder {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         ContextBuilder {
             instance_name: None,

@@ -8,6 +8,7 @@ use crate::{
 use holochain_core_types::error::HolochainError;
 use std::{path::PathBuf, sync::Arc};
 
+#[allow(clippy::ptr_arg)]
 pub trait ConductorUiAdmin {
     fn install_ui_bundle_from_file(
         &mut self,
@@ -28,6 +29,7 @@ pub trait ConductorUiAdmin {
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
+#[allow(clippy::ptr_arg, clippy::match_bool)]
 impl ConductorUiAdmin for Conductor {
     fn install_ui_bundle_from_file(
         &mut self,

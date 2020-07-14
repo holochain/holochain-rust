@@ -102,6 +102,7 @@ pub struct ConductorApiBuilder {
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
 impl ConductorApiBuilder {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         ConductorApiBuilder {
             instances: HashMap::new(),

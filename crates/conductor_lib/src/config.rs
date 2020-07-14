@@ -234,8 +234,9 @@ fn detect_dupes<'a, I: Iterator<Item = &'a String>>(
     }
 }
 
-#[autotrace]
+//#[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR_LIB)]
+#[allow(clippy::ptr_arg, clippy::toplevel_ref_arg)]
 impl Configuration {
     /// This function basically checks if self is a semantically valid configuration.
     /// This mainly means checking for consistency between config structs that reference others.
@@ -489,13 +490,13 @@ impl Configuration {
 
     /// Returns the agent configuration with the given ID if present
     pub fn agent_by_id(&self, id: &str) -> Option<AgentConfiguration> {
-        self.agents.iter().find(|ac| &ac.id == id).cloned()
+        self.agents.iter().find(|ac| ac.id == id).cloned()
     }
 
     /// Returns the agent configuration with the given ID if present
     pub fn update_agent_address_by_id(&mut self, id: &str, agent_id: &AgentId) {
         self.agents.iter_mut().for_each(|ac| {
-            if &ac.id == id {
+            if ac.id == id {
                 ac.public_address = agent_id.pub_sign_key.clone()
             }
         })
@@ -503,30 +504,30 @@ impl Configuration {
 
     /// Returns the DNA configuration with the given ID if present
     pub fn dna_by_id(&self, id: &str) -> Option<DnaConfiguration> {
-        self.dnas.iter().find(|dc| &dc.id == id).cloned()
+        self.dnas.iter().find(|dc| dc.id == id).cloned()
     }
 
     /// Returns the DNA configuration with the given ID if present
     pub fn update_dna_hash_by_id(&mut self, id: &str, hash: String) -> bool {
         self.dnas
             .iter_mut()
-            .find(|dc| &dc.id == id)
+            .find(|dc| dc.id == id)
             .map(|dna| dna.hash = hash)
             .is_some()
     }
 
     /// Returns the instance configuration with the given ID if present
     pub fn instance_by_id(&self, id: &str) -> Option<InstanceConfiguration> {
-        self.instances.iter().find(|ic| &ic.id == id).cloned()
+        self.instances.iter().find(|ic| ic.id == id).cloned()
     }
 
     /// Returns the interface configuration with the given ID if present
     pub fn interface_by_id(&self, id: &str) -> Option<InterfaceConfiguration> {
-        self.interfaces.iter().find(|ic| &ic.id == id).cloned()
+        self.interfaces.iter().find(|ic| ic.id == id).cloned()
     }
 
     pub fn ui_bundle_by_id(&self, id: &str) -> Option<UiBundleConfiguration> {
-        self.ui_bundles.iter().find(|ic| &ic.id == id).cloned()
+        self.ui_bundles.iter().find(|ic| ic.id == id).cloned()
     }
 
     /// Returns all defined instance IDs

@@ -20,6 +20,7 @@ use std::{convert::TryFrom, sync::Arc};
 
 #[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[allow(clippy::try_err)]
 pub fn get_validation_package_definition(
     entry: &Entry,
     context: Arc<Context>,

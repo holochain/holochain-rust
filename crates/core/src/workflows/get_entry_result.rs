@@ -47,7 +47,7 @@ pub async fn get_entry_with_meta_workflow<'a>(
         nucleus::actions::get_entry::get_entry_with_meta(context, address.clone())?;
     // 2. No result, so try on the network
     let method = QueryMethod::Entry(address.clone());
-    if let None = maybe_entry_with_meta {
+    if maybe_entry_with_meta.is_none() {
         let response =
             network::actions::query::query(context.clone(), method.clone(), timeout.clone())
                 .await?;

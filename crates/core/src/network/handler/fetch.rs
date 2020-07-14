@@ -40,7 +40,7 @@ pub fn fetch_aspects_for_entry(address: &EntryHash, context: Arc<Context>) -> Ha
                 get_meta_aspects_from_dht_eav(&address, context.clone()),
             ] {
                 match result {
-                    Ok(meta_aspects) => meta_aspects.into_iter().for_each(|a| {
+                    Ok(meta_aspects) => meta_aspects.iter().for_each(|a| {
                         aspects.insert(a.clone());
                     }),
                     Err(get_meta_error) => {

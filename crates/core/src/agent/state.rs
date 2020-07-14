@@ -183,6 +183,7 @@ impl From<AgentActionResponse> for Response {
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[allow(clippy::ptr_arg)]
 pub fn create_new_chain_header(
     entry: &Entry,
     agent_state: &AgentState,

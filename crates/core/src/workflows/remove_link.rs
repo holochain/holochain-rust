@@ -16,6 +16,7 @@ use snowflake::ProcessUniqueId;
 use std::sync::Arc;
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[allow(clippy::try_err)]
 pub async fn remove_link_workflow(
     pending_id: &ProcessUniqueId,
     entry_with_header: &EntryWithHeader,

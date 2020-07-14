@@ -159,7 +159,7 @@ pub fn send_message(
     };
 
     let msg = Lib3hClientProtocol::SendDirectMessage(data);
-    let _ = send(network_state, msg)?;
+    send(network_state, msg)?;
 
     network_state.direct_message_connections.insert(id, message);
 

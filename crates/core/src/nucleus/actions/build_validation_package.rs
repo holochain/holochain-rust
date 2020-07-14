@@ -18,6 +18,7 @@ use holochain_core_types::{
 use std::{sync::Arc, vec::Vec};
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[allow(clippy::ptr_arg)]
 pub fn build_validation_package<'a>(
     entry: &'a Entry,
     context: Arc<Context>,

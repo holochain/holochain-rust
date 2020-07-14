@@ -19,6 +19,7 @@ use lib3h_protocol::{
 /// Send back to network a HandleFetchEntryResult, no matter what.
 /// Will return an empty content field if it actually doesn't have the data.
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[allow(clippy::ptr_arg)]
 fn reduce_respond_fetch_data_inner(
     network_state: &mut NetworkState,
     fetch_data: &FetchEntryData,

@@ -79,6 +79,7 @@ impl PartialEq for NetworkState {
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[allow(clippy::new_without_default)]
 impl NetworkState {
     pub fn new() -> Self {
         NetworkState {
@@ -169,12 +170,10 @@ impl NetworkState {
                 //                };
             }
             ValidationPackageDefinition::ChainFull => {
-                if cache_entry.headers.len() == 0 {
+                if cache_entry.headers.is_empty() {
                     return None;
                 };
-                if cache_entry.entries.is_none() {
-                    return None;
-                };
+                cache_entry.entries.as_ref()?;
             }
         }
 

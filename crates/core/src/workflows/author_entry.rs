@@ -23,6 +23,7 @@ use crate::wasm_engine::callback::links_utils::get_link_entries;
 use std::{sync::Arc, vec::Vec};
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
+#[allow(clippy::ptr_arg)]
 pub async fn author_entry<'a>(
     entry: &'a Entry,
     maybe_link_update_delete: Option<Address>,

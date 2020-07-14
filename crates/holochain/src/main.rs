@@ -108,7 +108,7 @@ const MAGIC_STRING: &str = "*** Done. All interfaces started.";
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR)]
 fn main() {
     assert!(*SET_THREAD_PANIC_FATAL2);
-    let _ = spawn_locksmith_guard_watcher();
+    spawn_locksmith_guard_watcher();
 
     lib3h_sodium::check_init();
     let opt = Opt::from_args();
@@ -196,14 +196,14 @@ fn main() {
                                     writeln!(io, "mismatch for {}:", entry_hash)?;
                                     let actually_held_aspects : HashSet<(AspectHash, EntryAspect)> = aspects.into_iter().map(|aspect| (AspectHash::from(aspect.address()), aspect)).collect();
                                     let missing_in_held_list : HashSet<(AspectHash, EntryAspect)> = actually_held_aspects.clone().into_iter().filter(|(hash, _aspect)| !held_list_aspect_map.contains(hash)).collect();
-                                    if missing_in_held_list.len() > 0 {
+                                    if !missing_in_held_list.is_empty() {
                                         writeln!(io, "held list is missing:\n {:?}\n", missing_in_held_list)?;
                                     }
 
                                     let missing_in_cas : Vec<AspectHash> = held_list_aspect_map.clone().into_iter().filter(|hash| {
                                         !actually_held_aspect_map.contains(hash)
                                     }).collect();
-                                    if missing_in_cas.len() > 0 {
+                                    if !missing_in_cas.is_empty() {
                                         writeln!(io, "cas is missing:\n {:?}\n\n", missing_in_cas)?;
                                     }
                                     writeln!(io, "-------")?;
@@ -288,6 +288,7 @@ fn main() {
                 }
             }
 
+            #[allow(clippy::single_match)]
             match SignalConfiguration::default() {
                 #[cfg(unix)]
                 SignalConfiguration::Unix => {
@@ -331,7 +332,7 @@ fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
     let config = load_config_file(&String::from(path))?;
     config
         .check_consistency(&mut Arc::new(Box::new(Conductor::load_dna)))
-        .map_err(|string| HolochainError::ConfigError(string))?;
+        .map_err(HolochainError::ConfigError)?;
     mount_conductor_from_config(config);
     let mut conductor_guard = CONDUCTOR.lock().unwrap();
     let conductor = conductor_guard.as_mut().expect("Conductor must be mounted");
@@ -345,14 +346,14 @@ fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
             conductor.check_load_key_for_agent(&agent_config.id)
         })
         .collect::<Result<Vec<()>, String>>()
-        .map_err(|error| HolochainError::ConfigError(error))?;
+        .map_err(HolochainError::ConfigError)?;
     conductor.boot_from_config()?;
     Ok(())
 }
 
 #[cfg_attr(tarpaulin, skip)]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR)]
-fn load_config_file(path: &String) -> Result<Configuration, HolochainError> {
+fn load_config_file(path: &str) -> Result<Configuration, HolochainError> {
     let mut f = File::open(path)?;
     let mut contents = String::new();
     f.read_to_string(&mut contents)?;

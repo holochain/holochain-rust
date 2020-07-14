@@ -9,6 +9,7 @@ use std::{
 
 pub const TEST_DIR_NAME: &str = "test";
 
+#[allow(clippy::match_bool)]
 pub fn test(
     path: &PathBuf,
     tests_folder: &str,

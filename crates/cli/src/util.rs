@@ -121,13 +121,10 @@ pub fn check_for_cargo(use_case: &str, extra_help: Option<Vec<&str>>) -> Default
                     println!("It is important that you use the correct version of `cargo`.");
                     println!("We recommend you work inside a nix-shell or use nix-env to install `hc`.");
                     println!("For more information see https://docs.holochain.love");
-                    match extra_help {
-                        Some(messages) => {
-                            for message in messages {
-                                println!("{}", message)
-                            }
-                        },
-                        None => {}
+                    if let Some(messages) = extra_help {
+                        for message in messages {
+                            println!("{}", message)
+                        }
                     };
                     println!("Having taken those steps, retry this command.");
                     // early exit with Ok, but false (meaning don't continue) since this is the graceful exit

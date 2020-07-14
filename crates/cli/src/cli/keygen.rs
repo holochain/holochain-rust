@@ -58,12 +58,12 @@ when unlocking the keybundle to use within a Holochain conductor."
         println!("{}", pub_key);
         println!("{}", path_str);
     } else {
-        println!("");
+        println!();
         println!("Succesfully created new agent keystore.");
-        println!("");
+        println!();
         println!("Public address: {}", pub_key);
         println!("Keystore written to: {}", path_str);
-        println!("");
+        println!();
         println!("You can set this file in a conductor config as keystore_file for an agent.");
     }
     Ok(())

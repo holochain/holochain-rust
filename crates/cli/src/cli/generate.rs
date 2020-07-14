@@ -18,7 +18,7 @@ const RUST_PROC_TEMPLATE_TARBALL_URL: &str =
 const HOLOCHAIN_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
-pub fn generate(zome_path: &PathBuf, scaffold: &String) -> DefaultResult<()> {
+pub fn generate(zome_path: &PathBuf, scaffold: &str) -> DefaultResult<()> {
     let zome_name = zome_path
         .components()
         .last()
@@ -28,7 +28,7 @@ pub fn generate(zome_path: &PathBuf, scaffold: &String) -> DefaultResult<()> {
         .ok_or_else(|| format_err!("Zome path contains invalid characters"))?;
 
     // match against all supported templates
-    let url = match scaffold.as_ref() {
+    let url = match scaffold {
         "rust" => RUST_TEMPLATE_TARBALL_URL,
         "rust-proc" => RUST_PROC_TEMPLATE_TARBALL_URL,
         _ => scaffold, // if not a known type assume that a repo url was passed

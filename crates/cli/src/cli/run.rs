@@ -46,7 +46,7 @@ pub fn run(
     conductor.start_all_instances()?;
     conductor
         .start_all_static_servers()
-        .map_err(|e| failure::err_msg(e))?;
+        .map_err(failure::err_msg)?;
 
     println!(
         "Holochain development conductor started. Running {} server on port {}",
@@ -82,6 +82,7 @@ pub fn get_interface_type_string(given_type: String) -> String {
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
+#[allow(clippy::ptr_arg)]
 pub fn hc_run_configuration(
     dna_path: &PathBuf,
     port: u16,
@@ -119,7 +120,7 @@ pub fn hc_run_bundle_configuration(
             networking_configuration(networked),
             logger_configuration(logging),
         )
-        .map_err(|e| failure::err_msg(e))
+        .map_err(failure::err_msg)
 }
 
 // AGENT
@@ -204,12 +205,12 @@ const INTERFACE_CONFIG_ID: &str = "websocket-interface";
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
 fn interface_configuration(
-    interface_type: &String,
+    interface_type: &str,
     port: u16,
 ) -> DefaultResult<InterfaceConfiguration> {
-    let driver = if interface_type == &String::from("websocket") {
+    let driver = if interface_type == "websocket" {
         InterfaceDriver::Websocket { port }
-    } else if interface_type == &String::from("http") {
+    } else if interface_type == "http" {
         InterfaceDriver::Http { port }
     } else {
         return Err(format_err!("unknown interface type: {}", interface_type));

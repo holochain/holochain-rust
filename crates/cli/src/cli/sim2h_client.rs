@@ -18,6 +18,7 @@ use url2::prelude::*;
 /// NOTE: general output should be on stderr, because at least one flag (-f)
 /// needs to print valid JSON to stdout
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
+#[allow(clippy::try_err)]
 pub fn sim2h_client(
     url_string: String,
     message_string: String,
@@ -186,6 +187,7 @@ impl Job {
 }
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CLI)]
+#[allow(clippy::try_err)]
 fn await_in_stream_connect(connect_uri: &Url2) -> Result<InStreamWss<InStreamTcp>, String> {
     let timeout = std::time::Instant::now()
         .checked_add(std::time::Duration::from_millis(60000))

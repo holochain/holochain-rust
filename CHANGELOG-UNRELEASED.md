@@ -14,5 +14,6 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
-### Security
+- large number of clippy updates because of jumping to newer rust version
 
+### Security

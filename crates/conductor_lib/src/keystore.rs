@@ -527,11 +527,9 @@ impl Keystore {
                 let signature_str = base64::encode(&**buf);
                 Ok(Signature::from(signature_str))
             }
-            _ => {
-                Err(HolochainError::ErrorGeneric(
-                    "source secret is not a signing key".to_string(),
-                ))
-            }
+            _ => Err(HolochainError::ErrorGeneric(
+                "source secret is not a signing key".to_string(),
+            )),
         }
     }
 }

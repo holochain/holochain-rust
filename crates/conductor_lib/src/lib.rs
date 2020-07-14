@@ -108,41 +108,131 @@ extern crate nickel;
 #[macro_use]
 extern crate holochain_common;
 
-#[allow(clippy::suspicious_else_formatting, clippy::redundant_closure, clippy::let_and_return, clippy::collapsible_if)]
+#[allow(
+    clippy::suspicious_else_formatting,
+    clippy::redundant_closure,
+    clippy::let_and_return,
+    clippy::collapsible_if
+)]
 pub mod conductor;
-#[allow(clippy::suspicious_else_formatting, clippy::redundant_closure, clippy::let_and_return, clippy::collapsible_if)]
+#[allow(
+    clippy::suspicious_else_formatting,
+    clippy::redundant_closure,
+    clippy::let_and_return,
+    clippy::collapsible_if
+)]
 pub mod config;
-#[allow(clippy::suspicious_else_formatting, clippy::redundant_closure, clippy::let_and_return, clippy::collapsible_if)]
+#[allow(
+    clippy::suspicious_else_formatting,
+    clippy::redundant_closure,
+    clippy::let_and_return,
+    clippy::collapsible_if
+)]
 pub mod context_builder;
-#[allow(clippy::suspicious_else_formatting, clippy::redundant_closure, clippy::let_and_return, clippy::collapsible_if)]
+#[allow(
+    clippy::suspicious_else_formatting,
+    clippy::redundant_closure,
+    clippy::let_and_return,
+    clippy::collapsible_if
+)]
 pub mod dna_location;
-#[allow(clippy::suspicious_else_formatting, clippy::redundant_closure, clippy::let_and_return, clippy::collapsible_if)]
+#[allow(
+    clippy::suspicious_else_formatting,
+    clippy::redundant_closure,
+    clippy::let_and_return,
+    clippy::collapsible_if
+)]
 pub mod dpki_instance;
-#[allow(clippy::suspicious_else_formatting, clippy::redundant_closure, clippy::let_and_return, clippy::collapsible_if)]
+#[allow(
+    clippy::suspicious_else_formatting,
+    clippy::redundant_closure,
+    clippy::let_and_return,
+    clippy::collapsible_if
+)]
 pub mod error;
-#[allow(clippy::suspicious_else_formatting, clippy::redundant_closure, clippy::let_and_return, clippy::collapsible_if)]
+#[allow(
+    clippy::suspicious_else_formatting,
+    clippy::redundant_closure,
+    clippy::let_and_return,
+    clippy::collapsible_if
+)]
 pub mod happ_bundle;
-#[allow(clippy::suspicious_else_formatting, clippy::redundant_closure, clippy::let_and_return, clippy::collapsible_if)]
+#[allow(
+    clippy::suspicious_else_formatting,
+    clippy::redundant_closure,
+    clippy::let_and_return,
+    clippy::collapsible_if
+)]
 pub mod holo_signing_service;
-#[allow(clippy::suspicious_else_formatting, clippy::redundant_closure, clippy::let_and_return, clippy::collapsible_if)]
+#[allow(
+    clippy::suspicious_else_formatting,
+    clippy::redundant_closure,
+    clippy::let_and_return,
+    clippy::collapsible_if
+)]
 pub mod holochain;
-#[allow(clippy::suspicious_else_formatting, clippy::redundant_closure, clippy::let_and_return, clippy::collapsible_if)]
+#[allow(
+    clippy::suspicious_else_formatting,
+    clippy::redundant_closure,
+    clippy::let_and_return,
+    clippy::collapsible_if
+)]
 pub mod interface;
-#[allow(clippy::suspicious_else_formatting, clippy::redundant_closure, clippy::let_and_return, clippy::collapsible_if)]
+#[allow(
+    clippy::suspicious_else_formatting,
+    clippy::redundant_closure,
+    clippy::let_and_return,
+    clippy::collapsible_if
+)]
 pub mod interface_impls;
-#[allow(clippy::suspicious_else_formatting, clippy::redundant_closure, clippy::let_and_return, clippy::collapsible_if)]
+#[allow(
+    clippy::suspicious_else_formatting,
+    clippy::redundant_closure,
+    clippy::let_and_return,
+    clippy::collapsible_if
+)]
 pub mod key_loaders;
-#[allow(clippy::suspicious_else_formatting, clippy::redundant_closure, clippy::let_and_return, clippy::collapsible_if)]
+#[allow(
+    clippy::suspicious_else_formatting,
+    clippy::redundant_closure,
+    clippy::let_and_return,
+    clippy::collapsible_if
+)]
 pub mod keystore;
-#[allow(clippy::suspicious_else_formatting, clippy::redundant_closure, clippy::let_and_return, clippy::collapsible_if)]
+#[allow(
+    clippy::suspicious_else_formatting,
+    clippy::redundant_closure,
+    clippy::let_and_return,
+    clippy::collapsible_if
+)]
 pub mod logger;
-#[allow(clippy::suspicious_else_formatting, clippy::redundant_closure, clippy::let_and_return, clippy::collapsible_if)]
+#[allow(
+    clippy::suspicious_else_formatting,
+    clippy::redundant_closure,
+    clippy::let_and_return,
+    clippy::collapsible_if
+)]
 pub mod port_utils;
-#[allow(clippy::suspicious_else_formatting, clippy::redundant_closure, clippy::let_and_return, clippy::collapsible_if)]
+#[allow(
+    clippy::suspicious_else_formatting,
+    clippy::redundant_closure,
+    clippy::let_and_return,
+    clippy::collapsible_if
+)]
 pub mod signal_wrapper;
-#[allow(clippy::suspicious_else_formatting, clippy::redundant_closure, clippy::let_and_return, clippy::collapsible_if)]
+#[allow(
+    clippy::suspicious_else_formatting,
+    clippy::redundant_closure,
+    clippy::let_and_return,
+    clippy::collapsible_if
+)]
 pub mod static_file_server;
-#[allow(clippy::suspicious_else_formatting, clippy::redundant_closure, clippy::let_and_return, clippy::collapsible_if)]
+#[allow(
+    clippy::suspicious_else_formatting,
+    clippy::redundant_closure,
+    clippy::let_and_return,
+    clippy::collapsible_if
+)]
 pub mod static_server_impls;
 
 pub use crate::holochain::Holochain;

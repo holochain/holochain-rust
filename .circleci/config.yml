@@ -155,7 +155,7 @@ jobs:
       name: Deploy mac binaries
       no_output_timeout: 30m
       command: |
-       curl https://nixos.org/nix/install | sh
+       curl -L https://nixos.org/nix/install | sh
        . /Users/distiller/.nix-profile/etc/profile.d/nix.sh
        nix-shell --run hc-release-github-binaries
 

@@ -30,6 +30,7 @@ newrelic = { version = "=0.2.2", optional = true }
 serde_json = "=1.0.47"
 shrust = "0.0.7"
 im = { version = "=14.0.0", features = ["serde"] }
+protobuf = "=2.14.0"
 
 [target.'cfg(unix)'.dependencies]
 signal-hook = "=0.1.10"

@@ -52,6 +52,7 @@ holochain_logging = "=0.0.7"
 log = "0.4.8"
 newrelic = { version = "=0.2.2", optional = true }
 im = { version = "=14.0.0", features = ["serde"] }
+protobuf = "=2.14.0"
 
 [features]
 default = []

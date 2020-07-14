@@ -29,6 +29,7 @@ env_logger = "0.7.0"
 structopt-derive = "=0.2.18"
 structopt = "=0.2.18"
 tracing-log = "=0.1.1"
+protobuf = "=2.14.0"
 
 [features]
 default = []

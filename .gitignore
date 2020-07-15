@@ -44,3 +44,6 @@ Cargo.lock
 !/Cargo.lock
 
 stress-test/passthrough-dna.dna.json
+FlameGraph
+*.svg
+perf.data*

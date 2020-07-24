@@ -289,15 +289,19 @@ impl Sim2hWorker {
             message, buffered_message.hash
         );
         let payload: String = message.clone().into();
-        let signature = self
+        let maybe_signature = self
             .conductor_api
-            .execute(payload.clone(), CryptoMethod::Sign)
-            .unwrap_or_else(|e| {
-                panic!(
+            .execute(payload.clone(), CryptoMethod::Sign);
+        let signature = match maybe_signature {
+            Err(e) => {
+                error!(
                     "Couldn't sign wire message in sim2h worker: payload={}, error={:?}",
                     payload, e
-                )
-            });
+                );
+                return false;
+            }
+            Ok(sig) => sig,
+        };
         let payload: Opaque = payload.into();
         let signed_wire_message = SignedWireMessage::new(
             payload.clone(),

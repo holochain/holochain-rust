@@ -1352,14 +1352,23 @@ impl Sim2h {
             let _m = sim2h_handle.metric_timer("sim2h-handle_payload");
             match (|| -> Sim2hResult<(AgentId, WireMessage, WireMessage)> {
                 let signed_message = SignedWireMessage::try_from(payload.clone())?;
-                let result = signed_message.verify().unwrap();
+                let wire_message = WireMessage::try_from(signed_message.payload.clone())?;
+
+                // conductor only signs the JoinSpace message because afterwards the integrity of the
+                // connection will be guaranteed by the tls and encryption of the wss layer
+                let result = match wire_message {
+                    WireMessage::ClientToLib3h(ht::EncodedSpanWrap {
+                        data: ClientToLib3h::JoinSpace(_),
+                        ..
+                    }) => signed_message.verify().unwrap(),
+                    _ => true,
+                };
                 if !result {
                     return Err(VERIFY_FAILED_ERR_STR.into());
                 }
                 let agent_id: AgentId = signed_message.provenance.source().into();
                 let receipt = gen_receipt(&signed_message.payload);
 
-                let wire_message = WireMessage::try_from(signed_message.payload)?;
                 Ok((agent_id, wire_message, receipt))
             })() {
                 Ok((source, wire_message, receipt)) => {

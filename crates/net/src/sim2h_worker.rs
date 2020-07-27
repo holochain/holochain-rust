@@ -289,18 +289,29 @@ impl Sim2hWorker {
             message, buffered_message.hash
         );
         let payload: String = message.clone().into();
-        let maybe_signature = self
-            .conductor_api
-            .execute(payload.clone(), CryptoMethod::Sign);
-        let signature = match maybe_signature {
-            Err(e) => {
-                error!(
-                    "Couldn't sign wire message in sim2h worker: payload={}, error={:?}",
-                    payload, e
-                );
-                return false;
+
+        // we only sign the JoinSpace message because afterwards the integrity of the
+        // connection will be guaranteed by the tls and encryption of the wss layer
+        let signature = match message {
+            WireMessage::ClientToLib3h(ht::EncodedSpanWrap {
+                data: ClientToLib3h::JoinSpace(_),
+                ..
+            }) => {
+                let maybe_signature = self
+                    .conductor_api
+                    .execute(payload.clone(), CryptoMethod::Sign);
+                match maybe_signature {
+                    Err(e) => {
+                        error!(
+                            "Couldn't sign wire message in sim2h worker: payload={}, error={:?}",
+                            payload, e
+                        );
+                        return false;
+                    }
+                    Ok(sig) => sig,
+                }
             }
-            Ok(sig) => sig,
+            _ => "".to_string(), // null signature
         };
         let payload: Opaque = payload.into();
         let signed_wire_message = SignedWireMessage::new(

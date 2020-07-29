@@ -185,12 +185,15 @@ fn make_call_sig<J: Into<JsonString>>(
     parameters: J,
 ) -> Signature {
     let encode_call_data = encode_call_data_for_signing(function, parameters);
-    Signature::from(
-        context
-            .conductor_api
-            .execute(encode_call_data, CryptoMethod::Sign)
-            .expect("signing should work"),
-    )
+    let maybe_sig = context
+        .conductor_api
+        .execute(encode_call_data, CryptoMethod::Sign);
+    if maybe_sig.is_err() {
+        // signing service could be down so in that case just return a bad signature
+        Signature::from("badsig")
+    } else {
+        Signature::from(maybe_sig.unwrap())
+    }
 }
 
 // temporary function to verify a mock signature of for a zome call cap request

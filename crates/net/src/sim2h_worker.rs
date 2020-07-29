@@ -311,7 +311,7 @@ impl Sim2hWorker {
                     Ok(sig) => sig,
                 }
             }
-            _ => "".to_string(), // null signature
+            _ => "null".to_string(), // null signature
         };
         let payload: Opaque = payload.into();
         let signed_wire_message = SignedWireMessage::new(

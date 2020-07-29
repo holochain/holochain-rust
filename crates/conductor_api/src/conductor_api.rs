@@ -39,9 +39,16 @@ pub fn send_json_rpc(
         JsonRpc::Success(_) => Ok(String::from(
             response.get_result()?[request_reponse.1].as_str()?,
         )),
-        JsonRpc::Error(_) => Err(HolochainError::ErrorGeneric(serde_json::to_string(
-            &response.get_error()?,
-        )?)),
+        JsonRpc::Error(_) => {
+            let err = response.get_error().unwrap(); // unwrap ok because we know its an err
+            if err.code == 1 {
+                Err(HolochainError::CryptoServiceError(err.message.to_string()))
+            } else {
+                Err(HolochainError::ErrorGeneric(serde_json::to_string(
+                    &response.get_error()?,
+                )?))
+            }
+        }
         _ => Err(HolochainError::ErrorGeneric(format!(
             "agent/{} failed",
             request_reponse.0

@@ -1082,8 +1082,13 @@ impl ConductorApiBuilder {
 
             let signature = request_service(&agent_id, &payload, &signing_service_uri).map_err(
                 |holochain_error| {
-                    println!("Error in signing hack: {:?}", holochain_error);
-                    jsonrpc_core::Error::internal_error()
+                    let err = format!("Signing service error: {}", holochain_error);
+                    error!("{}", err);
+                    jsonrpc_core::Error {
+                        code: jsonrpc_core::types::error::ErrorCode::ServerError(1),
+                        message: err,
+                        data: None,
+                    }
                 },
             )?;
 
@@ -1104,8 +1109,13 @@ impl ConductorApiBuilder {
 
             let encrypted_message = request_service(&agent_id, &payload, &encryption_service_uri)
                 .map_err(|holochain_error| {
-                println!("Error in encryption hack: {:?}", holochain_error);
-                jsonrpc_core::Error::internal_error()
+                let err = format!("Encryption service error: {}", holochain_error);
+                error!("{}", err);
+                jsonrpc_core::Error {
+                    code: jsonrpc_core::types::error::ErrorCode::ServerError(1),
+                    message: err,
+                    data: None,
+                }
             })?;
 
             Ok(json!({ "message": encrypted_message }))
@@ -1125,8 +1135,13 @@ impl ConductorApiBuilder {
 
             let decrypted_message = request_service(&agent_id, &payload, &decryption_service_uri)
                 .map_err(|holochain_error| {
-                println!("Error in decryption hack: {:?}", holochain_error);
-                jsonrpc_core::Error::internal_error()
+                let err = format!("Decryption service error: {}", holochain_error);
+                error!("{}", err);
+                jsonrpc_core::Error {
+                    code: jsonrpc_core::types::error::ErrorCode::ServerError(1),
+                    message: err,
+                    data: None,
+                }
             })?;
 
             Ok(json!({ "message": decrypted_message }))

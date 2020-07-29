@@ -98,6 +98,7 @@ impl fmt::Display for CoreError {
 pub enum HolochainError {
     ErrorGeneric(String),
     CryptoError(CryptoError),
+    CryptoServiceError(String),
     NotImplemented(String),
     LoggingError,
     DnaMissing,
@@ -139,6 +140,7 @@ impl fmt::Display for HolochainError {
         match self {
             ErrorGeneric(err_msg) => write!(f, "{}", err_msg),
             CryptoError(crypto_error) => write!(f, "{}", crypto_error),
+            CryptoServiceError(service_error) => write!(f, "{}", service_error),
             NotImplemented(description) => write!(f, "not implemented: {}", description),
             LoggingError => write!(f, "logging failed"),
             DnaMissing => write!(f, "DNA is missing"),

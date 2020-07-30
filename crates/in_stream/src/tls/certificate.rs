@@ -13,7 +13,7 @@ impl TlsCertificate {
     /// generate a self-signed dev certificate
     pub fn generate_dev() -> Self {
         let id = format!("a{}a.a{}a", nanoid::simple(), nanoid::simple());
-        let mut params = rcgen::CertificateParams::new(vec![id.into()]);
+        let mut params = rcgen::CertificateParams::new(vec![id]);
         // would be nice to ed25519 - but seems incompatible with this openssl
         //params.alg = &rcgen::PKCS_ED25519;
         params.alg = &rcgen::PKCS_ECDSA_P256_SHA256;

@@ -187,8 +187,8 @@ impl Opt {
     }
 }
 
-//fn await_in_stream_connect(connect_uri: &Lib3hUri) -> InStreamWss<InStreamTls<InStreamTcp>> {
-fn await_in_stream_connect(connect_uri: &Lib3hUri) -> InStreamWss<InStreamTcp> {
+fn await_in_stream_connect(connect_uri: &Lib3hUri) -> InStreamWss<InStreamTls<InStreamTcp>> {
+    //fn await_in_stream_connect(connect_uri: &Lib3hUri) -> InStreamWss<InStreamTcp> {
     let timeout = std::time::Instant::now()
         .checked_add(std::time::Duration::from_millis(10000))
         .unwrap();
@@ -197,8 +197,8 @@ fn await_in_stream_connect(connect_uri: &Lib3hUri) -> InStreamWss<InStreamTcp> {
 
     // keep trying to connect
     loop {
-        //let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
-        let config = WssConnectConfig::new(TcpConnectConfig::default());
+        let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
+        //let config = WssConnectConfig::new(TcpConnectConfig::default());
         let mut connection = InStreamWss::connect(&(**connect_uri).clone().into(), config).unwrap();
         connection.write(WsFrame::Ping(b"".to_vec())).unwrap();
 
@@ -289,8 +289,8 @@ struct Job {
     #[allow(dead_code)]
     pub_key: Arc<Mutex<Box<dyn lib3h_crypto_api::Buffer>>>,
     sec_key: Arc<Mutex<Box<dyn lib3h_crypto_api::Buffer>>>,
-    connection: InStreamWss<InStreamTcp>,
-    //connection: InStreamWss<InStreamTls<InStreamTcp>>,
+    //connection: InStreamWss<InStreamTcp>,
+    connection: InStreamWss<InStreamTls<InStreamTcp>>,
     stress_config: OptStressRunConfig,
     got_ack: bool,
     next_ping: std::time::Instant,

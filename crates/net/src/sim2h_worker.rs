@@ -42,9 +42,12 @@ const BATCHING_INTERVAL_MS: u64 = 1000;
 
 fn connect(url: Lib3hUri, timeout_ms: u64) -> NetResult<TcpWss> {
     //    let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
-    let config = WssConnectConfig::new(TcpConnectConfig {
+    //let config = WssConnectConfig::new(TcpConnectConfig {
+    //    connect_timeout_ms: Some(timeout_ms),
+    //});
+    let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig {
         connect_timeout_ms: Some(timeout_ms),
-    });
+    }));
     Ok(InStreamWss::connect(&url::Url::from(url).into(), config)?)
 }
 

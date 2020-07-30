@@ -1,3 +1,4 @@
+#![feature(matches_macro)]
 //! Trait system for facilitating non-blocking stream chaining with handshaking
 //!
 //! # Example

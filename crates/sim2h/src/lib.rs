@@ -203,10 +203,10 @@ impl Drop for MetricsTimer {
     }
 }
 
-//pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>>;
-//pub(crate) type TcpWss = InStreamWss<InStreamTls<InStreamTcp>>;
-pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTcp>;
-pub type TcpWss = InStreamWss<InStreamTcp>;
+pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTls<InStreamListenerTcp>>;
+pub type TcpWss = InStreamWss<InStreamTls<InStreamTcp>>;
+//pub(crate) type TcpWssServer = InStreamListenerWss<InStreamListenerTcp>;
+//pub type TcpWss = InStreamWss<InStreamTcp>;
 
 mod connection_mgr;
 use connection_mgr::*;
@@ -1196,7 +1196,7 @@ impl Sim2h {
         );
 
         let config = TcpBindConfig::default();
-        //        let config = TlsBindConfig::new(config).dev_certificate();
+        let config = TlsBindConfig::new(config).dev_certificate();
 
         // if we don't get any messages within a timeframe from a connection,
         // the connection will throw a timeout error and disconnect.

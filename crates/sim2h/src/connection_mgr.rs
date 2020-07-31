@@ -284,7 +284,7 @@ impl ConnectionMgr {
         )
     }
 
-    fn handle_connect_data(&mut self, uri: Lib3hUri, wss: InStreamWss<InStreamTcp>) {
+    fn handle_connect_data(&mut self, uri: Lib3hUri, wss: TcpWss) {
         debug!(?uri);
         let cmd_send = spawn_wss_task(uri.clone(), wss, self.evt_send_from_children.clone());
         if let Some(old) = self.wss_map.insert(uri.clone(), cmd_send) {

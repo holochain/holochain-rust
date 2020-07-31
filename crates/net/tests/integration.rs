@@ -116,6 +116,7 @@ fn sim2h_worker_talks_to_sim2h() {
         },
     );
 
+    #[derive(Debug)]
     struct ResultData {
         pub got_handle_store: bool,
         pub got_handle_dm: bool,
@@ -146,6 +147,11 @@ fn sim2h_worker_talks_to_sim2h() {
         pub fn is_ok(s: &Arc<Mutex<Self>>) -> bool {
             let s = s.lock().unwrap();
             s.got_handle_store && s.got_handle_dm && s.got_handle_a_list && s.got_handle_g_list
+        }
+
+        pub fn assert_is_ok(s: &Arc<Mutex<Self>>) {
+            let repr = format!("{:#?}", *s.lock().unwrap());
+            assert!(ResultData::is_ok(s), repr);
         }
     }
 
@@ -195,7 +201,7 @@ fn sim2h_worker_talks_to_sim2h() {
         )))
         .unwrap();
 
-    for _ in 0..5 {
+    for _ in 0..10 {
         std::thread::sleep(std::time::Duration::from_millis(25));
 
         println!("tick: {:?}", worker.tick());
@@ -204,6 +210,12 @@ fn sim2h_worker_talks_to_sim2h() {
     // now close the client connection (and set timing for reconnect)
     // to prove out join space is properly re-sent
     worker.test_close_connection_cause_reconnect();
+
+    for _ in 0..10 {
+        std::thread::sleep(std::time::Duration::from_millis(25));
+
+        println!("tick: {:?}", worker.tick());
+    }
 
     worker
         .receive(ht::test_wrap_enc(Lib3hClientProtocol::PublishEntry(
@@ -223,6 +235,12 @@ fn sim2h_worker_talks_to_sim2h() {
         )))
         .unwrap();
 
+    for _ in 0..10 {
+        std::thread::sleep(std::time::Duration::from_millis(25));
+
+        println!("tick: {:?}", worker.tick());
+    }
+
     worker
         .receive(ht::test_wrap_enc(Lib3hClientProtocol::SendDirectMessage(
             DirectMessageData {
@@ -235,7 +253,7 @@ fn sim2h_worker_talks_to_sim2h() {
         )))
         .unwrap();
 
-    for _ in 0..40 {
+    for _ in 0..60 {
         std::thread::sleep(std::time::Duration::from_millis(25));
 
         println!("tick: {:?}", worker.tick());
@@ -247,5 +265,5 @@ fn sim2h_worker_talks_to_sim2h() {
 
     // -- end sim2h worker test -- //
 
-    assert!(ResultData::is_ok(&result_data));
+    ResultData::assert_is_ok(&result_data);
 }

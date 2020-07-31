@@ -14,8 +14,8 @@ use sim2h::{
 use std::sync::{Arc, Mutex};
 use url2::prelude::*;
 
-//fn await_in_stream_connect(connect_uri: &Lib3hUri) -> InStreamWss<InStreamTls<InStreamTcp>> {
-fn await_in_stream_connect(connect_uri: &Lib3hUri) -> InStreamWss<InStreamTcp> {
+fn await_in_stream_connect(connect_uri: &Lib3hUri) -> InStreamWss<InStreamTls<InStreamTcp>> {
+    //fn await_in_stream_connect(connect_uri: &Lib3hUri) -> InStreamWss<InStreamTcp> {
     let timeout = std::time::Instant::now()
         .checked_add(std::time::Duration::from_millis(20000))
         .unwrap();
@@ -24,8 +24,8 @@ fn await_in_stream_connect(connect_uri: &Lib3hUri) -> InStreamWss<InStreamTcp> {
 
     // keep trying to connect
     loop {
-        //let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
-        let config = WssConnectConfig::new(TcpConnectConfig::default());
+        let config = WssConnectConfig::new(TlsConnectConfig::new(TcpConnectConfig::default()));
+        //let config = WssConnectConfig::new(TcpConnectConfig::default());
         info!("try new connection -- {}", connect_uri);
         let mut connection = InStreamWss::connect(&(**connect_uri).clone().into(), config).unwrap();
         connection.write(WsFrame::Ping(b"".to_vec())).unwrap();
@@ -66,8 +66,8 @@ struct Job {
     #[allow(dead_code)]
     pub_key: Arc<Mutex<Box<dyn lib3h_crypto_api::Buffer>>>,
     sec_key: Arc<Mutex<Box<dyn lib3h_crypto_api::Buffer>>>,
-    connection: InStreamWss<InStreamTcp>,
-    //connection: InStreamWss<InStreamTls<InStreamTcp>>,
+    //connection: InStreamWss<InStreamTcp>,
+    connection: InStreamWss<InStreamTls<InStreamTcp>>,
     last_ping: std::time::Instant,
     last_pong: std::time::Instant,
 }

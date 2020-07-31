@@ -14,6 +14,5 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
-- Fixed bug in calculating entry address of a Content EntryAspect that cause entry updates to not validate correctly [2204](https://github.com/holochain/holochain-rust/pull/2204)
-
 ### Security
+

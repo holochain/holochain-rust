@@ -64,7 +64,7 @@ pub(crate) fn reduce_commit_entry(
     match reduce_store_entry_inner(&mut new_store, entry) {
         Ok(()) => Some(new_store),
         Err(e) => {
-            println!("{}", e);
+            error!("{}", e);
             None
         }
     }

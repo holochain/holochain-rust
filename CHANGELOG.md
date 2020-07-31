@@ -2,6 +2,22 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.51-alpha1] - 2020-07-31
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+- Fixed bug in calculating entry address of a Content EntryAspect that cause entry updates to not validate correctly [2204](https://github.com/holochain/holochain-rust/pull/2204)
+
+### Security
+
 ## [0.0.50-alpha4] - 2020-07-14
 
 ### Added

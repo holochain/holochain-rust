@@ -188,11 +188,16 @@ fn make_call_sig<J: Into<JsonString>>(
     let maybe_sig = context
         .conductor_api
         .execute(encode_call_data, CryptoMethod::Sign);
-    if maybe_sig.is_err() {
-        // signing service could be down so in that case just return a bad signature
-        Signature::from("badsig")
-    } else {
-        Signature::from(maybe_sig.unwrap())
+    match maybe_sig {
+        Ok(sig) => Signature::from(sig),
+        Err(err) => {
+            // signing service could be down so in that case just return a bad signature
+            error!(
+                "got error ({}) from signing service during zome call return bad signature",
+                err
+            );
+            Signature::from("badsig")
+        }
     }
 }
 

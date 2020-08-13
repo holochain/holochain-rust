@@ -14,14 +14,11 @@ use crate::{
 };
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use holochain_common::paths::DNA_EXTENSION;
-use holochain_core::{
-    logger::Logger, network::handler::fetch::fetch_aspects_for_entry, signal::Signal,
-};
+use holochain_core::{logger::Logger, signal::Signal};
 use holochain_core_types::{
     agent::AgentId,
     dna::Dna,
     error::{HcResult, HolochainError},
-    network::entry_aspect::EntryAspect,
 };
 use holochain_dpki::{key_bundle::KeyBundle, password_encryption::PwHashConfig};
 use holochain_json_api::json::JsonString;
@@ -30,7 +27,6 @@ use holochain_logging::{rule::RuleFilter, FastLogger, FastLoggerBuilder};
 use holochain_persistence_api::{cas::content::AddressableContent, hash::HashString};
 use holochain_tracing as ht;
 use jsonrpc_ws_server::jsonrpc_core::IoHandler;
-use lib3h_protocol::types::AspectHash;
 use std::{
     clone::Clone,
     collections::HashMap,
@@ -106,19 +102,6 @@ type TraceReporterMap = HashMap<
         ht::reporter::JaegerCompactReporter,
     ),
 >;
-
-/// options for GetMeta request
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct GetMetaOptions {}
-
-/// result structure for GetMeta requests
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct GetMetaResponse {
-    headers: Vec<HashString>,
-    aspects: Vec<(AspectHash, String)>, //Aspects and type
-    link_add_count: u32,
-    link_remove_count: u32,
-}
 
 /// Main representation of the conductor.
 /// Holds a `HashMap` of Holochain instances referenced by ID.
@@ -525,48 +508,6 @@ impl Conductor {
             notify(format!("Server started for \"{}\"", id))
         });
         Ok(())
-    }
-
-    /// Get data from instance
-    pub fn instance_get_meta(
-        &mut self,
-        id: &String,
-        hash: HashString,
-        _options: GetMetaOptions,
-    ) -> Result<GetMetaResponse, HolochainInstanceError> {
-        let instance = self.instances.get(id)?.read().unwrap();
-        let context = instance.context()?;
-
-        let headers = match context
-            .state()
-            .expect("Could not get state for handle_fetch_entry")
-            .get_headers(hash.clone())
-        {
-            Err(_error) => Vec::new(),
-            Ok(headers) => headers.into_iter().map(|h| h.address()).collect(),
-        };
-
-        let mut add_links = 0;
-        let mut remove_links = 0;
-        let aspects = fetch_aspects_for_entry(&hash.into(), context);
-        let aspects = aspects
-            .into_iter()
-            .map(|a| {
-                match a {
-                    EntryAspect::LinkAdd(_, _) => add_links += 1,
-                    EntryAspect::LinkRemove(_, _) => remove_links += 1,
-                    _ => (),
-                }
-                (a.address().into(), a.type_hint())
-            })
-            .collect();
-        let response = GetMetaResponse {
-            headers,
-            aspects,
-            link_add_count: add_links,
-            link_remove_count: remove_links,
-        };
-        Ok(response)
     }
 
     pub fn start_instance(&mut self, id: &String) -> Result<(), HolochainInstanceError> {

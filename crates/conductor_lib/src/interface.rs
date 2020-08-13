@@ -19,10 +19,7 @@ use jsonrpc_core::{self, types::params::Params, IoHandler, Value};
 use std::{collections::HashMap, convert::TryFrom, path::PathBuf, sync::Arc, thread};
 
 use crate::{
-    conductor::{
-        ConductorAdmin, ConductorDebug, ConductorTestAdmin, ConductorUiAdmin, GetMetaOptions,
-        CONDUCTOR,
-    },
+    conductor::{ConductorAdmin, ConductorDebug, ConductorTestAdmin, ConductorUiAdmin, CONDUCTOR},
     config::{
         AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration,
         InterfaceConfiguration, InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
@@ -416,13 +413,6 @@ impl ConductorApiBuilder {
     ///     Params:
     ///     * `id`: [string] Which instance to stop?
     ///
-    ///  * `admin/instance/get_meta`
-    ///     Gets meta-data about a hash on an instance
-    ///     Params:
-    ///     * `id`: [string] Which instance to get data from?
-    ///     * `hash`: [string] hash to get data about
-    ///     * `options`: [object] options about what data to return
-    ///
     ///  * `admin/instance/list`
     ///     Returns an array of all instances that are configured.
     ///
@@ -581,17 +571,6 @@ impl ConductorApiBuilder {
             conductor_call!(|c| c.start_instance(&id))?;
             Ok(json!({"success": true}))
         });
-
-        self.io
-            .add_method("admin/instance/get_meta", move |params| {
-                let params_map = Self::unwrap_params_map(params)?;
-                let id = Self::get_as_string("id", &params_map)?;
-                let hash = Self::get_as_string("hash", &params_map)?;
-                let response =
-                    conductor_call!(|c| c.instance_get_meta(&id, hash.into(), GetMetaOptions {}))?;
-                Ok(serde_json::to_value(response)
-                    .map_err(|_| jsonrpc_core::Error::internal_error())?)
-            });
 
         self.io.add_method("admin/instance/stop", move |params| {
             let params_map = Self::unwrap_params_map(params)?;

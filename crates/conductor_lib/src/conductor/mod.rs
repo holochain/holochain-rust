@@ -8,7 +8,7 @@ pub mod ui_admin;
 
 pub use self::{
     admin::ConductorAdmin,
-    base::{mount_conductor_from_config, Conductor, GetMetaOptions, GetMetaResponse, CONDUCTOR},
+    base::{mount_conductor_from_config, Conductor, CONDUCTOR},
     debug::ConductorDebug,
     test_admin::ConductorTestAdmin,
     ui_admin::ConductorUiAdmin,

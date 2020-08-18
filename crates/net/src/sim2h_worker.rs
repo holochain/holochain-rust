@@ -483,24 +483,25 @@ impl Sim2hWorker {
             Lib3hClientProtocol::PublishEntry(provided_entry_data) => {
                 //let log_context = "ClientToLib3h::PublishEntry";
 
-                if self.is_autonomous_node() {
-                    // As with QueryEntry, if we are in full-sync DHT mode,
-                    // this means that we can play back PublishEntry messages already locally
-                    // as HandleStoreEntryAspects.
-                    // This makes instances with Sim2hWorker work even if offline,
-                    // i.e. not connected to the sim2h node.
-                    for aspect in &provided_entry_data.entry.aspect_list {
-                        let msg =
-                            Lib3hServerProtocol::HandleStoreEntryAspect(StoreEntryAspectData {
-                                request_id: "".into(),
-                                space_address: provided_entry_data.space_address.clone(),
-                                provider_agent_id: provided_entry_data.provider_agent_id.clone(),
-                                entry_address: provided_entry_data.entry.entry_address.clone(),
-                                entry_aspect: aspect.clone(),
-                            });
-                        self.to_core.push(span_wrap.swapped(msg));
-                    }
+                // route publish back to self always in case the connection is actually
+                // bad.
+                //     if self.is_autonomous_node() {
+                // As with QueryEntry, if we are in full-sync DHT mode,
+                // this means that we can play back PublishEntry messages already locally
+                // as HandleStoreEntryAspects.
+                // This makes instances with Sim2hWorker work even if offline,
+                // i.e. not connected to the sim2h node.
+                for aspect in &provided_entry_data.entry.aspect_list {
+                    let msg = Lib3hServerProtocol::HandleStoreEntryAspect(StoreEntryAspectData {
+                        request_id: "".into(),
+                        space_address: provided_entry_data.space_address.clone(),
+                        provider_agent_id: provided_entry_data.provider_agent_id.clone(),
+                        entry_address: provided_entry_data.entry.entry_address.clone(),
+                        entry_aspect: aspect.clone(),
+                    });
+                    self.to_core.push(span_wrap.swapped(msg));
                 }
+                //  }
 
                 self.send_wire_message(WireMessage::ClientToLib3h(
                     span_wrap.swapped(ClientToLib3h::PublishEntry(provided_entry_data)),

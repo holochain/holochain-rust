@@ -19,13 +19,17 @@ use jsonrpc_core::{self, types::params::Params, IoHandler, Value};
 use std::{collections::HashMap, convert::TryFrom, path::PathBuf, sync::Arc, thread};
 
 use crate::{
-    conductor::{ConductorAdmin, ConductorDebug, ConductorTestAdmin, ConductorUiAdmin, CONDUCTOR},
+    conductor::{
+        ConductorAdmin, ConductorDebug, ConductorIntrospection, ConductorTestAdmin,
+        ConductorUiAdmin, CONDUCTOR,
+    },
     config::{
         AgentConfiguration, Bridge, DnaConfiguration, InstanceConfiguration,
         InterfaceConfiguration, InterfaceDriver, UiBundleConfiguration, UiInterfaceConfiguration,
     },
     keystore::{KeyType, Keystore, Secret},
 };
+use holochain_core_types::dna::fn_declarations::{FnDeclaration, FnParameter};
 use holochain_dpki::utils::SeedContext;
 use serde_json::{self, map::Map};
 
@@ -307,6 +311,43 @@ impl ConductorApiBuilder {
                 ))
             })?
             .to_string())
+    }
+
+    fn get_as_array<T: Into<String>>(
+        key: T,
+        params_map: &Map<String, Value>,
+    ) -> Result<Vec<Value>, jsonrpc_core::Error> {
+        let key = key.into();
+        Ok(params_map
+            .get(&key)
+            .ok_or_else(|| {
+                jsonrpc_core::Error::invalid_params(format!("`{}` param not provided", &key))
+            })?
+            .as_array()
+            .ok_or_else(|| {
+                jsonrpc_core::Error::invalid_params(format!("`{}` is not a valid json array", &key))
+            })?
+            .clone())
+    }
+
+    fn get_as_object<T: Into<String>>(
+        key: T,
+        params_map: &Map<String, Value>,
+    ) -> Result<Map<String, Value>, jsonrpc_core::Error> {
+        let key = key.into();
+        Ok(params_map
+            .get(&key)
+            .ok_or_else(|| {
+                jsonrpc_core::Error::invalid_params(format!("`{}` param not provided", &key))
+            })?
+            .as_object()
+            .ok_or_else(|| {
+                jsonrpc_core::Error::invalid_params(format!(
+                    "`{}` is not a valid json string",
+                    &key
+                ))
+            })?
+            .clone())
     }
 
     fn get_as_crypto_string<T: Into<String> + Clone>(
@@ -1254,6 +1295,78 @@ impl ConductorApiBuilder {
                 };
 
                 Ok(json!({ "pub_key": pub_key }))
+            });
+
+        self
+    }
+
+    /// Adds functionality for dealing with traits
+    ///
+    /// - `introspection/traits/get_zomes_by_trait`
+    ///     Checks all zomes of all installed instances if they implement the given
+    ///     trait and responds with a list of all found zomes with according instance
+    ///     ID such that caller is able to call trait functions of those zomes next.
+    ///     Params:
+    ///         - trait [object]
+    ///     Returns: [array] containing all found zomes implementing given trait as string
+    ///              prefixed by instance ID ("instance_id/zome_name")
+    pub fn with_introspection_functions(mut self) -> Self {
+        self.io
+            .add_method("introspection/traits/get_zomes_by_trait", move |params| {
+                let params_map = Self::unwrap_params_map(params)?;
+                let trait_map = Self::get_as_object("trait", &params_map)?;
+
+                // Extract name and function signatures from serde_json::Value
+                let trait_name = Self::get_as_string("name", &trait_map)?;
+                let mut trait_functions: Vec<FnDeclaration> = Vec::new();
+
+                for trait_function in Self::get_as_array("functions", &trait_map)? {
+                    let trait_function = trait_function.as_object().ok_or_else(|| {
+                        jsonrpc_core::Error::invalid_params(String::from(
+                            "All elements in `functions` array must be objects",
+                        ))
+                    })?;
+
+                    let function_name = Self::get_as_string("name", &trait_function)?;
+
+                    let inputs_values = Self::get_as_array("inputs", &trait_function)?;
+                    let mut inputs_parameters: Vec<FnParameter> = Vec::new();
+                    for value in inputs_values.iter() {
+                        let value = value.as_object().ok_or_else(|| {
+                            jsonrpc_core::Error::invalid_params(String::from(
+                                "All elements in `inputs` array must be objects",
+                            ))
+                        })?;
+                        inputs_parameters.push(FnParameter {
+                            name: Self::get_as_string("name", value)?,
+                            parameter_type: Self::get_as_string("type", value)?,
+                        })
+                    }
+
+                    let outputs_values = Self::get_as_array("outputs", &trait_function)?;
+
+                    let mut outputs_parameters: Vec<FnParameter> = Vec::new();
+                    for value in outputs_values.iter() {
+                        let value = value.as_object().ok_or_else(|| {
+                            jsonrpc_core::Error::invalid_params(String::from(
+                                "All elements in `outputs` array must be objects",
+                            ))
+                        })?;
+                        outputs_parameters.push(FnParameter {
+                            name: Self::get_as_string("name", value)?,
+                            parameter_type: Self::get_as_string("type", value)?,
+                        })
+                    }
+
+                    trait_functions.push(FnDeclaration {
+                        name: function_name,
+                        inputs: inputs_parameters,
+                        outputs: outputs_parameters,
+                    })
+                }
+
+                let zomes = conductor_call!(|c| c.get_zomes_by_trait(trait_name, trait_functions))?;
+                Ok(json!(zomes))
             });
 
         self

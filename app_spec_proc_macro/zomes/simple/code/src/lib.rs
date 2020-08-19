@@ -143,13 +143,13 @@ pub mod simple {
         hdk::emit_signal("test-signal", SignalPayload{message})
     }
 
-    #[zome_fn("hc_public")]
+    #[zome_fn("hc_public", "crypto")]
     pub fn encrypt(payload : String) -> ZomeApiResult<String> 
     {
        hdk::encrypt(payload)
     }
 
-    #[zome_fn("hc_public")]
+    #[zome_fn("hc_public", "crypto")]
     pub fn decrypt(payload : String) -> ZomeApiResult<String> 
     {
        hdk::decrypt(payload)

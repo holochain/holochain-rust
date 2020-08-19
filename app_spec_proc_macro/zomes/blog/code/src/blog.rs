@@ -388,7 +388,7 @@ pub fn handle_posts_by_agent(agent: Address) -> ZomeApiResult<GetLinksResult> {
 
 
 pub fn handle_my_posts(tag: Option<String>) -> ZomeApiResult<GetLinksResult> {
-    let tag = match tag {Some(ref s) => LinkMatch::Regex(s.as_ref()), None => LinkMatch::Any};
+    let tag = match tag {Some(ref s) => LinkMatch::Exactly(s.as_ref()), None => LinkMatch::Any};
     hdk::get_links(&AGENT_ADDRESS, LinkMatch::Exactly("authored_posts"), tag)
 }
 

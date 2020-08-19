@@ -25,6 +25,12 @@ define_zome! {
 
     traits: {
         hc_public [sum]
+
+        // This is to make sure the test for introspection/trait/get_zome_by_trait
+        // not only checks the trait name but also the function signatures in the trait.
+        // The according test expects to NOT get this zome as result for the crypto trait
+        // that is appropriately implemented only in the simple zome.
+        crypto [sum]
     }
 
 }

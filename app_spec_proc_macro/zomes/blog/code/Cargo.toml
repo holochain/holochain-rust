@@ -8,7 +8,7 @@ edition = "2018"
 serde = "=1.0.104"
 serde_json = { version = "=1.0.47", features = ["preserve_order"] }
 hdk = { path = "../../../../crates/hdk" }
-hdk-proc-macros = { path = "../../../../crates/hdk_v2" }
+hdk_proc_macros = { path = "../../../../crates/hdk_v2" }
 
 holochain_json_derive = "=0.0.23"
 serde_derive = "=1.0.104"

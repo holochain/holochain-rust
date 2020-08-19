@@ -1,7 +1,9 @@
 //! File holding all the structs for handling function declarations defined in DNA.
 
+use objekt::private::hash::{Hash, Hasher};
+
 /// Represents the type declaration for zome function parameter
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Hash)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FnParameter {
     #[serde(rename = "type")]
     pub parameter_type: String,
@@ -15,6 +17,22 @@ impl FnParameter {
             name: n.into(),
             parameter_type: t.into(),
         }
+    }
+}
+
+impl PartialEq for FnParameter {
+    fn eq(&self, other: &Self) -> bool {
+        let self_type: String = self.parameter_type.split_whitespace().collect();
+        let other_type: String = other.parameter_type.split_whitespace().collect();
+        self.name == other.name && self_type == other_type
+    }
+}
+
+impl Hash for FnParameter {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+        let parameter_type: String = self.parameter_type.split_whitespace().collect();
+        parameter_type.hash(state);
     }
 }
 

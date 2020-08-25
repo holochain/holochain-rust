@@ -117,24 +117,39 @@ pub(crate) fn reduce_hold_aspect(
                 }
             }
         }
-        EntryAspect::LinkRemove((link_data, links_to_remove), header) => Some(
-            links_to_remove
-                .iter()
-                .fold(new_store, |mut store, link_addresses| {
-                    let _ = reduce_add_remove_link_inner(
+        EntryAspect::LinkRemove((link_data, links_to_remove), header) => {
+            let folded_result = Some(links_to_remove.iter().fold(
+                new_store,
+                |mut store, link_addresses| {
+                    if let Err(e) = reduce_add_remove_link_inner(
                         &mut store,
                         &link_data,
                         link_addresses,
                         LinkModification::Remove,
                         header,
-                    );
+                    ) {
+                        let err = format!("EntryAspect::LinkRemove hold error: {}", e);
+                        hold_result = Err(HolochainError::ErrorGeneric(err));
+                    }
                     store
-                }),
-        ),
+                },
+            ));
+            if let Ok(_) = hold_result {
+                folded_result
+            } else {
+                None
+            }
+        }
         EntryAspect::Update(entry, header) => {
             if let Some(crud_link) = header.link_update_delete() {
-                let _ = reduce_update_entry_inner(&mut new_store, &crud_link, &entry.address());
-                Some(new_store)
+                match reduce_update_entry_inner(&mut new_store, &crud_link, &entry.address()) {
+                    Ok(_) => Some(new_store),
+                    Err(e) => {
+                        let err = format!("EntryAspect::Update hold error: {}", e);
+                        hold_result = Err(HolochainError::ErrorGeneric(err));
+                        None
+                    }
+                }
             } else {
                 let err = "EntryAspect::Update without crud_link in header received!";
                 hold_result = Err(HolochainError::ErrorGeneric(err.to_string()));
@@ -143,9 +158,15 @@ pub(crate) fn reduce_hold_aspect(
         }
         EntryAspect::Deletion(header) => {
             if let Some(crud_link) = header.link_update_delete() {
-                let _ =
-                    reduce_remove_entry_inner(&mut new_store, &crud_link, &header.entry_address());
-                Some(new_store)
+                match reduce_remove_entry_inner(&mut new_store, &crud_link, &header.entry_address())
+                {
+                    Ok(_) => Some(new_store),
+                    Err(e) => {
+                        let err = format!("EntryAspect::Deletion hold error: {}", e);
+                        hold_result = Err(HolochainError::ErrorGeneric(err));
+                        None
+                    }
+                }
             } else {
                 let err = "EntryAspect::Deletion without crud_link in header received!";
                 hold_result = Err(HolochainError::ErrorGeneric(err.to_string()));

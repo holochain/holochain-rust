@@ -62,7 +62,13 @@ pub async fn hold_update_workflow(
         entry_with_header.entry.clone(),
         entry_with_header.header.clone(),
     );
-    hold_aspect(pending_id, aspect, context.clone()).await?;
+    hold_aspect(pending_id, aspect.clone(), context.clone()).await?;
+    log_debug!(
+        context,
+        "workflow/hold_update: aspect held! aspect address:{} for entry with header: {:?}",
+        aspect.address(),
+        entry_with_header
+    );
 
     Ok(())
 }

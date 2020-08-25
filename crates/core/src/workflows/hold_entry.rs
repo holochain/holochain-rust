@@ -22,11 +22,11 @@ pub async fn hold_content_aspect(
         entry_with_header.entry.clone(),
         entry_with_header.header.clone(),
     );
-    hold_aspect(pending_id, aspect, context.clone()).await?;
-
+    hold_aspect(pending_id, aspect.clone(), context.clone()).await?;
     log_debug!(
         context,
-        "workflow/hold_entry: HOLDING: {}",
+        "workflow/hold_entry: holding content aspect address:{} for {}",
+        aspect.address(),
         entry_with_header.entry.address()
     );
     Ok(())

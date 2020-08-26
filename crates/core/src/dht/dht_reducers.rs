@@ -182,14 +182,20 @@ pub(crate) fn reduce_hold_aspect(
     // in the success case, where aspect really has been held the above match returns the
     // mutated store, otherwise it returns the error result.
     if let Some(ref mut store) = maybe_store {
-        debug!("reduce_hold_aspect: marking as held {:?}", aspect);
+        debug!(
+            "reduce_hold_aspect: marking as held {}-{:?}",
+            aspect.address(),
+            aspect
+        );
         store.mark_aspect_as_held(&aspect);
         store.mark_hold_aspect_complete(id.clone(), hold_result);
         maybe_store
     } else {
         debug!(
-            "reduce_hold_aspect: ERRORED with {:?} not marking as held {:?}",
-            hold_result, aspect
+            "reduce_hold_aspect: ERRORED with {:?} not marking as held {}-{:?}",
+            hold_result,
+            aspect.address(),
+            aspect
         );
         // error case, where hold_result is actually an error to be returned
         // we won't mark aspect as being held

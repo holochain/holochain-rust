@@ -41,7 +41,7 @@ pub fn reduce_get_validation_package(
         Duration::from_millis(GET_VALIDATION_PACKAGE_MESSAGE_TIMEOUT_MS),
     );
 
-    let result = match inner(network_state, header, key.clone(), timeout.clone()) {
+    let result = match inner(network_state, header, key.clone(), timeout) {
         Ok(()) => None,
         Err(err) => Some(Err(err)),
     };

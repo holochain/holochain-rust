@@ -134,7 +134,7 @@ pub(crate) fn reduce_hold_aspect(
                     store
                 },
             ));
-            if let Ok(_) = hold_result {
+            if hold_result.is_ok() {
                 folded_result
             } else {
                 None

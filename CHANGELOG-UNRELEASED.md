@@ -14,5 +14,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
-### Security
+- Fixed memory leak in various timeout conditions of direct messages  [#2208](https://github.com/holochain/holochain-rust/pull/2208)
+- Fixed holding-list/CAS mismatch potential in various error conditions when sim2h requests aspect holding [#2208](https://github.com/holochain/holochain-rust/pull/2208)
 
+### Security

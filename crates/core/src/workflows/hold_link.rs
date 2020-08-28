@@ -2,7 +2,7 @@ use crate::{
     context::Context,
     dht::actions::hold_aspect::hold_aspect,
     network::entry_with_header::EntryWithHeader,
-    nucleus::validation::{process_validation_err, validate_entry},
+    nucleus::validation::{process_validation_err, validate_entry, ValidationContext},
     workflows::{hold_entry::hold_content_aspect, validation_package},
 };
 use holochain_core_types::{
@@ -61,6 +61,7 @@ pub async fn hold_link_workflow(
         None,
         validation_data,
         &context,
+        ValidationContext::Holding,
     )
     .await
     .map_err(|err| {

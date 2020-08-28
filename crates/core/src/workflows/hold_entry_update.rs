@@ -2,7 +2,7 @@ use crate::{
     context::Context,
     dht::actions::hold_aspect::hold_aspect,
     network::entry_with_header::EntryWithHeader,
-    nucleus::validation::{process_validation_err, validate_entry},
+    nucleus::validation::{process_validation_err, validate_entry, ValidationContext},
     workflows::validation_package,
 };
 use holochain_core_types::{
@@ -46,16 +46,22 @@ pub async fn hold_update_workflow(
     };
 
     // 3. Validate the entry
-    validate_entry(entry.clone(), Some(link.clone()), validation_data, &context)
-        .await
-        .map_err(|err| {
-            process_validation_err(
-                "hold_update",
-                context.clone(),
-                err,
-                entry_with_header.entry.address(),
-            )
-        })?;
+    validate_entry(
+        entry.clone(),
+        Some(link.clone()),
+        validation_data,
+        &context,
+        ValidationContext::Holding,
+    )
+    .await
+    .map_err(|err| {
+        process_validation_err(
+            "hold_update",
+            context.clone(),
+            err,
+            entry_with_header.entry.address(),
+        )
+    })?;
 
     // 4. If valid store the entry aspect in the local DHT shard
     let aspect = EntryAspect::Update(

@@ -2,7 +2,7 @@ use crate::{
     context::Context,
     dht::actions::hold_aspect::hold_aspect,
     network::entry_with_header::EntryWithHeader,
-    nucleus::validation::{process_validation_err, validate_entry},
+    nucleus::validation::{process_validation_err, validate_entry, ValidationContext},
     workflows::{hold_entry::hold_content_aspect, validation_package},
 };
 use holochain_core_types::{
@@ -61,6 +61,7 @@ pub async fn hold_link_workflow(
         None,
         validation_data,
         &context,
+        ValidationContext::Holding,
     )
     .await
     .map_err(|err| {
@@ -79,9 +80,14 @@ pub async fn hold_link_workflow(
 
     // 4. If valid store the entry aspect in the local DHT shard
     let aspect = EntryAspect::LinkAdd(link_add.clone(), entry_with_header.header.clone());
-    hold_aspect(pending_id, aspect, context.clone()).await?;
-
-    log_debug!(context, "workflow/hold_link: aspect held! {:?}", link);
+    hold_aspect(pending_id, aspect.clone(), context.clone()).await?;
+    log_debug!(
+        context,
+        "workflow/hold_link: aspect held! aspect address:{}, link_add: {:?} {:?}",
+        aspect.address(),
+        link_add,
+        entry_with_header.header
+    );
 
     //5. store link_add entry so we have all we need to respond to get links queries without any other network look-up
     hold_content_aspect(pending_id, &entry_with_header, context.clone()).await?;

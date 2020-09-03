@@ -60,6 +60,13 @@ impl From<ValidationError> for HolochainError {
     }
 }
 
+/// enum for specifying if validation is being called for the purpose of holding data
+/// or as part of authoring entries
+pub enum ValidationContext {
+    Authoring,
+    Holding,
+}
+
 /// Main validation workflow.
 /// This is the high-level validate function that wraps the whole validation process and is what should
 /// be called from other workflows for validating an entry.
@@ -78,6 +85,7 @@ pub async fn validate_entry(
     link: Option<Address>,
     mut validation_data: ValidationData,
     context: &Arc<Context>,
+    validation_context: ValidationContext,
 ) -> ValidationResult {
     log_debug!(context, "workflow/validate_entry: {:?}", entry);
     //check_entry_type(entry.entry_type(), context)?;
@@ -108,11 +116,23 @@ pub async fn validate_entry(
         }
 
         EntryType::LinkAdd => {
-            link_entry::validate_link_entry(entry.clone(), validation_data, context).await
+            link_entry::validate_link_entry(
+                entry.clone(),
+                validation_data,
+                context,
+                validation_context,
+            )
+            .await
         }
 
         EntryType::LinkRemove => {
-            link_entry::validate_link_entry(entry.clone(), validation_data, context).await
+            link_entry::validate_link_entry(
+                entry.clone(),
+                validation_data,
+                context,
+                validation_context,
+            )
+            .await
         }
 
         // Deletion entries are not validated currently and always valid

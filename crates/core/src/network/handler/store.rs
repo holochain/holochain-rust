@@ -38,7 +38,7 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
             ack_single(context, aspect);
             return;
         }
-        match PendingValidationStruct::try_from(aspect) {
+        match PendingValidationStruct::try_from(aspect.clone()) {
             Err(e) => log_error!(
                 context,
                 "net/handle: handle_store: received bad aspect: {:?}",
@@ -47,8 +47,9 @@ pub fn handle_store(dht_data: StoreEntryAspectData, context: Arc<Context>) {
             Ok(pending) => {
                 log_debug!(
                     context,
-                    "net/handle: handle_store: Adding {} to holding queue...",
+                    "net/handle: handle_store: Adding {} for aspect {:?} to holding queue...",
                     pending.workflow,
+                    aspect,
                 );
                 dispatch_queue_holding_workflow(Arc::new(pending), None, context);
             }

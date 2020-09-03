@@ -9,8 +9,12 @@ use crate::{
 use holochain_core_types::error::HolochainError;
 use holochain_persistence_api::cas::content::Address;
 use holochain_wasm_utils::api_serialization::receive::ReceiveParams;
-use std::sync::Arc;
+use std::{
+    sync::Arc,
+    time::{Duration, SystemTime},
+};
 
+const CUSTOM_DIRECT_MESSAGE_RESPONSE_TIMEOUT_MS: u64 = 60000;
 /// handles receiving a message from an api send call
 /// call the receive call back, and sends the result back to the
 /// source of the send message which is in the from_agent_id param
@@ -53,7 +57,15 @@ pub async fn handle_custom_direct_message(
         is_response: true,
     };
 
-    let action_wrapper = ActionWrapper::new(Action::SendDirectMessage((direct_message_data, None)));
+    // when sending back the response to given by the receive callback we have to timeout
+    let timeout = (
+        SystemTime::now(),
+        Duration::from_millis(CUSTOM_DIRECT_MESSAGE_RESPONSE_TIMEOUT_MS),
+    );
+    let action_wrapper = ActionWrapper::new(Action::SendDirectMessage((
+        direct_message_data,
+        Some(timeout),
+    )));
     dispatch_action(context.action_channel(), action_wrapper);
     Ok(())
 }

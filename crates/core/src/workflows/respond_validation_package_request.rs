@@ -2,7 +2,10 @@ use crate::{
     action::{Action, ActionWrapper, DirectMessageData},
     context::Context,
     instance::dispatch_action,
-    network::direct_message::DirectMessage,
+    network::{
+        direct_message::DirectMessage,
+        reducers::get_validation_package::GET_VALIDATION_PACKAGE_MESSAGE_TIMEOUT_MS,
+    },
     nucleus::actions::{
         build_validation_package::build_validation_package, get_entry::get_entry_from_agent_chain,
     },
@@ -10,7 +13,11 @@ use crate::{
 
 use holochain_core_types::signature::Provenance;
 use holochain_persistence_api::cas::content::Address;
-use std::{sync::Arc, vec::Vec};
+use std::{
+    sync::Arc,
+    time::{Duration, SystemTime},
+    vec::Vec,
+};
 
 #[autotrace]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
@@ -48,6 +55,14 @@ pub fn respond_validation_package_request(
         is_response: true,
     };
 
-    let action_wrapper = ActionWrapper::new(Action::SendDirectMessage((direct_message_data, None)));
+    // when responding to a validation package request we have to timeout the direct message
+    let timeout = (
+        SystemTime::now(),
+        Duration::from_millis(GET_VALIDATION_PACKAGE_MESSAGE_TIMEOUT_MS),
+    );
+    let action_wrapper = ActionWrapper::new(Action::SendDirectMessage((
+        direct_message_data,
+        Some(timeout),
+    )));
     dispatch_action(context.action_channel(), action_wrapper);
 }

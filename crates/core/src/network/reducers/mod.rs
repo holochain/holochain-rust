@@ -57,7 +57,10 @@ use crate::network::reducers::clear::{
     reduce_clear_validation_package_result,
 };
 use holochain_persistence_api::cas::content::Address;
-use std::sync::Arc;
+use std::{
+    sync::Arc,
+    time::{Duration, SystemTime},
+};
 
 /// maps incoming action to the correct handler
 #[autotrace]
@@ -144,6 +147,7 @@ pub fn send_message(
     network_state: &mut NetworkState,
     to_agent_id: &Address,
     message: DirectMessage,
+    timeout: (SystemTime, Duration),
 ) -> Result<(), HolochainError> {
     let id = nanoid::simple();
 
@@ -161,7 +165,10 @@ pub fn send_message(
     let msg = Lib3hClientProtocol::SendDirectMessage(data);
     send(network_state, msg)?;
 
-    network_state.direct_message_connections.insert(id, message);
+    network_state
+        .direct_message_connections
+        .insert(id.clone(), message);
+    network_state.direct_message_timeouts.insert(id, timeout);
 
     Ok(())
 }

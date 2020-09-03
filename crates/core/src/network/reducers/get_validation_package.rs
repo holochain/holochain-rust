@@ -8,13 +8,14 @@ use std::time::{Duration, SystemTime};
 
 // Some thought needs to go in to how long this should really be
 // Should probably also be configurable via config or env vars
-const GET_VALIDATION_PACKAGE_MESSAGE_TIMEOUT_MS: u64 = 61000;
+pub const GET_VALIDATION_PACKAGE_MESSAGE_TIMEOUT_MS: u64 = 61000;
 
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 fn inner(
     network_state: &mut NetworkState,
     header: &ChainHeader,
     key: ValidationKey,
+    timeout: (SystemTime, Duration),
 ) -> Result<(), HolochainError> {
     network_state.initialized()?;
 
@@ -24,7 +25,7 @@ fn inner(
         .ok_or_else(|| HolochainError::ErrorGeneric("No source found in ChainHeader".to_string()))?
         .source();
     let direct_message = DirectMessage::RequestValidationPackage(key);
-    send_message(network_state, source_address, direct_message)
+    send_message(network_state, source_address, direct_message, timeout)
 }
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 pub fn reduce_get_validation_package(
@@ -35,7 +36,12 @@ pub fn reduce_get_validation_package(
     let action = action_wrapper.action();
     let (key, header) = unwrap_to!(action => crate::action::Action::GetValidationPackage);
 
-    let result = match inner(network_state, header, key.clone()) {
+    let timeout = (
+        SystemTime::now(),
+        Duration::from_millis(GET_VALIDATION_PACKAGE_MESSAGE_TIMEOUT_MS),
+    );
+
+    let result = match inner(network_state, header, key.clone(), timeout) {
         Ok(()) => None,
         Err(err) => Some(Err(err)),
     };
@@ -44,10 +50,6 @@ pub fn reduce_get_validation_package(
         .get_validation_package_results
         .insert(key.clone(), result);
 
-    let timeout = (
-        SystemTime::now(),
-        Duration::from_millis(GET_VALIDATION_PACKAGE_MESSAGE_TIMEOUT_MS),
-    );
     tracing::debug!(new_val_pack = ?key);
     network_state
         .get_validation_package_timeouts

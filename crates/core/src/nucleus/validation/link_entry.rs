@@ -2,7 +2,7 @@ use crate::{
     context::Context,
     nucleus::{
         actions::run_validation_callback::run_validation_callback,
-        validation::{ValidationError, ValidationResult},
+        validation::{ValidationContext, ValidationError, ValidationResult},
         CallbackFnCall,
     },
     wasm_engine::callback::links_utils,
@@ -23,11 +23,39 @@ pub async fn validate_link_entry(
     entry: Entry,
     validation_data: ValidationData,
     context: &Arc<Context>,
+    validation_context: ValidationContext,
 ) -> ValidationResult {
     let address = entry.address();
     let link = match entry.clone() {
         Entry::LinkAdd(link_add) => link_add.clone(),
-        Entry::LinkRemove((link_remove, _)) => link_remove,
+        Entry::LinkRemove((link_remove, links_to_remove)) => {
+            // if we are validating for holding check to make sure that original add links
+            // are already being held
+            if let ValidationContext::Holding = validation_context {
+                for link in links_to_remove.iter() {
+                    debug!(
+                        "checking if holding AddLink being requested to remove: {:?}",
+                        link
+                    );
+                    let maybe_entry_with_meta =
+                        crate::nucleus::actions::get_entry::get_entry_with_meta(
+                            context,
+                            link.clone(),
+                        )
+                        .map_err(|e| {
+                            ValidationError::Error(
+                                format!("Could not lookup LinkAdd locally: {}", e).into(),
+                            )
+                        })?;
+                    if maybe_entry_with_meta.is_none() {
+                        return Err(ValidationError::UnresolvedDependencies(
+                            [link.clone()].to_vec(),
+                        ));
+                    }
+                }
+            }
+            link_remove // return the the link to check for its dependencies
+        }
         _ => {
             return Err(ValidationError::Error(
                 "Could not extract link_add from entry".into(),

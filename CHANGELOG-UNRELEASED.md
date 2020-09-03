@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- Added get_meta to admin interface for access to DHT info  [#2207](https://github.com/holochain/holochain-rust/pull/2208)
+
 ### Changed
 
 ### Deprecated

@@ -78,6 +78,8 @@ pub(crate) fn reduce_hold_aspect(
     let (aspect, id) = unwrap_to!(action_wrapper.action() => Action::HoldAspect);
     let mut new_store = (*old_store).clone();
 
+    debug!("reduce_hold_aspect: {:?}", aspect);
+
     // TODO: we think we don't need this but not 100%
     // new_store.actions_mut().insert(
     //     action_wrapper.clone(),
@@ -115,24 +117,39 @@ pub(crate) fn reduce_hold_aspect(
                 }
             }
         }
-        EntryAspect::LinkRemove((link_data, links_to_remove), header) => Some(
-            links_to_remove
-                .iter()
-                .fold(new_store, |mut store, link_addresses| {
-                    let _ = reduce_add_remove_link_inner(
+        EntryAspect::LinkRemove((link_data, links_to_remove), header) => {
+            let folded_result = Some(links_to_remove.iter().fold(
+                new_store,
+                |mut store, link_addresses| {
+                    if let Err(e) = reduce_add_remove_link_inner(
                         &mut store,
                         &link_data,
                         link_addresses,
                         LinkModification::Remove,
                         header,
-                    );
+                    ) {
+                        let err = format!("EntryAspect::LinkRemove hold error: {}", e);
+                        hold_result = Err(HolochainError::ErrorGeneric(err));
+                    }
                     store
-                }),
-        ),
+                },
+            ));
+            if hold_result.is_ok() {
+                folded_result
+            } else {
+                None
+            }
+        }
         EntryAspect::Update(entry, header) => {
             if let Some(crud_link) = header.link_update_delete() {
-                let _ = reduce_update_entry_inner(&mut new_store, &crud_link, &entry.address());
-                Some(new_store)
+                match reduce_update_entry_inner(&mut new_store, &crud_link, &entry.address()) {
+                    Ok(_) => Some(new_store),
+                    Err(e) => {
+                        let err = format!("EntryAspect::Update hold error: {}", e);
+                        hold_result = Err(HolochainError::ErrorGeneric(err));
+                        None
+                    }
+                }
             } else {
                 let err = "EntryAspect::Update without crud_link in header received!";
                 hold_result = Err(HolochainError::ErrorGeneric(err.to_string()));
@@ -141,9 +158,15 @@ pub(crate) fn reduce_hold_aspect(
         }
         EntryAspect::Deletion(header) => {
             if let Some(crud_link) = header.link_update_delete() {
-                let _ =
-                    reduce_remove_entry_inner(&mut new_store, &crud_link, &header.entry_address());
-                Some(new_store)
+                match reduce_remove_entry_inner(&mut new_store, &crud_link, &header.entry_address())
+                {
+                    Ok(_) => Some(new_store),
+                    Err(e) => {
+                        let err = format!("EntryAspect::Deletion hold error: {}", e);
+                        hold_result = Err(HolochainError::ErrorGeneric(err));
+                        None
+                    }
+                }
             } else {
                 let err = "EntryAspect::Deletion without crud_link in header received!";
                 hold_result = Err(HolochainError::ErrorGeneric(err.to_string()));
@@ -156,12 +179,24 @@ pub(crate) fn reduce_hold_aspect(
             None
         }
     };
-    // success case, where aspect really has been held
+    // in the success case, where aspect really has been held the above match returns the
+    // mutated store, otherwise it returns the error result.
     if let Some(ref mut store) = maybe_store {
+        debug!(
+            "reduce_hold_aspect: marking as held {}-{:?}",
+            aspect.address(),
+            aspect
+        );
         store.mark_aspect_as_held(&aspect);
         store.mark_hold_aspect_complete(id.clone(), hold_result);
         maybe_store
     } else {
+        debug!(
+            "reduce_hold_aspect: ERRORED with {:?} not marking as held {}-{:?}",
+            hold_result,
+            aspect.address(),
+            aspect
+        );
         // error case, where hold_result is actually an error to be returned
         // we won't mark aspect as being held
         let mut store = (*old_store).clone();
@@ -196,13 +231,22 @@ pub fn reduce_queue_holding_workflow(
 
     let entry_aspect = EntryAspect::from((**pending).clone());
     if old_store.get_holding_map().contains(&entry_aspect) {
-        error!("Tried to add pending validation to queue which is already held!");
+        debug!(
+            "Skipping add pending validation to queue which is already held for aspect {:?}",
+            entry_aspect
+        );
         None
     } else if old_store.has_same_queued_holding_worfkow(pending) {
-        warn!("Tried to add pending validation to queue which is already queued!");
+        debug!(
+            "Skipping add pending validation to queue which is already queued for aspect {:?}",
+            entry_aspect
+        );
         None
     } else if old_store.has_same_in_process_holding_worfkow(pending) {
-        warn!("Tried to add pending validation to queue which is already in process!");
+        debug!(
+            "Skipping add pending validation to queue which is already in process for aspect {:?}",
+            entry_aspect
+        );
         None
     } else {
         let mut new_store = (*old_store).clone();

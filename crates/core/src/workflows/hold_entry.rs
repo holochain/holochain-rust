@@ -1,6 +1,8 @@
 use crate::{
-    context::Context, dht::actions::hold_aspect::hold_aspect,
-    network::entry_with_header::EntryWithHeader, nucleus::validation::validate_entry,
+    context::Context,
+    dht::actions::hold_aspect::hold_aspect,
+    network::entry_with_header::EntryWithHeader,
+    nucleus::validation::{validate_entry, ValidationContext},
 };
 
 use crate::{nucleus::validation::process_validation_err, workflows::validation_package};
@@ -22,11 +24,11 @@ pub async fn hold_content_aspect(
         entry_with_header.entry.clone(),
         entry_with_header.header.clone(),
     );
-    hold_aspect(pending_id, aspect, context.clone()).await?;
-
+    hold_aspect(pending_id, aspect.clone(), context.clone()).await?;
     log_debug!(
         context,
-        "workflow/hold_entry: HOLDING: {}",
+        "workflow/hold_entry: holding content aspect address:{} for {}",
+        aspect.address(),
         entry_with_header.entry.address()
     );
     Ok(())
@@ -65,6 +67,7 @@ pub async fn hold_entry_workflow(
         None,
         validation_data,
         &context,
+        ValidationContext::Holding,
     )
     .await
     .map_err(|err| {

@@ -4,7 +4,8 @@ use crate::{
     entry::CanPublish,
     network::actions::{publish::publish, publish_header_entry::publish_header_entry},
     nucleus::{
-        actions::build_validation_package::build_validation_package, validation::validate_entry,
+        actions::build_validation_package::build_validation_package,
+        validation::{validate_entry, ValidationContext},
     },
 };
 
@@ -64,6 +65,7 @@ pub async fn author_entry<'a>(
         maybe_link_update_delete.clone(),
         validation_data,
         &context,
+        ValidationContext::Authoring,
     )
     .await?;
     log_debug!(context, "worflow/authoring_entry {}: is valid!", address);

@@ -421,7 +421,6 @@ impl ConductorApiBuilder {
     ///     Params:
     ///     * `id`: [string] Which instance to get data from?
     ///     * `hash`: [string] hash to get data about
-    ///     * `options`: [object] options about what data to return
     ///
     ///  * `admin/instance/list`
     ///     Returns an array of all instances that are configured.

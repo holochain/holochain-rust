@@ -2,7 +2,7 @@
 let
   name = "hc-conductor-wasm-bindgen-install";
 
-  version = "0.2.32";
+  version = "0.2.48";
 
   script = pkgs.writeShellScriptBin name
   ''

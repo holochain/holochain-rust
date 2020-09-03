@@ -187,6 +187,7 @@ impl From<HolochainError> for RibosomeErrorCode {
         match error {
             HolochainError::ErrorGeneric(_) => RibosomeErrorCode::Unspecified,
             HolochainError::CryptoError(_) => RibosomeErrorCode::Unspecified,
+            HolochainError::CryptoServiceError(_) => RibosomeErrorCode::Unspecified,
             HolochainError::NotImplemented(_) => RibosomeErrorCode::CallbackFailed,
             HolochainError::LoggingError => RibosomeErrorCode::Unspecified,
             HolochainError::DnaMissing => RibosomeErrorCode::Unspecified,

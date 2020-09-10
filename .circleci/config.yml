@@ -40,6 +40,7 @@ jobs:
  fmt:
   docker:
    - image: holochain/holochain-rust:circle.fmt.develop
+  resource_class: large
   steps:
    - checkout
    - run:
@@ -128,6 +129,7 @@ jobs:
  cli-tests:
   docker:
    - image: holochain/holochain-rust:circle.cli-tests.develop
+  resource_class: large
   steps:
    - checkout
 

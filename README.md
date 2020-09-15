@@ -16,7 +16,9 @@ This is the home of the Holochain Rust libraries.
 
 This code is loosely based on the [Golang prototype](https://github.com/holochain/holochain-proto).
 
-**Code Status:** Rust version is alpha. Not for production use. The code is guaranteed NOT secure. We will aggressively restructure code APIs and data chains until Beta.
+**Code Status:** This Rust version is alpha software -- not for production use. You should expect unstable code APIs and data chains.
+
+**NOT CURRENT REPOSITORY:** This version of Holochain has been replaced by a version that is more performant, stable, and secure. We suggest porting applications to the [new version of Holochain](https://github.com/holochain/holochain) which is receiving regular updates and feature enhancements. 
 
 [Releases](https://github.com/holochain/holochain-rust/releases) happen weekly.
 <br/>

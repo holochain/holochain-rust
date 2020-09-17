@@ -12,13 +12,13 @@ Circle CI: [![CircleCI](https://circleci.com/gh/holochain/holochain-rust.svg?sty
 Codecov: [![Codecov](https://img.shields.io/codecov/c/github/holochain/holochain-rust.svg)](https://codecov.io/gh/holochain/holochain-rust/branch/master)
 License: [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
 
-This is the home of the Holochain Rust libraries.
+This code is loosely based on the previous [Golang prototype](https://github.com/holochain/holochain-proto).
 
-This code is loosely based on the [Golang prototype](https://github.com/holochain/holochain-proto).
+**Code Status:** This Rust version is alpha software -- not for production use. You should expect unstable code APIs and data chains.
 
-**Code Status:** Rust version is alpha. Not for production use. The code is guaranteed NOT secure. We will aggressively restructure code APIs and data chains until Beta.
+**NO LONGER CURRENT REPOSITORY:** This version of Holochain has been replaced by a version that is more performant, stable, and secure. We suggest porting applications to **the [new version of Holochain](https://github.com/holochain/holochain)** which is receiving regular updates and feature enhancements. 
 
-[Releases](https://github.com/holochain/holochain-rust/releases) happen weekly.
+[Find releases here.](https://github.com/holochain/holochain-rust/releases)
 <br/>
 
 | Holochain Links: | [FAQ](https://developer.holochain.org/guide/latest/faq.html) | [Developer Docs](https://developer.holochain.org) | [White Paper](https://github.com/holochain/holochain-proto/blob/whitepaper/holochain.pdf) |
@@ -62,11 +62,7 @@ Some helpful links:
 ## License
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
 
-Copyright (C) 2017 - 2019, Holochain Foundation
+Copyright (C) 2017 - 2020, Holochain Foundation
 
-This program is free software: you can redistribute it and/or modify it under the terms of the license p
-rovided in the LICENSE file (GPLv3).  This program is distributed in the hope that it will be useful, bu
-t WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- PURPOSE.
+This program is free software: you can redistribute it and/or modify it under the terms of the license provided in the LICENSE file (GPLv3).  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-**Note:** We are considering other 'looser' licensing options (like MIT license) but at this stage are using GPL while we're getting the matter sorted out.  See [this article](https://medium.com/holochain/licensing-needs-for-truly-p2p-software-a3e0fa42be6c) for some of our thinking on licensing for distributed application frameworks.

@@ -43,7 +43,7 @@ orchestrator.registerScenario("description of example test", async (s, t) => {
   const addr = await alice.call("myInstanceName", "my_zome", "create_my_entry", {"entry" : {"content":"sample content"}})
 
   // Wait for all network activity to settle
-  await s.consistency()
+  await new Promise(r => setTimeout(r, 1000));
 
   const result = await bob.call("myInstanceName", "my_zome", "get_my_entry", {"address": addr.Ok})
 

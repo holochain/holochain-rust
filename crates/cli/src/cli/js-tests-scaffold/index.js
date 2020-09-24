@@ -42,7 +42,8 @@ orchestrator.registerScenario("description of example test", async (s, t) => {
   // indicating the function, and passing it an input
   const addr = await alice.call("myInstanceName", "my_zome", "create_my_entry", {"entry" : {"content":"sample content"}})
 
-  // Wait for all network activity to settle
+  // Wait 1s for all network activity to settle; you may need to adjust this
+  // number to suit your scenario.
   await new Promise(r => setTimeout(r, 1000));
 
   const result = await bob.call("myInstanceName", "my_zome", "get_my_entry", {"address": addr.Ok})

@@ -39,7 +39,7 @@ Select a particular JSON-RPC interface to serve your DNA instance over.
 
 The JSON-RPC interface will expose, via a port on your device, a WebSocket or an HTTP server. It can be used to make function calls to the Zomes of a DNA instance. These are covered in depth in the [JSON-RPC interfaces article](./json_rpc_interfaces.md).
 
-The default interface is `websocket`.
+The default interface is `websocket`. `http` can be simpler and faster for prototyping but `websocket` is recommended and for sure more adapted to the production usage thanks to his bi-directional socket connection to the conductor. In fact with http it's only possible to pull data from the conductor. With websocket both are possible, pull data from the conductor and conductor can push data to the user. This will be very useful in many cases, for instance to receive a confirmation when a certain data has been validated or even to debug with the `admin = true` flag.
 
 **examples**
 To run it as HTTP, run:

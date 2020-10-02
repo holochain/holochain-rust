@@ -580,7 +580,7 @@ pub mod tests {
     use holochain_persistence_mem::{cas::memory::MemoryStorage, eav::memory::EavMemoryStorage};
 
     /// create a test context and TestLogger pair so we can use the logger in assertions
-    #[cfg_attr(tarpaulin, skip)]
+    #[cfg(not(tarpaulin_include))]
     pub fn test_context_and_logger(
         agent_name: &str,
         network_name: Option<&str>,
@@ -589,7 +589,7 @@ pub mod tests {
     }
 
     /// create a test context and TestLogger pair so we can use the logger in assertions
-    #[cfg_attr(tarpaulin, skip)]
+    #[cfg(not(tarpaulin_include))]
     pub fn test_context_and_logger_with_in_memory_network(
         agent_name: &str,
         network_name: Option<&str>,
@@ -619,13 +619,13 @@ pub mod tests {
     }
 
     /// create a test context
-    #[cfg_attr(tarpaulin, skip)]
+    #[cfg(not(tarpaulin_include))]
     pub fn test_context(agent_name: &str, network_name: Option<&str>) -> Arc<Context> {
         let (context, _) = test_context_and_logger(agent_name, network_name);
         context
     }
 
-    #[cfg_attr(tarpaulin, skip)]
+    #[cfg(not(tarpaulin_include))]
     pub fn test_context_with_memory_network(
         agent_name: &str,
         network_name: Option<&str>,
@@ -635,7 +635,7 @@ pub mod tests {
     }
 
     /// create a test context
-    #[cfg_attr(tarpaulin, skip)]
+    #[cfg(not(tarpaulin_include))]
     pub fn test_context_with_channels(
         agent_name: &str,
         action_channel: &ActionSender,
@@ -671,7 +671,7 @@ pub mod tests {
         )
     }
 
-    #[cfg_attr(tarpaulin, skip)]
+    #[cfg(not(tarpaulin_include))]
     pub fn test_context_with_state(network_name: Option<&str>) -> Arc<Context> {
         let file_storage = Arc::new(RwLock::new(
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap(),
@@ -701,7 +701,7 @@ pub mod tests {
         Arc::new(context)
     }
 
-    #[cfg_attr(tarpaulin, skip)]
+    #[cfg(not(tarpaulin_include))]
     pub fn test_context_with_agent_state(network_name: Option<&str>) -> Arc<Context> {
         let file_system =
             FilesystemStorage::new(tempdir().unwrap().path().to_str().unwrap()).unwrap();
@@ -739,13 +739,13 @@ pub mod tests {
         Arc::new(context)
     }
 
-    #[cfg_attr(tarpaulin, skip)]
+    #[cfg(not(tarpaulin_include))]
     pub fn test_instance(dna: Dna, network_name: Option<&str>) -> Result<Instance, String> {
         test_instance_and_context(dna, network_name).map(|tuple| tuple.0)
     }
 
     /// create a canonical test instance
-    #[cfg_attr(tarpaulin, skip)]
+    #[cfg(not(tarpaulin_include))]
     pub fn test_instance_and_context(
         dna: Dna,
         network_name: Option<&str>,
@@ -753,7 +753,7 @@ pub mod tests {
         test_instance_and_context_by_name(dna, "jane", network_name)
     }
 
-    #[cfg_attr(tarpaulin, skip)]
+    #[cfg(not(tarpaulin_include))]
     pub fn test_instance_and_context_by_name(
         dna: Dna,
         name: &str,
@@ -763,7 +763,7 @@ pub mod tests {
     }
 
     /// create a test instance
-    #[cfg_attr(tarpaulin, skip)]
+    #[cfg(not(tarpaulin_include))]
     pub fn test_instance_and_context_with_memory_network_nodes(
         dna: Dna,
         name: &str,
@@ -808,7 +808,7 @@ pub mod tests {
     }
 
     /// create a test instance with a blank DNA
-    #[cfg_attr(tarpaulin, skip)]
+    #[cfg(not(tarpaulin_include))]
     pub fn test_instance_blank() -> Instance {
         let mut dna = Dna::new();
         dna.zomes.insert("".to_string(), Zome::empty());

@@ -64,7 +64,7 @@ impl FromStr for Callback {
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CORE)]
 impl Callback {
     // cannot test this because PartialEq is not implemented for fns
-    #[cfg_attr(tarpaulin, skip)]
+    #[cfg(not(tarpaulin_include))]
     pub fn as_fn(
         &self,
     ) -> fn(context: Arc<Context>, zome: &str, params: &CallbackParams) -> CallbackResult {

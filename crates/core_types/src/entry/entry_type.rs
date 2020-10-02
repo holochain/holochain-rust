@@ -159,7 +159,7 @@ impl Display for EntryType {
 }
 
 /// dummy entry type
-#[cfg_attr(tarpaulin, skip)]
+#[cfg(not(tarpaulin_include))]
 pub fn test_app_entry_type() -> AppEntryType {
     AppEntryType::from("testEntryType")
 }
@@ -169,7 +169,7 @@ pub fn test_entry_type() -> EntryType {
 }
 
 /// dummy entry type, same as test_type()
-#[cfg_attr(tarpaulin, skip)]
+#[cfg(not(tarpaulin_include))]
 pub fn test_app_entry_type_a() -> AppEntryType {
     test_app_entry_type()
 }
@@ -179,7 +179,7 @@ pub fn test_entry_type_a() -> EntryType {
 }
 
 /// dummy entry type, differs from test_type()
-#[cfg_attr(tarpaulin, skip)]
+#[cfg(not(tarpaulin_include))]
 pub fn test_app_entry_type_b() -> AppEntryType {
     AppEntryType::from("testEntryTypeB")
 }

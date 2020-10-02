@@ -104,7 +104,7 @@ impl Default for SignalConfiguration {
 // NOTE: don't change without also changing in crates/trycp_server/src/main.rs
 const MAGIC_STRING: &str = "*** Done. All interfaces started.";
 
-#[cfg_attr(tarpaulin, skip)]
+#[cfg(not(tarpaulin_include))]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR)]
 fn main() {
     assert!(*SET_THREAD_PANIC_FATAL2);
@@ -326,7 +326,7 @@ fn main() {
     };
 }
 
-#[cfg_attr(tarpaulin, skip)]
+#[cfg(not(tarpaulin_include))]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR)]
 fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
     let config = load_config_file(&String::from(path))?;
@@ -351,7 +351,7 @@ fn bootstrap_from_config(path: &str) -> Result<(), HolochainError> {
     Ok(())
 }
 
-#[cfg_attr(tarpaulin, skip)]
+#[cfg(not(tarpaulin_include))]
 #[holochain_tracing_macros::newrelic_autotrace(HOLOCHAIN_CONDUCTOR)]
 fn load_config_file(path: &str) -> Result<Configuration, HolochainError> {
     let mut f = File::open(path)?;

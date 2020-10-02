@@ -11,7 +11,7 @@ pub extern crate holochain_json_api;
 pub extern crate holochain_persistence_api;
 
 /// ignore api_serialization because it is nothing but structs to hold serialization
-#[cfg_attr(tarpaulin, skip)]
+#[cfg(not(tarpaulin_include))]
 pub mod api_serialization;
 
 pub mod macros;

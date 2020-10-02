@@ -180,7 +180,7 @@ mod tests {
     //static AGENT_ID_1: &str = "HcScIkRaAaaaaaaaaaAaaaAAAAaaaaaaaaAaaaaAaaaaaaaaAaaAAAAatzu4aqa";
 
     #[test]
-    #[cfg_attr(tarpaulin, skip)]
+    #[cfg(not(tarpaulin_include))]
     fn can_memory_worker_double_track() {
         // setup client 1
         let memory_config = &JsonString::from(P2pConfig::unique_memory_backend_json());

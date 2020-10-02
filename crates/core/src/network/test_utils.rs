@@ -7,7 +7,7 @@ use holochain_persistence_api::cas::content::Address;
 use std::sync::Arc;
 
 /// create a test instance
-#[cfg_attr(tarpaulin, skip)]
+#[cfg(not(tarpaulin_include))]
 pub fn test_instance_with_spoofed_dna(
     dna: Dna,
     spoofed_dna_address: Address,

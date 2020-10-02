@@ -67,7 +67,7 @@ macro_rules! link_zome_api {
 
         impl ZomeApiFunction {
             // cannot test this because PartialEq is not implemented for fns
-            #[cfg_attr(tarpaulin, skip)]
+            #[cfg(not(tarpaulin_include))]
             pub fn apply(&self, runtime: &mut Runtime, args: &RuntimeArgs) -> ZomeApiResult {
                 // TODO Implement a proper "abort" function for handling assemblyscript aborts
                 // @see: https://github.com/holochain/holochain-rust/issues/324

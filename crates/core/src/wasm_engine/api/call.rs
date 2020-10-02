@@ -221,7 +221,7 @@ pub mod tests {
     use test_utils::create_test_dna_with_defs;
 
     /// dummy commit args from standard test entry
-    #[cfg_attr(tarpaulin, skip)]
+    #[cfg(not(tarpaulin_include))]
     pub fn test_bad_args_bytes() -> Vec<u8> {
         let args = ZomeFnCallArgs {
             instance_handle: "instance_handle".to_string(),
@@ -235,7 +235,7 @@ pub mod tests {
             .into_bytes()
     }
 
-    #[cfg_attr(tarpaulin, skip)]
+    #[cfg(not(tarpaulin_include))]
     pub fn test_args_bytes() -> Vec<u8> {
         let args = ZomeFnCallArgs {
             instance_handle: THIS_INSTANCE.to_string(),
@@ -262,7 +262,7 @@ pub mod tests {
         TestSetup { context, instance }
     }
 
-    #[cfg_attr(tarpaulin, skip)]
+    #[cfg(not(tarpaulin_include))]
     fn test_reduce_call(
         test_setup: &TestSetup,
         cap_request: CapabilityRequest,

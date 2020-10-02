@@ -23,6 +23,12 @@ with holonix.pkgs;
 {
  dev-shell = stdenv.mkDerivation (holonix.shell // {
   name = "dev-shell";
+  shellHook = holonix.pkgs.lib.concatStrings
+    [
+      holonix.shell.shellHook
+      ''export HC_TARGET_PREFIX=~/.holochain-compile-cache/
+      ''
+    ];
 
     shellHook = holonix.pkgs.lib.concatStrings [
     holonix.shell.shellHook

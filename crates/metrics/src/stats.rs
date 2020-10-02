@@ -6,8 +6,7 @@ use stats::Commute;
 use std::{
     collections::HashMap,
     error::Error,
-    fmt,
-    fmt::{Display, Formatter},
+    fmt::{self, Display, Formatter},
     io,
     iter::FromIterator,
 };

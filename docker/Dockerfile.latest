@@ -1,4 +1,4 @@
-FROM holochain/holonix:latest
+FROM holochain/holonix:latest.love
 
 WORKDIR /holochain-rust/build
 ENV NIX_ENV_PREFIX /holochain-rust/build

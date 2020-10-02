@@ -1,7 +1,7 @@
 # First steps writing Holochain hApps with Rust
 
 ___
-This tutorial builds for the 0.0.18-alpha1 release but as the API and HDK are changing it will likely fail under newer releases.
+This tutorial builds for the 0.0.28-alpha1 release but as the API and HDK are changing it will likely fail under newer releases.
 ___
 
 Holochain hApps are made of compiled WebAssembly that encodes the rules of the hApp, the data it can store and how users will interact with it. This means that [any language that can compile to WebAssembly](https://github.com/appcypher/awesome-wasm-langs) can one day be used for Holochain.
@@ -126,16 +126,22 @@ extern crate hdk;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
-extern crate holochain_persistence_derive;
+extern crate holochain_json_derive;
+
 use hdk::{
     error::ZomeApiResult,
-    holochain_core_types::{
-        hash::HashString,
-        error::HolochainError,
-        dna::entry_types::Sharing,
-        json::JsonString,
+    holochain_persistence_api::{
         cas::content::Address,
+        hash::HashString,
+    },
+    holochain_json_api::{
+        json::JsonString,
+        error::JsonError,
+    },
+    holochain_core_types::{
+        dna::entry_types::Sharing,
         entry::Entry,
+        link::LinkMatch,
     }
 };
 ```
@@ -183,7 +189,7 @@ define_zome! {
 // -- SNIP-- //
 ```
 
-Take note of the `native_type` field of the macro which gives which Rust struct represents the entry type. The `validation_package` field is a function that defines what data should be passed to the validation function through the `ctx` argument. In this case we use a predefined function to only include the entry itself, but it is also possible to pass chain headers, chain entries or the full local chain. The validation field is a function that performs custom validation for the entry. In both our cases we are just returning `Ok(())`.
+Take a note of the generic argument of `EntryValidationData` type in `validation_data` argument of `validation` field which gives which Rust struct represents the entry type. The `validation_package` field is a function that defines what data should be passed to the validation function through the `ctx` argument. In this case we use a predefined function to only include the entry itself, but it is also possible to pass chain headers, chain entries or the full local chain. The validation field is a function that performs custom validation for the entry. In both our cases we are just returning `Ok(())`.
 
 Take note also of the `links` field. As we will see later links are the main way to encode relational data in holochain. The `links` section of the entry macro defines what other types of entries are allowed to link to and from this type. This also includes a validation function for fine grain control over linking.
 
@@ -202,7 +208,7 @@ fn handle_create_list(list: List) -> ZomeApiResult<Address> {
     );
 
     // commit the entry and return the address
-	hdk::commit_entry(&list_entry)
+    hdk::commit_entry(&list_entry)
 }
 ```
 
@@ -218,9 +224,9 @@ fn handle_add_item(list_item: ListItem, list_addr: HashString) -> ZomeApiResult<
         list_item.into()
     );
 
-	let item_addr = hdk::commit_entry(&list_item_entry)?; // commit the list item
-	hdk::link_entries(&list_addr, &item_addr, "items", "")?; // if successful, link to list address
-	Ok(item_addr)
+    let item_addr = hdk::commit_entry(&list_item_entry)?; // commit the list item
+    hdk::link_entries(&list_addr, &item_addr, "items", "")?; // if successful, link to list address
+    Ok(item_addr)
 }
 ```
 
@@ -290,17 +296,22 @@ extern crate hdk;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
-extern crate holochain_persistence_derive;
+extern crate holochain_json_derive;
 
 use hdk::{
     error::ZomeApiResult,
-    holochain_core_types::{
-        hash::HashString,
-        error::HolochainError,
-        dna::entry_types::Sharing,
-        json::JsonString,
+    holochain_persistence_api::{
         cas::content::Address,
+        hash::HashString,
+    },
+    holochain_json_api::{
+        json::JsonString,
+        error::JsonError,
+    },
+    holochain_core_types::{
+        dna::entry_types::Sharing,
         entry::Entry,
+        link::LinkMatch,
     }
 };
 
@@ -345,7 +356,7 @@ define_zome! {
         Ok(())
     }
 
-	functions: [
+    functions: [
         create_list: {
             inputs: |list: List|,
             outputs: |result: ZomeApiResult<Address>|,
@@ -393,7 +404,7 @@ fn handle_create_list(list: List) -> ZomeApiResult<Address> {
     );
 
     // commit the entry and return the address
-	hdk::commit_entry(&list_entry)
+    hdk::commit_entry(&list_entry)
 }
 
 
@@ -404,9 +415,9 @@ fn handle_add_item(list_item: ListItem, list_addr: HashString) -> ZomeApiResult<
         list_item.into()
     );
 
-	let item_addr = hdk::commit_entry(&list_item_entry)?; // commit the list item
-	hdk::link_entries(&list_addr, &item_addr, "items")?; // if successful, link to list address
-	Ok(item_addr)
+    let item_addr = hdk::commit_entry(&list_item_entry)?; // commit the list item
+    hdk::link_entries(&list_addr, &item_addr, "items", "")?; // if successful, link to list address
+    Ok(item_addr)
 }
 
 
@@ -446,26 +457,41 @@ The testing framework is built on JavaScript around Tape.js and allows for writi
 Opening up the `test/index.js` file you will see a skeleton test file already created:
 
 ```javascript
-// This test file uses the tape testing framework.
-// To learn more, go here: https://github.com/substack/tape
-const { Config, Scenario } = require("@holochain/holochain-nodejs")
-Scenario.setTape(require("tape"))
+const path = require('path')
+const tape = require('tape')
 
-const dnaPath = "./dist/holochain-rust-todo.dna.json"
-const agentAlice = Config.agent("alice")
-const dna = Config.dna(dnaPath)
-const instanceAlice = Config.instance(agentAlice, dna)
-const scenario = new Scenario([instanceAlice])
+const { Diorama, tapeExecutor, backwardCompatibilityMiddleware } = require('@holochain/diorama')
 
-scenario.runTape("description of example test", async (t, { alice }) => {
+process.on('unhandledRejection', error => {
+  // Will print "unhandledRejection err is not defined"
+  console.error('got unhandledRejection:', error);
+});
+
+const dnaPath = path.join(__dirname, "../dist/bububu.dna.json")
+const dna = Diorama.dna(dnaPath, 'bububu')
+
+const diorama = new Diorama({
+  instances: {
+    alice: dna,
+    bob: dna,
+  },
+  bridges: [],
+  debugLog: false,
+  executor: tapeExecutor(require('tape')),
+  middleware: backwardCompatibilityMiddleware,
+})
+
+diorama.registerScenario("description of example test", async (s, t, { alice }) => {
   // Make a call to a Zome function
   // indicating the function, and passing it an input
-  const addr = alice.call("my_zome", "create_my_entry", {"entry" : {"content":"sample content"}})
-  const result = alice.call("my_zome", "get_my_entry", {"address": addr.Ok})
+  const addr = await alice.call("my_zome", "create_my_entry", {"entry" : {"content":"sample content"}})
+  const result = await alice.call("my_zome", "get_my_entry", {"address": addr.Ok})
 
   // check for equality of the actual and expected results
   t.deepEqual(result, { Ok: { App: [ 'my_entry', '{"content":"sample content"}' ] } })
 })
+
+diorama.run()
 ```
 
 This illustrates the `app.call` function that is exposed by the conductor for each app and that can be used to call our functions. Take note that the input-data should be a JSON object that matches the function signature. `call` will also return a JSON object.
@@ -473,26 +499,42 @@ This illustrates the `app.call` function that is exposed by the conductor for ea
 Lets add some tests for our todo list:
 
 ```javascript
-const { Config, Scenario } = require('@holochain/holochain-nodejs')
-Scenario.setTape(require('tape'))
-const dnaPath = "./dist/holochain-rust-todo.dna.json"
-const dna = Config.dna(dnaPath, 'happs')
-const agentAlice = Config.agent('alice')
-const instanceAlice = Config.instance(agentAlice, dna)
-const scenario = new Scenario([instanceAlice])
+const path = require('path')
+const tape = require('tape')
 
-scenario.runTape('Can create a list', async (t, { alice }) => {
-  const createResult = await alice.callSync('lists', 'create_list', { list: { name: 'test list' } })
+const { Diorama, tapeExecutor, backwardCompatibilityMiddleware } = require('@holochain/diorama')
+
+process.on('unhandledRejection', error => {
+  // Will print "unhandledRejection err is not defined"
+  console.error('got unhandledRejection:', error);
+});
+
+const dnaPath = path.join(__dirname, "../dist/my_first_app.dna.json")
+const dna = Diorama.dna(dnaPath, 'my_first_app')
+
+const diorama = new Diorama({
+  instances: {
+    alice: dna,
+    bob: dna,
+  },
+  bridges: [],
+  debugLog: false,
+  executor: tapeExecutor(require('tape')),
+  middleware: backwardCompatibilityMiddleware,
+})
+
+diorama.registerScenario("Can create a list", async (s, t, { alice }) => {
+  const createResult = await alice.call('my_zome', 'create_list', { list: { name: 'test list' } })
   console.log(createResult)
   t.notEqual(createResult.Ok, undefined)
 })
 
-scenario.runTape('Can add some items', async (t, { alice }) => {
-  const createResult = await alice.callSync('lists', 'create_list', { list: { name: 'test list' } })
+diorama.registerScenario('Can add some items', async (s, t, { alice }) => {
+  const createResult = await alice.call('my_zome', 'create_list', { list: { name: 'test list' } })
   const listAddr = createResult.Ok
 
-  const result1 = await alice.callSync('lists', 'add_item', { list_item: { text: 'Learn Rust', completed: true }, list_addr: listAddr })
-  const result2 = await alice.callSync('lists', 'add_item', { list_item: { text: 'Master Holochain', completed: false }, list_addr: listAddr })
+  const result1 = await alice.call('my_zome', 'add_item', { list_item: { text: 'Learn Rust', completed: true }, list_addr: listAddr })
+  const result2 = await alice.call('my_zome', 'add_item', { list_item: { text: 'Master Holochain', completed: false }, list_addr: listAddr })
 
   console.log(result1)
   console.log(result2)
@@ -501,18 +543,20 @@ scenario.runTape('Can add some items', async (t, { alice }) => {
   t.notEqual(result2.Ok, undefined)
 })
 
-scenario.runTape('Can get a list with items', async (t, { alice }) => {
-  const createResult = await alice.callSync('lists', 'create_list', { list: { name: 'test list' } })
+diorama.registerScenario('Can get a list with items', async (s, t, { alice }) => {
+  const createResult = await alice.call('my_zome', 'create_list', { list: { name: 'test list' } })
   const listAddr = createResult.Ok
 
-  await alice.callSync('lists', 'add_item', { list_item: { text: 'Learn Rust', completed: true }, list_addr: listAddr })
-  await alice.callSync('lists', 'add_item', { list_item: { text: 'Master Holochain', completed: false }, list_addr: listAddr })
+  await alice.call('my_zome', 'add_item', { list_item: { text: 'Learn Rust', completed: true }, list_addr: listAddr })
+  await alice.call('my_zome', 'add_item', { list_item: { text: 'Master Holochain', completed: false }, list_addr: listAddr })
 
-  const getResult = await alice.callSync('lists', 'get_list', { list_addr: listAddr })
+  const getResult = await alice.call('my_zome', 'get_list', { list_addr: listAddr })
   console.log(getResult)
 
   t.equal(getResult.Ok.items.length, 2, 'there should be 2 items in the list')
 })
+
+diorama.run()
 ```
 
 Running `hc test` will build the test file and run it using `node` which is able to load and execute holochain hApps via the holochain node conductor. If everything has worked correctly you should see some test output with everything passing.

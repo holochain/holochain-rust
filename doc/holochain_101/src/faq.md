@@ -4,18 +4,18 @@
 2. [Why do you call it "Holochain"?](#why-do-you-call-it-holochain)
 3. [How is Holochain different from a DHT (Distributed Hash Table)?](#how-is-holochain-different-from-a-dht-distributed-hash-table)
 4. [What kind of projects is Holochain good for?](#what-kind-of-projects-is-holochain-good-for)
- [What is Holochain _not_ good for?](#what-is-holochain-not-good-for)
-5. [What is Holochain's consensus algorithm?](#what-is-holochains-consensus-algorithm)
-6. [Can you run a cryptocurrency on Holochain?](#can-you-run-a-cryptocurrency-on-holochain)
-7. [How is Holochain different from __________?](#how-is-holochain-different-from-__________)
-8. [What language is Holochain written in? What languages can I use to make Holochain apps?](#what-language-is-holochain-written-in-what-languages-can-i-use-to-make-holochain-apps)
-9. [Is Holochain open source?](#is-holochain-open-source)
-10 [How is Holochain more environmentally ethical than blockchain?](#how-is-holochain-more-environmentally-ethical-than-blockchain)
-11. [How are data validated on Holochain?](#how-are-data-validated-on-holochain)
-12. [What happens to data when a node leaves the network?](#what-happens-to-data-when-a-node-leaves-the-network)
-13. [Should I build my coin/token on Holochain?](#should-i-build-my-cointoken-on-holochain)
-14. [What does “agent-centric” mean? How is this different from “data-centric”?](#what-does-agent-centric-mean-how-is-this-different-from-data-centric)
-15. [What is the TPS (Transactions Per Second) on Holochain?](#what-is-the-tps-transactions-per-second-on-holochain)
+5. [What is Holochain _not_ good for?](#what-is-holochain-not-good-for)
+6. [What is Holochain's consensus algorithm?](#what-is-holochains-consensus-algorithm)
+7. [Can you run a cryptocurrency on Holochain?](#can-you-run-a-cryptocurrency-on-holochain)
+8. [How is Holochain different from __________?](#how-is-holochain-different-from-__________)
+9. [What language is Holochain written in? What languages can I use to make Holochain apps?](#what-language-is-holochain-written-in-what-languages-can-i-use-to-make-holochain-apps)
+10. [Is Holochain open source?](#is-holochain-open-source)
+11.  [How is Holochain more environmentally ethical than blockchain?](#how-is-holochain-more-environmentally-ethical-than-blockchain)
+12. [How are data validated on Holochain?](#how-are-data-validated-on-holochain)
+13. [What happens to data when a node leaves the network?](#what-happens-to-data-when-a-node-leaves-the-network)
+14. [Should I build my coin/token on Holochain?](#should-i-build-my-cointoken-on-holochain)
+15. [What does “agent-centric” mean? How is this different from “data-centric”?](#what-does-agent-centric-mean-how-is-this-different-from-data-centric)
+16. [What is the TPS (Transactions Per Second) on Holochain?](#what-is-the-tps-transactions-per-second-on-holochain)
 
 
 
@@ -126,9 +126,9 @@ There are two reasons Holochain is vastly more efficient than blockchain and mor
 
 1. It eliminates the need for all nodes to be synchronized with each other in global consensus. Sharding is usually enabled on Holochain. This means that when two nodes make a transaction, each node saves a countersigned record of that transaction. Additionally, the transaction is published to the [Distributed Hash Table](https://www.youtube.com/watch?v=FhF_kvgfEZM) (sent to and saved by some unpredictably random nodes that can be looked up later for retrieval).
 
-    Sharding is configurable by app, and in some cases it's a good idea to turn it off. For example, imagine a distributed Slack-like team messaging app. With only 40-50 members, full synchronization would be worth the extra bandwidth requirement for the benefit of offline messages and reduced load times. But for most applications, global synchronization isn't really needed and sharding is kept on.
+   Sharding is configurable by app, and in some cases it's a good idea to turn it off. For example, imagine a distributed Slack-like team messaging app. With only 40-50 members, full synchronization would be worth the extra bandwidth requirement for the benefit of offline messages and reduced load times. But for most applications, global synchronization isn't really needed and sharding is kept on.
 
-    Because of DHTs, and the sharding they enable, Holochain actually doesn't rely on the transfer of large amounts of redundant information, and uses vastly less bandwidth than blockchain.
+   Because of DHTs, and the sharding they enable, Holochain actually doesn't rely on the transfer of large amounts of redundant information, and uses vastly less bandwidth than blockchain.
 
 2. There's no mining on Holochain. Blockchain's proof-of-work system provides a hefty incentive for thousands of people to spend the processing power of their CPUs and GPUs using up [huge amounts](https://digiconomist.net/bitcoin-energy-consumption) [of electricity](https://motherboard.vice.com/en_us/article/ywbbpm/bitcoin-mining-electricity-consumption-ethereum-energy-climate-change) on solving a meaningless cryptographic puzzle. Holochain doesn't have mining.
 
